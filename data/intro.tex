@@ -1,0 +1,164 @@
+% vim:tw=60
+
+\section{Introduction}
+\label{sec:intro}
+
+As industry is moving towards \textit{cloud computing}, many
+players in the industry are building large and complex data
+center applications on top of clusters of commodity PCs.
+Ensuring the correctness and performance of the applications
+are critical to providing sustained service to clients.
+However, bugs have been challenging service developers and
+maintainers continually.
+
+However, the inherent complexity of the system hinders
+people from understanding the system easily. The system are
+usually built in a tiered fashion, with each tier providing
+certain abstraction to the upper layer. Within a logical
+tier, its function is implemented as a distributed system.
+It may consist of hundreds or thousands of distributed
+processes which works coorperately to fulfill the requests
+from upper tier. Within a particular process, asynchronous
+staged handling of messages is well adopted to fully utilize
+the computing resource on a node. By leveraing the above
+techniques, developers have built large scale of complex
+systems to serve requests worldwide. The handling of a
+request is splitted into pieces of tasks which are executed
+distrbutedly across tiers, processes and stages. 
+
+Understanding runtime behaviour of the complex system is key
+to verify system design, debug its correctness and
+performance problems. By tracking task pieces and their
+causal dependencies, we can construct task flow by linking
+together pieces of its execution throughout the system.  In
+our previous work, we further developed techniques to
+automatically tracking tasks and infer hierarchical task
+models. Using the task models, developers can better
+understand the structures of components and their
+dependencies, and use debugging tools to instrument the
+system and verify the behavior of tasks at appropriate
+layers.
+
+The production system contains abundant logging information
+on system status, but it is not fully explored yet. It is
+useful for two reason. First, the log is added by developers
+who are familiar with the system.  The resulting log is a
+faithful records of system runtime behaviour. Second, log
+usually contains both state report and high level
+descriptions. The derived task models is of value for both
+automatic processing and human understanding.
+
+The hierarchical structure of tasks is often consist with
+the hierarchy of data processed by tasks. For example. In
+cosmos, data are organized as streams and streams are
+consisted of extents. By inspecting cosmos logs, task that
+processing a stream is splitted into subtasks. The first
+subtask do some stream level processing (open, etc.), and
+the following tasks process extents in the stream. But the
+task boundaries are not marked in the log.
+
+By mining and leveraging data hierarchy, we can use the
+information to infer the task hierarchy. A log item which
+starts to process a stream marks the begin of a task. The
+task lasts before the log item which process another stream.
+Within the task, it is splitted into subtasks at
+extent-processing boundary.
+
+In this paper, we present a method for automatically infer
+data hierarchy recorded in system log and use the
+information to construct task models.  We also describe our
+experiences in using the inferred task models to
+understanding the system design and debug performance
+problems.
+
+\comment{
+It faces several challenges. First, logs are not
+written in well strucutured form. Second, log contains a lot
+information other than data identifer, and the noises must
+be reduce automatically with best effort.
+
+}
+
+\comment{
+and build hierarchical task models to better
+understand and check system runtime behaviour.
+
+Meanwhile, debugging correctness and performance problems
+for the systems are difficult.
+
+System log is a rich source of information for understanding
+system runtime behaviour.
+
+Researchers have proposed several techniques, but system log
+is not explored much.
+
+In this paper, we try to build hierarchical task model
+through logs.
+
+Contribution/Highlights:
+
+Goal: Understanding system behaviour by exploiting existing
+system logs
+
+magpie: more details on low level properties d3s: customized
+log point pip: manual annotation
+
+our advangtage: 
+
+existing log more on high level semantic
+}
+
+\section{Design}
+\label{sec:design}
+
+In this section, we describe the detailed process of mining
+data hierarchy using system log. It works in two phases.
+
+\subsection{Extract key-value pairs}
+\notes{value format are limited, we can find value part
+easily, and track back in the text to find its key name.}
+
+\subsection{Mining hierarchical relation of keys}
+
+\notes{
+\begin{itemize}
+\item rule 1: keyS $>$ keyP, then keyS comes before keyP
+\item rule 2: keyS $>$ keyP, then there're 1-to-many mapping relation between keyS and keyP value set.
+\end{itemize}
+}
+
+\subsection{Construct hierarchical task models}
+\notes{In this step, we summarize the key relations into
+partial orders. and use it to construct task models.}
+
+\section{Discussion}
+\label{sec:discussion}
+Discussion. \notes{topic need decided}
+
+\section{Experiences}
+\label{sec:exp}
+
+\subsection{Understanding system behaviour}
+\notes{understanding cosmos client, en and csm, but the
+dependency line may be missing. Because log doesn't contain
+enough information to join tasks among threads.}
+
+\subsection{Guide on debugging}
+\notes{
+using the model to guide on debugging cosmos network
+library.
+
+}
+
+\section{Related Works}
+\label{sec:related}
+Related Works
+
+\section{Conclusion}
+\label{sec:conclusion}
+Conclusion
+
+\section{References}
+\label{sec:ref}
+References
+
