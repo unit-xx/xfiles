@@ -95,9 +95,26 @@ The mining algorithm takes (key, value) stream as input and
 outputs (keyS, keyP, R) tuples, indicating keyS $>$ keyP
 with rank R.
 
+\begin{verbatim}
+A a1
+B b1
+B b2
+A a2
+B b3
+\end{verbatim}
 
+There above (key, value) streams servers as an simple demo
+of mining algorithm. After mining, we will get (A, B, 3).
+Because A appears before B, A is a possible parent of B. The
+rank 3 is calulated as the cardinality of (valueA, valueB)
+set: \{(a1, b1), (a1, b2), (a2, b3)\}
+
+rank algorithm works as follows
+
+\notes{a more complete example here}
 
 reducing false positives
+
 
 \notes{cannot reduce all false positives. patch 1: user
 specify a subset of all keys. patch 2: user manually delete
@@ -115,4 +132,4 @@ the choice of different hierarchy
 
 using the data hierarchy to construct task models
 
-notes: the result is an approximation
+\notes{the result is an approximation}
