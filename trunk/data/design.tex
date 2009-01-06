@@ -1,0 +1,118 @@
+% vim:tw=60
+
+\section{Design}
+\label{sec:design}
+
+In this section, we describe the detailed process of mining
+data hierarchy using system log.
+
+\subsection{Extract key-value pairs}
+\notes{value format are limited, we can find value part
+easily, and track back in the text to find its key name.}
+
+Different system have different log format. We describe how
+to extract data from cosmos log in (key, value) format. The
+principle described here can be adopted to analyze 
+other kinds of log.
+
+\begin{verbatim}
+d,12/30/2008 14:51:22.949,CosmosClient,
+CosmosClientDebug,SrcFile="cosmosstream.cpp"
+SrcFunc="CosmosStream::StartCsmAppendJob" 
+SrcLine="570" Pid="3000" Tid="9144"
+TS="0x01C96A4B0702ECC2" String1="CSM append
+POSTED: opId: 3, streamId:
+{A8593030-1B74-4D40-B76B-52F4F7240513}, name:
+cosmos://srg-sna10/vol1/graphviz-2.20.2.exe,
+length: 1045679, offset: unknown,
+waitForSeal: 1, status: OK"
+\end{verbatim}
+
+The cosmos log can be divided into two parts and we refer
+above log item as an example. The first half has fixed
+format, which records log level, time, log category and a
+short title. Followed by the location of the log in source
+file, and runtime parameters. The second half is contained
+in \texttt{String1} field. It is written by developer and 
+not well structured. It is usually interleaved by 
+descriptive texts and programs states in (key, value) pairs.
+
+It is not straightforward to extract the (key, value) pairs.
+The developer can record (key, value) in several formats. In
+general, it is written as \texttt{key SEPARATOR1 value
+SEPARATOR2}. SEPARATOR1 and SEPARATOR2 have mutiple choices.
+It is not easy to determine which word is a key, otherwise
+we can do the job easily. Because a key may look similar to
+an irrelevant words, such as \texttt{POSTED:} and
+\texttt{opId:}.
+
+We use a novel method to extract the (key, value) pairs. It
+is based on the observation that the value part has limited
+formats, such as an integer, a hexadecimal or a GUID, and it
+is easy to be match by regular expression. Once the value
+part is located, we can track back in the text to find its
+corresponding key.
+
+Currently, we choose to extract (key, value) pairs whose
+value parts are numbers but not text. Our considerations
+are: a) values as text are more descriptitive and have
+little use in inferring data hierarchy in later steps. b)
+SEPARATOR1 and SEPARATOR2 may be both blanks. In such cases,
+text words, keys and values are messed up and they cannot be
+distinguished using simple rules.
+
+\notes{key alias, key name collision. our suggestion}
+
+\subsection{Mining hierarchical relation of keys}
+
+Some of the keys extracted from log have hierarchy
+relations. For example, to complete a \texttt{Session}, it
+is splitted into subtasks which are designated by different
+\texttt{opId}. There are similar relations with
+\texttt{StreadID} and \texttt{ExtentID}. We can use the
+data hierarchy to deduce task hierarchy.
+
+After the previous step, we get a stream of (key, value)
+pairs in their order of appearance in log file. Activities
+from multiple threads may be logged into the same log file.
+We split (key, value) streams by thread and mine different
+sub-streams separately. The mined results are combined
+together.
+
+We use two heuristics to mine data hierarchy among keys.
+They are the necessary conditions for two keys to have
+hierarchical relation.
+\begin{itemize}
+\item If keyS $>$ keyP, then keyS comes before keyP.
+\item If keyS $>$ keyP, then there're strict 1-to-many
+mapping between keyS and keyP value set.
+\end{itemize}
+The intuition is, if keyS $>$ keyP, one will see keyS first,
+and a series of keyP with different values, and then keyS,
+with another value, and then a series of keyP. 
+
+The mining algorithm takes (key, value) stream as input and
+outputs (keyS, keyP, R) tuples, indicating keyS $>$ keyP
+with rank R.
+
+
+
+reducing false positives
+
+\notes{cannot reduce all false positives. patch 1: user
+specify a subset of all keys. patch 2: user manually delete
+false pairs}
+
+\subsection{Construct hierarchical task models}
+\notes{In this step, we summarize the key relations into
+partial orders. and use it to construct task models.}
+
+the input: data hierarchy in pairs
+
+join the pairs together
+
+the choice of different hierarchy
+
+using the data hierarchy to construct task models
+
+notes: the result is an approximation
