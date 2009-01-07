@@ -135,19 +135,19 @@ We give a more complete example here.
 \begin{verbatim}
 Session s1
 opId 1
-StreamID 1
+StreamID x1
 opId 2
-ExtentID 1
-opId 2
-ExtentID 2
-
-Session 2
+ExtentID y1
 opId 3
-StreamID 1
+ExtentID y2
+
+Session s2
 opId 4
-ExtentID 1
+StreamID x2
 opId 5
-ExtentID 2
+ExtentID y3
+opId 6
+ExtentID y4
 \end{verbatim}
 The above example emulate the (key, value) stream we see in
 cosmos client log. When the client receives a command, it
