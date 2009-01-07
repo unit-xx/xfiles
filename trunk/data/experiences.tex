@@ -3,12 +3,52 @@
 \section{Experiences}
 \label{sec:exp}
 
-\subsection{Understanding system behaviour}
+\notes{any rational? What is the point? It is effective on
+what? and why}
+
+\subsection{Understanding runtime behaviour}
 \notes{understanding cosmos client, en and csm, but the
 dependency line may be missing. Because log doesn't contain
 enough information to join tasks among threads.}
 
-The process of create a stream at client side and en.
+We try to use the mined data hierarchy from logs to
+understand runtime behaviour of cosmos client and EN server.
+Cosmos is a distributed storage system similiar to GFS. The
+EN server is similiar to the role of chunkserver. In cosmos,
+data is organized in streams and streams are comprised of
+extents. Each stream and extent is identified by a GUID.
+
+We choose (Session, opId) to analyze cosmos client runtime
+and choose ExtentID to analyze EN server runtime.
+
+The process of create a stream at client side is: (create a
+stream), (append stream, append extent), (append extent),
+(append extent and seal the last extent). Each parentheses
+indicate a different opId, and all the 4 opId is in the same
+session.
+
+The process of create a stream at EN is: (create extent,
+append extent x 3, seal extent). Using ExtentID, we can only
+distinguish at extent operation level, no further precision.
+
+lesson:
+1) the choice of key is important. The result task model is
+sensitive to the choice of key.
+
+2) the task boundary has a phase-shift with real task
+boundary. Because some preparation steps doesn't know the
+key and value that early.
+
+3) we can combine scalpel and data hierarchy together. Using
+scalpel to automatically find dependency, and use data
+hierarchy to find task boundary. The advantage is, data
+hierarchy is predefined by system design and the result
+should be more precise than bottom-up mining.
+
+4) task model in this way is an overlay above low level
+synchronization operations.
+
+5) using ExtentID to analyze EN is too coarse.
 
 \subsection{Guide on debugging}
 \notes{
@@ -16,4 +56,8 @@ using the model to guide on debugging cosmos network
 library.
 }
 
+sender faster than worker
 
+worker's working segment is not interleaved
+
+examine worker's processing model
