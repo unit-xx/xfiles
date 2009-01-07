@@ -61,7 +61,9 @@ SEP1 and SEP2 may be both blanks. In such cases,
 text words, keys and values are messed up and they cannot be
 distinguished using simple rules.
 
-\notes{key alias, key name collision. our suggestion}
+\notes{key alias: one key has multiple names, key name
+collision: multiple key has the same name. our suggestion:
+regular key definition}
 
 \subsection{Mining hierarchical relation of keys}
 
@@ -171,16 +173,29 @@ specify a subset of all keys. patch 2: user manually delete
 false pairs}
 
 \subsection{Construct hierarchical task models}
-\notes{In this step, we summarize the key relations into
-partial orders. and use it to construct task models.}
 
-the input: data hierarchy in pairs
-After the previous step, 
+After the previous step, we mined out a set of data
+hierarchy relations. The relations can be translated
+directly to hierarchies of tasks which process the data. 
+If we have keyS $>$ keyP, and use Task(keyS) to denote task
+that process keyS, then we have Task(keyS) $:=$
+Task(keyP)$+$.
 
-join the pairs together
+We apply the mined data hierarchy on the log to construct
+task models. We first split log items into groups by highest
+level key. The group begins at the new value of a key and
+last until another value is met. We apply the process
+recursively within each group to construct hierarchical task
+models.
 
-the choice of different hierarchy
+%join the pairs together
 
-using the data hierarchy to construct task models
+The choice of which data hierarchy to apply is left to user.
+The choice depends on user's concentration. The user are not
+limited to mined result. Other hierarchy relations can be
+specified. For example, one can combine Session, opId,
+StreamID, ExtentID together, and write the relation as
+Session $:=$ opId$+$, opId $:=$ StreamID$|$ExtentID.
 
-\notes{the result is an approximation}
+\notes{the result task boundary is an approximation, has a
+shift with `real' boundary.}
