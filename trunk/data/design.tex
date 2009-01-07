@@ -39,8 +39,8 @@ descriptive texts and programs states in (key, value) pairs.
 
 It is not straightforward to extract the (key, value) pairs.
 The developer can record (key, value) in several formats. In
-general, it is written as \texttt{key SEPARATOR1 value
-SEPARATOR2}. SEPARATOR1 and SEPARATOR2 have mutiple choices.
+general, it is written as \texttt{key SEP1 value
+SEP2}. SEP1 and SEP2 have mutiple choices.
 It is not easy to determine which word is a key, otherwise
 we can do the job easily. Because a key may look similar to
 an irrelevant words, such as \texttt{POSTED:} and
@@ -57,7 +57,7 @@ Currently, we choose to extract (key, value) pairs whose
 value parts are numbers but not text. Our considerations
 are: a) values as text are more descriptitive and have
 little use in inferring data hierarchy in later steps. b)
-SEPARATOR1 and SEPARATOR2 may be both blanks. In such cases,
+SEP1 and SEP2 may be both blanks. In such cases,
 text words, keys and values are messed up and they cannot be
 distinguished using simple rules.
 
@@ -70,7 +70,9 @@ relations. For example, to complete a \texttt{Session}, it
 is splitted into subtasks which are designated by different
 \texttt{opId}. There are similar relations with
 \texttt{StreadID} and \texttt{ExtentID}. We can use the
-data hierarchy to deduce task hierarchy.
+data hierarchy to deduce task hierarchy. Two keys have
+hierarchical relations are denoted by $>$, for example,
+\texttt{Session} $>$ \texttt{opId}.
 
 After the previous step, we get a stream of (key, value)
 pairs in their order of appearance in log file. Activities
@@ -109,12 +111,60 @@ Because A appears before B, A is a possible parent of B. The
 rank 3 is calulated as the cardinality of (valueA, valueB)
 set: \{(a1, b1), (a1, b2), (a2, b3)\}
 
-rank algorithm works as follows
+The rank algorithm works as follows. It scans through the
+(key, value) stream and maintains an array of keys. Once a
+key is spotted for the first time, it is appended to the key
+array. A key is a possible parent for all the keys after it
+in the array (heuristic 1). In the scan process, the algorithm also
+accumulate an array of (valueS, valueP) for each (keyS, keyP)
+pairs. A new (keyP, valueP) will generate multiple (valueS,
+valueP) for each keyS before keyP in the key array.
 
-\notes{a more complete example here}
+Now for each (keyS, keyP) pair, we have a corresponding
+(valueS, valueP) array. To apply heuristic 2, we have to
+justify whether valueS and valueP have strict 1-many
+mappings. If yes, we use size of (valueS, valueP) array
+as the rank of (keyS, keyP), if not, we just ignore the
+(keyS, keyP) pair.
 
-reducing false positives
+\notes{pseudo code of mining algorithm}
 
+We give a more complete example here.
+\begin{verbatim}
+Session s1
+opId 1
+StreamID 1
+opId 2
+ExtentID 1
+opId 2
+ExtentID 2
+
+Session 2
+opId 3
+StreamID 1
+opId 4
+ExtentID 1
+opId 5
+ExtentID 2
+\end{verbatim}
+The above example emulate the (key, value) stream we see in
+cosmos client log. When the client receives a command, it
+starts a new session, opens the specified stream in next
+operation step, and process extents of the stream in the
+following operation steps.
+
+We sucessfully mined out StreamID $>$ ExtentID with rank 4
+and Session $>$ opId with rank 6. Session has no relation
+with StreamID, because multiple Session may operate on the
+same StreamID. The similar argument apply for (Session,
+ExtentID), (opId, StreamID) and (opId, ExtentID).
+
+For (key, value) streams generated form real world log, the
+mined result may contain a lot false positives.
+\notes{Have to find some way to automatically filter out
+false positives. For example, if (err, 0x0) is inserted
+after each Session, we will see Session $not >$ err, but
+err $>$ opId and Session $>$ opId, using transitive rule?}
 
 \notes{cannot reduce all false positives. patch 1: user
 specify a subset of all keys. patch 2: user manually delete
@@ -125,6 +175,7 @@ false pairs}
 partial orders. and use it to construct task models.}
 
 the input: data hierarchy in pairs
+After the previous step, 
 
 join the pairs together
 
