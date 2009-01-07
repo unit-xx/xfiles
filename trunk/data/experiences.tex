@@ -56,8 +56,33 @@ using the model to guide on debugging cosmos network
 library.
 }
 
-sender faster than worker
+Methodology: We have to identify the boundary of client
+threads (who enqueue message) and worker threads (who really
+send and receive message). So we send CsExtentInfo for a
+random set of extents, so using ExtentID as key, we can
+separate different tasks for both client threads and worker
+threads.
 
-worker's working segment is not interleaved
+Using our method we can only show that the worker threads
+are working in a synchronized way. No overlay between tasks.
+The root cause has to be invetigated manually.
 
-examine worker's processing model
+We do it in three steps:
+
+1. make sure client threads is faster than worker, so the
+client threads are not bottleneck. We
+maintain a flow control counter among client threads, and
+see that it is alway near maximum value.
+
+1.5. client threads enqueu the message and ignore it, means
+we use asynchronous send setting.
+
+2. worker's task segment is not interleaved, even for
+different threads.
+
+3. examine worker's processing model. We find that a
+processor object is shared among different workers, so it is
+a scarce resource. To send or receive a message, worker
+threads must obtain the shared processor object to `run' the
+message.
+
