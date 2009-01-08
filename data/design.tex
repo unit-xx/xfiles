@@ -74,8 +74,10 @@ text words, keys and values are messed up and they cannot be
 distinguished using simple rules.
 
 \notes{key alias: one key has multiple names, key name
-collision: multiple key has the same name. our suggestion:
-regular key definition}
+collision: multiple key has the same name.  we can solve
+above two problems using some key mapping scheme, but it
+requires manual work and one have to familiar with log and
+keys. our suggestion: regular key definition}
 
 \subsection{Mining hierarchical relation of keys}
 
@@ -118,6 +120,7 @@ B b2
 A a2
 B b3
 \end{verbatim}
+\notes{this will replaced by example below}
 
 There above (key, value) streams servers as an simple demo
 of mining algorithm. After mining, we will get (A, B, 3).
@@ -175,6 +178,7 @@ ExtentID), (opId, StreamID) and (opId, ExtentID).
 
 For (key, value) streams generated form real world log, the
 mined result may contain a lot false positives.
+
 \notes{Have to find some way to automatically filter out
 false positives. For example, if (err, 0x0) is inserted
 after each Session, we will see Session $not >$ err, but
@@ -194,7 +198,7 @@ hierarchy relations. The relations can be translated
 directly to hierarchies of tasks which process the data. 
 If we have keyS $>$ keyP, and use Task(keyS) to denote task
 that process keyS, then we have Task(keyS) $:=$
-Task(keyP)$+$.
+Task(keyP)$+$, in short keyS $:=$ keyP+
 
 We apply the mined data hierarchy on the log to construct
 task models. We first split log items into groups by highest
