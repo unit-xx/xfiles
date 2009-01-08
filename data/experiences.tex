@@ -7,9 +7,6 @@
 what? and why}
 
 \subsection{Understanding runtime behaviour}
-\notes{understanding cosmos client, en and csm, but the
-dependency line may be missing. Because log doesn't contain
-enough information to join tasks among threads.}
 
 We try to use the mined data hierarchy from logs to
 understand runtime behaviour of cosmos client and EN server.
@@ -21,17 +18,60 @@ extents. Each stream and extent is identified by a GUID.
 We choose (Session, opId) to analyze cosmos client runtime
 and choose ExtentID to analyze EN server runtime.
 
-The process of create a stream at client side is: (create a
-stream), (append stream, append extent), (append extent),
-(append extent and seal the last extent). Each parentheses
-indicate a different opId, and all the 4 opId is in the same
-session.
+At the client side, we upload several files into cosmos and
+query the streams status. We apply task model Session $:=$
+opId$+$ on cosmos client log to investigate its runtime
+behaviour. We successfully divide the activities of each
+threads by Session and Opid.
 
-The process of create a stream at EN is: (create extent,
-append extent x 3, seal extent). Using ExtentID, we can only
-distinguish at extent operation level, no further precision.
+There is one client thread who receives user commands and
+each command is run as a session. A command is executed in
+steps as different opId. Within a opId, it issues several
+RPC calls. The client thread does not run the RPC calls, but
+puts them into a queue. Other threads are workers who get
+RPC calls and run them. When the responses for RPC calls are
+returned, the workers notify the client threads on the
+results. The workers does not know the session concept and
+their activities are divided by opIds. The client and worker
+threads activities can be connected by the same opId.
 
-lesson:
+\begin{figure}
+\centering
+\includegraphics[height=1.5in]{ph}
+\caption{The process of create a stream at client side.}
+\label{fig:createstream}
+\end{figure}
+
+We look at how a file is uploaded into cosmos as stream
+specifically. The process of create a stream at client side
+is executed as four opIds and six RPC commands, as shown in
+Figure~\ref{fig:createstream}. They are (create a stream),
+(append stream, append extent), (append extent), (append
+extent and seal the extent). Each parentheses indicate a
+different opId. As the file size is smaller than the maximux
+allowed extent size, the created stream contains only one
+extent, and its content is sent by three append RPC calls.
+After the last appending extent request, the extent is
+sealed and no further append is allowed.
+
+\begin{figure}
+\centering
+\includegraphics[height=1.5in]{ph}
+\caption{Create and append extent at EN side.}
+\label{fig:createextent}
+\end{figure}
+
+We then investigae the corresponding activities at EN side.
+The result is shown in Figure~\ref{fig:createextent}. There
+are five RPC calls handled by the same thread. They are
+create extent, three append extent and seal extent. Using
+ExtentID, we can only distinguish at extent operation level,
+so the five RPC handling process are treated as one task
+instance.
+
+%\vskip 1em
+%\textbf{Lessons:}
+\lession
 1) the choice of key is important. The result task model is
 sensitive to the choice of key.
 
