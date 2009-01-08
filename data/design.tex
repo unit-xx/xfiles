@@ -5,12 +5,18 @@
 
 \begin{figure}
 \centering
-\includegraphics[height=2in]{ph}
+\includegraphics[height=2in]{design}
 \caption{Design Overview}
 \label{fig:design}
 \end{figure}
 
-Our design is summarized in Figure~\ref{fig:design}
+Our design is summarized in Figure~\ref{fig:design}. We
+first extract data from system logs as streams of (key,
+value) tuples. Then we try to mine hierarchical relations
+among keys. The mined relations can be directly translated
+to task models. Applying the task models on logs, we
+generate a set of task instances represented as an array of
+log items.
 
 \subsection{Extract key-value pairs}
 \notes{value format are limited, we can find value part
