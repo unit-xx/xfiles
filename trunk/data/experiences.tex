@@ -37,15 +37,15 @@ threads activities can be connected by the same opId.
 
 \begin{figure}
 \centering
-\includegraphics[height=1.5in]{ph}
+\includegraphics[height=1.5in]{clientcreate}
 \caption{The process of create a stream at client side.}
-\label{fig:createstream}
+\label{fig:clientcreate}
 \end{figure}
 
 We look at how a file is uploaded into cosmos as stream
 specifically. The process of create a stream at client side
 is executed as four opIds and six RPC commands, as shown in
-Figure~\ref{fig:createstream}. They are (create a stream),
+Figure~\ref{fig:clientcreate}. They are (create a stream),
 (append stream, append extent), (append extent), (append
 extent and seal the extent). Each parentheses indicate a
 different opId. As the file size is smaller than the maximux
@@ -56,13 +56,13 @@ sealed and no further append is allowed.
 
 \begin{figure}
 \centering
-\includegraphics[height=1.5in]{ph}
+\includegraphics[height=1.5in]{encreate}
 \caption{Create and append extent at EN side.}
-\label{fig:createextent}
+\label{fig:encreate}
 \end{figure}
 
 We then investigae the corresponding activities at EN side.
-The result is shown in Figure~\ref{fig:createextent}. There
+The result is shown in Figure~\ref{fig:encreate}. There
 are five RPC calls handled by the same thread. They are
 create extent, three append extent and seal extent. Using
 ExtentID, we can only distinguish at extent operation level,
@@ -123,7 +123,7 @@ as far as possible.
 
 \begin{figure}
 \centering
-\includegraphics[height=1.5in]{ph}
+\includegraphics[height=2.4in]{stresstest}
 \caption{Task trace for stress test}
 \label{fig:stresstest}
 \end{figure}
