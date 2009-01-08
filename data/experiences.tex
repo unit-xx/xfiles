@@ -69,60 +69,94 @@ ExtentID, we can only distinguish at extent operation level,
 so the five RPC handling process are treated as one task
 instance.
 
-%\vskip 1em
-%\textbf{Lessons:}
-\lession
-1) the choice of key is important. The result task model is
-sensitive to the choice of key.
-
-2) the task boundary has a phase-shift with real task
-boundary. Because some preparation steps doesn't know the
-key and value that early.
-
-3) we can combine scalpel and data hierarchy together. Using
-scalpel to automatically find dependency, and use data
-hierarchy to find task boundary. The advantage is, data
+\lesson Using task models translated from data hierarchy, we
+can effectively identify task instances and understanding
+system runtime behaviour. The advantage is, data
 hierarchy is predefined by system design and the result
 should be more precise than bottom-up mining.
 
-4) task model in this way is an overlay above low level
-synchronization operations.
+Another property is that we can see how high leve task is
+translated into several low level sub-task.
 
-5) using ExtentID to analyze EN is too coarse.
+\comment{
+We apply our task model to understanding runtime behaviour
+for each thread. To obtaining the whole execution path for
+handling a request, we have to asscociate task instances
+with causal dependencies.
 
-\subsection{Guide on debugging}
-\notes{
-using the model to guide on debugging cosmos network
-library.
+Our technique is complementary to
+existing ones in that 
+
+we can combine scalpel and data hierarchy together. Using
+scalpel to automatically find dependency, and use data
+hierarchy to find task boundary. 
 }
 
-Methodology: We have to identify the boundary of client
-threads (who enqueue message) and worker threads (who really
-send and receive message). So we send CsExtentInfo for a
-random set of extents, so using ExtentID as key, we can
-separate different tasks for both client threads and worker
-threads.
+There are some disadvantages. First the boundary of task
+instances may have a phase shift. The initialization part of
+a task instance doesn't know the data identifer yet so it
+will be merged into the tail of previous task instances.
+However, as initialization is relatively static and this
+phase shift can be corrected by adding a predefined
+displacement to task boundaries. Second, the granularity of
+task observed depends on the choice of keys. As demonstrated
+in EN server, several RPC handling task is merged into one
+task because they happpens to handle the same extent.
 
-Using our method we can only show that the worker threads
-are working in a synchronized way. No overlay between tasks.
-The root cause has to be invetigated manually.
+\subsection{Guide on debugging}
 
-We do it in three steps:
+We then show how we use the task model to help find a
+performace problem in cosmos.
 
-1. make sure client threads is faster than worker, so the
-client threads are not bottleneck. We
-maintain a flow control counter among client threads, and
-see that it is alway near maximum value.
+It is reported from tester that the cosmos network library
+cannot go through a bandwidth stress test. In the test,
+it uses several threads to concurrently issue RPC calls of
+fixed size (typically 128KB) and see whether the bandwidth
+is fully saturated. The result is negative, the bandwidth is
+only about 34\% of its capability, while the CPU usage is
+far under 100\%.
 
-1.5. client threads enqueu the message and ignore it, means
-we use asynchronous send setting.
+To our experiences, performance bugs are usually caused by
+convoluted application logic within deep code base. We try
+to use task model to find hints and narrow down the bug site
+as far as possible.
 
-2. worker's task segment is not interleaved, even for
-different threads.
+\begin{figure}
+\centering
+\includegraphics[height=1.5in]{ph}
+\caption{Task trace for stress test}
+\label{fig:stresstest}
+\end{figure}
 
-3. examine worker's processing model. We find that a
-processor object is shared among different workers, so it is
-a scarce resource. To send or receive a message, worker
-threads must obtain the shared processor object to `run' the
-message.
+We repeat the stress test and collect timing of each task
+instances. Figure~\ref{fig:stresstest} shows the the overall
+picture of task traces.
+
+We can immediately see from the figure that the worker
+threads are highly suspicious. They work in a synchronized
+way and non of worker threads' task instances have overlap
+with others.
+
+By examining cosmos worker's processing model, we finally
+find the root cause. When a worker thread get a RPC message
+from queue, it uses a processor object to process the
+message. However, all worker threads share one processor for
+each connection. Thus the processor object becomes a scarce
+resource which force worker threads work serially.
+
+\lesson Task model is very useful for narrowing down bug
+sites and helps reasoning about the root cause. With proper
+visualization, we can summarize the pattern for bugs. It is
+expected that performance bug have limited kinds of causes
+and each of them maps to different bug patterns. We can use
+the reverse mapping from a spotted bug pattern to determine
+it root cause.
+
+A lot of performance bugs are caused by resource
+contentions. The resource can be CPU, I/O, or mutex and
+shared object (processor object in above case). With proper
+helps (static analysis, instrumentation, etc.) we can
+summarize the set of resources shared by tasks, analyze
+their contention condition and shoot the root cause of
+performance problems precisely.
 
