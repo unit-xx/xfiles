@@ -35,10 +35,9 @@ from log. It will be represented as (key, value) tuples,
 with key as data identifer and value as current content.
 
 Different system have different log format. We describe how
-to extract data from cosmos log in (key, value) format. The
+to extract data from cosmos log in (key, value) form. The
 principle described here can be adopted to analyze other
-kinds of log. \notes{At the end of the section, we will
-discuss this problem in general.}
+kinds of log.
 
 \begin{verbatim}
 d,12/30/2008 14:51:22.949,CosmosClient,
@@ -104,11 +103,9 @@ Our method for extracting data from log have limitations. It
 recognizes key as the previous word of a value. It is based
 on observations from logs and the observation reflects
 developers logging practice. Several other choices are
-available. We can improve our 
-
-\notes{our method is prelimianry, maybe NLP can be adopted.
-we suggest programmer's either log in structure or they can
-write parser to ease the extraction work.}
+available. We can improve the logging facility to support
+structured data recording, or we can leverage NLP techniques
+to extract data more precisely.
 
 \subsection{Mining hierarchical relation of keys}
 
@@ -116,10 +113,10 @@ Some of the keys extracted from log have hierarchy
 relations. For example, to complete a \texttt{Session}, it
 is splitted into subtasks which are designated by different
 \texttt{opId}. There are similar relations with
-\texttt{StreadID} and \texttt{ExtentID}. We can use the
-data hierarchy to deduce task hierarchy. Two keys have
-hierarchical relations are denoted by $>$, for example,
-\texttt{Session} $>$ \texttt{opId}.
+\texttt{StreadID} and \texttt{ExtentID}. We can use the data
+hierarchy to deduce task hierarchy. Two keys have
+hierarchical relations are denoted by $>$ relation, for
+example, \texttt{Session} $>$ \texttt{opId}.
 
 After the previous step, we get a stream of (key, value)
 pairs in their order of appearance in log file. Activities
@@ -144,40 +141,8 @@ The mining algorithm takes (key, value) stream as input and
 outputs (keyS, keyP, R) tuples, indicating keyS $>$ keyP
 with rank R.
 
-\begin{verbatim}
-A a1
-B b1
-B b2
-A a2
-B b3
-\end{verbatim}
-\notes{this will replaced by example below}
-
-There above (key, value) streams servers as an simple demo
-of mining algorithm. After mining, we will get (A, B, 3).
-Because A appears before B, A is a possible parent of B. The
-rank 3 is calulated as the cardinality of (valueA, valueB)
-set: \{(a1, b1), (a1, b2), (a2, b3)\}
-
-The rank algorithm works as follows. It scans through the
-(key, value) stream and maintains an array of keys. Once a
-key is spotted for the first time, it is appended to the key
-array. A key is a possible parent for all the keys after it
-in the array (heuristic 1). In the scan process, the algorithm also
-accumulate an array of (valueS, valueP) for each (keyS, keyP)
-pairs. A new (keyP, valueP) will generate multiple (valueS,
-valueP) for each keyS before keyP in the key array.
-
-Now for each (keyS, keyP) pair, we have a corresponding
-(valueS, valueP) array. To apply heuristic 2, we have to
-justify whether valueS and valueP have strict 1-many
-mappings. If yes, we use size of (valueS, valueP) array
-as the rank of (keyS, keyP), if not, we just ignore the
-(keyS, keyP) pair.
-
-\notes{pseudo code of mining algorithm}
-
-We give a more complete example here.
+\begin{figure}
+\centering
 \begin{verbatim}
 Session s1
 opId 1
@@ -195,50 +160,81 @@ ExtentID y3
 opId 6
 ExtentID y4
 \end{verbatim}
-The above example emulate the (key, value) stream we see in
-cosmos client log. When the client receives a command, it
-starts a new session, opens the specified stream in next
-operation step, and process extents of the stream in the
-following operation steps.
+\caption{A sample (key, value) stream}
+\label{fig:kvstream}
+\end{figure}
 
-We sucessfully mined out StreamID $>$ ExtentID with rank 4
+The example Figure~\ref{fig:kvstream} emulate the (key,
+value) stream we see in cosmos client log. When the client
+receives a command, it starts a new session, opens the
+specified stream in next operation step, and process extents
+of the stream in the following operation steps.
+
+The rank algorithm works as follows. It scans through the
+(key, value) stream and maintains an array of keys. Once a
+key is spotted for the first time, it is appended to the key
+array. A key is a possible parent for all the keys after it
+in the array (heuristic 1). In the scan process, the algorithm also
+accumulate an array of (valueS, valueP) for each (keyS, keyP)
+pairs. A new (keyP, valueP) will generate multiple (valueS,
+valueP) pairs for each keyS before keyP in the key array.
+
+Now for each (keyS, keyP) pair, we have a corresponding
+(valueS, valueP) array. To apply heuristic 2, we have to
+justify whether valueS and valueP have strict 1-many
+mappings. If yes, we use size of (valueS, valueP) array
+as the rank of (keyS, keyP), if not, we just ignore the
+(keyS, keyP) pair.
+
+\notes{pseudo code of mining algorithm}
+
+For We sucessfully mined out StreamID $>$ ExtentID with rank 4
 and Session $>$ opId with rank 6. Session has no relation
 with StreamID, because multiple Session may operate on the
 same StreamID. The similar argument apply for (Session,
 ExtentID), (opId, StreamID) and (opId, ExtentID).
 
 For (key, value) streams generated form real world log, the
-mined result may contain a lot false positives.
+mined result may contain a lot false positives. Because we
+just put every key we extract from log into mining
+algorithm.
 
-\notes{Have to find some way to automatically filter out
-false positives. For example, if (err, 0x0) is inserted
-after each Session, we will see Session $not >$ err, but
-err $>$ opId and Session $>$ opId, using transitive rule?}
-
-\notes{cannot reduce all false positives. patch 1: user
-specify a subset of all keys. patch 2: user manually delete
-false pairs}
+By looking at false positive results, we recognize that keys
+can be roughly divided into two categories, \notes{xxx}
 
 \subsection{Construct hierarchical task models}
-
-\notes{task model can be expanded to many task instances. The
-boundary of a task instance defined by value flip point.}
 
 After the previous step, we mined out a set of data
 hierarchy relations. The relations can be translated
 directly to hierarchies of tasks which process the data. 
 If we have keyS $>$ keyP, and use Task(keyS) to denote task
 that process keyS, then we have Task(keyS) $:=$
-Task(keyP)$+$, in short keyS $:=$ keyP+
+Task(keyP)$+$, in short keyS $:=$ keyP+. We use the later
+definition as task model.
 
-We apply the mined data hierarchy on the log to construct
-task models. We first split log items into groups by highest
-level key. The group begins at the new value of a key and
-last until another value is met. We apply the process
-recursively within each group to construct hierarchical task
-models.
+We apply the mined data hierarchy on the log to split system
+runtime into hierarchical task instances. Each task instance
+is represented by a sequence of log items describing system
+activeties within a certain time interval of the same
+thread. We first split log items into first level task
+instances by highest level key. An instance begins at the
+new value of the key is spotted and last until another value
+is met. We apply the process recursively within each first
+level instances to obtain lower level task instances.
 
-%join the pairs together
+\begin{figure}
+\centering
+\includegraphics[height=1.5in]{ph}
+\caption{Hierarchical task instances.}
+\label{fig:runtime}
+\end{figure}
+
+For cosmos client, we find it convinient to using Session
+$:=$ opId$+$ as task model. This is consistent with
+developer's mind on organizing client activities. After
+applying the model on (key, value) streams in
+Figure~\ref{fig:kvstream}, we organize the activites as in
+Figure~\ref{fig:runtime}.
 
 The choice of which data hierarchy to apply is left to user.
 The choice depends on user's concentration. The user are not
@@ -246,12 +242,4 @@ limited to mined result. Other hierarchy relations can be
 specified. For example, one can combine Session, opId,
 StreamID, ExtentID together, and write the relation as
 Session $:=$ opId$+$, opId $:=$ StreamID$|$ExtentID.
-
-\notes{the result task boundary is an approximation, has a
-shift with `real' boundary.}
-
-\subsection{Put things together}
-
-From the demo to task model and then task instances
-
 
