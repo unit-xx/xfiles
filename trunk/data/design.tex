@@ -22,10 +22,25 @@ log items.
 \notes{value format are limited, we can find value part
 easily, and track back in the text to find its key name.}
 
+System logs contains a lot of information on system
+activities. The log items mainly describes who (threads,
+event handlers) are performing some operations (as function
+name or in human language) on a set of data, with extra
+information such as operation result (return code).
+
+Our tool can infer the hierarchical relations among the data
+on which system operates and generat task models using
+inferred data hierarchy.
+
+To do the inferrence, we have to first extract data part
+from log. It will be represented as (key, value) tuples,
+with key as data identifer and value as current content.
+
 Different system have different log format. We describe how
 to extract data from cosmos log in (key, value) format. The
-principle described here can be adopted to analyze 
-other kinds of log.
+principle described here can be adopted to analyze other
+kinds of log. \notes{At the end of the section, we will
+discuss this problem in general.}
 
 \begin{verbatim}
 d,12/30/2008 14:51:22.949,CosmosClient,
@@ -40,23 +55,23 @@ length: 1045679, offset: unknown,
 waitForSeal: 1, status: OK"
 \end{verbatim}
 
-The cosmos log can be divided into two parts and we refer
-above log item as an example. The first half has fixed
-format, which records log level, time, log category and a
-short title. Followed by the location of the log in source
-file, and runtime parameters. The second half is contained
-in \texttt{String1} field. It is written by developer and 
-not well structured. It is usually interleaved by 
-descriptive texts and programs states in (key, value) pairs.
+The above shows a typical log item picked from cosmos.  The
+cosmos log can be divided into two parts. The first half has
+fixed format, which records log level, time, log category
+and a short title. Followed by the location of the log in
+source file, and runtime parameters. The second half is
+contained in \texttt{String1} field. It is written by
+developer and not well structured. It is usually interleaved
+with descriptive texts and programs states in (key, value)
+pairs.
 
 It is not straightforward to extract the (key, value) pairs.
 The developer can record (key, value) in several formats. In
-general, it is written as \texttt{key SEP1 value
-SEP2}. SEP1 and SEP2 have mutiple choices.
-It is not easy to determine which word is a key, otherwise
-we can do the job easily. Because a key may look similar to
-an irrelevant words, such as \texttt{POSTED:} and
-\texttt{opId:}.
+general, it is written as \texttt{key SEP1 value SEP2}. SEP1
+and SEP2 have mutiple choices. It is not easy to determine
+which word is a key, otherwise we can do the job easily. A
+key may look similar to an irrelevant words, such as
+\texttt{POSTED:} and \texttt{opId:}.
 
 We use a novel method to extract the (key, value) pairs. It
 is based on the observation that the value part has limited
