@@ -15,9 +15,6 @@ EN server is similiar to the role of chunkserver. In cosmos,
 data is organized in streams and streams are comprised of
 extents. Each stream and extent is identified by a GUID.
 
-We choose (Session, opId) to analyze cosmos client runtime
-and choose ExtentID to analyze EN server runtime.
-
 At the client side, we upload several files into cosmos and
 query the streams status. We apply task model Session $:=$
 opId$+$ on cosmos client log to investigate its runtime
@@ -25,15 +22,16 @@ behaviour. We successfully divide the activities of each
 threads by Session and Opid.
 
 There is one client thread who receives user commands and
-each command is run as a session. A command is executed in
-steps as different opId. Within a opId, it issues several
-RPC calls. The client thread does not run the RPC calls, but
-puts them into a queue. Other threads are workers who get
-RPC calls and run them. When the responses for RPC calls are
-returned, the workers notify the client threads on the
-results. The workers does not know the session concept and
-their activities are divided by opIds. The client and worker
-threads activities can be connected by the same opId.
+each command is run in a session. A command is executed in
+steps with different opId. Within a opId,  several RPC calls
+may be issued. The client thread does not directly make the
+RPC calls, but puts them into a queue. Other threads are
+workers who get RPC calls and run them. When the responses
+for RPC calls are returned, the workers notify the client
+threads on the results. The workers does not know the
+session concept and their activities are divided by opIds.
+The client and worker threads activities can be connected by
+the same opId.
 
 \begin{figure}
 \centering
@@ -75,8 +73,8 @@ system runtime behaviour. The advantage is, data
 hierarchy is predefined by system design and the result
 should be more precise than bottom-up mining.
 
-Another property is that we can see how high leve task is
-translated into several low level sub-task.
+%Another property is that we can see how high level task is
+%translated into several low level sub-task.
 
 \comment{
 We apply our task model to understanding runtime behaviour
@@ -92,16 +90,17 @@ scalpel to automatically find dependency, and use data
 hierarchy to find task boundary. 
 }
 
-There are some disadvantages. First the boundary of task
+There are some imprecisions. First the boundary of task
 instances may have a phase shift. The initialization part of
 a task instance doesn't know the data identifer yet so it
 will be merged into the tail of previous task instances.
 However, as initialization is relatively static and this
 phase shift can be corrected by adding a predefined
 displacement to task boundaries. Second, the granularity of
-task observed depends on the choice of keys. As demonstrated
-in EN server, several RPC handling task is merged into one
-task because they happpens to handle the same extent.
+task observed depends on the choice of keys.  As
+demonstrated in EN server, several RPC handling task is
+merged into one task because they happpens to handle the
+same extent.
 
 \subsection{Guide on debugging}
 
@@ -109,12 +108,12 @@ We then show how we use the task model to help find a
 performace problem in cosmos.
 
 It is reported from tester that the cosmos network library
-cannot go through a bandwidth stress test. In the test,
-it uses several threads to concurrently issue RPC calls of
-fixed size (typically 128KB) and see whether the bandwidth
-is fully saturated. The result is negative, the bandwidth is
-only about 34\% of its capability, while the CPU usage is
-far under 100\%.
+cannot go through a bandwidth stress test. In the test, it
+uses several threads (typically 4) to concurrently issue RPC
+calls of fixed size (typically 128KB) and see whether the
+bandwidth is fully saturated. The result is negative, the
+bandwidth is only about 34\% of its capacity, while the
+CPU usage is far under 100\%.
 
 To our experiences, performance bugs are usually caused by
 convoluted application logic within deep code base. We try
@@ -134,8 +133,8 @@ picture of task traces.
 
 We can immediately see from the figure that the worker
 threads are highly suspicious. They work in a synchronized
-way and non of worker threads' task instances have overlap
-with others.
+way and non of worker threads tasks have overlap with
+others.
 
 By examining cosmos worker's processing model, we finally
 find the root cause. When a worker thread get a RPC message
@@ -149,8 +148,8 @@ sites and helps reasoning about the root cause. With proper
 visualization, we can summarize the pattern for bugs. It is
 expected that performance bug have limited kinds of causes
 and each of them maps to different bug patterns. We can use
-the reverse mapping from a spotted bug pattern to determine
-it root cause.
+the reverse mapping from a spotted bug pattern to reason it
+root cause.
 
 A lot of performance bugs are caused by resource
 contentions. The resource can be CPU, I/O, or mutex and
