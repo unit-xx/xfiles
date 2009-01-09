@@ -8,28 +8,72 @@ translated into task models (Task(Session) $:=$ Task(opId+).
 Task model can be instantiated into many distances.  We
 implement the idea on system logs.}
 
-As industry is moving towards \textit{cloud computing}, many
-players in the industry are building large and complex data
-center applications on top of clusters of commodity PCs.
-Ensuring the correctness and performance of the applications
-are critical to providing sustained service to clients.
-However, bugs have been challenging service developers and
-maintainers continually.
+%As industry is moving towards \textit{cloud computing}, many
+%players in the industry are building large and complex data
+%center applications on top of clusters of commodity PCs.
+%Ensuring the correctness and performance of the applications
+%are critical to providing sustained service to clients.
+%However, bugs have been challenging service developers and
+%maintainers continually.
 
-However, the inherent complexity of the system hinders
-people from understanding the system easily. The system are
-usually built in a tiered fashion, with each tier providing
-certain abstraction to the upper layer. Within a logical
-tier, its function is implemented as a distributed system.
-It may consist of hundreds or thousands of distributed
-processes which works coorperately to fulfill the requests
-from upper tier. Within a particular process, asynchronous
-staged handling of messages is well adopted to fully utilize
-the computing resource on a node. By leveraing the above
-techniques, developers have built large scale of complex
-systems to serve requests worldwide. The handling of a
-request is splitted into pieces of tasks which are executed
-distrbutedly across tiers, processes and stages. 
+Distributed systems are the key enabler of most
+today's Internet Services. They run over many machines,
+exploit and schedule the machine resources to provide 
+high-throughput, low latency services, and have to cope 
+with many kinds of failures. Because of the system scale
+and the critical service requirement, the design and 
+implementation of these systems is prone to have bugs
+that lead to unexpected execution behaviors. 
+The root causes of bugs are sometimes hidden behind
+the convoluted application logic, and takes long time
+to find out. 
+
+Understanding runtime behaviour of distributed systems 
+is key to design verification, detection of correctness
+and performance problems, and tracking down the root cause
+of bugs. However, it is non-trivial, even for the developers
+who implement the system, to fully understand the system 
+logic. This is because of the inherent complexity 
+in system design and runtime behaviors, and that 
+the system is typically developed by a group of people
+and keep evolving in a daily manner.
+Especially, distributed systems usually adopt a layered
+and tiered design, in which a user request is accomplished
+through multiple stages, each stage involving a hierarchical
+functional abstractions. A high-level function or user-level
+task is achieved by low-level ones, which may execute
+concurently and communicate across the boundaries of machines, 
+processes, and threads. All of these issues contribute to the
+difficulty in understanding system behaviors.
+
+Existing approaches have shown that modeling and representing
+system behaviors with hierarchical task models help developers
+better understand and verify system behaviors. For example,
+Pip~\cite{} allows developers to define nested task flows
+with associated properties as ``expectations'', which are used 
+to detect violations.
+By this means, developers are able to specify and verify 
+system properties at an appropriate layer, instead of
+
+
+of 
+For example, 
+Our previous work ...
+shown the benefits in verifying .. and understanding the
+root cause. 
+
+
+Hierarchical representation is justified by existing
+work (pip) and our previous work. In this paper, we further
+explore the idea
+
+
+This paper present the tool for developer, tester, 
+and system administrator to explore 
+
+
+
+
 
 Understanding runtime behaviour of the complex system is key
 to verify system design, debug its correctness and
