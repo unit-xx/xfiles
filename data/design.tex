@@ -19,8 +19,6 @@ generate a set of task instances represented as an array of
 log items.
 
 \subsection{Extract key-value pairs}
-\notes{value format are limited, we can find value part
-easily, and track back in the text to find its key name.}
 
 System logs contains a lot of information on system
 activities. The log items mainly describes who (threads,
@@ -88,11 +86,29 @@ SEP1 and SEP2 may be both blanks. In such cases,
 text words, keys and values are messed up and they cannot be
 distinguished using simple rules.
 
-\notes{key alias: one key has multiple names, key name
-collision: multiple key has the same name.  we can solve
-above two problems using some key mapping scheme, but it
-requires manual work and one have to familiar with log and
-keys. our suggestion: regular key definition}
+In verifying the extracted (key, value) pairs, we note that
+there are cases where 1) a key may have mutiple alias names,
+2) different keys may share the same name. We use a mapping
+schema to solve the both problems. After a log item is
+parsed, we apply the mapping specified in schema file and
+translate some keys to a new name.
+
+The schema specify mappings as (SrcFile, SrcFunc, key) $\to$
+(new key). In this way, key aliases can be solved by
+writing (*, *, alias) $\to$ (key). And key confliction can
+be solved by writing (SrcFileX, SrcFuncY, conflict key) $\to$
+(new key). In our experiences, just specifying SrcFuncY is
+enough.
+
+Our method for extracting data from log have limitations. It
+recognizes key as the previous word of a value. It is based
+on observations from logs and the observation reflects
+developers logging practice. Several other choices are
+available. We can improve our 
+
+\notes{our method is prelimianry, maybe NLP can be adopted.
+we suggest programmer's either log in structure or they can
+write parser to ease the extraction work.}
 
 \subsection{Mining hierarchical relation of keys}
 
