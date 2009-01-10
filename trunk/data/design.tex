@@ -10,33 +10,33 @@
 \label{fig:design}
 \end{figure}
 
-Our design is summarized in Figure~\ref{fig:design}. We
-first extract data from system logs as streams of (key,
-value) tuples. Then we try to mine hierarchical relations
-among keys. The mined relations can be directly translated
+Figure~\ref{fig:design} summarizes our design. We
+first extract data from logs as streams of (key,
+value) pairs. Then we mine hierarchical relations
+among keys. The relations are directly translated
 to task models. Applying the task models on logs, we
-generate a set of task instances represented as an array of
-log items.
+organize logs into a set of task instances.
 
+\subsection{Extracting key-value pairs}
 
-\subsection{Extract key-value pairs}
+Logs contains a lot of information on system
+activities. Figure~\ref{fig:design} shows an example
+of logs used in \cosmos. Each log entry is a string,
+which contains a header that describes the thread
+context and the event handler or function being invoked. 
+After the header there is a set of phrases for 
+associated data. The log format may vary from different
+systems, but our example well represent the typical
+unstructured logs used by system software.
 
-System logs contains a lot of information on system
-activities. The log items mainly describes who (threads,
-event handlers) are performing some operations (as function
-name or in human language) on a set of data, with extra
-information such as operation result (return code).
+%Our tool can infer the hierarchical relations among the data
+%on which system operates and generate task models using
+%inferred data hierarchy.
 
-Our tool can infer the hierarchical relations among the data
-on which system operates and generate task models using
-inferred data hierarchy.
-
-To do the inference, we have to first extract data part
-from log. It will be represented as (key, value) tuples,
-with key as data identifer and value as current content.
-
-Different system have different log format. We describe how
-to extract data from \cosmos log in (key, value) form. The
+We first extract data that identifies task instances
+as (key, value) pairs, in which keys are the task names
+and values are the identifiers.
+We describe how our tool extracts from \cosmos log in (key, value) form. The
 principle described here can be adopted to analyze other
 kinds of log.
 
