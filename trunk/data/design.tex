@@ -36,7 +36,7 @@ from log. It will be represented as (key, value) tuples,
 with key as data identifer and value as current content.
 
 Different system have different log format. We describe how
-to extract data from cosmos log in (key, value) form. The
+to extract data from \cosmos log in (key, value) form. The
 principle described here can be adopted to analyze other
 kinds of log.
 
@@ -58,7 +58,7 @@ waitForSeal: 1, status: OK"
 \end{figure}
 
 The Figure~\ref{fig:logitem} shows a typical log item picked
-from cosmos.  The cosmos log can be divided into two parts.
+from \cosmos.  The \cosmos log can be divided into two parts.
 The first half has fixed format, which records log level,
 time, log category and a short title. Followed by the
 location of the log in source file, and runtime parameters.
@@ -118,7 +118,7 @@ Some of the keys extracted from log have hierarchy
 relations. For example, to complete a \texttt{Session}, it
 is splitted into subtasks which are designated by different
 \texttt{opId}. There are similar relations with
-\texttt{StreadID} and \texttt{ExtentID}. We can use the data
+\texttt{StreadID} and \texttt{ChunkID}. We can use the data
 hierarchy to deduce task hierarchy. Two keys have
 hierarchical relations are denoted by $>$ relation, for
 example, \texttt{Session} $>$ \texttt{opId}.
@@ -153,26 +153,26 @@ Session s1
 opId 1
 StreamID x1
 opId 2
-ExtentID y1
+ChunkID y1
 opId 3
-ExtentID y2
+ChunkID y2
 
 Session s2
 opId 4
 StreamID x2
 opId 5
-ExtentID y3
+ChunkID y3
 opId 6
-ExtentID y4
+ChunkID y4
 \end{verbatim}
 \caption{A sample (key, value) stream}
 \label{fig:kvstream}
 \end{figure}
 
 Figure~\ref{fig:kvstream} emulate the (key, value) stream we
-see in cosmos client log. When the client receives a
+see in \cosmos client log. When the client receives a
 command, it starts a new session, opens the specified stream
-in next operation step, and process extents of the stream in
+in next operation step, and process chunks of the stream in
 the following operation steps.
 
 The rank algorithm works as follows. It scans through the
@@ -194,11 +194,11 @@ as the rank of (keyS, keyP), if not, we just ignore the
 \notes{pseudo code of mining algorithm}
 
 For sample (key, value) stream in Figure~\ref{fig:kvstream},
-we sucessfully mined out StreamID $>$ ExtentID with rank 4
+we sucessfully mined out StreamID $>$ ChunkID with rank 4
 and Session $>$ opId with rank 6. Session has no relation
 with StreamID, because multiple Session may operate on the
 same StreamID. The similar argument apply for (Session,
-ExtentID), (opId, StreamID) and (opId, ExtentID).
+ChunkID), (opId, StreamID) and (opId, ChunkID).
 
 For (key, value) streams generated form real world log, the
 mined result may contain a lot false positives. Because we
@@ -235,7 +235,7 @@ level instances to obtain lower level task instances.
 \label{fig:runtime}
 \end{figure}
 
-For cosmos client, we find it convenient to using Session
+For \cosmos client, we find it convenient to using Session
 $:=$ opId$+$ as task model. This is consistent with
 developer's mind on organizing client activities. After
 applying the model on (key, value) streams in
@@ -246,8 +246,8 @@ The choice of which data hierarchy to apply is left to user.
 The choice depends on user's concentration. The user are not
 limited to mined result. Other hierarchy relations can be
 specified. For example, one can combine Session, opId,
-StreamID, ExtentID together, and write the relation as
-Session $:=$ opId$+$, opId $:=$ StreamID$|$ExtentID.
+StreamID, ChunkID together, and write the relation as
+Session $:=$ opId$+$, opId $:=$ StreamID$|$ChunkID.
 
 After we obtain task instances, we use value-based joins to
 draw dependency lines among tasks.
