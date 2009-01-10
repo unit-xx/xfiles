@@ -3,10 +3,6 @@
 \section{Introduction}
 \label{sec:intro}
 
-\notes{Main idea: data hierarchy (Session$>$opId) can be
-translated into task models (Task(Session) $:=$ Task(opId+).
-Task model can be instantiated into many distances.  We
-implement the idea on system logs.}
 
 %As industry is moving towards \textit{cloud computing}, many
 %players in the industry are building large and complex data
@@ -53,72 +49,140 @@ Pip~\cite{} allows developers to define nested task flows
 with associated properties as ``expectations'', which are used 
 to detect violations.
 By this means, developers are able to specify and verify 
-system properties at an appropriate layer, instead of
+system properties at an appropriate layer. This approach is 
+proven to be effective in detecting bugs, especially 
+performance ones. Our previous work Scalpel~\cite{}
+further avoids the manual effort of specifying task structure
+by automatically inferring task models from low level
+system traces. The preliminary results show that it is 
+possible to infer reasonable hierarchical structures that reflect
+the semantics of task flows from monitoring OS-level synchronization.
+Such inferred models have helped developers find out
+certain performance bugs more quickly.
+
+Our ultimate goal is to build a tool for developers, 
+testers, and system adminitrators to explore and better 
+understand system behaviors through hierarchical task representation, 
+\emph{without or with minimal annotation effort}.
+Based on our previous work, in this paper
+we further explore the idea of task model inference, 
+while focusing on leveraging application-level logs instead of 
+just using low level system call traces. 
+The rationale is that, compared with low level traces, 
+application-level logs can better reveal semantics of 
+task flow and the purpose of execution pieces. 
+Log entries are inserted for debugging usage 
+by developers who implement the system, therefore they 
+usually contain critical application-level state and events,
+e.g., the begin and end of a user-level task, the critical 
+steps in processing request, ect.
+Leveraging this information can help our tool infer  
+user-level semantics, which may hard to precisely obtained
+from system call traces.
+
+% annotation
+Inferring hierarchical task models from logs needs to 
+solve mainly two problems. First, logs are usually unstructured
+and added by developers in ad hoc ways. We need to extract
+from logs the information that effectively reveal the task 
+structure. Second, there is a gap between individual log events 
+and the overall task flow. A high-level task may span over
+several separate log entries. We need to correlate these
+log entries and further mine out the hierarchical 
+task relation. Our idea is to extract the task identifiers 
+that identifies user-level task instances, and further
+mine out a hierarchical task structure according to
+the pattern these identifiers change during the execution.
+For example, as typical seen in many distributed systems, 
+a log string many contain phrases like 
+\texttt{"request = 1000"}, which represents the current event
+belongs to the user-level task named "request" with unique ID 1000. 
+We use a customizable parser and several heurisitics
+to extract such identifiers as key-value pairs,
+and group log entries that belong to the same task instance.
+A log entry can belong to multiple tasks, and from the 
+pattern how their unique IDs change, we can further
+infer the task hierarchy.
+For example, if there are two log entries  
+\texttt{"request = 1000, operation = 1"} and 
+\texttt{"request = 1000, operation = 2"}, 
+we infer that these events belong to the same "request" task
+(with ID 1000) but different "operation" task (with ID 1 and 2,
+respectively), and that the "operation" task could be 
+a child task of the "request" task. 
+By summarizing the patterns from all extracted pairs,
+we can effectively infer the entire hierarchical task model. 
+
+We implemented the prototype of task inference tool.
+We apply it to a distributed storage system
+named Cosmos, which is similar to GFS and used by production 
+team for storing web pages. Our tool infers reasonable
+task structure, and we further detect a performance
+bug in Cosmos guided by the infered task models. 
+Our experience shows that logs are useful in reflecting
+high-level system semantics, and our approach can effectively
+infer task models, which can help better understand system 
+design and execution behaviors.
+
+The rest of the paper is organized as follows. We describe
+our design of the inference tool in Section~\ref{}. 
+We present our experience of using our tool in Section~\ref{}.
+We discuss XXX in Section~\ref{}. Section~\ref{} summarizes
+related work, and Section~\ref{} concludes this paper.
+
+%In the rest paper, we present a method for automatically infer
+%data hierarchy recorded in system log and use the
+%information to construct task models.  We also describe our
+%experiences in using the inferred task models to
+%understanding the system design and debug performance
+%problems.
 
 
-of 
-For example, 
-Our previous work ...
-shown the benefits in verifying .. and understanding the
-root cause. 
+%The hierarchical structure of tasks is often consist with
+%the hierarchy of data processed by tasks. For example. In
+%cosmos, data are organized as streams and streams are
+%consisted of extents. By inspecting cosmos logs, task that
+%processing a stream is splitted into subtasks. The first
+%subtask do some stream level processing (open, etc.), and
+%the following tasks process extents in the stream. But the
+%task boundaries are not marked in the log.
 
 
-Hierarchical representation is justified by existing
-work (pip) and our previous work. In this paper, we further
-explore the idea
-
-
-This paper present the tool for developer, tester, 
-and system administrator to explore 
-
-
+%\notes{Main idea: data hierarchy (Session$>$opId) can be
+%translated into task models (Task(Session) $:=$ Task(opId+).
+%Task model can be instantiated into many distances.  We
+%implement the idea on system logs.}
 
 
 
-Understanding runtime behaviour of the complex system is key
-to verify system design, debug its correctness and
-performance problems. By tracking task pieces and their
-causal dependencies, we can construct task flow by linking
-together pieces of its execution throughout the system.  In
-our previous work, we further developed techniques to
-automatically tracking tasks and infer hierarchical task
-models. Using the task models, developers can better
-understand the structures of components and their
-dependencies, and use debugging tools to instrument the
-system and verify the behavior of tasks at appropriate
-layers.
+%Understanding runtime behaviour of the complex system is key
+%to verify system design, debug its correctness and
+%performance problems. By tracking task pieces and their
+%causal dependencies, we can construct task flow by linking
+%together pieces of its execution throughout the system.  In
+%our previous work, we further developed techniques to
+%automatically tracking tasks and infer hierarchical task
+%models. Using the task models, developers can better
+%understand the structures of components and their
+%dependencies, and use debugging tools to instrument the
+%system and verify the behavior of tasks at appropriate
+%layers.
 
-The production system contains abundant logging information
-on system status, but it is not fully explored yet. It is
-useful for two reason. First, the log is added by developers
-who are familiar with the system.  The resulting log is a
-faithful records of system runtime behaviour. Second, log
-usually contains both state report and high level
-descriptions. The derived task models is of value for both
-automatic processing and human understanding.
 
-The hierarchical structure of tasks is often consist with
-the hierarchy of data processed by tasks. For example. In
-cosmos, data are organized as streams and streams are
-consisted of extents. By inspecting cosmos logs, task that
-processing a stream is splitted into subtasks. The first
-subtask do some stream level processing (open, etc.), and
-the following tasks process extents in the stream. But the
-task boundaries are not marked in the log.
 
-By mining and leveraging data hierarchy, we can use the
-information to infer the task hierarchy. A log item which
-starts to process a stream marks the begin of a task. The
-task lasts before the log item which process another stream.
-Within the task, it is splitted into subtasks at
-extent-processing boundary.
+%By mining and leveraging data hierarchy, we can use the
+%information to infer the task hierarchy. A log item which
+%starts to process a stream marks the begin of a task. The
+%task lasts before the log item which process another stream.
+%Within the task, it is splitted into subtasks at
+%extent-processing boundary.
 
-In this paper, we present a method for automatically infer
-data hierarchy recorded in system log and use the
-information to construct task models.  We also describe our
-experiences in using the inferred task models to
-understanding the system design and debug performance
-problems.
+%In this paper, we present a method for automatically infer
+%data hierarchy recorded in system log and use the
+%information to construct task models.  We also describe our
+%experiences in using the inferred task models to
+%understanding the system design and debug performance
+%problems.
 
 \comment{
 It faces several challenges. First, logs are not
