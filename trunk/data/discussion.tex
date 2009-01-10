@@ -2,8 +2,7 @@
 
 \section{Discussion}
 \label{sec:discussion}
-Discussion. \notes{topic need decided}
-
+\comment{
 dependency line cannot be draw from log
 
 we can overlay the task model on scapel to a) see how high
@@ -12,4 +11,17 @@ operations, b) see dependency among tasks
 
 Or we can put a short discussion paragraph at the end of
 each subsection of Design section.
+}
 
+By leveraging system log, our task model is different with
+our previous work~\cite{} in several ways.  By taking more
+heuristics from logs, the task model contains semantic on
+higher level tasks, for example session.  This can be hardly
+expressed in scalpel's task model.  Second, we use
+value-based join to catch dependencies among tasks, which
+requires experts knowledge. While scalple uses
+synchronization points to infer low level dependencies.
+
+We recognize the complementary between the two approaches.
+It will be better to combine them together and see how level
+task and dependencies are mapped to that at low level.
