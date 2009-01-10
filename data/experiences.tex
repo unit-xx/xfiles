@@ -6,19 +6,19 @@
 \notes{any rational? What is the point? It is effective on
 what? and why}
 
-\subsection{Understanding runtime behaviour}
+\subsection{Understanding runtime behavior}
 
 We try to use the mined data hierarchy from logs to
-understand runtime behaviour of cosmos client and EN server.
-Cosmos is a distributed storage system similiar to GFS. The
-EN server is similiar to the role of chunkserver. In cosmos,
+understand runtime behavior of cosmos client and EN server.
+Cosmos is a distributed storage system similar to GFS. The
+EN server is similar to the role of chunkserver. In cosmos,
 data is organized in streams and streams are comprised of
 extents. Each stream and extent is identified by a GUID.
 
 At the client side, we upload several files into cosmos and
 query the streams status. We apply task model Session $:=$
 opId$+$ on cosmos client log to investigate its runtime
-behaviour. We successfully divide the activities of each
+behavior. We successfully divide the activities of each
 threads by Session and Opid.
 
 There is one client thread who receives user commands and
@@ -35,7 +35,7 @@ the same opId.
 
 \begin{figure}
 \centering
-\includegraphics[height=1.5in]{clientcreate}
+\includegraphics[height=1.2in]{clientcreate}
 \caption{The process of create a stream at client side.}
 \label{fig:clientcreate}
 \end{figure}
@@ -46,7 +46,7 @@ is executed as four opIds and six RPC commands, as shown in
 Figure~\ref{fig:clientcreate}. They are (create a stream),
 (append stream, append extent), (append extent), (append
 extent and seal the extent). Each parentheses indicate a
-different opId. As the file size is smaller than the maximux
+different opId. As the file size is smaller than the maximum
 allowed extent size, the created stream contains only one
 extent, and its content is sent by three append RPC calls.
 After the last appending extent request, the extent is
@@ -54,12 +54,12 @@ sealed and no further append is allowed.
 
 \begin{figure}
 \centering
-\includegraphics[height=1.5in]{encreate}
+\includegraphics[height=1.2in]{encreate}
 \caption{Create and append extent at EN side.}
 \label{fig:encreate}
 \end{figure}
 
-We then investigae the corresponding activities at EN side.
+We then investigate the corresponding activities at EN side.
 The result is shown in Figure~\ref{fig:encreate}. There
 are five RPC calls handled by the same thread. They are
 create extent, three append extent and seal extent. Using
@@ -69,7 +69,7 @@ instance.
 
 \lesson Using task models translated from data hierarchy, we
 can effectively identify task instances and understanding
-system runtime behaviour. The advantage is, data
+system runtime behavior. The advantage is, data
 hierarchy is predefined by system design and the result
 should be more precise than bottom-up mining.
 
@@ -77,17 +77,17 @@ should be more precise than bottom-up mining.
 %translated into several low level sub-task.
 
 \comment{
-We apply our task model to understanding runtime behaviour
+We apply our task model to understanding runtime behavior
 for each thread. To obtaining the whole execution path for
-handling a request, we have to asscociate task instances
+handling a request, we have to associate task instances
 with causal dependencies.
 
 Our technique is complementary to
-existing ones in that 
+existing ones in that
 
 we can combine scalpel and data hierarchy together. Using
 scalpel to automatically find dependency, and use data
-hierarchy to find task boundary. 
+hierarchy to find task boundary.
 }
 
 There are some imprecisions. First the boundary of task
@@ -99,7 +99,7 @@ phase shift can be corrected by adding a predefined
 displacement to task boundaries. Second, the granularity of
 task observed depends on the choice of keys.  As
 demonstrated in EN server, several RPC handling task is
-merged into one task because they happpens to handle the
+merged into one task because they happen to handle the
 same extent.
 
 \subsection{Guide on debugging}
@@ -122,7 +122,7 @@ as far as possible.
 
 \begin{figure}
 \centering
-\includegraphics[height=2.4in]{stresstest}
+\includegraphics[height=2.6in]{stresstest}
 \caption{Task trace for stress test}
 \label{fig:stresstest}
 \end{figure}

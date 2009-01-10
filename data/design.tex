@@ -5,7 +5,7 @@
 
 \begin{figure}
 \centering
-\includegraphics[height=2in]{design}
+\includegraphics[height=2.4in]{design}
 \caption{Design Overview}
 \label{fig:design}
 \end{figure}
@@ -18,6 +18,7 @@ to task models. Applying the task models on logs, we
 generate a set of task instances represented as an array of
 log items.
 
+
 \subsection{Extract key-value pairs}
 
 System logs contains a lot of information on system
@@ -27,10 +28,10 @@ name or in human language) on a set of data, with extra
 information such as operation result (return code).
 
 Our tool can infer the hierarchical relations among the data
-on which system operates and generat task models using
+on which system operates and generate task models using
 inferred data hierarchy.
 
-To do the inferrence, we have to first extract data part
+To do the inference, we have to first extract data part
 from log. It will be represented as (key, value) tuples,
 with key as data identifer and value as current content.
 
@@ -39,10 +40,11 @@ to extract data from cosmos log in (key, value) form. The
 principle described here can be adopted to analyze other
 kinds of log.
 
+\begin{figure}
 \begin{verbatim}
 d,12/30/2008 14:51:22.949,CosmosClient,
 CosmosClientDebug,SrcFile="cosmosstream.cpp"
-SrcFunc="CosmosStream::StartCsmAppendJob" 
+SrcFunc="CosmosStream::StartCsmAppendJob"
 SrcLine="570" Pid="3000" Tid="9144"
 TS="0x01C96A4B0702ECC2" String1="CSM append
 POSTED: opId: 3, streamId:
@@ -51,21 +53,24 @@ cosmos://srg-sna10/vol1/graphviz-2.20.2.exe,
 length: 1045679, offset: unknown,
 waitForSeal: 1, status: OK"
 \end{verbatim}
+\caption{A sample log item}
+\label{fig:logitem}
+\end{figure}
 
-The above shows a typical log item picked from cosmos.  The
-cosmos log can be divided into two parts. The first half has
-fixed format, which records log level, time, log category
-and a short title. Followed by the location of the log in
-source file, and runtime parameters. The second half is
-contained in \texttt{String1} field. It is written by
-developer and not well structured. It is usually interleaved
-with descriptive texts and programs states in (key, value)
-pairs.
+The Figure~\ref{fig:logitem} shows a typical log item picked
+from cosmos.  The cosmos log can be divided into two parts.
+The first half has fixed format, which records log level,
+time, log category and a short title. Followed by the
+location of the log in source file, and runtime parameters.
+The second half is contained in \texttt{String1} field. It
+is written by developer and not well structured. It is
+usually interleaved with descriptive texts and programs
+states in (key, value) pairs.
 
 It is not straightforward to extract the (key, value) pairs.
 The developer can record (key, value) in several formats. In
 general, it is written as \texttt{key SEP1 value SEP2}. SEP1
-and SEP2 have mutiple choices. It is not easy to determine
+and SEP2 have multiple choices. It is not easy to determine
 which word is a key, otherwise we can do the job easily. A
 key may look similar to an irrelevant words, such as
 \texttt{POSTED:} and \texttt{opId:}.
@@ -79,14 +84,14 @@ corresponding key.
 
 Currently, we choose to extract (key, value) pairs whose
 value parts are numbers but not text. Our considerations
-are: a) values as text are more descriptitive and have
+are: a) values as text are more descriptive and have
 little use in inferring data hierarchy in later steps. b)
 SEP1 and SEP2 may be both blanks. In such cases,
 text words, keys and values are messed up and they cannot be
 distinguished using simple rules.
 
 In verifying the extracted (key, value) pairs, we note that
-there are cases where 1) a key may have mutiple alias names,
+there are cases where 1) a key may have multiple alias names,
 2) different keys may share the same name. We use a mapping
 schema to solve the both problems. After a log item is
 parsed, we apply the mapping specified in schema file and
@@ -135,7 +140,7 @@ mapping between keyS and keyP value set.
 \end{itemize}
 The intuition is, if keyS $>$ keyP, one will see keyS first,
 and a series of keyP with different values, and then keyS,
-with another value, and then a series of keyP. 
+with another value, and then a series of keyP.
 
 The mining algorithm takes (key, value) stream as input and
 outputs (keyS, keyP, R) tuples, indicating keyS $>$ keyP
@@ -164,11 +169,11 @@ ExtentID y4
 \label{fig:kvstream}
 \end{figure}
 
-The example Figure~\ref{fig:kvstream} emulate the (key,
-value) stream we see in cosmos client log. When the client
-receives a command, it starts a new session, opens the
-specified stream in next operation step, and process extents
-of the stream in the following operation steps.
+Figure~\ref{fig:kvstream} emulate the (key, value) stream we
+see in cosmos client log. When the client receives a
+command, it starts a new session, opens the specified stream
+in next operation step, and process extents of the stream in
+the following operation steps.
 
 The rank algorithm works as follows. It scans through the
 (key, value) stream and maintains an array of keys. Once a
@@ -188,7 +193,8 @@ as the rank of (keyS, keyP), if not, we just ignore the
 
 \notes{pseudo code of mining algorithm}
 
-For We sucessfully mined out StreamID $>$ ExtentID with rank 4
+For sample (key, value) stream in Figure~\ref{fig:kvstream},
+we sucessfully mined out StreamID $>$ ExtentID with rank 4
 and Session $>$ opId with rank 6. Session has no relation
 with StreamID, because multiple Session may operate on the
 same StreamID. The similar argument apply for (Session,
@@ -206,7 +212,7 @@ can be roughly divided into two categories, \notes{xxx}
 
 After the previous step, we mined out a set of data
 hierarchy relations. The relations can be translated
-directly to hierarchies of tasks which process the data. 
+directly to hierarchies of tasks which process the data.
 If we have keyS $>$ keyP, and use Task(keyS) to denote task
 that process keyS, then we have Task(keyS) $:=$
 Task(keyP)$+$, in short keyS $:=$ keyP+. We use the later
@@ -215,7 +221,7 @@ definition as task model.
 We apply the mined data hierarchy on the log to split system
 runtime into hierarchical task instances. Each task instance
 is represented by a sequence of log items describing system
-activeties within a certain time interval of the same
+activities within a certain time interval of the same
 thread. We first split log items into first level task
 instances by highest level key. An instance begins at the
 new value of the key is spotted and last until another value
@@ -224,16 +230,16 @@ level instances to obtain lower level task instances.
 
 \begin{figure}
 \centering
-\includegraphics[height=1.5in]{ph}
+\includegraphics[height=1.5in]{runtime}
 \caption{Hierarchical task instances.}
 \label{fig:runtime}
 \end{figure}
 
-For cosmos client, we find it convinient to using Session
+For cosmos client, we find it convenient to using Session
 $:=$ opId$+$ as task model. This is consistent with
 developer's mind on organizing client activities. After
 applying the model on (key, value) streams in
-Figure~\ref{fig:kvstream}, we organize the activites as in
+Figure~\ref{fig:kvstream}, we organize the activities as in
 Figure~\ref{fig:runtime}.
 
 The choice of which data hierarchy to apply is left to user.
