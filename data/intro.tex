@@ -115,10 +115,10 @@ we can effectively infer the entire hierarchical task model.
 
 We implemented the prototype of task inference tool.
 We apply it to a distributed storage system
-named Cosmos, which is similar to GFS and used by production
+named \cosmos, which is similar to GFS and used by production
 team for storing web pages. Our tool infers reasonable
 task structure, and we further detect a performance
-bug in Cosmos guided by the inferred task models.
+bug in \cosmos guided by the inferred task models.
 Our experience shows that logs are useful in reflecting
 high-level system semantics, and our approach can effectively
 infer task models, which can help better understand system
@@ -143,8 +143,8 @@ Section~\ref{sec:conclusion} concludes this paper.
 
 %The hierarchical structure of tasks is often consist with
 %the hierarchy of data processed by tasks. For example. In
-%cosmos, data are organized as streams and streams are
-%consisted of extents. By inspecting cosmos logs, task that
+%\cosmos, data are organized as streams and streams are
+%consisted of extents. By inspecting \cosmos logs, task that
 %processing a stream is splitted into subtasks. The first
 %subtask do some stream level processing (open, etc.), and
 %the following tasks process extents in the stream. But the
