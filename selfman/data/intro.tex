@@ -1,13 +1,88 @@
 \section{Introduction}
 
 \note{management is a critical problem}
-Distrbuted systems are at the heart of today's Internet
-services. Because of their complex design and large scale,
-they are hard to design, test and manage. The development of
-these systems often goes in the loop of
-design-deploy-test-redesign. A 
 
-\note{what is involved in management acitivity}
+Distrbuted systems are at the heart of today's Internet
+services (\note{cloud?}). While the cost of commodity
+computers continues to drop, it is common for large scale
+clusters to contain thousands of computers, such as
+PlanetLab, Amazon EC2 and Teragrid. These platforms can
+provide petabytes of data storage and hundreds of teraflops
+of computing capabilities that boost performance of
+distributed applications significantly. However, the
+applications must be carefully designed to scale to
+thousands of computers and fully utilize the resources.
+%handle frequent and inevitable failures at host,
+%application and network levels.
+
+After distributed application is designed and implemented,
+an important problem is how to manage it effectively and
+efficiently on distributed platforms. Managing a distributed
+application involves several tasks. The application must be
+first deployed to a set of computers. Appropriate control
+commands must be disseminated to configure and start
+application processes. After the application is started, its
+status need to be monitored for detecting and recovering
+from failures, ensuring sustained performance or just for
+collecting statistics. Operators may also want to send
+control commands on demand to recover failed processes and
+fine tunning application performance.
+
+To efficiently manage distributed applications at large
+scale, the manangement system is designed in distributed
+approaches. It consists of many ``peers'' on each machine
+where distributed application will be deployed. The peers
+work cooperately to disseminate application's software
+package and data. After the applicaiton is started, a peer
+monitors local applicaiton processes within the same machine
+box.
+
+The distributed design makes management system a distributed
+application in essential and it introduces a problem: the
+management system need to be deployed first and maintained
+continually through its lifecycle. To address this problem,
+operator can use simple scripts which leverage OS's local
+service (e.g. sshd) to ``manage'' a management system
+centrally. It is noticed that more advanced tool will
+introduce the same problem recursively.
+
+%It is of great challenge to manage distributed application
+%when the scale is large. Distributed application management
+%system is designed to ease the burdens of deploying and
+%maintaining distributed applications in large-scale
+%computing platforms. It provides user-friendly interfaces for
+%people to deploy, configure, monitor and control distributed
+%applications.
+
+%To achieve
+%these goals, a management system faces several challenges.
+%It must have good scalability so as to deploy applications
+%and broadcast control commands efficiently.  Host or network
+%failures must be carefully handled to reduce their negative
+%effects on application management to near minimum. When
+%application is started, the management system monitors its
+%running status. It must provide a extensible way for
+%developers to define abnormal status of the application and
+%the corresponding actions to peformance against abnormal
+%status.
+
+
+
+management system need to be managed too. current approach
+is not scalable. 
+Distributed application management sysmtems help... To
+manage distributed systems, the management system itself is
+a distributed system in essential, and it has the same
+problem on management with other distributed systems. It has
+to be deployed... As far as we know, these challenges have
+not been address in literature yet.
+
+Distributed managment systems cannot rely on external
+systems to solve the problems. and we proposed a
+self-management scheme.
+
+
+\note{what is involved in management activity}
 
 \note{the problem in current management tools:}
 
