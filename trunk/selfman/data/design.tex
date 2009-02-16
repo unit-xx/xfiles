@@ -6,18 +6,349 @@ self-recover and self-update. It consists of peers on every
 machine where applications will be deployed and managed by
 SMON. The peers are all identical in functionality. They
 communicate with each other epidemically to detect and
-recover failed peers. A failed peer ... So, for a failed
-peer, deployed first, if necessary, and be started. In this
-way, even there is only one peer, the whole SMON will be
-deployed and running on all the machines ... While SMON is
-running, the failed process will... SMON peer has an
-associated version number and it is stored persistently with
-each peer. The version number is used to update SMON
-``online'' to newer version. When two peer communicate ...
-Two peers work cooperately to update the lower version to
-the latest verison. Using epidemic communication, this
-mechanism will ensure the whole SMON system will be updated
-once a single peer is updated.
+recover failed peers. A failed peer is not deployed or
+killed ... So, for a failed peer, deployed first, if
+necessary, and be started. In this way, even there is only
+one peer, the whole SMON will be deployed and running on all
+the machines ... While SMON is running, the failed process
+will... SMON peer has an associated version number and it is
+stored persistently with each peer. The version number is
+used to update SMON ``online'' to newer version. When two
+peer communicate ...  Two peers work cooperately to update
+the lower version to the latest verison. Using epidemic
+communication, this mechanism will ensure the whole SMON
+system will be updated once a single peer is updated.
+
+SMON can manage a set of distributed applications.
+
+SMON can be used in several ways.
+
+We then describe SMON design in details.
+
+\subsection{Self-deployment}
+
+For a list of target machines, SMON can deploy itself to all
+the machines automatically. At the very beginning, there is
+not any SMON peer deployed and running yet. At least one
+peer must be deployed to a node and started manually.  The
+first peer then detects other machines in its partial view
+and deploy new peers. The new peers repeat the similar
+detect-and-deploy process. While there are more SMON peers
+deployed and running, this self-deployment process speeds up
+exponentially. It is proved that with probability 1 all the
+reachable machines can be deployed
+eventually\cite{Eugster2004}.
+
+The deployment precedure for a SMON peer works as follows.
+A peer $P$ choose a random machine $M$ from its member list
+and sends a ping message. If a pong message is not received
+within predifined timeout intervals, it will start the
+deployment precedure on machine $M$. $P$ first authenticates
+itself with $M$ and login into $M$ automatically (described
+in in \ref{subsec:security}), then it copies an installation
+package of SMON peer to $M$, starts the packag and logout
+$M$. The installation package will check the interity of
+itself (currently using MD5 checksum) in case of transfer
+errors during copy process. And it will configure and start
+the SMON peer.
+
+There may be failures (e.g. connection corrupted, machine
+downed) at any time when peer $P$ authenticates and login
+into $M$, copies and starts installation package remotely.
+When failure happens, $P$ will just abort the deployment
+precedure. $M$ will be choosen by another SMON peer at later
+time. It is expected that a new SMON peer will be deployed
+on $M$ eventually.
+
+Because peers communicate with each other epidemically, it
+is possible that two or more peers try to deploy SMON peer
+on the same machine simultaneously. This problem is solved
+without direct coordination among peers. Before deployment
+procedure, a peer will generate a temporary directory name
+using name of the machine in which it is running. The
+installation package will be copied to that directory of the
+remote machine, and it will not overwrite packages from
+other peers. The execution of simultaneously started
+installation packages are serialized using OS provided
+sychnization facilities (currentl lock file). So only the
+first installation process will finish and others will abort
+because they find that a SMON peer is already running. In
+solving the problme, some overhead is introduced because
+multiple SMON peer packages may be copied, which wastes
+network bandwidth and storage resources. Through the
+evaluation, it is shown that the overhead is low on most
+nodes. And the size of SMON installation package is small
+(122KB), so the overhead can be considered as insignificant.
+
+It is not easy to define when self-deployment is finished
+globally. Ideally, it is finished when all the target
+machines are reached and deployed with SMON peers.  However,
+considering some nodes may be unreachable or shutdown
+temporarily, the `finished-globally' situation is rare. Even
+after a machine is deployed with SMON peer, it may be failed
+and replaced with a new machine with same host name after
+some time. The peers then have to continue the
+detect-and-deploy process as long as they are live and leave
+the `finish' definition to user. The user can query how many
+or which peers are deployed, and determine whether it is
+appropriate to consider the situation as a finish.
+
+\subsection{Self-update}
+
+As a distributed system, SMON can update itself to a new
+version automatically. The update goes online while SMON is
+running. Operator needs not to stop SMON before update.
+
+Each SMON peer has a version number and it is stored
+persistently in configuration file with the peer. When two
+peers communicate using ping-pong messages, they also
+piggyback their version numbers in the messages. If two
+peers find a difference in their versions, the peer with
+lower version will update itself automatically to the higher
+version. \note{detail?}
+
+installation package will regenerate configuration file, in
+which version number is stored.
+
+To update the whole SMON system to a new version, operator
+only has to update one peer to the new version and all the
+other SMON peers will emerge to the newest versions
+eventually. The operator can update a SMON peer by copying
+the SMON installation package of new version to local file
+system of the peer's machine, and instructing the peer to
+update itself by using a RPC call. The peer will run the
+installation package, start the new peer and exit.
+
+When a SMON peer knows there's a new version of peer, a list of
+hosts on which peers with new version are running is gathered
+through active detection among peers.  A self-update action is
+scheduled to read the list and download the new version. At the
+beginning of the self-update process, there would only be a
+small number of peers running in new version, but they are known
+by a lot of other peers.  If there's not any constraints, a lot
+of peers may download from the same host simultaneously. To
+prevent that, we use a conservative strategy to control the
+self-update action.  The destination is, at average, only a
+constant $k$ of peers can download simultaneously from a host.
+The algorithm we use does not need any coordination among peers,
+and works as follows.  If there are $n$ peers want to download
+from the same host. Each of them choose to take the download
+action  with probability $k/n$. If the action is not taken, it
+will be delayed in the next time. So at average, there will be
+only $k$ peers downloading from the same host simultaneously,
+and it takes a peer to rerun the action $n/k$ times to select
+the same peer.  As peers don't coordinate with each other, they
+make a conservative estimation that set $n$ to $N$, the number
+of all the peers. The strategy may cause a slow start at the
+begin of self-update process because $n$ is far smaller that
+$N$. When more peers are updated to new version, the update
+process would be boosted. If a peer knows $p$ peers of new
+version, the probability it choose to not download from any of
+them is $q=(1-k/n)^p$ and it takes at average $\frac{1}{1-q}$
+tries to choose a host. When $p$ increases, $q$ decreases
+quickly and $\frac{1}{1-q}$ will be nearly 1 with large $p$.
+
+\comment{
+It is important to ensure that communication interfaces for
+different versions of SMON peers are consistent. If the condition
+is ensured, the whole SMON system can be updated gracefully while
+most of peers are running and the system functions well.
+Otherwise, the new SMON system can only be deployed after the old
+one is stopped.
+}
+
+\subsection{Self-recovery}
+
+Two kinds of failures may happen and must be handled by SMON,
+namely, node failure and network partitions.
+
+Node failures are handled by self-deployment mechanism.
+
+When a node fails, the SMON peer running on it is stopped also.
+As soon as the node recovers, it will be noticed by some SMON
+nodes quickly and the deployed SMON peer will be restarted.
+
+It is possbile that 
+node $H$ has already been deployed with a peer but the peer
+is not running, the peer will be simply re-started without extra
+deployment. Starting multiple instances of SMON peer on the same
+node is idempotent to start only one instance. 
+
+
+Network partitions can also be handled by SMON easily. The
+topology formed by SMON peers is a random graph which ensures
+that all the nodes are connected with high probability. When
+network partition occurs, SMON peers are splitted into several
+sub-systems, each of which is connected internally. Implied by
+epidemic algorithm, each partitioned part will eventually
+emerges to the consistent state regarding to the version of SMON
+peers, the version of managed applications, and the vertion of
+active states. When two partitions rejoin, the peers in
+different part will contact and communicate with each other,
+leading to the emergence of the whole system.
+
+\subsection{Security}
+\label{subsec:security}
+
+It is necessary for different SMON peers to authenticate each
+others and keep the communication confidential among them. In
+addition, when a SMON peer deploys another SMON peer on a remote
+node, it need to authenticate
+itself to the remote node to deploy contents and execute
+commands. The authentication credential is owned by user and
+should be protected confidentially. From another point of view,
+the SMON peers relies upon the authentication credentials
+provided by user to deploy and manage each others automatically
+in a distributed approach. 
+
+SMON system is designed for distributed infrastructures that are
+semi-open---like Planet-Lab or grid, or for proprietary
+ones---such as large machine rooms or data centers. It assumes
+that: 1) the network between nodes in a distributed
+infrastructure is not trusted, 2) the users that can access the
+infrastructures are not adversarial, 3) the applications running
+in the infrastructures are not adversarial. Based on assumptions
+above, SMON designed an ad-hoc mechanism which guarantees that 1)
+communications among SMON peers are authenticated and
+confidential, 2) authentication credentials needed to
+authenticate with remote nodes are not leaked under any
+circumstances. The mechanism incorporated in current design
+supports challenge
+based authentications like public-key authentication scheme,
+which is extensively used.
+
+To achieve that goal, SMON includes an separate authentication
+agent acting as the authentication bootstrap for SMON.
+Whenever a SMON peer needs to login into a node, it will indirect
+the authentication challenges to the agent and the agent will
+solve the challenges and send the result back. In this way, the
+authentication credentials are kept secret for all the times. A
+symmetric encryption key $K_E$ is shared among all the SMON peers
+and the authentication agent. It is used to authenticate peers
+and agent within the same SMON system, and establish confidential
+communication channels among them. The shared key $K_E$ is
+included within the software package of the SMON peer. When a SMON
+peer is deployed, $K_E$ is deployed also. Note that $K_E$ is
+never leaked during deployment. $K_E$ is safe to be stored
+within local nodes based on assumption 2) and 3), and further
+local security policies can be leveraged to protect $K_E$.
+
+It is not necessary to keep authentication agent running for all
+the time.  When the self-deployment process is finished, the
+agent can be closed, and re-open timely for maintennace purpose.
+It is also a security concern to offline authentication
+agent to protect user authentication credentials.
+
+The authenticate agent can be also replicated if required. When
+a SMON system is deployed at large enough scales, there can be
+multiple instances of authenticate agent for performance
+considerations.
+
+\subsection{Membership}
+
+The membership maintenance of SMON system is different from other
+distributed systems. While other distributed systems maintains a
+list of peers that are currently running, SMON maintains a list
+nodes on which there should be peers running.  And an important
+requirement of SMON is, even when there is only one SMON peer
+running, it should be able to know all the target nodes that SMON
+need to be deployed. The implication is every running SMON peer
+should be able to know the full list of target nodes.
+
+In current design, a simple scheme is used that each SMON peer
+will store a replica of the full list of target management nodes
+persistently in compressed format. The partial view of a SMON
+peer is chosen randomly from the whole list. The list also has
+an associated version number and is maintained in epidemic
+approach among peers. To further reduce the communication
+overhead, only the differences between two version are
+propagated during node list update process. This scheme is
+enough for handling node list containing even tens of thousands
+of nodes because only the node names or IPs are stored in the
+list.  An estimation shows that, storing 15000+ nodes names in
+zip format takes about 100K bytes, which is an acceptable
+result.
+
+\subsection{Start and stop}
+
+The SMON system has a global state indicating it is active or
+not. When SMON is active, the peer-monitoring component is
+enabled. Every SMON peers actively monitor each others and keep
+them running as possible as they can. While SMON is not active,
+the peer-monitoring function is disable and SMON acts just like
+an usual management tools. The active state is an essential part
+of SMON system design. Without it, SMON is just another usual
+management tool for distributed applications. If the state is
+designed as active all the time, it is a hard problem to stop an
+active SMON system. If we try to stop the SMON peers one-by-one,
+we will noticed that the stopped peers will soon be restarted by
+other peers. And the only way to stop an active SMON system is to
+stop all the peers near simultaneously, which is quite hard.
+The active state also has an associated version number and
+each SMON peer replicates and stores the state with version locally.
+The epidemic algorithm is used to maintain the state consistently
+and efficiently among all peers.
+
+\subsection{Application management}
+
+which bin to start
+on failure: report, restart N times, ignore
+watch pid file
+
+NO app update, not necessary and too complex
+
+One or more distributed applications can be managed by SMON. Each
+SMON peer manages the application peers that run in the same
+node. Each of the managed application peers has an associated
+version number.  The version numbers of application peers are
+maintained by managing SMON peers. The similar epidemic algorithm
+is used for keeping application peers up-to-date. A trick used
+in application management is, when an application peer has not
+been deployed on a node yet, its version number is set to 0.0,
+which is smaller than any real version numbers. In this way,
+application deployment problem is turned to the application
+update problem.
+
+SMON peers knows the existence of a new application or a new
+version of application through periodically communicating with each
+other. A new application entry is created if it is known for the
+first time.  The peers download the application with specified
+version from other peers. There is a set of implemented RPC
+calls for control and monitoring of managed applications.
+
+
+\subsection{Client utility}
+
+query SMON, live? version?
+
+query app, live?
+
+update version
+
+install application
+
+set/query livetag, 
+
+
+
+
+The one-hop source routing\cite{Gummadi2004} algorithm is
+implemented by SMON. When a peer failed to communicate directly
+to another peer, it randomly selected $k$ ($k=4$ in current
+design) other peers for sending the messages indirectly.  This
+feature is useful for managing large number of nodes. We
+implement this mechanism because we notice a lot of connection
+problems caused by name resolution error. It happens between our
+laptop and PlanetLab nodes, and also among some PlanetLab nodes.
+In the experiment, we noticed a node cannot connect to other two
+nodes because of name resolution error for more than one day.
+But through one-hop source routing, they can communicate without
+problem. This feature is useful for users to control or monitor
+nodes at large scale. As the user control or monitor other nodes
+through a peer as proxy, one-hop source routing can increase the
+number of connected peers.
+
+\subsection{Discussion}
 
 
 
