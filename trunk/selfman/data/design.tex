@@ -104,11 +104,8 @@ persistently in configuration file with the peer. When two
 peers communicate using ping-pong messages, they also
 piggyback their version numbers in the messages. If two
 peers find a difference in their versions, the peer with
-lower version will update itself automatically to the higher
-version. \note{detail?}
-
-installation package will regenerate configuration file, in
-which version number is stored.
+lower version will copy the installation package from the
+peer with higher version and update itself automatically.
 
 To update the whole SMON system to a new version, operator
 only has to update one peer to the new version and all the
@@ -119,6 +116,7 @@ system of the peer's machine, and instructing the peer to
 update itself by using a RPC call. The peer will run the
 installation package, start the new peer and exit.
 
+\note{need revise the method, consider the ping interval}
 When a SMON peer knows there's a new version of peer, a list of
 hosts on which peers with new version are running is gathered
 through active detection among peers.  A self-update action is
@@ -160,134 +158,139 @@ one is stopped.
 \subsection{Self-recovery}
 
 Two kinds of failures may happen and must be handled by SMON,
-namely, node failure and network partitions.
+namely, machine failure and network partitions.
 
 Node failures are handled by self-deployment mechanism.
+When a machine fails, the SMON peer running on it is stopped
+also.  As soon as the machine recovers, it will be noticed
+by some SMON peers quickly and the deployed SMON peer will
+be restarted. Starting multiple instances of SMON peer on
+the same machine is idempotent to start only one instance
+and this is implemented using lock files. When Multiple SMON
+peer instance is started, the first one will hold the lock
+and the others will exit gracefully.  If the failed machine
+is replaced with a new one, it will be installed by a new
+copy of SMON peer.
 
-When a node fails, the SMON peer running on it is stopped also.
-As soon as the node recovers, it will be noticed by some SMON
-nodes quickly and the deployed SMON peer will be restarted.
-
-It is possbile that 
-node $H$ has already been deployed with a peer but the peer
-is not running, the peer will be simply re-started without extra
-deployment. Starting multiple instances of SMON peer on the same
-node is idempotent to start only one instance. 
-
-
-Network partitions can also be handled by SMON easily. The
-topology formed by SMON peers is a random graph which ensures
-that all the nodes are connected with high probability. When
-network partition occurs, SMON peers are splitted into several
-sub-systems, each of which is connected internally. Implied by
-epidemic algorithm, each partitioned part will eventually
-emerges to the consistent state regarding to the version of SMON
-peers, the version of managed applications, and the vertion of
-active states. When two partitions rejoin, the peers in
-different part will contact and communicate with each other,
-leading to the emergence of the whole system.
+Network partitions can also be handled by SMON easily. When
+network partition occurs, SMON peers are splitted into
+several sub-systems, each of which is connected internally.
+Implied by epidemic algorithm, each partitioned part will
+eventually emerges to the consistent state regarding to the
+version of SMON peers. When two partitions rejoin, the peers
+in different part will contact and communicate with each
+other, leading to the emergence of the whole system.
 
 \subsection{Security}
 \label{subsec:security}
 
-It is necessary for different SMON peers to authenticate each
-others and keep the communication confidential among them. In
-addition, when a SMON peer deploys another SMON peer on a remote
-node, it need to authenticate
-itself to the remote node to deploy contents and execute
-commands. The authentication credential is owned by user and
-should be protected confidentially. From another point of view,
-the SMON peers relies upon the authentication credentials
-provided by user to deploy and manage each others automatically
-in a distributed approach. 
+It is necessary for different SMON peers to authenticate
+each others and keep the communication confidential among
+them. In addition, when a SMON peer deploys another SMON
+peer on a remote node, or a SMON peer copy installation
+package from another peer for update, it need to
+authenticate itself to the remote node to copy contents and
+execute commands (start the installation package).  The
+authentication credential is owned by user and should be
+protected confidentially. From another point of view, the
+SMON peers relies upon the authentication credentials
+provided by user to deploy and manage each others
+automatically in a distributed approach. 
 
-SMON system is designed for distributed infrastructures that are
-semi-open---like Planet-Lab or grid, or for proprietary
-ones---such as large machine rooms or data centers. It assumes
-that: 1) the network between nodes in a distributed
-infrastructure is not trusted, 2) the users that can access the
-infrastructures are not adversarial, 3) the applications running
-in the infrastructures are not adversarial. Based on assumptions
-above, SMON designed an ad-hoc mechanism which guarantees that 1)
-communications among SMON peers are authenticated and
-confidential, 2) authentication credentials needed to
-authenticate with remote nodes are not leaked under any
-circumstances. The mechanism incorporated in current design
-supports challenge
-based authentications like public-key authentication scheme,
-which is extensively used.
+SMON system is designed for distributed infrastructures that
+are semi-open---like Planet-Lab or grid, or for proprietary
+ones---such as large machine rooms or data centers. It
+assumes that: 1) the network between nodes in a distributed
+infrastructure is not trusted, 2) the users that can access
+the infrastructures are not adversarial, 3) the applications
+running in the infrastructures are not adversarial. Based on
+assumptions above, SMON designed an security mechanism which
+guarantees that 1) communications among SMON peers are
+authenticated and confidential, 2) authentication
+credentials needed to authenticate with remote nodes are not
+leaked under any circumstances. The mechanism incorporated
+in current design supports challenge based authentications
+like public-key authentication scheme, which is extensively
+used.
 
-To achieve that goal, SMON includes an separate authentication
-agent acting as the authentication bootstrap for SMON.
-Whenever a SMON peer needs to login into a node, it will indirect
-the authentication challenges to the agent and the agent will
-solve the challenges and send the result back. In this way, the
-authentication credentials are kept secret for all the times. A
-symmetric encryption key $K_E$ is shared among all the SMON peers
-and the authentication agent. It is used to authenticate peers
-and agent within the same SMON system, and establish confidential
-communication channels among them. The shared key $K_E$ is
-included within the software package of the SMON peer. When a SMON
-peer is deployed, $K_E$ is deployed also. Note that $K_E$ is
-never leaked during deployment. $K_E$ is safe to be stored
-within local nodes based on assumption 2) and 3), and further
-local security policies can be leveraged to protect $K_E$.
+To achieve that goal, SMON includes an separate
+authentication agent acting as the authentication bootstrap
+for SMON.  Whenever a SMON peer needs to login into a node,
+it will indirect the authentication challenges to the agent
+and the agent will solve the challenges and send the result
+back. In this way, the authentication credentials are kept
+secret for all the times. A symmetric encryption key $K_E$
+is shared among all the SMON peers and the authentication
+agent. It is used to authenticate peers and agent within the
+same SMON system, and establish confidential communication
+channels among them. The shared key $K_E$ is included within
+the installation package of the SMON peer. When a SMON peer
+is deployed, $K_E$ is deployed also. Note that $K_E$ is
+never leaked out of network during deployment. $K_E$ is safe
+to be stored within local nodes based on assumption 2) and
+3), and further local security mechanisms can be leveraged
+to protect $K_E$, such as file system read/write
+permissions.
 
-It is not necessary to keep authentication agent running for all
-the time.  When the self-deployment process is finished, the
-agent can be closed, and re-open timely for maintennace purpose.
-It is also a security concern to offline authentication
-agent to protect user authentication credentials.
+It is not necessary to keep authentication agent running for
+all the time.  When the self-deployment process is finished,
+the agent can be closed, and re-open timely for maintennace
+purpose.  It is also a security concern to offline
+authentication agent to protect user authentication
+credentials.
 
-The authenticate agent can be also replicated if required. When
-a SMON system is deployed at large enough scales, there can be
-multiple instances of authenticate agent for performance
-considerations.
+The authenticate agent can be also replicated if required.
+When a SMON system is deployed at large enough scales, there
+can be multiple instances of authenticate agent for
+performance considerations. Name server based load balance
+mechanism\cite{} can be used to direct SMON peers to their nearest
+agents.
 
 \subsection{Membership}
 
-The membership maintenance of SMON system is different from other
-distributed systems. While other distributed systems maintains a
-list of peers that are currently running, SMON maintains a list
-nodes on which there should be peers running.  And an important
-requirement of SMON is, even when there is only one SMON peer
-running, it should be able to know all the target nodes that SMON
-need to be deployed. The implication is every running SMON peer
-should be able to know the full list of target nodes.
+The membership maintenance of SMON system is different from
+other distributed systems. While other distributed systems
+maintains a list of peers that are currently running, SMON
+maintains a list nodes on which there should be peers
+running.  And an important requirement of SMON is, even when
+there is only one SMON peer running, it should be able to
+know all the target nodes that SMON need to be deployed. The
+implication is every running SMON peer should be able to
+know the full list of target nodes.
 
-In current design, a simple scheme is used that each SMON peer
-will store a replica of the full list of target management nodes
-persistently in compressed format. The partial view of a SMON
-peer is chosen randomly from the whole list. The list also has
-an associated version number and is maintained in epidemic
-approach among peers. To further reduce the communication
-overhead, only the differences between two version are
-propagated during node list update process. This scheme is
-enough for handling node list containing even tens of thousands
-of nodes because only the node names or IPs are stored in the
-list.  An estimation shows that, storing 15000+ nodes names in
-zip format takes about 100K bytes, which is an acceptable
-result.
+In current design, a simple scheme is used that each SMON
+peer will store a replica of the full list of target
+management nodes persistently in compressed format. The list
+also has an associated version number and is maintained in
+epidemic approach among peers. To further reduce the
+communication overhead, only the differences between two
+version are propagated during node list update process. This
+scheme is enough for handling node list containing even tens
+of thousands of nodes because only the node names or IPs are
+stored in the list.  An estimation shows that, storing
+15000+ nodes names in zip format takes about 100K bytes,
+which is an acceptable result.
 
 \subsection{Start and stop}
 
-The SMON system has a global state indicating it is active or
-not. When SMON is active, the peer-monitoring component is
-enabled. Every SMON peers actively monitor each others and keep
-them running as possible as they can. While SMON is not active,
-the peer-monitoring function is disable and SMON acts just like
-an usual management tools. The active state is an essential part
-of SMON system design. Without it, SMON is just another usual
-management tool for distributed applications. If the state is
-designed as active all the time, it is a hard problem to stop an
-active SMON system. If we try to stop the SMON peers one-by-one,
-we will noticed that the stopped peers will soon be restarted by
-other peers. And the only way to stop an active SMON system is to
+The SMON system has a global state indicating it is active
+or not. When SMON is active, the peer-monitoring component
+is enabled. Every SMON peers actively monitor each others
+and keep them running as possible as they can. While SMON is
+not active, the peer-monitoring function is disable and SMON
+acts just like an usual management tools. The active state
+is an essential part of SMON system design. Without it, SMON
+is just another usual management tool for distributed
+applications. If the state is designed as active all the
+time, it is a hard problem to stop an active SMON system. If
+we try to stop the SMON peers one-by-one, we will noticed
+that the stopped peers will soon be restarted by other
+peers. And the only way to stop an active SMON system is to
 stop all the peers near simultaneously, which is quite hard.
 The active state also has an associated version number and
-each SMON peer replicates and stores the state with version locally.
-The epidemic algorithm is used to maintain the state consistently
-and efficiently among all peers.
+each SMON peer replicates and stores the state with version
+locally.  The epidemic algorithm is used to maintain the
+state consistently and efficiently among all peers.
 
 \subsection{Application management}
 
@@ -329,7 +332,7 @@ install application
 
 set/query livetag, 
 
-
+maintain version number of SMON and live tag
 
 
 The one-hop source routing\cite{Gummadi2004} algorithm is
