@@ -19,32 +19,100 @@ After distributed application is designed and implemented,
 an important problem is how to manage it effectively and
 efficiently on distributed platforms. Managing a distributed
 application involves several tasks. The application must be
-first deployed to a set of computers. Appropriate control
-commands must be disseminated to configure and start
-application processes. After the application is started, its
-status need to be monitored for detecting and recovering
-from failures, ensuring sustained performance or just for
-collecting statistics. Operators may also want to send
-control commands on demand to recover failed processes and
-fine tunning application performance.
+first deployed to a set of computers. After the application
+is configured and started, its status need to be monitored
+for detecting and recovering from failures, ensuring
+sustained performance or just for collecting runtime data
+and statistics. Operators may also want to send control
+commands to control the application on demand, such as fine
+tunning application performance.
 
-To efficiently manage distributed applications at large
-scale, the manangement system is designed in distributed
-approaches. It consists of many ``peers'' on each machine
-where distributed application will be deployed. The peers
-work cooperately to disseminate application's software
-package and data. After the applicaiton is started, a peer
-monitors local applicaiton processes within the same machine
-box.
+The distributed application management system is designed to
+simply tasks involved in deploying and maintaining
+distributed application. To efficiently manage distributed
+applications at large scale, the manangement system is
+designed in distributed approaches. It consists of many
+``peers'' \note{need clarification? client/server} on each
+machine where distributed application will be deployed. The
+peers work cooperately to disseminate application's
+installation package and required data. After the
+applicaiton is started, each peer can monitor applicaiton's
+processes within the same machine box, and it responds to
+messages sent from other peers and user.
 
 The distributed design makes management system a distributed
-application in essential and it introduces a problem: the
-management system need to be deployed first and maintained
-continually through its lifecycle. To address this problem,
-operator can use simple scripts which leverage OS's local
-service (e.g. sshd) to ``manage'' a management system
-centrally. It is noticed that more advanced tool will
-introduce the same problem recursively.
+application in essential and it introduces an important
+problem: the management system need to be deployed first and
+maintained continually through its lifecycle. To address
+this problem, operator can use simple scripts which leverage
+OS's local service (e.g. sshd) to ``manage'' a management
+system centrally. But this approach is not scalable. Trying
+to uses more advanced management systems which use their own
+peers to manage another one will introduce the same problem
+recursively.  \note{define managment loop here, and we
+automate the loop within peers in SMON}
+
+In this paper, we propose a Self-Managed Overlay Network
+(SMON) that addresses the above problem. SMON is designed as
+a distributed system with built-in self-management
+capability, namely, self-deployment, self-recovery and
+self-update. It consists of peers on every target machines
+where applications will be deployed and managed. The peers
+actively monitor each other and automatically deploy new
+peers on fresh machines, recover failed peers, and update
+peers of old versions. The collective behaviour of all peers
+gives rise to a distributed system that can automatically
+deploy itself to a set of machines, recover failed process
+as soon as possbile and update itself to new versions
+online.
+
+\comment{
+Running SMON peers will automatically deploy
+and start new instances of SMON peers on machines where SMON
+peers are not installed.  In this way, operator only needs
+to deploy and start one SMON peer and SMON will be deployed
+to all the target machines quickly. 
+
+Each SMON peer has an associated version number and it is
+stored persistently in configuration file. The version
+number can be used to update SMON ``online'' to newer
+versions.  When two peers communicate with each other and
+find a difference in version, they work cooperately to
+update the lower version to the latest verison. Using
+epidemic communication, the whole SMON system will be
+updated eventually once a single peer is updated.
+
+SMON may be stopped because of machine failures or other
+reasons. The failed peers will be detected and started 
+by running ones automatically.
+}
+
+
+%SMON can deploy itself to a set of target machines
+%automatically. While it is running, it monitors itself and
+%recovers failed peers. If a new version of SMON is
+%available, it will update itself online. SMON can also
+%deploy and maintain a set of distributed applications. User
+%can use a set of management interfaces to query status and
+%set parameters of SMON and managed applications.
+
+In designing SMON there are several challenges.
+
+First, auto authentication while protecting user
+credentials.
+
+to deploy or start an installed SMON peer, a
+SMON has to login into a remote machine and execute several
+commands.
+
+The second challenge is
+scalability: epidemic
+
+The third challenge is robust. epidemic, the control loop,
+the monitor-reaction model.
+
+The forth is extensible.
+
 
 %It is of great challenge to manage distributed application
 %when the scale is large. Distributed application management
@@ -66,20 +134,15 @@ introduce the same problem recursively.
 %the corresponding actions to peformance against abnormal
 %status.
 
+in summary, the paper makes following contributions.
+scalable and robust self-management scheme using epidemic
+alogorithm.
 
+implementation on planetlab
 
-management system need to be managed too. current approach
-is not scalable. 
-Distributed application management sysmtems help... To
-manage distributed systems, the management system itself is
-a distributed system in essential, and it has the same
-problem on management with other distributed systems. It has
-to be deployed... As far as we know, these challenges have
-not been address in literature yet.
+evaluation showing scalability
 
-Distributed managment systems cannot rely on external
-systems to solve the problems. and we proposed a
-self-management scheme.
+the paper layout is.
 
 \comment{
 \note{what is involved in management activity}
