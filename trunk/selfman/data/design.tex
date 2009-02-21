@@ -1,23 +1,5 @@
 \section{Design}
 
-Generally, SMON is defined as a distributed system with
-built-in self-management capability, namely, self-deploy,
-self-recover and self-update. It consists of peers on every
-machine where applications will be deployed and managed by
-SMON. The peers are all identical in functionality. They
-communicate with each other epidemically to detect and
-recover failed peers. A failed peer is not deployed or
-killed ... So, for a failed peer, deployed first, if
-necessary, and be started. In this way, even there is only
-one peer, the whole SMON will be deployed and running on all
-the machines ... While SMON is running, the failed process
-will... SMON peer has an associated version number and it is
-stored persistently with each peer. The version number is
-used to update SMON ``online'' to newer version. When two
-peer communicate ...  Two peers work cooperately to update
-the lower version to the latest verison. Using epidemic
-communication, this mechanism will ensure the whole SMON
-system will be updated once a single peer is updated.
 
 SMON can manage a set of distributed applications.
 
