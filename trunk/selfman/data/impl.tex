@@ -1,13 +1,29 @@
 \section{Implementation}
 \label{sec:impl}
 
+We implement a prototype of SMON system on Planet-Lab.  The
+source is written in Python, and the final installation
+package size of a BON peer is about 122KB, with 1000+ lines
+of code.
+
 SMON makes a predefined and consistent directory layout of
 peer installation and it is critical for peers to perform
-their functions correctly.
+their functions correctly. A SMON peer is installed to
+\texttt{SMON} directory of user's home directory, and this
+setting can be changed. Under \texttt{bin} directory, a
+\texttt{run.py} and \texttt{smon.cfg} is placed. To start
+SMON peer, \texttt{run.py} is executed and it read
+configuration in \texttt{smon.cfg} and start the version
+specified in \texttt{smon.cfg}. A new version SMON peer
+should change \texttt{smon.cfg} appropriately. Different
+version of SMON peer is placed according to version number
+under different directories. \texttt{app} directory contains
+different application entries, as different directories. A
+configuration file for each application is placed under it
+directory. Installation package of SMON peer and
+applications are stored under \texttt{packages} directory,
+placed according to its name and version.
 
-SMON is implemented in python, using expect.
-linux/planetlab, ssh/scp, ssh control path(opt)
-
-ping interval and timeout value
+%ping interval and timeout value
 
 % vim:foldmethod=marker:textwidth=60
