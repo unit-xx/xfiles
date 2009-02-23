@@ -1,11 +1,32 @@
 \section{Design}
+\label{sec:design}
+
+SMON consists of peers on each target machines. Each peer
+contains the full list of target machines. A peer choose a
+random peer from the list and communicate with others in an
+epidemic way. It will automatically ... We use an agent to
+... live tag? Users can use a client utility to query and
+control the SMON system and the managed applications.
 
 
-SMON can manage a set of distributed applications.
+\subsection{Monitor-reaction model}
 
-SMON can be used in several ways.
+%The collective behaviour of all peers defines the runtime
+%of a SMON system. 
+We use a monitor-reaction model to define peer's behaviours.
+The model is consistent with and automatically implements
+what humans do when maintaining a distributed system
+manually.
 
-We then describe SMON design in details.
+peer's behaviour is defined by
+
+the loops can be combined
+
+the loops have to be well coordinated.
+
+
+the live tag here? 
+
 
 \subsection{Self-deployment}
 
@@ -252,6 +273,8 @@ of thousands of nodes because only the node names or IPs are
 stored in the list.  An estimation shows that, storing
 15000+ nodes names in zip format takes about 100K bytes,
 which is an acceptable result.
+
+when the node is excluded from list
 
 \subsection{Start and stop}
 
