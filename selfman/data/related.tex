@@ -1,20 +1,43 @@
 \section{Related Work}
 \label{sec:related}
 
-many systems have been proposed to help managing distributed
-applications.
-plush/plush-m, pier/p2, sword, ganglia, d3s
+Many systems have been proposed to help managing distributed
+applications. Plush, appmanager are two management systems
+which support deploy, maintain and monitor applications
+centrally. Plush supports automatic bootstrap
+(self-deployment) of client end, but the centralized
+approach limit their scalability. Plush-M further improved
+Plush's scalability by replacing star topology in Plush with
+RanSub. 
 
+Researchers have been studing self-* properties of
+distributed systems for long time. Self-stabalization is a
+concept of fault-tolerance in distributed computing. A
+self-stabalization system will converge to a legitimate
+state from \emph{any} state. DHTs are distributed systems
+that have self-oranizing properties. It will automatically
+orgnize their topologies as predefined topologies under
+changing network conditions. \cite{self-host} proposed
+self-hosting systems that acquire or release resources
+dynamically and automatically deploy the system to acquired
+resources (as real or virtual machines) using underling
+system management tools.
+
+\comment{
 DHT (self-organization), 
+
 Dependable Self-Hosting Distributed Systems Using Constraints
 self-stabalization
+
 19. E.W. Dijkstra, "Self-Stabilizing Systems in Spite of Distributed Control," Comm.
 ACM, vol. 17, no. 11, 1974, pp. 643-644.
+
 20. S. Dolev, Self-Stabilization, MIT Press, 2000.
-
-
 
 plush LASCO provides improved scalability and fault
 tolerance
+}
+
+
 
 % vim:foldmethod=marker:textwidth=60
