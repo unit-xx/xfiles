@@ -13,40 +13,40 @@ control the SMON system and the managed applications.
 
 %The collective behaviour of all peers defines the runtime
 %of a SMON system. 
-stateless?
 
-We use a monitor-reaction model to define peer's behaviours.
-The model is consistent with and automatically implements
-what humans do when maintaining a distributed system
-manually. In the model, the ``monitor'' part defines what
-status to observe timely, and based on the monitored result,
-certain ``action'' is performed. Thus, the model describes a
-closed loop control that eliminates human interventions.
-For example, we should continually monitor whether a peer is
-running normally on a machine. If a fail-stop model is
-assumed, there can be two monitored results: running or
-stopped. For first result, an empty action is performed and
-nothing is done. For the second result, we have to recover
-the failed peer by login into the machine and restart it.
-The model is shown in figure~\ref{fig:recover}.
+We use a monitor-reaction model to define SMON peer's
+behaviours.  The model is consistent with and automatically
+implements what humans do when maintaining a distributed
+system manually. In the model, the ``monitor'' part defines
+what status to observe timely, and based on the monitored
+result, certain ``reaction'' is performed. Thus, the model
+describes a closed-loop control that eliminates human
+interventions.  For example, we should continually monitor
+whether a peer is running normally on a machine. If a
+fail-stop model is assumed, there can be two monitored
+results: running or stopped. For first result, an empty
+action is performed and nothing is done. For the second
+result, we have to recover the failed peer by login into the
+machine and restart it.  The model is shown in
+figure~\ref{fig:recover}.
 
-The monitor-react model can have varations. First, one model
-can be nested in the action part of another model. Using
-previous example, when we know that a peer is failed, there
-can be another reason: the machine is crashed and maybe
-replaced by a new one with same host name. To handle such
-cases, in the action part we need to further detect whether
-the machine has a SMON peer installation, if not, we have to
-deploy a copy of SMON peer first. The model is shown in
-figure~\ref{fig:recover-nest}.
+The monitor-reaction model can have varations. First, one
+model can be nested in the reaction part of another model.
+Using previous example, when we know that a peer is failed,
+there can be another reason: the machine is crashed and
+maybe replaced by a new one with the same host name. To
+handle such cases, in the reaction part we need to further
+detect whether the machine has a SMON peer installation, if
+not, we have to deploy a copy of SMON peer first. The model
+is shown in figure~\ref{fig:recover-nest}.
 
 Second, two or model models can be combined for purposes
-such as optimization. For example, SMON peers also
-communiate their versions and update peers with low version
+such as optimization. For example, SMON peers also exchange
+their versions and update peers with low version
 automatically. This model can be combined with the failure
 detector model by piggyback version information within the
-ping message. Thus, we can save one RPC call.
-The combining is shown in figure~\ref{fig:combine}.
+ping message. Thus, we can save one RPC call.  The combined
+model is shown in figure~\ref{fig:combine}.
 
 One peer may implements several models. They run
 concurrently and need to be well coordinated. In the update
