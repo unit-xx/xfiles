@@ -3,25 +3,32 @@
 
 Many systems have been proposed to help managing distributed
 applications. Plush, appmanager are two management systems
-which support deploy, maintain and monitor applications
-centrally. Plush supports automatic bootstrap
-(self-deployment) of client end, but the centralized
-approach limit their scalability. Plush-M further improved
-Plush's scalability by replacing star topology in Plush with
-RanSub. 
+which support deploying, monitoring and controlling
+applications centrally. Plush can bootstrap
+(self-deployment) its clients automatically, but the
+centralized approach limits its scalability. Plush-M further
+improved Plush's scalability on managing applications by
+replacing star topology in Plush with RanSub, but the
+management of Plush clients is still in centralized
+approach. SMON addresses the self-management property of
+distributed systems. It can be used to manage other
+management systems efficiently.
 
 Researchers have been studing self-* properties of
 distributed systems for long time. Self-stabalization is a
 concept of fault-tolerance in distributed computing. A
 self-stabalization system will converge to a legitimate
 state from \emph{any} state. DHTs are distributed systems
-that have self-oranizing properties. It will automatically
-orgnize their topologies as predefined topologies under
-changing network conditions. \cite{self-host} proposed
-self-hosting systems that acquire or release resources
-dynamically and automatically deploy the system to acquired
-resources (as real or virtual machines) using underling
-system management tools.
+that have self-oranizing properties. They will automatically
+organize their overlay topologies conforming to predefined
+constraints under changing network conditions.
+\cite{self-host} proposed self-hosting system that acquires
+or releases resources dynamically and automatically deploys
+the system to acquired resources (as real or virtual
+machines) using underling system management tools. SMON is
+complementary to these systems and these techniques can be
+combined together to build distributed systems which is more
+stable, efficient with little human management efforts.
 
 \comment{
 DHT (self-organization), 

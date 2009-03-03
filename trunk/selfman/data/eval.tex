@@ -2,25 +2,36 @@
 \label{sec:eval}
 
 We conducted experiments on PlanetLab platform to evaluate
-the performance of SMON. Planet-Lab is a global research
-network consisting of 900+ nodes at 400+ sites in the world.
-We choose 159 nodes in Planet-Lab platform and let SMON
-start self-deployment. We study the performance of the
-self-deployment process, and measure the overhead introduced
-in solving race conditions. To show SMON has good
-scalability, we deploy SMON on another set of 24 nodes, and
-compare the performance with the previous deployment. We
-then close SMON by ... and study the performance ...
+SMON system. Planet-Lab is a global research network
+consisting of 900+ nodes at 400+ sites in the world.
 
-Our experimental results show that SMON is efficient at
-deploying itself and achieves good scalability, the overhead
-caused by race condition is small and the active state
-transition is fast.
+%let SMON start self-deployment. We study the performance of
+%the self-deployment process, and measure the overhead
+%introduced in solving race conditions. To show SMON has
+%good scalability, we deploy SMON on another set of 24
+%nodes, and compare the performance with the previous
+%deployment. We then close SMON by ... and study the
+%performance ...
+%
+%Our experimental results show that SMON is efficient at
+%deploying itself and achieves good scalability, the
+%overhead caused by race condition is small and the active
+%state transition is fast.
 
-\subsection{Self-deployment Evaluation}
+First, we evaluate the performance of SMON. We choose 159
+nodes in Planet-Lab platform and start a SMON peer. SMON
+then start deploying itself on all 159 nodes.
 
-Self-deployment process is the core of the SMON system and we
-evaluate it extensively and shows the results in this section.
+In our configuration, A SMON peer detects a random nodes and
+sleep for 5 seconds. We finally collected data from 154
+nodes out of 159 nodes. There are 5 nodes unreachable at
+data-collecting stage and their data are omitted in the
+result. This kind of failure is common for large scale
+distributed systems.  Figure~\ref{fig:self-deploy} shows a
+CDF of time needed to finish self-deployment. We can see
+that 90\% (143) of nodes are deployed successfully with a
+SMON peer within 149 seconds. The median deployment time is
+93 seconds while the largest one is 533 seconds. 
 
 \begin{figure}
 \centering
@@ -30,42 +41,38 @@ nodes}
 \label{fig:self-deploy}
 \end{figure}
 
-
-First, we evaluate the performance of self-deployment process on
-159 Planet-Lab nodes. An instance of SMON peer is started and the
-list of 159 nodes are given. A SMON peer detects other 5 nodes
-for every 10 seconds. We finally collected timing data from 154
-nodes out of 159 nodes. There are 5 nodes cannot be connected at
-data-collecting stage and their data are omitted in the result.
-This kind of failure is common for distributed systems
-especially when the scale is large. Figure~\ref{fig:self-deploy}
-summarizes the progress of self-deployment process.  We can see
-that 90\% (143) of nodes are deployed successfully with a SMON
-peer within 149 seconds. The median deployment time is 93
-seconds while the largest one is 533 seconds. 
-
-
-During the self-deployment process, there are cases that multiple
-SMON peers try to deploy an instance on the same node and this
-can cause extra overhead. The overhead wastes network
-bandwidth and the storage at the deployed node. We evaluate the
-overhead by count the simultaneous deployment happened at each
-node. The result is shown in Figure~\ref{fig:overhead}. We can
-see that for 43.71\% of nodes there is exactly one deployment
-on each of them. Obviously, most of nodes have a deployment
-overhead within 10. These nodes count for 92.04\% of all nodes
-and the average overhead of these nodes is 2.31. The average
-overhead for all nodes is 4.30 which is an acceptable number. 
+State transition between active state and inactive state is
+an important part of SMON system and we evaluate its
+performance here. We turn the state of SMON system deployed
+on 159 Planet-Lab nodes from inactive to active.  The
+progress of state transition time is shown in
+Figure~\ref{fig:state-transition} and some statistics is
+summarized in Table~\ref{tbl:state-transition} for
+convenience. It can be concluded that the state-transition
+is effective and efficient. For 90\% percentile of peers,
+the states are changed after 143 seconds and the median
+state transition time is 37 seconds.
 
 \begin{figure}
 \centering
-\includegraphics[scale=0.5]{overhead.png}
-\caption{Overhead introduced by race condition during
-self-deployment process}
-\label{fig:overhead}
+\includegraphics[scale=0.618]{state-trans.png}
+\caption{Progress of state transition from inactive to active}
+\label{fig:state-transition}
 \end{figure}
 
-\subsection{Scalability}
+\begin{table}
+\centering
+\begin{tabular}{|l|c|}
+\hline
+median & 37 \\
+\hline
+90\% percentile & 143 \\
+\hline
+\end{tabular}
+\caption{Statistics for state transition experiment in seconds}
+\label{tbl:state-transition}
+\end{table}
+
 To evaluate the scalability of self-deployment process, we deploy
 a new instance of SMON system at a different scale (24 nodes) and
 compare the performance of self-deployment process.
@@ -93,39 +100,27 @@ Final & 103 & 533 \\
 \label{tbl:scalability}
 \end{table}
 
-\subsection{Active State Transition Performance}
+During the self-deployment process, there are cases that
+multiple SMON peers try to deploy an instance on the same
+node and this can cause extra overhead. The overhead wastes
+network bandwidth and the storage at the deployed node. We
+evaluate the overhead by count the simultaneous deployment
+happened at each node. The result is shown in
+Figure~\ref{fig:overhead}. We can see that for 43.71\% of
+nodes there is exactly one deployment on each of them.
+Obviously, most of nodes have a deployment overhead within
+10. These nodes count for 92.04\% of all nodes and the
+average overhead of these nodes is 2.31. The average
+overhead for all nodes is 4.30 which is an acceptable
+number. 
 
 \begin{figure}
 \centering
-\includegraphics[scale=0.618]{state-trans.png}
-\caption{Progress of state transition from inactive to active}
-\label{fig:state-transition}
+\includegraphics[scale=0.5]{overhead.png}
+\caption{Overhead introduced by race condition during
+self-deployment process}
+\label{fig:overhead}
 \end{figure}
 
-State transition between active state and inactive state
-is an important part of SMON system and we evaluate its
-performance here. We turn the state of SMON system deployed on 159
-Planet-Lab nodes from inactive to active.
-The progress of state transition time is shown in
-Figure~\ref{fig:state-transition} and some statistics is
-summarized in Table~\ref{tbl:state-transition} for convenience. It can be
-concluded that the
-state-transition is effective and efficient. For 90\% percentile
-of peers, the states are changed after 143 seconds and the
-median state transition time is 37 seconds.
-
-
-\begin{table}
-\centering
-\begin{tabular}{|l|c|}
-\hline
-median & 37 \\
-\hline
-90\% percentile & 143 \\
-\hline
-\end{tabular}
-\caption{Statistics for state transition experiment in seconds}
-\label{tbl:state-transition}
-\end{table}
 
 % vim:foldmethod=marker:textwidth=60
