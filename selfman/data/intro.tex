@@ -1,21 +1,19 @@
 \section{Introduction}
 
-\note{management is a critical problem}
-
 Distrbuted systems are at the heart of today's Internet
-services (\note{cloud?}). While the cost of commodity
-computers continues to drop, it is common for large scale
-clusters to contain thousands of computers, such as
-PlanetLab, Amazon EC2 and Teragrid. These platforms can
-provide petabytes of data storage and hundreds of teraflops
-of computing capabilities that boost performance of
-distributed applications significantly. However, the
-applications must be carefully designed to scale to
-thousands of computers and fully utilize the resources.
+services. While the cost of commodity computers continues to
+drop, it is common for large scale clusters to contain
+thousands of computers, such as PlanetLab, Amazon EC2 and
+Teragrid. These platforms can provide petabytes of data
+storage and hundreds of teraflops of computing capabilities
+that boost performance of distributed applications
+significantly. The applications must be carefully designed
+to scale to thousands of computers and fully utilize the
+resources.
 %handle frequent and inevitable failures at host,
 %application and network levels.
 
-After distributed application is designed and implemented,
+After a distributed application is designed and implemented,
 an important problem is how to manage it efficiently on
 distributed platforms.
 %Managing a distributed application involves several tasks.
@@ -27,41 +25,42 @@ distributed platforms.
 %Administrators may also want to send commands to control
 %the application on demand.
 The distributed application management system is designed to
-simplify tasks involved in deploying and maintaining
-distributed applications. To efficiently manage distributed
-applications at large scale, the manangement system is
-designed in distributed approaches. It consists of many
-``peers'' \note{need clarification? client/server} on each
-machine where application will be deployed. The peers form
-some kind of overlay network, and they may work cooperately
-to deploy application to a set of machines. After the
-applicaiton is started, each peer can monitor applicaton's
-processes within the same machine box.  Administrator can
-send messages into the overlay for querying application
-status and executing control commands.
+simplify tasks involved in deploying and maintaining the
+applications. To efficiently manage distributed applications
+at large scale, the manangement system is designed in
+distributed approaches. It consists of many
+``peers''\footnote{The word peer here will refer to client
+if the management system is in client/sever architecture.}
+on each machine where application will be deployed. The
+peers form some kind of overlay network, and they may work
+cooperately to deploy application to a set of machines.
+After the applicaiton is started, each peer can monitor and
+maintain applicaton's processes within the same machine box.
+Administrator can send messages into the overlay for
+querying application status and executing control commands
+on demand.
 
 The distributed design makes management system a distributed
 application in essential and it introduces an important
 problem: the management system need to be deployed first and
 maintained continually through its lifecycle. Currently,
 this problem is addressed by using centralized approach. A
-central controller first deploy the peers of application
-management system to a set of machines and start them. After
-that, the controller periodically monitors the peers and
-recover the failed ones. If a crashed machine is replaced by
-a new one, the controller has to deploy a new instance of
-peer on the fresh machine. The controller can also upgrade
-peers to new versions with bug fixes and improved
-performance. The centralized approach has several
-disadvantages. First, it is not scalable at deploying peers.
-Second, it is not efficient at monitoring the peers.
-Frequent monitoring detects peers failures quickly, but it
-puts burden on network resources of the central controller
-when establishing connections and sending messages to remote
-machines. Third, it is not adaptive. The static star toploy
-from central controller to peers' machines cannot handle
-changes or failures in network environments, such as network
-partition.
+central controller first deploy and start the peers of
+management system to a set of machines. After that, the
+controller periodically monitors the peers and recover the
+failed ones. If a crashed machine is replaced by a new one,
+the controller has to deploy a new instance of peer on the
+fresh machine. The controller can also upgrade peers to new
+versions with bug fixes and improved performance. The
+centralized approach has several disadvantages. First, it is
+not scalable at deploying peers. Second, it is not efficient
+at monitoring the peers. Frequent monitoring detects peers
+failures quickly, but it puts heavy burden on network
+resource of the central controller when establishing
+connections and sending messages to remote machines. Third,
+it is not adaptive. The static star toploy from central
+controller to peers' machines cannot handle changes or
+failures in network environments, such as network partition.
 %What is more, trying to use more advanced management
 %systems which use their own peers to manage another one
 %will introduce the same problem recursively.  \note{define
@@ -69,8 +68,9 @@ partition.
 %in SMON}
 
 In this paper, we propose a Self-Managed Overlay Network
-(SMON) that addresses the above problem. SMON is designed as
-a distributed system with built-in self-management
+(SMON) that addresses the problem of deployment and
+maintainnance of distributed management systems. SMON is a
+distributed management system with built-in self-management
 capability, namely, self-deployment, self-recovery and
 self-upgrade. It consists of peers on every target machines
 where applications will be deployed and maintained. The
