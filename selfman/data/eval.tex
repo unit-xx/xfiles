@@ -3,7 +3,8 @@
 
 We conducted experiments on PlanetLab platform to evaluate
 SMON system. Planet-Lab is a global research network
-consisting of 900+ nodes at 400+ sites in the world.
+consisting of 900+ nodes at 400+ sites spreaded around the
+world.
 
 %let SMON start self-deployment. We study the performance of
 %the self-deployment process, and measure the overhead
@@ -18,20 +19,21 @@ consisting of 900+ nodes at 400+ sites in the world.
 %overhead caused by race condition is small and the active
 %state transition is fast.
 
-First, we evaluate the performance of SMON. We choose 159
-nodes in Planet-Lab platform and start a SMON peer. SMON
-then start deploying itself on all 159 nodes.
+First, we evaluate the performance of self-deployment of
+SMON.  We choose 159 nodes in Planet-Lab platform and start
+a SMON peer. SMON then start deploying itself on all 159
+nodes.
 
 In our configuration, A SMON peer detects a random nodes and
 sleep for 5 seconds. We finally collected data from 154
 nodes out of 159 nodes. There are 5 nodes unreachable at
 data-collecting stage and their data are omitted in the
 result. This kind of failure is common for large scale
-distributed systems.  Figure~\ref{fig:self-deploy} shows a
-CDF of time needed to finish self-deployment. We can see
-that 90\% (143) of nodes are deployed successfully with a
-SMON peer within 149 seconds. The median deployment time is
-93 seconds while the largest one is 533 seconds. 
+distributed systems.  Figure~\ref{fig:self-deploy} shows the
+progress of self-deployment. We can see that 90\% (143) of
+nodes are deployed successfully with a SMON peer within 149
+seconds. The median deployment time is 93 seconds while the
+largest one is 533 seconds. 
 
 \begin{figure}
 \centering
@@ -41,11 +43,11 @@ nodes}
 \label{fig:self-deploy}
 \end{figure}
 
-State transition between active state and inactive state is
-an important part of SMON system and we evaluate its
-performance here. We turn the state of SMON system deployed
-on 159 Planet-Lab nodes from inactive to active.  The
-progress of state transition time is shown in
+We then evaluate the performance of enable/disable
+self-management functionality of SMON system. We first
+disable self-management of SMON system deployed on 159
+Planet-Lab and then enable it again. The progress of state
+transition from disabled to enabled is shown in
 Figure~\ref{fig:state-transition} and some statistics is
 summarized in Table~\ref{tbl:state-transition} for
 convenience. It can be concluded that the state-transition
