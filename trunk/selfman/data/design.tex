@@ -4,7 +4,11 @@
 \begin{figure}
 \centering
 \includegraphics[width=3.0in]{smon_arch}
-\caption{Architecture of SMON system.}
+\caption{Architecture of SMON system. SMON peers monitor each
+other by sending ping messages. User can send query or control messages
+to any peer. Authentication agent resolves authentication
+chanllenge from peers to help them login into other machines
+automatically.}
 \label{fig:smon_arch}
 \end{figure}
 
@@ -16,9 +20,10 @@ The SMON peers run on a set of target machines where
 distributed applications will be deployed. Each peer
 maintains the full list of target machines as its membership
 list. The peers monitor and maintain each other
-epidemically. A peer periodically chooses a random machine
-and sends it a ping message, if the pong message is not
-replied within a timeout interval, the neighbour is
+epidemically. A peer periodically chooses a random peer
+and sends it a ping message.
+If the pong message is not
+replied within a timeout interval, it is
 considered as failed. The peer will try to recover the
 failed peer by restarting it remotely, or deploying and
 starting a new peer on fresh machines. Each peer has an
@@ -27,7 +32,7 @@ numbers epidemically and peers of lower version upgrade
 themselves to the latest versions.
 
 The authentication agent holds the credential (e.g. private
-key) used to login into the target machines. When
+key) used to authenticate with the target machines. When
 SMON peers try to deploy or restart another peer, it can
 automatically login into the remote machine with the help of
 the agent. The credential is never known to the peers or
@@ -42,7 +47,7 @@ functionalities of SMON can be extended greatly.
 \subsection{Monitor-reaction model}
 
 %The collective behaviour of all peers defines the runtime
-%of a SMON system. 
+%of a SMON system.
 
 \begin{figure}
 \centering
@@ -52,13 +57,13 @@ functionalities of SMON can be extended greatly.
 \end{figure}
 
 We use a monitor-reaction model to define SMON peer's
-behaviours. The model is consistent with and automatically
+behaviors. The model is consistent with and automatically
 implements what humans do when maintaining a distributed
 system manually. In the model, the ``monitor'' part defines
 what status to observe timely, and based on the monitored
 result, certain ``reactions'' are performed. Thus, the model
 describes a closed-loop control that eliminates human
-interventions. For example, a SMON peer will contiually ping
+interventions. For example, a SMON peer will continually ping
 other peers to see if they are running. If a pong message is
 not received within a predefined timeout interval, we
 consider it as failed and try to recover it by login into
@@ -139,22 +144,22 @@ eventually\cite{Eugster2004}.
 %upper part of the ping model in figure~\ref{fig:combine}.
 In detail, a peer $P$ will periodically choose a random
 machine $M$ from its membership list and sends a ping
-message. If a pong message is not received within predifined
-timeout intervals, it will start the deployment precedure on
+message. If a pong message is not received within predefined
+timeout intervals, it will start the deployment procedure on
 machine $M$. $P$ first authenticates itself with $M$ and
 login into $M$ with help of the authentication agent
-(described in in \ref{subsec:security}), then it copies an
+(described in \ref{subsec:security}), then it copies an
 installation package of SMON peer to $M$, starts the package
 remotely and logout $M$. The installation package first
-checks the interity of itself (currently using MD5 checksum)
+checks the integrity of itself (currently using MD5 checksum)
 in case of transfer errors during remote copy, then it
 installs and starts SMON peer.
 
 There may be failures (e.g. connection corrupted, machine
-crashed) at any time when peer $P$ authenticates and login
+crashed) at any time when peer $P$ logins
 into $M$, copies and starts installation package remotely.
 When failure happens, $P$ will just abort the deployment
-precedure. $M$ will be choosen by another SMON peer at later
+procedure. $M$ will be chosen by another SMON peer at later
 time. It is expected that a new SMON peer will be deployed
 on $M$ eventually.
 
@@ -201,7 +206,7 @@ there is a difference, the peer with lower version will
 retrieve the installation package from the other and upgrade
 itself automatically.
 
-It is possbile that a peer of new version is
+It is possible that a peer of new version is
 known by many peers of old version quickly. To avoid flash
 crowd, the peer of new version will limit the number of
 simultaneous request for retrieving installation package.
@@ -275,43 +280,17 @@ peers in different part will be able to contact and
 communicate with each other, leading to the convergence of
 the whole system.
 
-\subsubsection*{Disable/enable self-managment}
-\label{subsec:livetag}
-
-We need mechanism to disable self-management functionality
-of SMON to stop it from running. When self-management is
-enabled, we cannot stop SMON by shutdown peers one by one.
-If a peer is stopped by user, it will be started soon by
-another peer. The only solution under such conditions is to
-stop all the SMON peers simultaneously, which is not
-feasible at large scale.
-
-We use a boolean variable called \texttt{livetag} to control epidemic
-monitoring among peers. If the value is false, a peer will
-stop sending periodic ping message to others and the whole
-SMON system stops maintaining itself. We can now stop SMON
-peers one by one.
-
-The \texttt{livetag} variable has an associated version
-number and is maintained on each peer distributedly. The
-peers exchange \texttt{$<$livetag, version$>$} tuples
-epidemically and update the tuple to the latest version.
-Note that even the epidemic update of \texttt{livetag} is
-controlled by the value of \texttt{livetag}.  When
-\texttt{livetag} is false, peers stop running epidemic
-activities but still responds to incoming messages, so as to
-help disseminating the update to \texttt{livetag}.
-
 \subsubsection*{Combine them together}
 
 A SMON peer monitors and maintains other ones by combining
-above-mentioned functionalities together.  Two points are
+above-mentioned three functionalities together.  Two points are
 worth mentioning. First, as an optimization, the version
 number of SMON is piggybacked in ping/pong messages among
 peers.  Second, when peer $A$ considers another one $B$ as
 failed, there are two possible reasons: no SMON peer is
 installed or $B$ is stopped. $A$ will restart $B$ directly
-if SMON is already installed.
+if SMON is already installed. In this way, a peer can choose
+which action to take based on result of a ping message.
 
 \comment{
 The SMON system has a global state indicating it is active
@@ -334,6 +313,32 @@ locally.  The epidemic algorithm is used to maintain the
 state consistently and efficiently among all peers.
 }
 
+\subsubsection*{Disable/enable self-management}
+\label{subsec:livetag}
+
+We need mechanism to disable self-management functionality
+of SMON to stop it from running. When self-management is
+enabled, we cannot stop SMON by shutdown peers one by one.
+If a peer is stopped by user, it will be started soon by
+another peer. The only solution under such condition is to
+stop all the SMON peers simultaneously, which is not
+feasible at large scale.
+
+We use a boolean variable called \texttt{livetag} to control epidemic
+monitoring among peers. If the value is false, a peer will
+stop sending periodic ping message to others and the whole
+SMON system stops maintaining itself. We can now stop SMON
+peers one by one.
+
+The \texttt{livetag} variable has an associated version
+number and is maintained on each peer distributedly. The
+peers exchange \texttt{$<$livetag, version$>$} tuples
+epidemically and update the tuple to the latest version.
+Note that even the epidemic update of \texttt{livetag} is
+controlled by the value of \texttt{livetag}.  When
+\texttt{livetag} is false, peers still respond
+to incoming messages, so as to
+help disseminating the update to \texttt{livetag}.
 
 %\note{the complete execution of a peer}
 
@@ -419,7 +424,7 @@ public key. The peer will indirect the authentication
 challenges from sshd to the agent and the agent will solve
 the challenges and send the result back. In this way, a peer
 can login into any machine in his slice and the private key
-is kept secret for all the times. A symmetric encryption key
+is kept secret for all the times. A symmetric key
 $K_E$ is shared among all the SMON peers and the
 authentication agent. It is used to authenticate peers and
 agent within the same SMON system, and establish
@@ -440,16 +445,15 @@ authentication agent to protect user authentication
 credentials.
 }
 
-The agent should run on machine which user makes sure his
+The agent should run on machine where user makes sure his
 private key is safe. The agent can be also replicated if
 required. When a SMON system is deployed at large enough
 scales, there can be multiple instances of authenticate
-agent for performance considerations. Name server based load
-balance mechanism\cite{xxx} can be used to direct SMON peers to
-their nearest agents.
+agent for performance considerations. SMON peers can be
+directed to their nearest agents by DNS server.
 
 The above security mechanism can be applies the distributed
-platforms fulfulling two requirements:
+platforms fulfilling two requirements:
 
 \begin{itemize}
 
@@ -464,17 +468,17 @@ For example, the mechanism can be applied on Amazon EC2
 platform and private clusters. For Amazon EC2, user starts
 instances of virtual machines based on an AMI (Amazon
 Machine Image). The user access his AMI instances using
-private key. For private clusters, virtual machine is not
-adopted but users who can access the system is not
+private key. For private clusters, virtual machine may be not
+adopted but users who can access the system are not
 adversarial and $K_E$ can be considered safe to stored on
 local file systems.
 
 \subsection{Membership}
 
 The membership maintenance of SMON system is different from
-other distributed systems. While other distributed systems
+other distributed systems. While others
 maintains a list of peers that are currently running, SMON
-maintains a list machines on which there should be peers
+maintain a list machines on which there should be peers
 running. The failure of SMON peers will not affect the
 membership list at all. The list is specified by user and
 should not changes very often. And an important requirement
@@ -493,7 +497,7 @@ can update the membership list to change the set of machines
 on which SMON runs.
 %To reduce the communication overhead in updating membershit
 %list, only the differences between two version are
-%propagated during machine list update process. 
+%propagated during machine list update process.
 This scheme is enough for handling machine list containing
 even tens of thousands of machines because only the machine
 names or IPs are stored in the list.  An estimation shows
@@ -554,23 +558,24 @@ machine. The choices can be:
 
 A SMON peer will report the application states to a central
 server timely. And whenever the application state changes,
-the SMON peer will report the changes immediatelly. 
+the SMON peer will report the changes immediately.
 
 It is obvious that the application monitoring and
-maintainnence semantic provided by SMON is very basic. It
-only considers the ``liveness'' states of application. This
-is enough for maintainning long running services whose peers
-should be running as long as possble.
+maintenance semantic provided by SMON is very basic. It
+only considers whether an application is running, without
+further monitoring liveness or safety states. This
+is enough for maintaining long running services whose peers
+should be running as long as possible.
 
 If more management semantic or features are required, user
 can first deploy another application management or
 monitoring system on top of SMON. In this way, SMON's
-management functionalities can be extend greatly. For
-example, D3S is a monitoring tool which uses
-instrumentation~\cite{xx} to monitor application's internal
+functionalities can be extend greatly. For
+example, D3S~\cite{Liu2008} is a monitoring tool which uses
+instrumentation~\cite{Guo2008} to monitor application's internal
 states. It calculates user specified predicates on global
 snapshots of application states and reports when predicates
-are false. User can deloy D3S on top of SMON and define
+are false. User can delay D3S on top of SMON and define
 safety or liveness predicates to check application states in
 detail.
 
@@ -587,7 +592,7 @@ deploy itself automatically. To upgrade SMON, the utility
 mimics itself as a SMON peer and notifies a random SMON peer
 that a new version available.  The peer will then retrieve
 the installation package from utility's machine and upgrade
-itself. Then SMON will be upgraded.  Similary, the utility
+itself. Then SMON will be upgraded.  Similarly, the utility
 can notify a random peer to install an application, update
 the member list and enable or disable self-management
 capability of SMON. The latest version numbers of SMON peer,
@@ -610,7 +615,7 @@ update version
 
 install application
 
-set/query \texttt{livetag}, 
+set/query \texttt{livetag},
 
 maintain version number of SMON and live tag
 }
@@ -624,7 +629,7 @@ for redirecting the message.  This feature is useful for
 managing large number of machines. We implement this mechanism
 because we notice a lot of connection problems caused by
 name resolution error. It happens between our laptop and
-PlanetLab machines, and also among some PlanetLab machines.  In
+Planet-Lab machines, and also among some Planet-Lab machines.  In
 the experiment, we noticed a machine cannot connect to other
 two machines because of name resolution error for more than one
 day.  But through one-hop source routing, they can
