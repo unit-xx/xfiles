@@ -43,16 +43,18 @@ Scalpel~\cite{scalpel}进一步发展了一种方法，能够从底层系统调�
 我们需要从中提取出和任务相关的信息。第二、推断任务之间的层次关系，构建
 层次结构的任务模型。我们的解决方法是，首先，提取出任务的名称与ID，接着，
 通过推断任务ID的变化，来确定任务的边界，并推断任务的层次关系。例如，我
-们可以在日志中发现这样的模式“request=R1, operation=op1○1 ……
-request=R1, operation=op2○2 …… request=R2, operation=op3○
-3”。request、operation是任务的名称，它们的值表示相应任务ID。通过观察
-request任务ID的变化，我们可以推断R1任务的边界在○1处开始，在○3之前结
-束，之间的日志条目都属于任务R1，描述它的执行过程。进一步，同一个日志条
-目，可能属于多个任务，通过观察多个任务ID的变化关系，我们可以推断不同任
-务之间的层次关系。例如，同时考虑任务request和 operation，我们发现，○1
-○3之间的任务，同属于一个request任务R1，但是分属于不同的operation任务，
-从而我们推断，request和operation任务之间，有层次嵌套关系。通过对日志中
-所有的任务标识进行提取和推断，我们可以有效的构造出分层任务模型来。
+们可以在日志中发现这样的模式“request=R1, operation=op1\textcircled{1}
+……request=R1, operation=op2\textcircled{2} …… request=R2,
+operation=op3\textcircled{3}”。request、operation是任务的名称，它们的
+值表示相应任务ID。通过观察request任务ID的变化，我们可以推断R1任务的边
+界在\textcircled{1}处开始，在\textcircled{3}之前结束，之间的日志条目都
+属于任务R1，描述它的执行过程。进一步，同一个日志条目，可能属于多个任务，
+通过观察多个任务ID的变化关系，我们可以推断不同任务之间的层次关系。例如，
+同时考虑任务request和 operation，我们发现，\textcircled{1}
+\textcircled{3}之间的任务，同属于一个request任务R1，但是分属于不同的
+operation任务，从而我们推断，request和operation任务之间，有层次嵌套关
+系。通过对日志中所有的任务标识进行提取和推断，我们可以有效的构造出分层
+任务模型来。
 
 我们实现了基于日志的任务模型推断工具，并使用它分析一个分布式存储系统
 ChunkFS。ChunkFS是一个类似GFS~\cite{gfs}的分布式文件系统。我们的工具能
@@ -150,10 +152,10 @@ eventID，表示目前正在处理的请求/事件是requestID，requestID与任
 我们使用如下两条规则从(key, value)序列中推断任务之间的层次关系，它们是
 两个任务有＞关系的充要条件。
 
-	规则一：如果keyS＞keyP，那么在(key, value)序列中，keyS的第一次
-出现早于keyP的第一次出现。
+规则一：如果keyS$>$keyP，那么在(key, value)序列中，keyS的第一次
+出现早于keyP的第一次出现。
 
-规则二：如果keyS＞keyP，那么keyS的值域与keyP的值域，有严格的一对多关系，
+规则二：如果keyS$>$keyP，那么keyS的值域与keyP的值域，有严格的一对多关系，
 也就是一个子任务，只能属于一个父任务。
 
 通过规则一，我们可以得到所有任务之间可能的层次关系，通过规则二，我们将

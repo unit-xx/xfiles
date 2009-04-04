@@ -88,9 +88,17 @@ challenge）转发给认证代理，并将认证代理回复的应答密文（re
 面部署新的管理系统来扩展系统整体的管理能力。这样，任何部署在SMON之上的
 分布式应用，都具有了自管理的能力。
 
-本章接来下的部分安排如下：\note{xxx}
+本章接来下的部分安排如下：\ref{sec:smon_design}节描述如何设计SMON系统，
+包括如何实现自我管理，SMON的安全机制、邻居列表维护与应用管理语意的实现。
+\ref{sec:smon_impl}节描述了如何在Planet-Lab上实现SMON。
+\ref{sec:smon_app}节展示了SMON系统的一些使用方式。我们在Planet-Lab上评
+测了SMON系统的性能参数，其结果展示在\ref{sec:smon_eval}节。
+\ref{sec:smon_related}节讨论了相关工作。\ref{sec:smon_conclusion}为本
+章小结。
 
-\section{设计}
+
+\section{系统设计}
+\label{sec:smon_design}
 
 \begin{figure}
   \centering
@@ -123,7 +131,7 @@ SMON节点在远程机器上部署新的SMON节点，或者恢复失败的SMON�
 用户使用客户端工具来管理一组分布式应用，这其中包括其它分布式管理系统。
 通过这个办法，我们可以不断扩充SMON的管理能力。\note{这个说法需要斟酌。}
 
-\subsection{SMON的自我管理}
+\subsection{自我管理设计}
 
 我们分别描述SMON自我管理的三个方面：自我部署，自我更新和自我恢复。
 
@@ -356,7 +364,7 @@ SMON可以管理若干个其它分布式应用。每个SMON节点负责部署和
 语意是足够的，例如维护一个需要长期运行的分布式应用，应用的节点需要尽可
 能处在运行状态。由于这样的应用一般都经过一定测试，相对稳定，因此重启失
 败的节点是恢复应用的直接手段。SMON提供的管理语意只考虑了应用是否运行，
-而没有进一步监视应用是否运行在正确状态，即应用的安全性与活性（safety
+而没有进一步监视应用是否运行在正确状态，包括应用的安全性与活性（safety
 and liveness）。为了扩展管理语意，增加新的管理功能，用户可以在SMON上部
 署其它的分布式应用管理系统。这在~\ref{sec:smon_app}节有进一步论述。
 
@@ -376,6 +384,93 @@ SMON系统都会得到更新。类似的，用户可以使用客户端工具来�
 端工具调用远程SMON的RPC，查询SMON节点的状态、应用的状态，以及管理分布
 式应用，改变应用某个节点的维护选项。
 
+\section{实现细节}
+\label{sec:smon_impl}
+
+我们针对Planet-Lab平台设计了SMON原型系统。Planet-Lab是一个全球范围的分
+布式计算平台，它包含了超过400个站点，规模超过800个节点。使用
+Planet-Lab的用户需要注册一个账号，并将账号与一个或多个slice相关联。
+slice是Planet-Lab分配分布式资源的方式，一个slice对应分布在不同节点上的
+一组虚拟机。用户可以使用ssh以公钥认证的方式登录他的slice里的机器。
+
+我们使用Python语言实现SMON系统原型。最终的SMON节点安装程序大约122KB大
+小，包括超过1000行代码。
+
+我们使用单独的线程实现SMON节点运行时的epidemic活动。包括一个探测并维护
+其它节点，实现自我管理功能的线程，一个更新邻居节点线程，一个更新
+\texttt{livetag}的线程。对每一个应用，我们启动一个单独的管理与维护线程。
+
+\begin{table*}
+\small
+\centering
+\caption{SMON节点通信使用的RPC}
+\label{fig:smon_rpc}
+\begin{tabular}{|l|p{7cm}|}
+
+\hline
+\textbf{RPC} & \textbf{功能描述} \\
+
+\hline
+\texttt{ping(ver)} & Call with local SMON peer's version and
+return remote peer's version.\\
+
+\hline
+\texttt{retrieve\_peer(ver)} & Retrieve installation package
+of SMON peer with specified version.\\
+
+\hline
+\texttt{exchange\_livetag(tag, ver)} & Call with local
+$<$livetag, version$>$, and return remote peer's $<$livetag,
+version$>$.\\
+
+\hline
+\texttt{exchange\_member(ver)} & Call with local membership
+list version and return remote peer's membership list.\\
+
+\hline
+\texttt{retreive\_member(ver)} & Retrive membership list of
+specified version.\\
+
+\hline
+\texttt{exchange\_app(app\_name)} & Call with an application
+name, return true if remote peer has installed the
+application.\\
+
+\hline
+\texttt{retrieve\_app(app\_name)} & Retrieve installation package
+of an application with specified name.\\
+
+\hline
+\texttt{resolve\_challenge(challenge)} & Return the response
+to an authentication challenge.\\
+
+\hline
+\texttt{set\_app\_status(app\_name, status)} & Set application status (online,
+offline, ignore).\\
+
+\hline
+\texttt{get\_app\_status()} & Get application status. \\
+
+\hline
+
+\end{tabular}
+\end{table*}
+
+
+SMON节点间的通信使用RPC机制实现，总结在表~\ref{fig:smon_rpc}中。
+
+SMON节点通过spawn一个ssh/scp进程来远程复制安装程序或者执行命令。我们使
+用修改的\texttt{ssh-agent}将ssh认证时的挑战密文转发给认证代理，实现自
+动认证的过程。认证代理实现了RPC接口\texttt{resolve\_challenge}，其输入
+参数是认证的挑战密文，返回对应的应答密文。
+
+SMON节点运行时的参数保存在一个配置文件中。包括连续epdemic活动之间的时
+间间隔，SMON节点和邻居列表的版本号，$<$\texttt{livetag, version}$>$对，
+以及认证代理的地址。每个应用也可以指定应用状态变化时目标报告节点的地址。
+配置文件用SQLite数据库实现，保证数据不会在机器崩溃时丢失。配置文件由
+SMON节点与应用的安装程序更新。邻居列表单独保存在一个压缩文件中。
+
+
 \section{应用方式}
 \label{sec:smon_app}
 plush
@@ -384,11 +479,8 @@ d3s
 
 scalpel
 
-\section{其它实现细节}
-
-
-
 \section{性能评价}
+\label{sec:smon_eval}
 
 我们在Planet-Lab平台上评测了SMON系统的性能指标。Planet-Lab是一个全球范
 围的分布式计算平台，它包含了超过400的站点，规模超过800个节点。具体的说，
@@ -401,8 +493,7 @@ SMON系统的自我管理功能能够很快的在禁止和启动状态间转换�
   \begin{minipage}{0.8\linewidth}
     \centering
     \includegraphics[scale=0.618]{self-deploy.png}
-    \caption{Progress of self-deployment process on 159
-    nodes.}
+    \caption{SMON在159个Planet-Lab机器上自我部署的进度}
     \label{fig:self-deploy}
   \end{minipage}
 \end{figure}
@@ -423,8 +514,7 @@ SMON系统的自我管理功能能够很快的在禁止和启动状态间转换�
   \begin{minipage}{0.8\linewidth}
     \centering
     \includegraphics[scale=0.618]{state-trans.png}
-    \caption{Progress of state transition of self-management from disabled to
-    enabled.}
+    \caption{SMON的自我管理功能从禁止到启动过程的进度}
     \label{fig:state-transition}
   \end{minipage}
 \end{figure}
@@ -440,8 +530,7 @@ SMON系统能够在活跃和非活跃状态间转换是非常重要的。我们�
   \begin{minipage}{0.8\linewidth}
     \centering
     \includegraphics[scale=0.5]{overhead.png}
-    \caption{Overhead introduced by race condition during
-    self-deployment process}
+    \caption{为了解决自我部署过程中的竞争情形而产生的额外开销分布。}
     \label{fig:overhead}
   \end{minipage}
 \end{figure}
@@ -459,18 +548,17 @@ SMON系统能够在活跃和非活跃状态间转换是非常重要的。我们�
 \centering
   \begin{minipage}{0.8\linewidth}
     \centering
-    \caption{Comparison of self-deployment process at different
-    scales in seconds.}
+    \caption{在不同的规模SMON自我部署性能比较}
     \label{fig:scalability}
     \begin{tabular}{|l|c|c|}
     \hline
-      & 24 nodes & 159 nodes\\
+           & 24 nodes & 159 nodes\\
     \hline
     median & 58 sec & 82 sec \\
     \hline
-    90\% percentile & 85 sec & 149 sec\\
+    90\%完成 & 85 sec & 149 sec\\
     \hline
-    Final & 103 sec & 533 sec\\
+    最终完成 & 103 sec & 533 sec\\
     \hline
     \end{tabular}
   \end{minipage}
@@ -482,7 +570,8 @@ SMON系统能够在活跃和非活跃状态间转换是非常重要的。我们�
 比例是6.6（159/24），但是90\%进度的部署时间比例只有1.75（149/85），而
 部署时间中值的比例是1.41（82/58）。可以看出，SMON系统具有良好的扩展性。
 
-
 \section{相关工作}
+\label{sec:smon_related}
 
 \section{本章小结}
+\label{sec:smon_conclusion}
