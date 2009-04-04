@@ -743,7 +743,7 @@
   \setbox0=\hbox{\textbf{Key words:\enskip}}
   \ifthu@bachelor\indent\else\noindent\hangindent\wd0\hangafter1\fi
     \box0\thu@ekeywords}
-\newenvironment{denotation}[1][2.5cm]{
+\newenvironment{denotation}[1][3.5cm]{
   \thu@chapter*[]{\thu@denotation@name} % no tocline
   \noindent\begin{list}{}%
     {\vskip-30bp\xiaosi[1.6]
