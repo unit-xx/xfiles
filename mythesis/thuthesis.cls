@@ -93,6 +93,7 @@
 \RequirePackage[neverdecrease]{paralist}
 \ifthu@xetex
   \RequirePackage{xunicode,xltxtra}
+  \RequirePackage{mathptmx}
   \RequirePackage[CJKnumber,CJKtextspaces,CJKmathspaces]{xeCJK}
   %\punctstyle{kaiming}
   % todo: minor fix of CJKnumb

@@ -2,15 +2,22 @@
 \chapter{相关工作}
 \label{chap:related}
 
+本文分别研究了可自管理的分布式管理系统设计，
+
 本文分别研究了分布式系统管理与分布式系统调试主题下的一些问题。
 
 distributed platform?
 
 文件部署，自管理，self-*性质
 
+
 \section{分布式系统管理}
 
+和自管理紧密相关的研究，epidemic algorithm，dissemination，self-*
+
 \subsection{management overview}
+
+*should not needed, duplicated in intro*
 
 resource discovery: sword
 
@@ -19,14 +26,6 @@ dissemination: below
 monitor: aggregation (mon, sdims, san femin)
 
 and distributed trigger, 
-
-\subsection{dissemination}
-
-bittorrent
-
-codeploy
-
-sharkfs
 
 \subsection{management: last to write}
 
@@ -38,6 +37,16 @@ cfengine
 
 globus
 
+\subsection{dissemination}
+
+bittorrent
+
+acms?
+
+codeploy
+
+sharkfs
+
 \subsection{self-*}
 
 automatic computing?
@@ -48,36 +57,151 @@ dht
 
 self-host
 
-\section{分布式系统调试与任务模型}
+\section{分布式系统调试}
+
+分布式系统调试的难点在于任务会被分为不同的部分或阶段，分散在系统的不同
+机器、进程和线程执行。错误：执行顺序，状态变化
 
 topic: task model/execution path reconstruction, inference, graph
 mining
 
+我们使用图上的聚类算法研究了自动推断任务模型的方法，涉及到xxx个主题，
+任务模型，图聚类，分别叙述相关工作如下。
+
 log mining related
 
-\subsection{task model}
+\subsection{task model control flow}
 
-magpie
+*white box*
 
-pip
+获取系统对每个请求的执行路径，也就是请求在系统中被处理的过程，是分析系
+统行为，找到错误根本原因的一个基本方法。
 
-xtrace
+执行路径也可以被称为因果路径（causal path），因为
 
-\subsection{dataflow}
+% Performance Debugging for Distributed Systems of Black Boxes
+% (sosp03)
 
-whodunit, data flow tomography
+\subsubsection*{pinpoint}
+
+Pinpoint~\cite{pinpoint}通过对系统增加标注的办法，为J2EE应用的每个用户
+请求附加了一个唯一标识。标注就是对系统代码进行一定修改，在适当的地方输
+出与传递标识。随着请求被处理，和它关联的标识也在系统中传播，从而我们可
+以追踪得到每个请求在系统中处理的执行路径。
+
+进一步的，Pinpoint可以找到执行路径中的异常。所谓异常并不一定是系统的软
+件错误。Pinpoint的假设是，系统错误是较少发生的，因此那些有异常的执行路
+径可能代表系统错误的发生。这一方法对多数情况是有效地，但是也会造成一些
+漏判，也就是把一些的确有错误的执行路径当成正常情况。
+
+Pinpoint使用概率上下文无关文法（probabilistic context free grammar，
+PCFG~\cite{pcfg}，来检测有异常的执行路径。也就是，Pinpoint记录了执行路
+径上的事件会以什么概率导致其它事件发生。例如，一个事件$A$发生后，可能
+会接着发生事件$B$或$C$。所以，如果观测到$A \to D$，则这是一个异常事件。
+
+\subsubsection*{Magpie}
+
+与Pinpoint不同，Magpie~\cite{magpie}并不对每个请求增加标注，而是使用用
+户提供的方案（schema）将观测到的系统事件联系成为任务执行路径。Magpie将
+得到的执行路径用聚类算法分类，每一类称为一个负载模型，描述了某一种请求
+在系统中处理的典型路径和资源消耗情况。使用负载模型，可以对系统性能进行
+分析与预测。
+
+Magpie基于Windows平台。它使用ETW（Event Tracing for
+Windows~\cite{magpieref17, ref18}机制收集系统执行过程中发生的事件。
+ETW是Windows平台内建的消息追踪机制，追踪与输出事件的额外负载（
+overhead）很低。Windows操作系统在运行时就输出很多预设的ETW事件，这些事
+件可以作为Magpie的输入。为了得到系统运行时的内部事件，可以使用插装的方
+法动态输出系统内部状态。插装并不改变系统代码。ETW事件中包含了关于系统
+资源（CPU，内存等）使用情况的信息，因而可以明确得到请求执行过程中消耗
+资源的详细信息。
+
+Magpie设计的特别之处在于使用用户提供的方案将属于同一请求的事件联合
+（join）到一起，联合操作的语意借用了数据库的思想。详细描述如何编写方案
+、不同的事件是如何被联合到一起超出本文的范围。简单举例说，如果一组事件
+的ThreadID属性（表示事件在哪个线程发生）相同，则这组事件可以用ThreadID
+联合到一起。考虑到资源复用的情况，例如线程池内的不同线程会在不同的时间
+段处理不同的请求，Magpie借用了时间联合~\cite{magpie10}（temporal join）
+的思想，方案中同时描述了被联合属性的有效时间区间，从而，线程处理不同请
+求的时间段可以被区分开，其它类似情况也可以被处理。
+
+正确的编写方案要求用户对系统有深入的理解。用户需要正确的写出事件如何联
+合起来，定义联合属性的有效时间区间，需要用户是专家级人员，例如系统的设
+计与开发者。
+
+\subsubsection*{pip}
+
+Pip~\cite{pip}对代码增加标注，得到系统的执行路径。Pip定义了一个声明式
+期望语言（declarative expectation language）。使用期望，用户可以表达系
+统的运行时行为应该是什么样子的，通过将期望与实际运行获得的执行路径进行
+对比，用户可以发现可能的系统错误，并使用运行时执行路径帮助找到错误发生
+的原因。由于执行路径中包含了结构、时间和资源消耗的信息，Pip可以有效的
+同时检查系统正确性错误与性能错误。
+
+\subsubsection*{X-Trace}
+
+X-Trace~\cite{x-trace}是一个网络层的跟踪工具。它将包括任务标示符的任务
+元数据嵌入用户请求（例如一个web请求）中，随着用户请求在网络上被向前传
+送与处理，我们就能够得到这个请求在网络上处理的整个过程。任务元数据不仅
+在同一层次的网络协议中传播，同时也被推送到下层协议中（例如从TCP到IP）。
+这样，一个请求在网上被处理的过程就形成了一个完成的任务树。这能够帮助我
+们理解请求在网络协议层次的因果路径。
+
+图xxx显示了一个HTTP请求通过一个代理被发送到HTTP服务器的因果路径。
+
+对于一些网络协议，X-Trace可以在消息包头的扩展域内添加任务元数据，这些
+元数据会在处理的过程中自动传播，例如HTTP，SIP，Email和IP协议。TCP协议
+虽然支持嵌入扩展信息，但是只支持一跳传播，需要改变Linux内核让元数据自
+动传播到下一条去。对于一些复杂的应用层协议，例如Chord~\cite{chord}，由
+于Chord节点会对消息进行一些复杂处理，才生成新的路由消息，需要对Chord代
+码进行一些更改才能支持元数据自动传播。
 
 \subsection{inference}
 
-wap5 and project 5
+上面这些工作把系统当作白盒，也就是认为我们可以得到系统内部的状态信息，
+或者我们能够通过标注或者插装的方法改变系统行为。这个假设并不一定总能满
+足。在系统中通常会使用第三方软件，例如在Web服务中后端的数据库系统。这
+些系统可能是商业软件，因此不提供代码。这时基于白盒假设的调试工具就会失
+去作用。
 
-\subsection{graph mining}
+针对这个问题，一些基于黑盒假设的分析与调试工具被提出，以Project
+5~\cite{p5}，WAP5~\cite{wap5}，sherlock~\cite{sherlock}为代表。这些工
+具分析系统组件之间的消息通信，推断出请求被处理的因果路径。并分析在消息
+处理层次，系统性能的瓶颈所在。
 
-briefly
+由于不能得到确切的系统状态，因此这些工具的推断结果只是概率意义上的，并
+不完全准确。这些工具即使是对白盒系统也是有意义的。因为理解系统内部工作
+机制，对系统增加标注并不容易，需要花费很长时间。基于黑盒假设的工具可以
+很快的给出系统运行的大概情况，帮助人们尽快理解系统。
+
+\subsection{dataflow}
+
+请求被处理的执行路径，或者因果路径表示了请求处理的控制流信息。
+
+\subsubsection*{whodunit}
+
+p
+
+\subsubsection*{data flow tomography}
+
+p
+
+% \subsection{graph mining} briefly
 
 \subsection{log mining}
 
-see log-mining paper
+% see log-mining paper (wasl \& sysml)
 
-我们使用图上的聚类算法研究了自动推断任务模型的方法，涉及到xxx个主题，
-任务模型，图聚类，分别叙述相关工作如下。
+系统日志是系统运行过程中产生的、对系统运行活动的描述，包含了很多应用层
+任务流的语意，它是理解系统运行，调试系统问题的重要资源。SALSA[10]在
+Hadoop[11]日志上，提取出分布式系统的控制流和数据流，并导出系统在每个节
+点上的状态机形式的运行过程。利用产生的结果，SALSA可以对系统失败原因进
+行检查。CLUEBOX[12]使用了机器学习方法，对系统的性能日志进行分析，提取
+出系统的负载-性能模型。对于性能问题，CLUEBOX能够很快的将问题定位于相关
+的一组性能计数器（performance counter）。Artemis[13]是一个日志分析框架，
+包含了日志收集、日志存储、可视化工具和一组插件定义接口，使用它，用户可
+以自定义插件，对系统（例如Dryad[14]）进行分析。
+
+\section{本章小结}
+
+本章对xxx进行了介绍，虽然xxx，但是xxx问题仍然是xxx面临的挑战。
