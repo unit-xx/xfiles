@@ -39,40 +39,140 @@ Amazon EC2~\cite{ec2}。在这些平台上，较多使用的管理工具有：
 
 \subsubsection*{vxargs和pssh}
 
+vxargs~\cite{vx}和pssh~\cite{pssh}是两个集中式管理工具，用一组脚本实现。
+它们利用Unix/Linux平台安装的ssh/scp工具远程复制文件或执行控制命令。使
+用时，只需要将工具的脚本复制到发起管理的中心节点即可。
+
 \subsubsection*{Application Manager}
+
+Application Manager~\cite{appman}（简称appmanager）也是一个集中管理工
+具。它稍微复杂一点，有了自己的客户端。使用者首先将appmanager的客户端安
+装到一组机器上并启动。客户端在运行时定期和服务器通信，询问有没有尚未执
+行的用户命令。用户可以使用appmanager安装、查询与控制在客户端机器上运行
+着的应用节点状态。
 
 \subsubsection*{Plush}
 
+Plush~\cite{plush}致力于提供一个全面的管理框架。它首先将管理一个分布式
+应用的过程分为资源发现与获取、应用部署、应用维护三大部分。用户使用XML
+语言描述应用管理涉及的这三部分内容，让Plush自动完成管理工作。
+
+图xxx是用Plush管理SWORD~\cite{sword}的XML说明。在\texttt{software}标签
+里，指明了SWORD的安装程序地址是\url{http://plush.ucsd.edu/sword.tar}。
+在\texttt{component}标签，指明了运行SWORD需要Planet-Lab上至少10个，至
+多800个机器，但是没有指明机器的属性。在\texttt{application\_block}标签，
+指明了应用执行与维护相关的参数，例如SWORD的执行路径是
+\texttt{dd\-/planetlab\-/run sword}，SWORD的维护策略是\texttt{service
+（service="1"）}等等。
+
+Plush也采用了集中式管理的策略，有自己的客户端，通过客户端与服务器端的
+通信完成管理任务。Plush具备一定的自管理能力。在运行时，如果发现某个机
+器上没有运行Plush客户端，服务器端会自动将Plush客户端安装至远程机器。然
+而这个过程也是使用集中式算法实现，因而可扩展性不好，也不能应对网络分割
+问题。
+
+Plush-M~\cite{plush-m}注意到了Plush采用集中式算法的问题。它将Plush中服
+务器到客户端之间的星型拓扑，替换为RanSub~\cite{ransub}组播树。提高了系
+统的可扩展性，与应对网络分割错误的能力。需要注意到，这仅仅改变了Plush
+管理其它应用的方式，并没有改变Plush自管理的方式。
+
 \subsubsection*{Globus}
 
+Globus~\cite{globus}是搭建Grid系统与应用的软件工具包。它包含了应用管理
+的组件。例如，可以使用Globus Resource Specification Language (RSL)描述
+对资源的需求，使用Globus Resource Allocation Manager (GRAM)为应用分配
+资源。
 
-Amazon EC2怎么怎么（就不用开个小标题了）
 
-plush, plush-M
+% Amazon EC2怎么怎么（就不用开个小标题了）
 
-smartfrog
-
-cfengine
+% smartfrog cfengine
 
 \subsection{dissemination}
 
-bittorrent
+\subsubsection*{bittorrent}
 
-acms?
+Bittorrent~\cite{bt}是一个Peer-to-Peer(P2P)文件共享协议，它是internet
+上使用最广泛的文件分发、共享工具。一些估算表明，它产生的网络通信
+占整个internet流量的35\%~\cite{wiki_bt_[1]}。
 
-codeploy
+Bittorrent由一组节点（peer）和一个tracker构成。初始时，有一个节点包含
+了整个要共享的文件，它被称为种子。其它节点可以从种子下载文件。同时，节
+点还可以通过tracker获取其它节点的列表，并相互交换没有的文件块。这样，
+不仅加速了文件共享传输的速度，也减轻了种子节点的带宽消耗。
 
-sharkfs
+由于Bittorrent出色的性能，它也被用来在Planet-Lab平台上部署分发数据
+~\cite{plDist}。
+
+\subsubsection*{ACMS}
+
+Akamai~\cite{akamai}是运营着一个全球范围的内容分发网络（Content
+Distribution Network, CDN），包括了部署在60多个国家的1200多个ISP的超过
+15000个服务器。用户可以使用Akamai分发自己的网络内容与服务，提高应用的
+性能和可靠性。
+
+ACMS~\cite{acms}(The Akamai Configuration Management System)是Akamai的
+配置管理工具。它将用户对分发内容的配置部署到CDN网络内。这面临着很多挑
+战。使用ACMS的用户来自世界各地，可以在任何时间访问系统。首先需要保证服
+务可用性。ACMS使用了多个服务入口点（entry point）接受配置文件更新的请
+求，入口点分布在不同的ISP内。其次，同一配置，可能会被不同的人同时更新，
+更新请求可能会同时到达不同的入口点。需要保证更新的一致性。ACMS使用了基
+于向量交换（Vector Exchange）的quorum算法，让入口点之间对更新顺序达成
+一致意见，保证了更新的正确性。
+
+图xxx
+
+为了同时保证更新能够快速有效的被传送到整个CDN的所有机器上，ACMS将更新
+分为两部进行，如图xxx所示。更新首先由用户发送到某一个入口点，这个入口
+点服务器和其它服务器达成对更新的一致意见后，将更新持久化保存到各自的硬
+盘上，并给用户返回更新成功。其它CDN的节点会定期向入口点查询订阅的配置
+文件的版本，并从入口点机器下载更新。通过利用CDN节点的HTTP缓存机制，更
+新可以快速的被传递到所有的CDN机器上。
+
+ACMS使用的分层部署方法将更新的正确性和性能问题分开解决。入口点机器通过
+使用quorum算法解决了正确性问题，其它节点向入口点机器订阅更新，解决了更
+新传递的性能问题。
+
+\subsubsection*{CoDeploy}
+
+CoDeploy~\cite{codeploy, coblitz}利用了CoDeeN~\cite{codeen}内容分发网
+络帮助人们在Planet-Lab平台上部署应用与数据。由于部署的内容可能很大，而
+CoDeeN使用了基于HTTP缓存的内容分发技术，因此CoDeploy首先将要部署的内容
+打成碎片。在部署的目标节点上分别下载各个碎片后，再将原来的部署数据复原。
+
+\subsubsection*{SharkFS}
+
+SharkFS~\cite{sharkfs}使用了合作缓存（Cooperative Caching）技术提高了
+网络文件系统的可扩展性。通常在网络文件系统中，客户端会向文件系统服务器
+所要数据，服务器会成为性能瓶颈。SharkFS让客户端之间相互下载自己没有对
+方有的文件块来解决这个问题。这个方式类似于Bittorrent。与Bittorrent不同
+的是，SharkFS中没有集中的tracker，而是让所有客户端之间形成一个结构化覆
+盖网络\cite{can, pastry, tapestry, chord, kademlia}，实现了一个分布式
+的tracker。
 
 \subsection{self-*}
 
-automatic computing?
+自稳\cite{Dijkstra1974}（self-stablization）是一个分布式系统中的容错概
+念，在1974年由E.\ W.\ Dijkstra提出。它是指，系统从任何状态开始，都会自动
+收敛于合法的状态。这是一个很强的属性。由于分布式系统难于调试与分析，因
+此这个属性是很受期待的。
 
-self-stablization
+IBM在2001年提出了Automatic Computing~\cite{Kephart2003}（AC）的概念。
+由于分布式系统越来越大，其管理复杂度也越来越高。AC旨在让分布式系统具备
+自我管理的能力，能够自动应对各种不可预期的错误。在AC中，系统行为用闭环
+控制（closed control loops）建模，从而能够自动监测外部状态改变，并自动
+调整自己的行为。
 
-dht
+DHT~\cite{can, pastry, tapestry, chord, kademlia}（Distributed Hash
+Table）能够自动应对系统的节点加入与退出事件，通过调整每个对等节点的路
+由表，自动维护设计的拓扑结构。
 
-self-host
+Rhizoma~\cite{Rhizoma}试图将自我管理功能嵌入到分布式应用内部去。它的研
+究动机是，随着Utility Computing（UC）的出现，将有越来越多的公司将自身
+的计算需求外包给计算服务提供商，例如Amazon EC2~\cite{ec2}。运行在UC计
+算平台的应用有依据资源使用状况、节点失败和计费等情况迁移到其它节点的需
+求。这个问题可以利用管理工具实现，Rhizoma试图将自我管理功能内嵌到应用
+来解决这个问题。
 
 \section{分布式系统调试}
 
@@ -133,10 +233,11 @@ Pinpoint~\cite{pinpoint}通过对系统增加标注的办法，为J2EE应用的�
 径可能代表系统错误的发生。这一方法对多数情况是有效地，但是也会造成一些
 漏判，也就是把一些的确有错误的执行路径当成正常情况。
 
-Pinpoint使用概率上下文无关文法（Probabilistic Context Free Grammar，
-PCFG~\cite{pcfg}，来检测有异常的执行路径。也就是，Pinpoint记录了执行路
-径上的事件会以什么概率导致其它事件发生。例如，一个事件$A$发生后，可能
-会接着发生事件$B$或$C$。所以，如果观测到$A \to D$，则这是一个异常事件。
+Pinpoint使用概率上下文无关文法（Probabilistic Context Free
+Grammar，PCFG~\cite{Manning1999}，来检测有异常的执行路径。也就是，
+Pinpoint记录了执行路径上的事件会以什么概率导致其它事件发生。例如，一个
+事件$A$发生后，可能会接着发生事件$B$或$C$。所以，如果观测到$A \to D$，
+则这是一个异常事件。
 
 \subsubsection*{Magpie}
 
