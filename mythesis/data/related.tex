@@ -17,25 +17,42 @@ distributed platform?
 
 \subsection{management overview}
 
+从管理设计到的任务看：
+
 *should not needed, duplicated in intro*
 
-resource discovery: sword
+resource discovery: sword, xenosearch
 
 dissemination: below
 
-monitor: aggregation (mon, sdims, san femin)
+monitor: aggregation (pier, sophia, irisnet, mon, astrolabe, sdims,
+willow, SOMO, san femin, ganglia, )
 
-and distributed trigger, 
+and distributed trigger (sum -> complex operation -> topK -> quantiles
+-> set-expression, ok and enough)
 
 \subsection{management: last to write}
+
+分布式系统管理工具对一个分布式计算平台来说是必不可少的。一些可以公开或
+半公开访问的的分布式计算平台有Planet-Lab~\cite{pl}，TeraGrid~\cite{tg}和
+Amazon EC2~\cite{ec2}。在这些平台上，较多使用的管理工具有：
+
+\subsubsection*{vxargs和pssh}
+
+\subsubsection*{Application Manager}
+
+\subsubsection*{Plush}
+
+\subsubsection*{Globus}
+
+
+Amazon EC2怎么怎么（就不用开个小标题了）
 
 plush, plush-M
 
 smartfrog
 
 cfengine
-
-globus
 
 \subsection{dissemination}
 
@@ -59,6 +76,18 @@ self-host
 
 \section{分布式系统调试}
 
+First, execution of a transaction is often distributed across process
+and machine boundaries. Second, an executing stage may be a process, a
+thread, an event, or a stage worker thread (as in the Staged Event
+Driven Architecture (SEDA) [25]). A transaction needs to be tracked
+across all such stages. Third, threads may pass a particular
+transaction between them- selves via shared memory. Shared memory
+communications are generally harder to track than inter-process
+communication (IPC) via the operating system or middleware. Finally,
+due to concurrent execution, a transaction may cause another
+transaction to wait, e.g., due to lock contention.
+
+
 分布式系统调试的难点在于任务会被分为不同的部分或阶段，分散在系统的不同
 机器、进程和线程执行。错误：执行顺序，状态变化
 
@@ -77,24 +106,34 @@ log mining related
 获取系统对每个请求的执行路径，也就是请求在系统中被处理的过程，是分析系
 统行为，找到错误根本原因的一个基本方法。
 
+(pinpoint) The path abstraction has been used in many other areas,
+typically as a form of control flow. Paths are used in Scout for a
+single-node OS [38], are the foundation for
+integrated-layer-processing [1], and play a key role in many compiler
+optimization techniques [5]. Several recent systems have also used
+paths to profile distributed systems.
+
+路径：控制路径，数据路径
+
+
 执行路径也可以被称为因果路径（causal path），因为
 
 % Performance Debugging for Distributed Systems of Black Boxes
 % (sosp03)
 
-\subsubsection*{pinpoint}
+\subsubsection*{Pinpoint}
 
 Pinpoint~\cite{pinpoint}通过对系统增加标注的办法，为J2EE应用的每个用户
 请求附加了一个唯一标识。标注就是对系统代码进行一定修改，在适当的地方输
-出与传递标识。随着请求被处理，和它关联的标识也在系统中传播，从而我们可
-以追踪得到每个请求在系统中处理的执行路径。
+出与传递任务标识。随着请求被处理，和它关联的标识也在系统中传播，从而我
+们可以追踪得到每个请求在系统中处理的执行路径。
 
 进一步的，Pinpoint可以找到执行路径中的异常。所谓异常并不一定是系统的软
 件错误。Pinpoint的假设是，系统错误是较少发生的，因此那些有异常的执行路
 径可能代表系统错误的发生。这一方法对多数情况是有效地，但是也会造成一些
 漏判，也就是把一些的确有错误的执行路径当成正常情况。
 
-Pinpoint使用概率上下文无关文法（probabilistic context free grammar，
+Pinpoint使用概率上下文无关文法（Probabilistic Context Free Grammar，
 PCFG~\cite{pcfg}，来检测有异常的执行路径。也就是，Pinpoint记录了执行路
 径上的事件会以什么概率导致其它事件发生。例如，一个事件$A$发生后，可能
 会接着发生事件$B$或$C$。所以，如果观测到$A \to D$，则这是一个异常事件。
@@ -138,6 +177,8 @@ Pip~\cite{pip}对代码增加标注，得到系统的执行路径。Pip定义了
 的原因。由于执行路径中包含了结构、时间和资源消耗的信息，Pip可以有效的
 同时检查系统正确性错误与性能错误。
 
+pip的期望示例。
+
 \subsubsection*{X-Trace}
 
 X-Trace~\cite{x-trace}是一个网络层的跟踪工具。它将包括任务标示符的任务
@@ -176,15 +217,49 @@ X-Trace~\cite{x-trace}是一个网络层的跟踪工具。它将包括任务标�
 
 \subsection{dataflow}
 
-请求被处理的执行路径，或者因果路径表示了请求处理的控制流信息。
+请求被处理的执行路径，或者因果路径表示了请求处理的控制流信息。还有一些
+工作通过获取系统运行时的数据流信息，分析系统行为。包括
+Whodunit~\cite{whodunit} 和Data Flow Tomography~\cite{dft}等。
 
-\subsubsection*{whodunit}
+\subsubsection*{Whodunit}
 
-p
+Whodunit提出了事务概要分析（transactional profiling）的概念和方法，这
+是对调用图概要分析（call graph profiling）~\cite{whodunit13}和调用路径
+概要分析（call path profiling）~\cite{whodunit14,15}的一个扩展。所谓事
+务并不是数据库中事务的概念，而是表示分布式系统对外来的用户请求处理的整
+个过程。
 
-\subsubsection*{data flow tomography}
+Whodunit将事务的执行过程分为若干阶段（stage），每个阶段都可能在不同的
+机器、进程和线程执行。阶段之间通过一定的数据共享或传输方式进行交互。
+Whodunit考虑了三种数据共享或传输的方式，共享内存，事件和网络消息传递。
 
-p
+Whodunit通过分析线程之间的数据流扑捉事务通过共享内存传递的过程，
+Whodunit借助虚拟机~\cite{qemu}截取所有的内存操作汇编指令做到这一点。这
+个方法能够获取细粒度的事物传递过程，同时也不用修改系统代码。但是由于使
+用了虚拟机，因而带来比较大的额外负载。
+
+对于事物通过事件传递的情况，Whodunit需要在事件中添加事物信息。随着事件
+在不同的阶段传递，就能得到事物处理的过程。这需要对事件处理的中间件
+~\cite{seda}插装才能做到。类似的，Whodunit需要在网络消息中添加事物信息，
+才能追踪事物通过网络传递的情况，它通过对\texttt{send}和
+\texttt{receive}函数包装，并让应用调用包装后的\texttt{send}和
+\texttt{receive}函数做到这一点。
+
+\subsubsection*{Data Flow Tomography}
+
+Data Flow Tomography的想法受到正电子发射断层扫描（Positron Emission
+Tomography）的启发。正电子发射断层扫描技术将存活期短的放射性同位素注入
+人体，通过观测它在人体内流动的过程，能够对病况进行诊断。
+
+类似的，Data Flow Tomography工作对数据添加标记，从而可以观测到数据是如
+何在系统中被处理和传递的整个过程。这包括，数据通过函数参数在不同的函数
+抽象层传播，数据通过共享内存在线程间传播，数据通过网络传播等等情况。这
+样，就能够回答诸如某个数据会产生哪些数据，某个数据由哪些数据生成等等问
+题。
+
+Data Flow Tomography通过使用虚拟机~\cite{qemu}追踪指令级（ISA）的数据
+处理过程。这个做法的好处是不需要对应用做任何修改，但是反面作用是分析的
+额外负载会很大。
 
 % \subsection{graph mining} briefly
 
@@ -193,14 +268,25 @@ p
 % see log-mining paper (wasl \& sysml)
 
 系统日志是系统运行过程中产生的、对系统运行活动的描述，包含了很多应用层
-任务流的语意，它是理解系统运行，调试系统问题的重要资源。SALSA[10]在
-Hadoop[11]日志上，提取出分布式系统的控制流和数据流，并导出系统在每个节
-点上的状态机形式的运行过程。利用产生的结果，SALSA可以对系统失败原因进
-行检查。CLUEBOX[12]使用了机器学习方法，对系统的性能日志进行分析，提取
-出系统的负载-性能模型。对于性能问题，CLUEBOX能够很快的将问题定位于相关
-的一组性能计数器（performance counter）。Artemis[13]是一个日志分析框架，
-包含了日志收集、日志存储、可视化工具和一组插件定义接口，使用它，用户可
-以自定义插件，对系统（例如Dryad[14]）进行分析。
+任务流的语意，它是理解系统运行，调试系统问题的重要资源。
+
+\subsubsection*{SALSA}
+
+SALSA~\cite{salsa}在Hadoop~\cite{hadoop}日志上，提取出分布式系统的控制
+流和数据流，并导出系统在每个节点上的状态机形式的运行过程。利用产生的结
+果，SALSA可以对系统失败原因进行检查，并将系统的分布式行为可视化。
+
+\subsubsection*{CLUEBOX}
+
+CLUEBOX~\cite{cluebox}使用了机器学习方法，对系统的性能日志进行分析，提
+取出系统的负载-性能模型。对于性能问题，CLUEBOX能够很快的将问题定位于相
+关的一组性能计数器（performance counter）。
+
+\subsubsection*{Artemis}
+
+Artemis~\cite{artemis}是一个日志分析框架，包含了日志收集、日志存储、可
+视化工具和一组插件定义接口，使用它，用户可以自定义插件，对系统（例如
+Dryad~\cite{dryad}）进行分析。
 
 \section{本章小结}
 
