@@ -2,13 +2,12 @@
 \chapter{相关工作}
 \label{chap:related}
 
-本文分别研究了可自管理的分布式管理系统设计，
+针对本文的研究内容，在本章分别介绍分布式系统管理与分布式系统调试相关的
+研究工作。
 
-本文分别研究了分布式系统管理与分布式系统调试主题下的一些问题。
+% distributed platform
 
-distributed platform?
-
-文件部署，自管理，self-*性质
+% 文件部署，自管理，self-*性质
 
 
 \section{分布式系统管理}
@@ -34,22 +33,23 @@ and distributed trigger (sum -> complex operation -> topK -> quantiles
 \subsection{management: last to write}
 
 分布式系统管理工具对一个分布式计算平台来说是必不可少的。一些可以公开或
-半公开访问的的分布式计算平台有Planet-Lab~\cite{pl}，TeraGrid~\cite{tg}和
-Amazon EC2~\cite{ec2}。在这些平台上，较多使用的管理工具有：
+半公开访问的的分布式计算平台有
+Planet-Lab~\cite{Bavier2004}，TeraGrid~\cite{Catlett2002}和Amazon
+EC2~\cite{Garfinkel2007}。在这些平台上，较多使用的管理工具有：
 
 \subsubsection*{vxargs和pssh}
 
-vxargs~\cite{vx}和pssh~\cite{pssh}是两个集中式管理工具，用一组脚本实现。
-它们利用Unix/Linux平台安装的ssh/scp工具远程复制文件或执行控制命令。使
-用时，只需要将工具的脚本复制到发起管理的中心节点即可。
+vxargs~\cite{vxargs}和pssh~\cite{pssh}是两个集中式管理工具，用一组脚本
+实现。它们利用Unix/Linux平台安装的ssh/scp工具远程复制文件或执行控制命
+令。使用时，只需要将工具的脚本复制到发起管理的中心节点即可。
 
 \subsubsection*{Application Manager}
 
-Application Manager~\cite{appman}（简称appmanager）也是一个集中管理工
-具。它稍微复杂一点，有了自己的客户端。使用者首先将appmanager的客户端安
-装到一组机器上并启动。客户端在运行时定期和服务器通信，询问有没有尚未执
-行的用户命令。用户可以使用appmanager安装、查询与控制在客户端机器上运行
-着的应用节点状态。
+Application Manager~\cite{appmanager}（简称appmanager）也是一个集中管
+理工具。它稍微复杂一点，有了自己的客户端。使用者首先将appmanager的客户
+端安装到一组机器上并启动。客户端在运行时定期和服务器通信，询问有没有尚
+未执行的用户命令。用户可以使用appmanager安装、查询与控制在客户端机器上
+运行着的应用节点状态。
 
 \subsubsection*{Plush}
 
@@ -57,13 +57,13 @@ Plush~\cite{plush}致力于提供一个全面的管理框架。它首先将管�
 应用的过程分为资源发现与获取、应用部署、应用维护三大部分。用户使用XML
 语言描述应用管理涉及的这三部分内容，让Plush自动完成管理工作。
 
-图xxx是用Plush管理SWORD~\cite{sword}的XML说明。在\texttt{software}标签
-里，指明了SWORD的安装程序地址是\url{http://plush.ucsd.edu/sword.tar}。
-在\texttt{component}标签，指明了运行SWORD需要Planet-Lab上至少10个，至
-多800个机器，但是没有指明机器的属性。在\texttt{application\_block}标签，
-指明了应用执行与维护相关的参数，例如SWORD的执行路径是
-\texttt{dd\-/planetlab\-/run sword}，SWORD的维护策略是\texttt{service
-（service="1"）}等等。
+图xxx是用Plush管理SWORD~\cite{sword_worlds, sword_toit}的XML说明。在
+\texttt{software}标签里，指明了SWORD的安装程序地址是
+\texttt{\url{http://plush.ucsd.edu/sword.tar}}。在\texttt{component}标
+签，指明了运行SWORD需要Planet-Lab上至少10个，至多800个机器，但是没有指
+明机器的属性。在\texttt{application\_block}标签，指明了应用执行与维护
+相关的参数，例如SWORD的执行路径是\texttt{dd\-/planetlab\-/run sword}，
+SWORD的维护策略是\texttt{service（service="1"）}等等。
 
 Plush也采用了集中式管理的策略，有自己的客户端，通过客户端与服务器端的
 通信完成管理任务。Plush具备一定的自管理能力。在运行时，如果发现某个机
@@ -90,19 +90,19 @@ Globus~\cite{globus}是搭建Grid系统与应用的软件工具包。它包含�
 
 \subsection{dissemination}
 
-\subsubsection*{bittorrent}
+\subsubsection*{BitTorrent}
 
-Bittorrent~\cite{bt}是一个Peer-to-Peer(P2P)文件共享协议，它是internet
-上使用最广泛的文件分发、共享工具。一些估算表明，它产生的网络通信
-占整个internet流量的35\%~\cite{wiki_bt_[1]}。
+BitTorrent~\cite{bittorrent}是一个Peer-to-Peer(P2P)文件共享协议，它是
+internet上使用最广泛的文件分发、共享工具。一些估算表明，它产生的网络通
+信占整个internet流量的35\%~\cite{bt2004}。
 
 Bittorrent由一组节点（peer）和一个tracker构成。初始时，有一个节点包含
 了整个要共享的文件，它被称为种子。其它节点可以从种子下载文件。同时，节
 点还可以通过tracker获取其它节点的列表，并相互交换没有的文件块。这样，
 不仅加速了文件共享传输的速度，也减轻了种子节点的带宽消耗。
 
-由于Bittorrent出色的性能，它也被用来在Planet-Lab平台上部署分发数据
-~\cite{plDist}。
+由于Bittorrent出色的性能，它也被用来在Planet-Lab平台上部署
+分发数据~\cite{plDist}。
 
 \subsubsection*{ACMS}
 
@@ -135,10 +135,10 @@ ACMS使用的分层部署方法将更新的正确性和性能问题分开解决�
 
 \subsubsection*{CoDeploy}
 
-CoDeploy~\cite{codeploy, coblitz}利用了CoDeeN~\cite{codeen}内容分发网
-络帮助人们在Planet-Lab平台上部署应用与数据。由于部署的内容可能很大，而
-CoDeeN使用了基于HTTP缓存的内容分发技术，因此CoDeploy首先将要部署的内容
-打成碎片。在部署的目标节点上分别下载各个碎片后，再将原来的部署数据复原。
+CoDeploy~\cite{codeploy}利用了CoDeeN~\cite{codeen}内容分发网络帮助人们
+在Planet-Lab平台上部署应用与数据。由于部署的内容可能很大，而CoDeeN使用
+了基于HTTP缓存的内容分发技术，因此CoDeploy首先将要部署的内容打成碎片。
+在部署的目标节点上分别下载各个碎片后，再将原来的部署数据复原。
 
 \subsubsection*{SharkFS}
 
@@ -169,10 +169,10 @@ Table）能够自动应对系统的节点加入与退出事件，通过调整每
 
 Rhizoma~\cite{Rhizoma}试图将自我管理功能嵌入到分布式应用内部去。它的研
 究动机是，随着Utility Computing（UC）的出现，将有越来越多的公司将自身
-的计算需求外包给计算服务提供商，例如Amazon EC2~\cite{ec2}。运行在UC计
-算平台的应用有依据资源使用状况、节点失败和计费等情况迁移到其它节点的需
-求。这个问题可以利用管理工具实现，Rhizoma试图将自我管理功能内嵌到应用
-来解决这个问题。
+的计算需求外包给计算服务提供商，例如Amazon EC2~\cite{Garfinkel2007}。
+运行在UC计算平台的应用有依据资源使用状况、节点失败和计费等情况迁移到其
+它节点的需求。这个问题可以利用管理工具实现，Rhizoma试图将自我管理功能
+内嵌到应用来解决这个问题。
 
 \section{分布式系统调试}
 
@@ -248,20 +248,20 @@ Pinpoint记录了执行路径上的事件会以什么概率导致其它事件发
 分析与预测。
 
 Magpie基于Windows平台。它使用ETW（Event Tracing for
-Windows~\cite{magpieref17, ref18}机制收集系统执行过程中发生的事件。
-ETW是Windows平台内建的消息追踪机制，追踪与输出事件的额外负载（
-overhead）很低。Windows操作系统在运行时就输出很多预设的ETW事件，这些事
-件可以作为Magpie的输入。为了得到系统运行时的内部事件，可以使用插装的方
-法动态输出系统内部状态。插装并不改变系统代码。ETW事件中包含了关于系统
-资源（CPU，内存等）使用情况的信息，因而可以明确得到请求执行过程中消耗
-资源的详细信息。
+Windows）~\cite{etw, Park2003}机制收集系统执行过程中发生的事件。ETW是
+Windows平台内建的消息追踪机制，追踪与输出事件的额外负载（overhead）很
+低。Windows操作系统在运行时就输出很多预设的ETW事件，这些事件可以作为
+Magpie的输入。为了得到系统运行时的内部事件，可以使用插装的方法动态输出
+系统内部状态。插装并不改变系统代码。ETW事件中包含了关于系统资源（CPU，
+内存等）使用情况的信息，因而可以明确得到请求执行过程中消耗资源的详细信
+息。
 
 Magpie设计的特别之处在于使用用户提供的方案将属于同一请求的事件联合
 （join）到一起，联合操作的语意借用了数据库的思想。详细描述如何编写方案
 、不同的事件是如何被联合到一起超出本文的范围。简单举例说，如果一组事件
 的ThreadID属性（表示事件在哪个线程发生）相同，则这组事件可以用ThreadID
 联合到一起。考虑到资源复用的情况，例如线程池内的不同线程会在不同的时间
-段处理不同的请求，Magpie借用了时间联合~\cite{magpie10}（temporal join）
+段处理不同的请求，Magpie借用了时间联合~\cite{Gao2005}（temporal join）
 的思想，方案中同时描述了被联合属性的有效时间区间，从而，线程处理不同请
 求的时间段可以被区分开，其它类似情况也可以被处理。
 
@@ -307,9 +307,9 @@ X-Trace~\cite{x-trace}是一个网络层的跟踪工具。它将包括任务标�
 去作用。
 
 针对这个问题，一些基于黑盒假设的分析与调试工具被提出，以Project
-5~\cite{p5}，WAP5~\cite{wap5}，sherlock~\cite{sherlock}为代表。这些工
-具分析系统组件之间的消息通信，推断出请求被处理的因果路径。并分析在消息
-处理层次，系统性能的瓶颈所在。
+5~\cite{project5}，WAP5~\cite{wap5}，sherlock~\cite{sherlock}为代表。
+这些工具分析系统组件之间的消息通信，推断出请求被处理的因果路径。并分析
+在消息处理层次，系统性能的瓶颈所在。
 
 由于不能得到确切的系统状态，因此这些工具的推断结果只是概率意义上的，并
 不完全准确。这些工具即使是对白盒系统也是有意义的。因为理解系统内部工作
@@ -324,11 +324,11 @@ Whodunit~\cite{whodunit} 和Data Flow Tomography~\cite{dft}等。
 
 \subsubsection*{Whodunit}
 
-Whodunit提出了事务概要分析（transactional profiling）的概念和方法，这
-是对调用图概要分析（call graph profiling）~\cite{whodunit13}和调用路径
-概要分析（call path profiling）~\cite{whodunit14,15}的一个扩展。所谓事
-务并不是数据库中事务的概念，而是表示分布式系统对外来的用户请求处理的整
-个过程。
+Whodunit~\cite{whodunit}提出了事务概要分析（transactional profiling）
+的概念和方法，这是对调用图概要分析（call graph
+profiling）~\cite{Graham2004}和调用路径概要分析（call path profiling）~
+\cite{Hall1992, Hall1993}的一个扩展。所谓事务并不是数据库中事务的概念，
+而是表示分布式系统对外来的用户请求处理的整个过程。
 
 Whodunit将事务的执行过程分为若干阶段（stage），每个阶段都可能在不同的
 机器、进程和线程执行。阶段之间通过一定的数据共享或传输方式进行交互。
@@ -348,9 +348,9 @@ Whodunit借助虚拟机~\cite{qemu}截取所有的内存操作汇编指令做到
 
 \subsubsection*{Data Flow Tomography}
 
-Data Flow Tomography的想法受到正电子发射断层扫描（Positron Emission
-Tomography）的启发。正电子发射断层扫描技术将存活期短的放射性同位素注入
-人体，通过观测它在人体内流动的过程，能够对病况进行诊断。
+Data Flow Tomography~\cite{dft}的想法受到正电子发射断层扫描（Positron
+Emission Tomography）的启发。正电子发射断层扫描技术将存活期短的放射性
+同位素注入人体，通过观测它在人体内流动的过程，能够对病况进行诊断。
 
 类似的，Data Flow Tomography工作对数据添加标记，从而可以观测到数据是如
 何在系统中被处理和传递的整个过程。这包括，数据通过函数参数在不同的函数
