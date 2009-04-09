@@ -74,7 +74,7 @@ Magpie~\cite{magpie}，可以从单独的运行事件trace推断每个请求的�
 
 \section{推断方法设计}
 
-本章叙述推断方法设计，以及它的原型实现\pozhehao{}Scalpel。
+本节叙述推断方法设计，以及它的原型实现\pozhehao{}Scalpel。
 
 \subsection{收集系统运行trace}
 收集什么
@@ -126,13 +126,16 @@ Scalpel使用若干启发点分辨真的因果依赖关系。如果系统使用�
 （semaphore）对象，它们通常被用来同步线程对共享资源的访问，因此不认为
 它们构成因果依赖关系。
 
+\note{即使扔了mutex问题也不大，因为只是用mutex同步访问，
+producer-consumer关系可以从iocp看出来。}
+
 \note{match socket}
 
 
 \subsection{推断任务层次结构}
 
 我们通过不断挖掘任务因果关系图上重复出现的模式，来推断任务的层次结构。
-发掘算法受到文章~\cite{s11}的启发，\cite{s11}的工作通过搜寻“热点子路
+发掘算法受到文章~\cite{wpp}的启发，\cite{wpp}的工作通过搜寻“热点子路
 径”（就是函数调用路径上重复出现的字串），来推断上下文无关文法。类似的，
 我们的算法搜寻任务因果关系图上重复出现的子图。我们认为每一个子图都在逻
 辑上代表了一个更高层的任务，它由子图中的任务集合构成。通过递归调用挖掘
@@ -164,7 +167,26 @@ a
 
 \section{讨论}
 
-a
+Scalpel主要是为系统开发者而设计的，希望能够帮助他们理解、验证与调试搭
+建的系统。因此，我们假设程序的调试信息（主要是符号表）是可以得到的。
+Scalpel利用这些信息追踪函数调用，为叶子任务提供易于理解的名字。这个假
+设并不是推断任务层次结构的必要条件。即使没有调试信息，我们仍然可以对系
+统调用插装，追踪同步点的调用信息。通过使用stack walking技术，我们可以
+得到函数地址形式的调用栈。函数地址与函数名有对应关系，仍然可以用来分析
+推断任务结构。因此，无论有没有调试信息，我们都可以推断出同样结构的层次
+任务模型来。如果没有调试信息，叶子任务的名字不易于人去理解，但是不妨碍
+使用其他调试工具分析任务模型。
+
+人们习惯上使用因果路径分析~\cite{pinpoint, project5, pip, magpie}去分
+析系统行为，这种方法将系统的运行过程抽象为单层的因果路径。我们认为，作
+为本文核心概念的层次结构任务模型，是对因果路径分析的一个扩展。实际上，
+如果只看叶子任务这一层，则我们的任务模型实际上就是因果路径，因此也可以
+被用在类似的基于路径的分析中。然而，层次结构可以带来更多的好处。它将实
+现细节包装在更高层次的任务中，程序员可以再不同的任务层次和粒度下，分析
+验证系统行为。可以用类似Pip~\cite{pip}的方法，在不同层次的任务上，将
+系统行为与程序员的期望做比较验证。虽然本文的工作侧重与推断方法的设计，
+并未提出在任务模型上进一步分析的方法，我们希望能在将来的工作中完成进一
+步的工作。
 
 \section{验证推断方法}
 
@@ -172,11 +194,138 @@ iocp, event, mutex
 
 \section{应用实例}
 
-apache, sqlite
+在本节，我们使用Scalpel分析一些复杂系统，以评测任务模型是否有效。可以
+从两个方面来评测任务模型。首先，任务模型应该能够表达出系统设计的含义。
+这一点很难用数字测量，因此，我们需要程序员去将推断的任务模型与实际系统
+设计对比，判断两者是否符合。其次，任务模型也是验证系统正确性或者性能的
+方法，所以，我们也可以评测任务模型在帮助调试系统时的有效性。
 
-pacifica
+我们同时使用这两种方式评测Scalpel，分别将Scalpel应用在
+Apache~\cite{apache}和PacificA~\cite{pacifica}上。Apache和PacificA都使
+用了典型的配置。我们在Apache上增加了一个Subversion（SVN）模块，并使用
+客户端执行10次checkout。我们使用两台机器配置了一个PacificA的复制组
+（Replication Group），一台机器时主节点（primary），一台是从节点
+（backup）。我们运行一个测试程序，在Pacifica中创建一个表，并提交15条随
+机数据。我们使用Scalpel追踪每个系统的运行，并推断任务模型。两个实验都
+是在如下机器配置上进行的：2.0 GHz Xeon双核CPU，4 GB内存，运行Windows
+Server 2003 SP2操作系统，机器间通过1 Gb网络连接。
 
-// statistics
+\subsection{Apache}
+
+我们首先人工验证Scalpel在Apache上推断的任务模型。图xxx显示了得到的模型。
+在图上，每个节点都是一个叶子任务，连接任务的实线与虚线表示任务之间的因
+果关系，实线表示线程内部执行顺序因果关系，虚线表示线程间因果关系。叶子
+任务上标记了任务起始点的调用栈。为了易于理解，在本文中，我们只显示了调
+用栈尾部调用同步函数的那个函数名称。
+
+图xxx
+
+通过仔细阅读理解Apache和SVN的代码，我们确定推断的模型就是Apache服务SVN
+checkout操作时的工作流程。Apache接受外来的请求，并将请求交给线程池中的
+一个worker线程去完成。Scalpel推断出5个Apache核心执行的叶子任务（图xxx
+的左边部分）。每个任务表示Apache接受并服务请求的主要步骤。详细说，监听
+线程接受连接（\texttt{winnt\_accept\_1}），从连接上下文
+\footnote{Connection context，描述外来请求的数据结构。}资源池中取出一
+个连接上下文（\texttt{mpm\_get\_completion\_context}），并将这个上下文
+通过I/O completion port（IOCP）传递给worker线程
+（\texttt{winnt\_accept\_2}），并继续等待其他请求到来。在IOCP的另一边，
+线程池中的一个worker线程首先获得连接上下文
+（\texttt{winnt\_get\_connection}），并调用SVN服务模块去处理请求（从
+\texttt{ap\_core\_input\_filter}到\texttt{ap\_lingering\_close}）。之
+后，worker线程将连接上下文回收到上下文资源池
+（\texttt{mpm\_recycle\_completion\_context)}），并等待IOCP中的其它请
+求。SVN checkout过程中的一些叶子任务未在图上完全显示，但是它们都是处理
+请求过程中的关键步骤。因此，这也是使用同步点为启发推断叶子任务边界有效
+性的一个例证。
+
+进一步的，Scalpel还成功的找到了两个有实际含义的高层任务，见图xxx中方框
+表示的部分，在图上我们按照两个任务的工作给它们标了名字。第一个高层任务
+（上下文资源池）包括了连接上下文被取出用来传递用户请求又被回收的过程。
+另一个（SVN checkout）包含了SVN checkout被处理的过程。因为这两个任务都
+被频繁执行，因此Scalpel可以精确的将他们确认为高层任务。
+
+\subsection{PacificA}
+
+图xxx
+
+% 把secondary也加上
+
+图xxx显示了PacificA的任务模型。PacificA开发者确认了这个模型准确表达了
+用户提交数据在主节点上执行的过程。模型包含了三个高层任务，分别是提交数
+据执行过程的三个主要步骤：一个worker任务，一个本地提交任务和一个确认远
+程提交的任务。在worker任务中，一个socket监听线程循环的等待用户请求
+（\texttt{Session\-::Recv\-Packet}），接受来自用户的消息，并将用户请求
+通过IOCP交给线程池中的worker线程去执行
+（\texttt{PA\-Thread\-Pool\-::Thread\-Internal\-::DoWork}）。worker线
+程取到用户请求后，立即执行本地提交任务。它首先将数据在本地存储
+（\texttt{Logic\-Replica\-::Mutate}，并将提交请求使用异步RPC发送给从节
+点（\texttt{Rpc\-Client\-::Rpc\-Async\-Call\-Chain}），RPC被序列化后通
+过网络层发送出去（\texttt{Session\-::Send\-Packet}），在主节点确认自己
+已经持久化存储用户提交数据后
+（\texttt{Logic\-Replica\-::Receive\-MutationAck}），本地提交任务结束。
+从节点在收到提交请求后将数据存储，并给主节点发确认命令
+（acknowledgement）。确认远程提交任务就是主节点处理从节点确认命令的。
+它首先处理从节点的确认消息
+（\texttt{Logic\-Replica\-::Receive\-Mutation\-Ack}），之后向用户回复
+数据提交请求的结果（\texttt{Rpc\-Client\-::Rpc\-Call\-Reply}），RPC被
+序列化后通过网络层发送出去（\texttt{Session\-::Send\-Packet}）。
+
+值得注意的是，Scalpel不仅仅能够推断出用户提交数据的过程可以分为三个高
+层任务，同时能够将worker线程执行的本地提交和确认远程提交两个任务区分开
+来。这不是因为Scalpel理解了任务执行的语意，而是因为，这两个任务分别被
+两次\texttt{DoWork}任务触发执行，因此，挖掘算法能够将每个任务正确的区
+分开来。
+
+\begin{table}[t!]
+\small
+\centering
+\begin{tabular}{lll}
+
+  		& Apache	& PacificA \\
+\hline
+Leaf Tasks	& 423952	& 10636 \\
+\hline
+Events		& 0			& 47 \\
+Mutex 		& 210472	& 4950 \\
+IOCP		& 23		& 16 \\
+Socket		& 527		& 77 \\
+run-after	& 193972	& 11304 \\
+\hline
+
+\end{tabular}
+\caption{Statistic numbers of Apache and PacificA.}
+\label{scp:statistics}
+\end{table}
+
+表~\ref{scp:statistics}小结了推断算法的执行统计。
+
+接下来，我们评测使用Scalpel得到的任务模型对帮助调试系统是否有效。
+PacificA的开发者希望我们能够使用Scalpel帮助他们解决系统中的一个性能问
+题。开发者注意到了这个问题，并曾经试图使用函数性能概要分析（profiling）
+的办法，但是没有解决问题。我们使用图~\ref{pacifica-model}的模型分析
+PacificA的性能。对每一个叶子任务，我们使用Scalpel记录它的执行时间，网
+络带宽消耗，CPU使用等信息。对高层任务，我们将它的子任务性能参数聚集得
+到它的性能参数信息。
+
+通过在压力测试中执行数据提交操作，我们很快发现了那个性能问题：提交任务
+很难使用所有的网络带宽，同时它的CPU使用率也很低，远小于100\%。我们通过
+自上而下的办法找到这个问题的症结，从最高层任务向下，找到执行时间最长的
+那个任务。我们发现，当以很高频率发送数据时，发送线程（典型的配置是4个
+并行线程同时发送）会在某一时刻阻塞大约一秒钟，其原因是，在PacificA的网
+络层代码，会对数据发送做流量控制，如果发送消息的缓冲区慢了的话，流量控
+制会引起所有发送线程同步sleep一秒，如图~\ref{flow_control_code}。这样，
+四个并发的发送线程就会表现出几乎同步的行为来，如图~\ref{sleep_send}所
+示。
+
+进一步对代码审查让我们对问题根本原因有了深刻理解。当使用异步方式调用
+RPC时，RPC层并没有流量控制机制。每个发送线程都会以非阻塞方式独立发送
+RPC消息。网络层的消息缓冲区很快就会被填满，导致发送线程被网络层阻塞（
+图~\ref{flow_control_code}）。这就让发送线程表现出了同步的行为，无论使
+用多少RPC发送线程，它们都会被在网路层被同步阻塞。引起这个问题的根本原
+因是RPC层和网络层没有一致的控制逻辑。通过使用层次结构任务模型，我们很
+快能够找到性能问题，并理解造成它的根本原因。
+
+% statistics
 
 \section{性能评测}
 
