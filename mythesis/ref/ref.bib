@@ -39,7 +39,7 @@
 
 @INPROCEEDINGS{sharkfs,
   author = {Siddhartha Annapureddy and Michael J. Freedman and David Mazi{\`e}res},
-  title = {{Shark}: Scaling File Servers via Cooperative Caching},
+  title = {Shark: Scaling File Servers via Cooperative Caching},
   booktitle = {USENIX Symposium on Networked Systems Design and Implementation (NSDI)},
   year = {2005},
   bibsource = {DBLP, http://dblp.uni-trier.de},
@@ -99,6 +99,41 @@
   location = {San Francisco, CA}
 }
 
+@INPROCEEDINGS{bullet,
+  author = {Dejan Kosti C and Adolfo Rodriguez and Jeannie Albrecht and Amin
+	Vahdat},
+  title = {Bullet: High Bandwidth Data Dissemination Using an Overlay Mesh},
+  booktitle = {The ACM Symposium on Operating Systems Principles (SOSP)},
+  year = {2003}
+}
+
+@INPROCEEDINGS{sanfermin,
+  author = {Cappos,, Justin and Hartman,, John H.},
+  title = {San Ferm\'{\i}n: aggregating large data sets using a binomial swap
+	forest},
+  booktitle = {USENIX Symposium on Networked Systems Design and Implementation (NSDI)},
+  year = {2008},
+  pages = {147--160},
+  address = {Berkeley, CA, USA},
+  publisher = {USENIX Association},
+  isbn = {111-999-5555-22-1},
+  location = {San Francisco, California}
+}
+
+@INPROCEEDINGS{splitstream,
+  author = {Castro,, Miguel and Druschel,, Peter and Kermarrec,, Anne-Marie and
+	Nandi,, Animesh and Rowstron,, Antony and Singh,, Atul},
+  title = {SplitStream: high-bandwidth multicast in cooperative environments},
+  booktitle = {ACM symposium on Operating systems principles (SOSP)},
+  year = {2003},
+  pages = {298--313},
+  address = {New York, NY, USA},
+  publisher = {ACM},
+  doi = {http://doi.acm.org/10.1145/945445.945474},
+  isbn = {1-58113-757-5},
+  location = {Bolton Landing, NY, USA}
+}
+
 @INPROCEEDINGS{Catlett2002,
   author = {Catlett,, Charlie},
   title = {The Philosophy of {TeraGrid}: Building an Open, Extensible, Distributed
@@ -123,6 +158,22 @@
   timestamp = {2009.04.08}
 }
 
+@ARTICLE{bigtable,
+  author = {Chang,, Fay and Dean,, Jeffrey and Ghemawat,, Sanjay and Hsieh,,
+	Wilson C. and Wallach,, Deborah A. and Burrows,, Mike and Chandra,,
+	Tushar and Fikes,, Andrew and Gruber,, Robert E.},
+  title = {Bigtable: A Distributed Storage System for Structured Data},
+  journal = {ACM Transactions on Computer Systems },
+  year = {2008},
+  volume = {26},
+  pages = {1--26},
+  number = {2},
+  address = {New York, NY, USA},
+  doi = {http://doi.acm.org/10.1145/1365815.1365816},
+  issn = {0734-2071},
+  publisher = {ACM}
+}
+
 @INPROCEEDINGS{pinpoint,
   author = {Chen,, Mike Y. and Accardi,, Anthony and Kiciman,, Emre and Lloyd,,
 	Jim and Patterson,, Dave and Fox,, Armando and Brewer,, Eric},
@@ -145,12 +196,19 @@
 }
 
 @INPROCEEDINGS{dynamo,
-  author = {Giuseppe DeCandia and Deniz Hastorun and Madan Jampani and Gunavardhan
-	Kakulapati and Avinash Lakshman and Alex Pilchin and Swami Sivasubramanian
-	and Peter Vosshall and Werner Vogels},
-  title = {Dynamo: {Amazon}'s Highly Available Key-Value Store},
+  author = {DeCandia,, Giuseppe and Hastorun,, Deniz and Jampani,, Madan and
+	Kakulapati,, Gunavardhan and Lakshman,, Avinash and Pilchin,, Alex
+	and Sivasubramanian,, Swaminathan and Vosshall,, Peter and Vogels,,
+	Werner},
+  title = {Dynamo: amazon's highly available key-value store},
   booktitle = {The ACM Symposium on Operating Systems Principles (SOSP)},
-  year = {2007}
+  year = {2007},
+  pages = {205--220},
+  address = {New York, NY, USA},
+  publisher = {ACM},
+  doi = {http://doi.acm.org/10.1145/1294261.1294281},
+  isbn = {978-1-59593-591-5},
+  location = {Stevenson, Washington, USA}
 }
 
 @ARTICLE{Dijkstra1974,
@@ -171,6 +229,16 @@
   year = {2007},
   owner = {Administrator},
   timestamp = {2009.04.08}
+}
+
+@INPROCEEDINGS{coral,
+  author = {Freedman,, Michael J. and Freudenthal,, Eric and Mazi\`{e}res,, David},
+  title = {Democratizing content publication with coral},
+  booktitle = {USENIX Symposium on Networked Systems Design and Implementation (NSDI)},
+  year = {2004},
+  address = {Berkeley, CA, USA},
+  publisher = {USENIX Association},
+  location = {San Francisco, California}
 }
 
 @ARTICLE{Gao2005,
@@ -197,6 +265,26 @@
   timestamp = {2009.04.08}
 }
 
+@INPROCEEDINGS{friday,
+  author = {Geels, D. and Altekar, G. and Maniatis, P. and Roscoe, T. and Stoica,
+	I.},
+  title = {Friday: Global comprehension for distributed replay},
+  booktitle = {USENIX Symposium on Networked Systems Design and Implementation (NSDI)},
+  year = {2007}
+}
+
+@INPROCEEDINGS{liblog,
+  author = {Geels,, Dennis and Altekar,, Gautam and Shenker,, Scott and Stoica,,
+	Ion},
+  title = {Replay debugging for distributed applications},
+  booktitle = {USENIX Annual Technical Conference},
+  year = {2006},
+  pages = {27--27},
+  address = {Berkeley, CA, USA},
+  publisher = {USENIX Association},
+  location = {Boston, MA}
+}
+
 @INPROCEEDINGS{gfs,
   author = {Sanjay Ghemawat and Howard Gobioff and Shun-Tak Leung},
   title = {The {Google} file system},
@@ -217,6 +305,14 @@
   doi = {http://doi.acm.org/10.1145/989393.989401},
   issn = {0362-1340},
   publisher = {ACM}
+}
+
+@INPROCEEDINGS{r2,
+  author = {Guo, Zhenyu and Wang, Xi and Tang, Jian and Liu, Xuezheng and Xu,
+	Zhilei and Wu, Ming and Kaashoek, Frans and Zhang, Zheng},
+  title = {{R2}: An application-level kernel for record and replay},
+  booktitle = {USENIX Symposium on Operating Systems Design and Implementation (OSDI)},
+  year = {2008}
 }
 
 @INPROCEEDINGS{Hall1992,
@@ -247,7 +343,7 @@
 @INPROCEEDINGS{dryad,
   author = {Isard,, Michael and Budiu,, Mihai and Yu,, Yuan and Birrell,, Andrew
 	and Fetterly,, Dennis},
-  title = {{Dryad}: distributed data-parallel programs from sequential building
+  title = {Dryad: distributed data-parallel programs from sequential building
 	blocks},
   booktitle = {ACM SIGOPS/EuroSys European Conference on Computer Systems (EuroSys)},
   year = {2007},
@@ -280,12 +376,26 @@
   timestamp = {2009.04.08}
 }
 
+@INPROCEEDINGS{d3s,
+  author = {Liu,, Xuezheng and Guo,, Zhenyu and Wang,, Xi and Chen,, Feibo and
+	Lian,, Xiaochen and Tang,, Jian and Wu,, Ming and Kaashoek,, M. Frans
+	and Zhang,, Zheng},
+  title = {D3S: debugging deployed distributed systems},
+  booktitle = {USENIX Symposium on Networked Systems Design and Implementation (NSDI)},
+  year = {2008},
+  pages = {423--437},
+  address = {Berkeley, CA, USA},
+  publisher = {USENIX Association},
+  isbn = {111-999-5555-22-1},
+  location = {San Francisco, California}
+}
+
 @BOOK{Manning1999,
   title = {Foundations of Statistical Natural Language Processing},
   publisher = {MIT Press},
-  address = {Cambridge, MA, USA},
   year = {1999},
   author = {Chris Manning and Hinrich Schutze},
+  address = {Cambridge, MA, USA},
   owner = {Administrator},
   timestamp = {2009.04.08}
 }
@@ -315,7 +425,7 @@
 	Sherwood},
   title = {Understanding and visualizing full systems with data flow tomography},
   booktitle = {International Conference on Architectural Support for Programming
-	Languages and Operating Systems  (ASPLOS)},
+	Languages and Operating Systems (ASPLOS)},
   year = {2008},
   owner = {Administrator},
   timestamp = {2009.04.08}
@@ -329,6 +439,15 @@
   year = {2004},
   owner = {gcn},
   timestamp = {2007.04.24}
+}
+
+@INPROCEEDINGS{chainsaw,
+  author = {Vinay Pai and Kapil Kumar and Karthik Tamilmani and Vinay Sambamurthy
+	and Er E. Mohr},
+  title = {Chainsaw: Eliminating Trees from Overlay Multicast},
+  booktitle = {International Workshop on Peer-to-Peer Systems (IPTPS)},
+  year = {2005},
+  pages = {127--140}
 }
 
 @INPROCEEDINGS{Park2003,
@@ -378,8 +497,8 @@
 
 @INPROCEEDINGS{pastry,
   author = {Antony Rowstron and Peter Druschel},
-  title = {{Pastry}: Scalable decentralized object location and routing for
-	large-scale peer-to-peer systems},
+  title = {Pastry: Scalable decentralized object location and routing for large-scale
+	peer-to-peer systems},
   booktitle = {IFIP/ACM International Conference on Distributed Systems Platforms
 	(Middleware)},
   year = {2001},
@@ -406,6 +525,14 @@
   pages = {245--258},
   address = {Berkeley, CA, USA},
   publisher = {USENIX Association}
+}
+
+@INPROCEEDINGS{xenosearch,
+  author = {David Spence and Tim Harris},
+  title = {Xenosearch: Distributed resource discovery in the xenoserver open
+	platform},
+  booktitle = {High Performance Distributed Computing (HPDC)},
+  year = {2003}
 }
 
 @INPROCEEDINGS{chord,
@@ -445,6 +572,21 @@
   timestamp = {2009.04.08}
 }
 
+@ARTICLE{astrolabe,
+  author = {Van Renesse,, Robbert and Birman,, Kenneth P. and Vogels,, Werner},
+  title = {Astrolabe: A robust and scalable technology for distributed system
+	monitoring, management, and data mining},
+  journal = {ACM Transactions on Computer Systems },
+  year = {2003},
+  volume = {21},
+  pages = {164--206},
+  number = {2},
+  address = {New York, NY, USA},
+  doi = {http://doi.acm.org/10.1145/762483.762485},
+  issn = {0734-2071},
+  publisher = {ACM}
+}
+
 @INPROCEEDINGS{codeen,
   author = {Wang,, Limin and Park,, Kyoung Soo and Pang,, Ruoming and Pai,, Vivek
 	and Peterson,, Larry},
@@ -470,6 +612,30 @@
   location = {Banff, Alberta, Canada}
 }
 
+@INPROCEEDINGS{mpiwiz,
+  author = {Xue,, Ruini and Liu,, Xuezheng and Wu,, Ming and Guo,, Zhenyu and
+	Chen,, Wenguang and Zheng,, Weimin and Zhang,, Zheng and Voelker,,
+	Geoffrey},
+  title = {{MPIWiz}: subgroup reproducible replay of mpi applications},
+  booktitle = {ACM SIGPLAN symposium on Principles and practice of parallel programming
+	(PPoPP)},
+  year = {2008},
+  pages = {251--260},
+  address = {New York, NY, USA},
+  publisher = {ACM},
+  doi = {http://doi.acm.org/10.1145/1504176.1504213},
+  isbn = {978-1-60558-397-6},
+  location = {Raleigh, NC, USA}
+}
+
+@INPROCEEDINGS{sdims,
+  author = {Praveen Yalagandula},
+  title = {A scalable distributed information management system},
+  booktitle = {SIGCOMM},
+  year = {2004},
+  pages = {379--390}
+}
+
 @INPROCEEDINGS{Rhizoma,
   author = {Qin Yin and Justin Cappos and Andrew Baumann and Timothy Roscoe},
   title = {Dependable Self-Hosting Distributed Systems Using Constraints},
@@ -479,10 +645,25 @@
   timestamp = {2009.04.08}
 }
 
+@INPROCEEDINGS{coolstreaming,
+  author = {Xinyan Zhang and Jiangchuan Liu and Tak-shing Peter Yum},
+  title = {Coolstreaming/donet: A data-driven overlay network for peer-to-peer
+	live media streaming},
+  booktitle = {IEEE Conference on Computer Communications (Infocom)},
+  year = {2005}
+}
+
+@INPROCEEDINGS{somo,
+  author = {Zheng Zhang and Shu-Ming Shi and Jing Zhu},
+  title = {SOMO: Self-Organized Metadata Overlay for Resource Management},
+  booktitle = {International Workshop on Peer-to-Peer Systems (IPTPS)},
+  year = {2003}
+}
+
 @ARTICLE{tapestry,
   author = {Ben Y. Zhao and Ling Huang and Jeremy Stribling and Sean C. Rhea
 	and Anthony D. Joseph and John D. Kubiatowicz},
-  title = {{Tapestry}: A Resilient Global-Scale Overlay for Service Deployment},
+  title = {Tapestry: A Resilient Global-Scale Overlay for Service Deployment},
   journal = {IEEE Journal on Selected Areas in Communications},
   year = {2004},
   volume = {22},
@@ -503,6 +684,20 @@
   timestamp = {2009.04.08}
 }
 
+@MISC{archie,
+  title = {Archie search engine},
+  howpublished = {\url{http://archie.icm.edu.pl/archie-adv_eng.html}},
+  owner = {Administrator},
+  timestamp = {2009.04.11}
+}
+
+@MISC{baidu,
+  title = {Baidu},
+  howpublished = {\url{http://www.baidu.com/}},
+  owner = {Administrator},
+  timestamp = {2009.04.11}
+}
+
 @MISC{bittorrent,
   title = {BitTorrent},
   howpublished = {\url{http://bittorrent.org/}},
@@ -517,6 +712,34 @@
   timestamp = {2009.04.08}
 }
 
+@MISC{cnbeta_bigtable,
+  title = {Google spotlights data center inner workings},
+  howpublished = {\url{http://news.cnet.com/webware/?keyword=BigTable}},
+  owner = {Administrator},
+  timestamp = {2009.04.11}
+}
+
+@MISC{comon,
+  title = {CoMon},
+  howpublished = {\url{http://comon.cs.princeton.edu/}},
+  owner = {Administrator},
+  timestamp = {2009.04.11}
+}
+
+@MISC{facebook,
+  title = {Facebook},
+  howpublished = {\url{http://www.facebook.com}},
+  owner = {Administrator},
+  timestamp = {2009.04.11}
+}
+
+@MISC{gdoc,
+  title = {Google Docs},
+  howpublished = {\url{http://docs.google.com/}},
+  owner = {Administrator},
+  timestamp = {2009.04.11}
+}
+
 @MISC{globus,
   title = {Globus Toolkit},
   howpublished = {\url{http://www.globus.org/toolkit/}},
@@ -524,11 +747,39 @@
   timestamp = {2007.04.24}
 }
 
+@MISC{gmail,
+  title = {Gmail},
+  howpublished = {\url{http://www.gmail.com}},
+  owner = {Administrator},
+  timestamp = {2009.04.11}
+}
+
+@MISC{google,
+  title = {Google},
+  howpublished = {\url{http://www.google.com/}},
+  owner = {Administrator},
+  timestamp = {2009.04.11}
+}
+
 @MISC{hadoop,
   title = {Hadoop},
   howpublished = {\url{http://hadoop.apache.org/}},
   owner = {Administrator},
   timestamp = {2009.04.08}
+}
+
+@MISC{how_google_works,
+  title = {How google works},
+  howpublished = {\url{http://www.baselinemag.com/c/a/Infrastructure/How-Google-Works-1/}},
+  owner = {Administrator},
+  timestamp = {2009.04.11}
+}
+
+@MISC{idisk,
+  title = {Apple iDisk},
+  howpublished = {\url{http://www.mac.com/}},
+  owner = {Administrator},
+  timestamp = {2009.04.11}
 }
 
 @MISC{pldist,
@@ -545,10 +796,31 @@
   timestamp = {2007.04.24}
 }
 
+@MISC{s3,
+  title = {Amazon Simple Storage Service (S3)},
+  howpublished = {\url{https://s3.amazonaws.com/}},
+  owner = {Administrator},
+  timestamp = {2009.04.11}
+}
+
+@MISC{smartfrog,
+  title = {SmartFrog},
+  howpublished = {\url{http://www.smartfrog.org/}},
+  owner = {Administrator},
+  timestamp = {2009.04.11}
+}
+
 @MISC{vxargs,
   title = {vxargs},
   howpublished = {\url{http://dharma.cis.upenn.edu/planetlab/vxargs/}},
   owner = {gcn},
   timestamp = {2007.04.24}
+}
+
+@MISC{yahoo,
+  title = {Yahoo},
+  howpublished = {\url{http://www.yahoo.com/}},
+  owner = {Administrator},
+  timestamp = {2009.04.11}
 }
 
