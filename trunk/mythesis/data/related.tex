@@ -117,8 +117,8 @@ ACMS~\cite{acms}(The Akamai Configuration Management System)是Akamai的
 务可用性。ACMS使用了多个服务入口点（entry point）接受配置文件更新的请
 求，入口点分布在不同的ISP内。其次，同一配置，可能会被不同的人同时更新，
 更新请求可能会同时到达不同的入口点。需要保证更新的一致性。ACMS使用了基
-于向量交换（Vector Exchange）的quorum算法，让入口点之间对更新顺序达成
-一致意见，保证了更新的正确性。
+于向量交换（Vector Exchange）~\cite{xxx}的quorum算法，让入口点之间对更
+新顺序达成一致意见，保证了更新的正确性。
 
 图xxx
 
@@ -224,6 +224,8 @@ paths to profile distributed systems.
 % (sosp03)
 
 \subsubsection*{Pinpoint}
+
+% see related in reynolds thesis
 
 Pinpoint~\cite{pinpoint}通过对系统增加标注的办法，为J2EE应用的每个用户
 请求附加了一个唯一标识。标注就是对系统代码进行一定修改，在适当的地方输
