@@ -299,7 +299,7 @@ pip, x-trace, project5}。
 
 \begin{figure}
 \centering
-\includegraphics[height=0.5\linewidth]{3tier_causalpath}
+\includegraphics[width=0.8\linewidth]{3tier_causalpath}
 \caption{三层结构Web服务处理用户请求的因果路径示例}
 \label{fig:3tier}
 \end{figure}
@@ -418,7 +418,7 @@ SMON（Self-Managed Overlay Network）。构成这个系统的节点相互监测
 机制使SMON节点能够自动与计算平台的机器认证并登陆。SMON节点将登陆认证过
 程中的挑战密文转发给认证代理，并返回认证代理求解的应答密文给远程机器，
 从而完成自动认证的过程。同时，这一机制保证了用户提供的认证信息不会泄露
-到认证代理外部。最后，可以使用SMON的自我升级功能，扩展它的管理能力。也
+到认证代理外部。最后，可以使用SMON的自我更新功能，扩展它的管理能力。也
 可以使用SMON部署其它管理系统。这样，我们既获得了需要的管理功能，也省去
 了管理和维护的负担。
 
@@ -508,23 +508,33 @@ ChunkFS。ChunkFS是一个类似GFS~\cite{gfs}的分布式文件系统。我们�
 
 本文的创新点和贡献是：
 
-\begin{enumerate}
+\begin{itemize}
 
-  \item
+  \item 提出了分布式应用管理系统应该具备自管理能力。我们研究了基于
+  epidemic算法的自管理设计方法，并实现了一个具备自管理能力的分布式应用
+  管理系统SMON。SMON具有很好的可扩展性和应对网络分割的能力。
 
-  \item
+  \item 研究了自动推断系统层次结构任务模型的方法。与已有工作对比，我们
+  的工作不需要人手工标注系统的任务模型。我们的推断方法能够自动推断任务
+  的边界、任务之间的因果依赖关系，并使用聚类算法推断任务的层次结构。在
+  一些实际系统上的应用表明，我们的推断方法能够得到具有合理含义的层次任
+  务模型，帮助人们理解系统设计与解决系统设计问题。
 
-  \item
+  \item 研究了在系统日志上推断任务模型的方法。我们能够自动从系统日志中
+  提取出任务信息，并在一组任务上，推断它们的层次结构关系。使用得到的层
+  次关系，我们能够将系统的运行时行为，分为层次结构的任务实例。在实际系
+  统上的应用表明，我们的推断方法能够帮助理解系统的运行时行为，并帮助解
+  决系统设计中的问题。
 
-\end{enumerate}
+\end{itemize}
 
 \subsection{内容组织}
 
 本文主要研究了分布式系统管理和调试中的一些关键问题，各章内容安排如下：
 
-\begin{enumerate}
+\begin{itemize}
 
-  \item 第一章
+  \item 第一章（本章）：叙述了本文工作的研究背景。
 
   \item 第二章
 
@@ -536,5 +546,5 @@ ChunkFS。ChunkFS是一个类似GFS~\cite{gfs}的分布式文件系统。我们�
 
   \item 第六章
 
-\end{enumerate}
+\end{itemize}
 
