@@ -2,8 +2,7 @@
 \chapter{相关工作}
 \label{chap:related}
 
-针对本文的研究内容，在本章分别介绍分布式系统管理与分布式系统调试相关的
-研究工作。
+本章介绍与本文内容相关的分布式系统管理与调试方面的研究工作。
 
 % distributed platform
 
@@ -12,36 +11,40 @@
 
 \section{分布式系统管理}
 
-和自管理紧密相关的研究，epidemic algorithm，dissemination，self-*
+\ref{}节首先叙述了一些常见的分布式应用管理系统，使读者对基本的管理系统
+设计有所了解。数据分发是可自管理的分布式应用管理系统中的重点，\ref{}节
+介绍了一些重要的数据分发系统。
 
-\subsection{management overview}
+% 和自管理紧密相关的研究，epidemic algorithm，dissemination，self-*
 
-从管理设计到的任务看：
+% \subsection{management overview}
+% 
+% 从管理设计到的任务看：
+% 
+% *should not needed, duplicated in intro*
+% 
+% resource discovery: sword, xenosearch
+% 
+% dissemination: below
+% 
+% monitor: aggregation (pier, sophia, irisnet, mon, astrolabe, sdims,
+% willow, SOMO, san femin, ganglia, )
+% 
+% and distributed trigger (sum -> complex operation -> topK -> quantiles
+% -> set-expression, ok and enough)
 
-*should not needed, duplicated in intro*
+\subsection{分布式应用管理系统}
 
-resource discovery: sword, xenosearch
-
-dissemination: below
-
-monitor: aggregation (pier, sophia, irisnet, mon, astrolabe, sdims,
-willow, SOMO, san femin, ganglia, )
-
-and distributed trigger (sum -> complex operation -> topK -> quantiles
--> set-expression, ok and enough)
-
-\subsection{management: last to write}
-
-分布式系统管理工具对一个分布式计算平台来说是必不可少的。一些可以公开或
-半公开访问的的分布式计算平台有
+分布式应用管理系统或工具对一个分布式计算平台来说是必不可少的。一些可以
+公开或半公开访问的的分布式计算平台有
 Planet-Lab~\cite{Bavier2004}，TeraGrid~\cite{Catlett2002}和Amazon
 EC2~\cite{Garfinkel2007}。在这些平台上，较多使用的管理工具有：
 
 \subsubsection*{vxargs和pssh}
 
 vxargs~\cite{vxargs}和pssh~\cite{pssh}是两个集中式管理工具，用一组脚本
-实现。它们利用Unix/Linux平台安装的ssh/scp工具远程复制文件或执行控制命
-令。使用时，只需要将工具的脚本复制到发起管理的中心节点即可。
+实现。使用时，只需要将工具的脚本复制到发起管理的中心节点即可。它们利用
+Unix/Linux平台安装的ssh/scp工具远程复制文件或执行控制命令。
 
 \subsubsection*{Application Manager}
 
@@ -53,17 +56,61 @@ Application Manager~\cite{appmanager}（简称appmanager）也是一个集中管
 
 \subsubsection*{Plush}
 
-Plush~\cite{plush}致力于提供一个全面的管理框架。它首先将管理一个分布式
-应用的过程分为资源发现与获取、应用部署、应用维护三大部分。用户使用XML
-语言描述应用管理涉及的这三部分内容，让Plush自动完成管理工作。
+Plush~\cite{fig:plush_spec}致力于提供一个全面的管理框架。它首先将管理
+一个分布式应用的过程分为资源发现与获取、应用部署、应用维护三大部分。用
+户使用XML语言描述应用管理涉及的这三部分内容，让Plush自动完成管理工作。
 
-图xxx是用Plush管理SWORD~\cite{sword_worlds, sword_toit}的XML说明。在
-\texttt{software}标签里，指明了SWORD的安装程序地址是
-\texttt{\url{http://plush.ucsd.edu/sword.tar}}。在\texttt{component}标
-签，指明了运行SWORD需要Planet-Lab上至少10个，至多800个机器，但是没有指
-明机器的属性。在\texttt{application\_block}标签，指明了应用执行与维护
-相关的参数，例如SWORD的执行路径是\texttt{dd\-/planetlab\-/run sword}，
-SWORD的维护策略是\texttt{service（service="1"）}等等。
+\begin{figure}
+\centering
+\begin{lstlisting}[language=XML,basicstyle=\small,numbers=left,
+numberstyle=\tiny,tabsize=8,stringstyle=\ttfamily]
+<?xml_version="1.0" encoding="utf-8"?>
+<plush>
+    <project_name="sword">
+        <software name="sword_software" type="tar">
+            <package name="sword.tar" type="web">
+                <path>http://plush.ucsd.edu/sword.tar</path>
+                <dest>sword.tar</dest>
+            </package>
+        </software>
+        <component name="sword_participants">
+            <rspec>
+                <num_hosts_min="10" max="800"/>
+            </rspec>
+            <resources>
+                <resource_type="planetlab" group="ucsd_sword"/>
+            </resources>
+            <software_name="sword_software"/>
+        </component>
+        <application_block name="sword_app_block" service="1"
+            reconnect_interval="300">
+            <execution>
+                <component_block_name="participants">
+                    <component_name="sword_participants"/>
+                    <process_block name="sword">
+                        <process name="sword_run">
+                            <path>dd/planetlab/run sword</path>
+                        </process>
+                    </process_block>
+                </component_block>
+            </execution>
+        </application_block>
+    </project>
+<plush>
+\end{lstlisting}
+\caption{Plush应用管理说明}
+\label{fig:plush_spec}
+\end{figure}
+
+
+图~\cite{fig:plush_spec}是用Plush管理SWORD~\cite{sword_worlds,
+sword_toit}的XML说明。在\texttt{software}标签里，指明了SWORD的安装程序
+地址是\texttt{\url{http://plush.ucsd.edu/sword.tar}}。在
+\texttt{component}标签，指明了运行SWORD需要Planet-Lab上至少10个，至多
+800个机器，但是没有指明机器的属性。在\texttt{application\_block}标签，
+指明了应用执行与维护相关的参数，例如SWORD的执行路径是
+\texttt{dd\-/planetlab\-/run sword}，SWORD的维护策略是\texttt{service
+（service="1"）}等等。
 
 Plush也采用了集中式管理的策略，有自己的客户端，通过客户端与服务器端的
 通信完成管理任务。Plush具备一定的自管理能力。在运行时，如果发现某个机
@@ -88,7 +135,7 @@ Globus~\cite{globus}是搭建Grid系统与应用的软件工具包。它包含�
 
 % smartfrog cfengine
 
-\subsection{dissemination}
+\subsection{数据分发}
 
 \subsubsection*{BitTorrent}
 
@@ -117,17 +164,23 @@ ACMS~\cite{acms}(The Akamai Configuration Management System)是Akamai的
 务可用性。ACMS使用了多个服务入口点（entry point）接受配置文件更新的请
 求，入口点分布在不同的ISP内。其次，同一配置，可能会被不同的人同时更新，
 更新请求可能会同时到达不同的入口点。需要保证更新的一致性。ACMS使用了基
-于向量交换（Vector Exchange）~\cite{xxx}的quorum算法，让入口点之间对更
+于向量交换（Vector Exchange）的quorum算法，让入口点之间对更
 新顺序达成一致意见，保证了更新的正确性。
 
-图xxx
+\begin{figure}
+\centering
+\includegraphics[width=0.8\linewidth]{acms_design}
+\caption{ACMS系统结构}
+\label{fig:acms_design}
+\end{figure}
+
 
 为了同时保证更新能够快速有效的被传送到整个CDN的所有机器上，ACMS将更新
-分为两部进行，如图xxx所示。更新首先由用户发送到某一个入口点，这个入口
-点服务器和其它服务器达成对更新的一致意见后，将更新持久化保存到各自的硬
-盘上，并给用户返回更新成功。其它CDN的节点会定期向入口点查询订阅的配置
-文件的版本，并从入口点机器下载更新。通过利用CDN节点的HTTP缓存机制，更
-新可以快速的被传递到所有的CDN机器上。
+分为两部进行，如图~\cite{fig:acms_design}所示。更新首先由用户发送到某
+一个入口点，这个入口点服务器和其它服务器达成对更新的一致意见后，将更新
+持久化保存到各自的硬盘上，并给用户返回更新成功。其它CDN的节点会定期向
+入口点查询订阅的配置文件的版本，并从入口点机器下载更新。通过利用CDN节
+点的HTTP缓存机制，更新可以快速的被传递到所有的CDN机器上。
 
 ACMS使用的分层部署方法将更新的正确性和性能问题分开解决。入口点机器通过
 使用quorum算法解决了正确性问题，其它节点向入口点机器订阅更新，解决了更

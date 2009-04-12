@@ -212,37 +212,45 @@ Server 2003 SP2操作系统，机器间通过1 Gb网络连接。
 
 \subsection{Apache}
 
-我们首先人工验证Scalpel在Apache上推断的任务模型。图xxx显示了得到的模型。
-在图上，每个节点都是一个叶子任务，连接任务的实线与虚线表示任务之间的因
-果关系，实线表示线程内部执行顺序因果关系，虚线表示线程间因果关系。叶子
-任务上标记了任务起始点的调用栈。为了易于理解，在本文中，我们只显示了调
-用栈尾部调用同步函数的那个函数名称。
+我们首先人工验证Scalpel在Apache上推断的任务模型。图~
+\ref{fig:apache_model}显示了得到的模型。在图上，每个节点都是一个叶子任
+务，连接任务的实线与虚线表示任务之间的因果关系，实线表示线程内部执行顺
+序因果关系，虚线表示线程间因果关系。叶子任务上标记了任务起始点的调用栈。
+为了易于理解，在本文中，我们只显示了调用栈尾部调用同步函数的那个函数名
+称。
 
-图xxx
+\begin{figure}
+\centering
+\includegraphics[width=\linewidth]{apache-task-model}
+\caption{执行SVN checkout得到的Apache任务模型}
+\label{fig:apache_model}
+\end{figure}
+
 
 通过仔细阅读理解Apache和SVN的代码，我们确定推断的模型就是Apache服务SVN
 checkout操作时的工作流程。Apache接受外来的请求，并将请求交给线程池中的
-一个worker线程去完成。Scalpel推断出5个Apache核心执行的叶子任务（图xxx
-的左边部分）。每个任务表示Apache接受并服务请求的主要步骤。详细说，监听
-线程接受连接（\texttt{winnt\_accept\_1}），从连接上下文
-\footnote{Connection context，描述外来请求的数据结构。}资源池中取出一
-个连接上下文（\texttt{mpm\_get\_completion\_context}），并将这个上下文
-通过I/O completion port（IOCP）传递给worker线程
+一个worker线程去完成。Scalpel推断出5个Apache核心执行的叶子任务（图~
+\ref{fig:apache_model}的左边部分）。每个任务表示Apache接受并服务请求的
+主要步骤。详细说，监听线程接受连接（\texttt{winnt\_accept\_1}），从连
+接上下文\footnote{Connection context，描述外来请求的数据结构。}资源池
+中取出一个连接上下文（\texttt{mpm\_get\_completion\_context}），并将这
+个上下文通过I/O completion port（IOCP）传递给worker线程
 （\texttt{winnt\_accept\_2}），并继续等待其他请求到来。在IOCP的另一边，
 线程池中的一个worker线程首先获得连接上下文
 （\texttt{winnt\_get\_connection}），并调用SVN服务模块去处理请求（从
 \texttt{ap\_core\_input\_filter}到\texttt{ap\_lingering\_close}）。之
 后，worker线程将连接上下文回收到上下文资源池
-（\texttt{mpm\_recycle\_completion\_context)}），并等待IOCP中的其它请
-求。SVN checkout过程中的一些叶子任务未在图上完全显示，但是它们都是处理
-请求过程中的关键步骤。因此，这也是使用同步点为启发推断叶子任务边界有效
-性的一个例证。
+（\texttt{mpm\_recycle\_completion\_context}），并等待IOCP中的其它请求。
+SVN checkout过程中的一些叶子任务未在图上完全显示，但是它们都是处理请求
+过程中的关键步骤。因此，这也是使用同步点为启发推断叶子任务边界有效性的
+一个例证。
 
-进一步的，Scalpel还成功的找到了两个有实际含义的高层任务，见图xxx中方框
-表示的部分，在图上我们按照两个任务的工作给它们标了名字。第一个高层任务
-（上下文资源池）包括了连接上下文被取出用来传递用户请求又被回收的过程。
-另一个（SVN checkout）包含了SVN checkout被处理的过程。因为这两个任务都
-被频繁执行，因此Scalpel可以精确的将他们确认为高层任务。
+进一步的，Scalpel还成功的找到了两个有实际含义的高层任务，见图~
+\ref{fig:apache_model}中方框表示的部分，在图上我们按照两个任务的工作给
+它们标了名字。第一个高层任务（Context Pool）包括了连接上下文被取出用来
+传递用户请求又被回收的过程。另一个（SVN checkout）包含了SVN checkout被
+处理的过程。因为这两个任务都被频繁执行，因此Scalpel可以精确的将他们确
+认为高层任务。
 
 \subsection{PacificA}
 
@@ -279,6 +287,8 @@ checkout操作时的工作流程。Apache接受外来的请求，并将请求交
 \begin{table}[t!]
 \small
 \centering
+\caption{Statistic numbers of Apache and PacificA.}
+\label{scp:statistics}
 \begin{tabular}{lll}
 
   		& Apache	& PacificA \\
@@ -293,8 +303,6 @@ run-after	& 193972	& 11304 \\
 \hline
 
 \end{tabular}
-\caption{Statistic numbers of Apache and PacificA.}
-\label{scp:statistics}
 \end{table}
 
 表~\ref{scp:statistics}小结了推断算法的执行统计。
