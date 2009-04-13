@@ -10,14 +10,16 @@
 NotebookFileLineBreakTest
 NotebookFileLineBreakTest
 NotebookDataPosition[       145,          7]
-NotebookDataLength[      7504,        172]
-NotebookOptionsPosition[      6882,        150]
-NotebookOutlinePosition[      7543,        173]
-CellTagsIndexPosition[      7500,        170]
+NotebookDataLength[      7837,        185]
+NotebookOptionsPosition[      7153,        160]
+NotebookOutlinePosition[      7814,        183]
+CellTagsIndexPosition[      7771,        180]
 WindowFrame->Normal*)
 
 (* Beginning of Notebook Content *)
 Notebook[{
+
+Cell[CellGroupData[{
 Cell[BoxData[
  RowBox[{"Plot", "[", 
   RowBox[{
@@ -39,19 +41,21 @@ Cell[BoxData[
    RowBox[{"FrameLabel", "\[Rule]", 
     RowBox[{"{", 
      RowBox[{
-     "\:8f6e\:6570", ",", "\:88ab\:611f\:67d3\:4eba\:53e3\:6bd4\:7387"}], 
-     "}"}]}], ",", 
+     "\"\<\:8f6e\:6570(r)\>\"", ",", 
+      "\"\<\:88ab\:611f\:67d3\:4eba\:53e3\:6bd4\:7387(Y_r)\>\""}], "}"}]}], 
+   ",", 
    RowBox[{"LabelStyle", "\[Rule]", 
     RowBox[{"Directive", "[", 
      RowBox[{
       RowBox[{"FontFamily", "\[Rule]", "\"\<\:5b8b\:4f53\>\""}], ",", 
-      "Larger", ",", "Bold"}], "]"}]}]}], "]"}]], "Input",
+      "Larger"}], "]"}]}]}], "]"}]], "Input",
  CellChangeTimes->{{3.4485152135*^9, 3.4485152406875*^9}, {
   3.44851551571875*^9, 3.448515552328125*^9}, {3.448515589375*^9, 
   3.44851559840625*^9}, {3.448515697578125*^9, 3.44851569915625*^9}, {
   3.44851583678125*^9, 3.44851584096875*^9}, {3.448516042515625*^9, 
   3.44851616171875*^9}, {3.4485162195625*^9, 3.44851625371875*^9}, {
-  3.44851629265625*^9, 3.44851633615625*^9}}],
+  3.44851629265625*^9, 3.44851633615625*^9}, {3.448585726421875*^9, 
+  3.448585788078125*^9}, {3.44859016078125*^9, 3.4485901610625*^9}}],
 
 Cell[BoxData[
  GraphicsBox[{{}, {}, 
@@ -132,21 +136,27 @@ pTbBdBXl7b5T2xi6O2n6TKwZh7oFqbXfvzHEGVLArsv0/wD2Ggek
   AxesOrigin->{0, 0},
   Frame->True,
   FrameLabel->{
-    FormBox["\:8f6e\:6570", TraditionalForm], 
-    FormBox["\:88ab\:611f\:67d3\:4eba\:53e3\:6bd4\:7387", TraditionalForm]},
+    FormBox["\"\:8f6e\:6570(r)\"", TraditionalForm], 
+    FormBox[
+    "\"\:88ab\:611f\:67d3\:4eba\:53e3\:6bd4\:7387(Y_r)\"", TraditionalForm]},
   FrameStyle->{{
      GrayLevel[0], 
      GrayLevel[1]}, {
      GrayLevel[0], 
      GrayLevel[1]}},
-  ImageSize->{440., Automatic},
-  LabelStyle->Directive[FontFamily -> "\:5b8b\:4f53", Larger, Bold],
+  LabelStyle->Directive[FontFamily -> "\:5b8b\:4f53", Larger],
   PlotRange->{{0, 10}, {0., 0.9928331442897337}},
   PlotRangeClipping->True,
   PlotRangePadding->{
     Scaled[0.02], 
-    Scaled[0.02]}]], "Input",
- CellChangeTimes->{{3.4485332973125*^9, 3.448533299671875*^9}}]
+    Scaled[0.02]}]], "Output",
+ CellChangeTimes->{{3.448585734515625*^9, 3.44858578834375*^9}, 
+   3.44859016171875*^9}]
+}, Open  ]],
+
+Cell[BoxData[""], "Input",
+ CellChangeTimes->{{3.4485332973125*^9, 3.448533299671875*^9}, 
+   3.448585745140625*^9}]
 },
 PrintingStyleEnvironment->"Presentation",
 WindowSize->{615, 655},
@@ -172,8 +182,11 @@ CellTagsIndex->{}
 *)
 (*NotebookFileOutline
 Notebook[{
-Cell[545, 20, 1303, 33, 117, "Input"],
-Cell[1851, 55, 5027, 93, 299, InheritFromParent]
+Cell[CellGroupData[{
+Cell[567, 22, 1411, 35, 117, "Input"],
+Cell[1981, 59, 5037, 94, 252, "Output"]
+}, Open  ]],
+Cell[7033, 156, 116, 2, 31, "Input"]
 }
 ]
 *)
