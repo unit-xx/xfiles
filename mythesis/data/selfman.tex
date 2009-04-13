@@ -45,17 +45,17 @@ EC2~\cite{Garfinkel2007} and Teragrid~\cite{Catlett2002}。这些计算平台
 分利用这些资源来提升自己的性能。
 
 随着分布式应用的规模越来越大，有效的管理它们越来越有挑战性。分布式应用
-管理系统能够帮助人们简化部署和维护分布式应用的工作。为了有效的完成管理
-任务，管理系统也被设计为一个复杂的分布式系统。一个管理系统包括运行在不
-同机器上的若干“节点\footnote{对于采用集中式算法的管理系统，节点就是所
-谓的客户端}”。这些管理节点间形成一个覆盖网络，节点相互合作来部署分布
-式应用。在大规模分布式系统上，故障或失败事件（failure）是经常发生，包
-括节点故障、应用失败和网络故障。当分布式应用被部署并启动以后，管理系统
-可以监测被管理应用的状态，并将应用从失败中恢复，恢复的方法依赖于特定应
-用的要求。使用者也可以通过管理系统查询应用的状态，或者控制应用的运行。
+管理系统能够帮助人们简化部署和维护分布式应用的管理工作。为了有效的完成
+管理任务，管理系统也被设计为一个复杂的分布式系统。一个管理系统包括运行
+在不同机器上的若干“节点\footnote{对于采用集中式算法的管理系统，节点就
+是所谓的客户端}”。这些管理节点间形成一个覆盖网络，节点相互合作来部署
+分布式应用。在大规模分布式系统上，故障或失败事件（failure）是经常发生，
+包括节点故障、应用失败和网络故障。当分布式应用被部署并启动以后，管理系
+统监测被管理应用的状态，并将应用从失败中恢复，恢复的方法依赖于特定应用
+的语意。使用者也可以通过管理系统查询应用的状态，或者控制应用的运行。
 
 我们注意到，由于管理系统实际上也是一个分布式系统，或者说分布式应用，这
-带来了一个重要的问题：管理系统也需要被管理。使用者需要把管理节点部署到
+引出了一个重要的问题：管理系统也需要被管理。使用者需要把管理节点部署到
 一组机器上去，在管理系统被启动后，需要持续监测它的运行状态，并将它从失
 败中恢复。% 恢复管理系统的方法？
 
@@ -64,27 +64,34 @@ EC2~\cite{Garfinkel2007} and Teragrid~\cite{Catlett2002}。这些计算平台
 管理系统，对控制节点的网络资源消耗随系统规模增大而线性增长，在大规模情
 况下，会对控制节点的网络资源带来很大负担。其次，集中式方式使用了星型的
 静态拓扑结构，这种结构不能很好的应对网络环境的变化与失败事件，例如网络
-分割（network partition）。另外，不可能使用一个采用P2P方式的管理系统去
-管理其它管理系统。因为前者同样需要被管理。
+分割（network partition）。
+
+% 另外，不可能使用一个采用P2P方式的管理系统去管理其它管理系统。因为前
+% 者同样需要被管理。
 
 在本文中，我们提出了可自管理的覆盖网络（SMON, Self-Managed Overlay
-Network）。SMON是一个新颖的分布式应用管理系统，它具有内建自管理能力，
-包括自我部署、自我更新和自我恢复能力。因而，它有效的解决了分布式管理系
-统也需要管理的问题。SMON包括分布在一组机器上的管理节点，这些节点相互探
-测对方的状态，依据探测的结果，自动执行自我管理与维护任务，包括安装新的
-SMON管理节点、更新SMON管理节点至新的版本，或者恢复失败的SMON管理节点。
-这样，从整体来看，SMON具有了自我管理的能力。作为一个分布式应用管理系统，
-SMON提供了一组基本的管理语意。可以使用SMON部署与维护其它分布式应用，其
-中也包括其他分布式应用管理系统。
+Network）。SMON是一个新颖的分布式应用管理系统（下文中简称管理系统，或
+分布式管理系统），它具有内建自管理能力，包括自我部署、自我更新和自我恢
+复能力。因而，它有效的解决了管理系统也需要被管理的问题。SMON包括分
+布在一组机器上的管理节点，这些节点相互探测对方的状态，依据探测的结果，
+自动执行自我管理与维护任务，包括安装新的SMON管理节点、更新SMON管理节点
+至新的版本，或者恢复失败的SMON管理节点。这样，从整体来看，SMON具有了自
+我管理的能力。同时，SMON提供了一组基本的管理语意。可以使用SMON部署与维
+护其它分布式应用。
 
-设计SMON需要解决一下几个挑战性问题。
+提出SMON的意义在于，如果我们把SMON与它管理的分布式应用看做一个整体，那
+么这个新的分布式应用也具备了自管理的能力。特别的，如果被SMON管理的应用
+是一个分布式应用管理系统，则那个管理系统也具备了自管理能力。也就是说，
+SMON能够让任何分布式管理系统具备自管理能力。
+
+设计SMON需要解决以下几个挑战性问题。
 
 首先，SMON需要有良好的可扩展性。其次，为了让SMON节点能够自动在远程机器
 上安装新的SMON节点，或者恢复失败的节点，需要有安全机制使SMON节点能够自
 动与远程机器认证并登陆，同时保护用户的认证信息（例如私钥）不会被泄露。
-最后，SMON的管理能力应该是能够被拓展的（extensible）。
+% 最后，SMON的管理能力应该是能够被拓展的（extensible）。
 
-SMON的设计分别处理了上面几个问题，叙述如下。对第一个问题，SMON的节点构
+SMON的设计分别处理了上面的问题，叙述如下。对第一个问题，SMON的节点构
 成一个无结构的覆盖网络，节点间使用epidemic算法相互探测，并相互维护。
 epidemic算法保证了SMON系统具有良好的扩展性（$O(\log N)$），同时
 epidemic算法也带来了额外的好处，首先它易于实现，其次，它使得SMON系统很
@@ -93,17 +100,19 @@ epidemic算法也带来了额外的好处，首先它易于实现，其次，它
 证过程中需要的认证信息（例如私钥），它并不将认证信息泄露给任何SMON节点，
 或其它外部对象。简单的说，SMON节点会将认证过程中收到的挑战密文
 （challenge）转发给认证代理，并将认证代理回复的应答密文（response）发
-送给远程机器，从而完成了自动认证的过程。对于第三个问题，可以使用SMON的
-自我更新功能，扩展它的管理能力。也可以使用SMON部署其它管理系统。这样，
-我们既获得了需要的管理功能，也省去了管理和维护的负担。
+送给远程机器，从而完成了自动认证的过程。
+
+% 对于第三个问题，可以使用SMON的自我更新功能，扩展它的管理能力。也可以
+% 使用SMON部署其它管理系统。这样，我们既获得了需要的管理功能，也省去了
+% 管理和维护的负担。
 
 本章接来下的部分安排如下：\ref{sec:smon_design}节描述如何设计SMON系统，
 包括如何实现自我管理，SMON的安全机制、邻居列表维护与应用管理语意的设计。
-\ref{sec:smon_impl}节描述了如何在Planet-Lab上实现SMON。
-\ref{sec:smon_app}节展示了SMON系统的一些使用方式。我们在Planet-Lab上评
-测了SMON系统的性能参数，其结果展示在\ref{sec:smon_eval}节。
-\ref{sec:smon_related}节讨论了相关工作。\ref{sec:smon_conclusion}为本
-章小结。
+\ref{sec:smon_impl}节描述了如何在Planet-Lab上实现
+SMON。\ref{sec:smon_app}节描述了SMON系统的一些应用方式。我们在
+Planet-Lab上评测了SMON系统的性能，并将实测结果与理论分析结果进行了对比，
+在\ref{sec:smon_eval}节中叙述。\ref{sec:smon_related}节讨论了相关工作。
+\ref{sec:smon_conclusion}为本章小结。
 
 
 \section{系统设计}
@@ -126,19 +135,20 @@ SMON系统的体系结构如图~\ref{fig:smon_arch}所示，包含了三个部�
 点，认证代理和客户端工具。
 
 SMON管理节点运行在分布式平台一组指定的机器上，每个节点都维护着完整的机
-器列表，这个列表也称作是SMON节点的邻居列表。SMON节点相互探测并相互维护。
-SMON节点定期从从邻居列表中选择一个节点，向它发一个ping消息，如果超时没
-有收到回复的pong消息，那么这个SMON节点会试图向远程机器安装新的SMON节点，
-如果远程机器已经安装有SMON节点，那么它将会试图恢复失败的SMON节点运行。
-每个SMON节点都保存着自身的版本号，在用ping-pong消息相互探测过程中，会
-顺便交换相互的版本号，低版本的SMON节点会将自身升级至高版本。
+器列表，这个列表也称作是SMON节点的邻居列表。SMON节点使用epidemic算法相
+互探测并相互维护。SMON节点定期从从邻居列表中随机选择一个节点，向它发
+ping消息，如果超时没有收到回复的pong消息，那么这个SMON节点会试图向远程
+机器安装新的SMON节点，如果远程机器已经安装有SMON节点，那么它将会试图恢
+复失败的SMON节点。每个SMON节点都保存着自身的版本号，在用ping-pong消息
+相互探测过程中，会顺便交换相互的版本号，低版本的SMON节点会将自身升级至
+高版本。
 
 认证代理持有与分布式平台上的机器认证所需的认证信息（例如私钥）。当
 SMON节点在远程机器上部署新的SMON节点，或者恢复失败的SMON节点时，需要首
 先与远程机器认证并登陆，这一过程需要认证代理的协助。
 
-用户使用客户端工具来管理一组分布式应用，这其中包括其它分布式管理系统。
-也可以通过客户端工具查询SMON与应用的状态。
+用户使用客户端工具来管理一组分布式应用，也可以通过客户端工具查询SMON与
+应用的状态。
 
 \subsection{自我管理设计}
 
@@ -151,19 +161,19 @@ SMON节点在远程机器上部署新的SMON节点，或者恢复失败的SMON�
 % 相互探测，相互维护
 % ping -> liveness
 
-SMON可以自动将自己部署至分布式平台的一组指定的目标机器上去。在最初状态
-时，所有的目标机器上都没有被部署运行SMON节点。用户需要手动部署并启动一
-个SMON节点。这个SMON节点会在邻居列表中随机选取一个机器，并在它上面部署
-第二个SMON节点。新的SMON节点同样会在别的机器上部署SMON节点。当越来越多
-的SMON节点被部署，自我部署过程会以幂指数速度增长。可以证明，以概率1，
-所有可以连接的机器上都会被部署SMON节点~\cite{Eugster2004}。
+SMON可以自动将自己部署至分布式计算平台的指定目标机器上。在最初状态时，
+所有的目标机器上都没有被部署运行SMON节点。用户需要手动部署并启动一个
+SMON节点。这个SMON节点会在邻居列表中随机选取一个机器，并在它上面部署第
+二个SMON节点。新的SMON节点同样会在别的机器上部署SMON节点。当越来越多的
+SMON节点被部署，自我部署过程会以幂指数速度增长。可以证明，以概率1，所
+有可以连接的机器上都会被部署SMON节点~\cite{Eugster2004}。
 
-详细来说，节点$P$会定期选择邻居列表里的一个机器$M$，并向它上发送SMON节
-点探测消息（ping）。如果超时没有收到回应的pong消息，$P$就会在$M$上远程
-部署一份SMON节点。它首先在认证代理的协助下（在\ref{subsec:security}节
-中描述）认证并登陆进$M$，向$M$远程拷贝一份SMON的安装程序，并远程启动安
-装程序。启动的安装程序首先检查自己的完整性（使用checksum校验和），以防
-传输过程中产生错误，然后它会安装并启动SMON节点。
+详细来说，节点$P$会定期随机选择邻居列表里的一个机器$M$，并向它发送
+SMON节点探测消息（ping）。如果超时没有收到回应的pong消息，$P$就会在$M$
+上远程部署一份SMON节点。它首先在认证代理的协助下（在
+\ref{subsec:security}节中描述）认证并登陆进$M$，向$M$远程拷贝一份SMON
+的安装程序，并远程启动安装程序。启动的安装程序首先检查自己的完整性（使
+用checksum校验和），以防传输过程中产生错误，然后它会安装并启动SMON节点。
 
 在上述过程运行的任何时刻，都有可能因为外界因素而产生错误（例如连接中断，
 机器崩溃等）。如果有错误发生，$P$会直接放弃这次远程部署的任务。
@@ -342,16 +352,26 @@ SMON系统的邻居列表有其自身的特点。一般来说，在其它分布�
 点将会很少收到来自其它节点的消息，这些SMON节点会在长时间未收到消息的情
 况下，自动停止自己的运行。
 
+% 应用呢？
+
 \subsection{应用管理}
 
-SMON可以管理若干个其它分布式应用。每个SMON节点负责部署和维护运行在同一
-个机器内的分布式应用的节点~\footnote{也就是分布式应用的进程}。每个应用
-由它的名字所唯一标识。SMON节点会使用epidemic方式，定期与一个随机选择的
-SMON节点交换它们管理的应用名称，如果发现一个新的未部署的应用，它会从对
-方获取应用的安装程序，并在本机器部署安装新的应用。
+SMON可以管理若干个分布式应用。每个SMON节点负责部署和维护运行在同一个机
+器内的分布式应用的节点~\footnote{也就是分布式应用的进程}。每个应用由它
+的名字所唯一标识。SMON节点会使用epidemic方式，定期与一个随机选择的SMON
+节点交换它们管理的应用名称，如果发现一个新的未部署的应用，它会从对方获
+取应用的安装程序，并在本机器部署安装新的应用。
 
-应用被部署并启动后，会被同一机器上运行的SMON节点所监视并维护。应用可以
-有两种状态，运行或停止。作为维护选项，用户可以指定应用的维护策略，可以
+不同的分布式应用需要不同的管理与维护语意。SMON针对长期运行的分布式服务
+设计了管理语意。这包括，在每个机器安装应用节点后立即启动应用，而不用等
+待其它其它应用节点的进度，在应用节点失败后，以重新启动的方式恢复应用节
+点，而不用重新启动整个分布式应用。
+
+由于分布式管理系统也是一种分布式服务，因而SMON的使用者可以在SMON上部署
+新的管理系统，得到他需要的管理语意。
+
+应用被部署并启动后，会被同一机器上运行的SMON节点所监测并维护。应用可以
+有两种状态，运行或停止。作为应用维护选项，用户可以指定应用的状态，可以
 有三种选择：
 
 \begin{itemize}
@@ -364,19 +384,18 @@ SMON节点交换它们管理的应用名称，如果发现一个新的未部署�
   态。
 \end{itemize}
 
-这三个维护选项包含在应用的安装程序内，在应用被部署时自动设置。用户也可
-以在应用部署后单独改变某个应用节点的维护选项。SMON节点会定期向应用指定
-的一个中心节点报告应用的状态。当应用的状态改变时，SMON会立即向那个中心
-节点报告这个变化。
+应用的安装程序会设置应用应处于哪个状态。用户也可以在应用部署后单独改变
+某个应用节点的维护选项。SMON节点会定期向应用指定的一个中心节点报告应用
+的状态。当应用的状态改变时，SMON会立即向中心节点报告这个变化。
 
 %
 
-显然，SMON提供的应用监测与维护语意是很基本的。对于一些情况，这样的管理
-语意是足够的，例如维护一个需要长期运行的分布式应用，应用的节点需要尽可
-能处在运行状态。SMON提供的管理语意只考虑了应用是否运行，而没有进一步监
-视应用是否运行在正确状态，包括应用的安全性与活性（safety and
-liveness）。为了扩展管理语意，增加新的管理功能，用户可以在SMON上部署其
-它的分布式应用管理系统。这在~\ref{sec:smon_app}节有进一步论述。
+% 显然，SMON提供的应用监测与维护语意是很基本的。对于一些情况，这样的管
+% 理语意是足够的，例如维护一个需要长期运行的分布式应用，应用的节点需要
+% 尽可能处在运行状态。SMON提供的管理语意只考虑了应用是否运行，而没有进
+% 一步监视应用是否运行在正确状态，包括应用的安全性与活性（safety and
+% liveness）。为了扩展管理语意，增加新的管理功能，用户可以在SMON上部署
+% 其它的分布式应用管理系统。这在~\ref{sec:smon_app}节有进一步论述。
 
 \subsection{客户端工具}
 \label{subsec:client}
@@ -413,7 +432,7 @@ slice是Planet-Lab分配分布式资源的方式，一个slice对应分布在不
 \begin{table*}
 \small
 \centering
-\caption{SMON节点通信使用的RPC}
+\caption{SMON节点与认证代理支持的RPC}
 \label{fig:smon_rpc}
 \begin{tabular}{|l|p{7cm}|}
 
@@ -421,45 +440,36 @@ slice是Planet-Lab分配分布式资源的方式，一个slice对应分布在不
 \textbf{RPC} & \textbf{功能描述} \\
 
 \hline
-\texttt{ping(ver)} & Call with local SMON peer's version and
-return remote peer's version.\\
+\texttt{ping(ver)} & ping其它SMON节点，并互换版本号.\\
 
 \hline
-\texttt{retrieve\_peer(ver)} & Retrieve installation package
-of SMON peer with specified version.\\
+\texttt{retrieve\_peer(ver)} & 获取指定版本的SMON安装程序.\\
 
 \hline
-\texttt{exchange\_livetag(tag, ver)} & Call with local
-$<$livetag, version$>$, and return remote peer's $<$livetag,
+\texttt{exchange\_livetag(tag, ver)} & 与其它SMON节点交换$<$livetag,
 version$>$.\\
 
 \hline
-\texttt{exchange\_member(ver)} & Call with local membership
-list version and return remote peer's membership list.\\
+\texttt{exchange\_member(ver)} & 与其它SMON节点交换邻居列表版本.\\
 
 \hline
-\texttt{retreive\_member(ver)} & Retrive membership list of
-specified version.\\
+\texttt{retreive\_member(ver)} & 获取指定版本的邻居列表.\\
 
 \hline
-\texttt{exchange\_app(app\_name)} & Call with an application
-name, return true if remote peer has installed the
-application.\\
+\texttt{exchange\_app(app\_name)} & 与其它SMON节点.\\
 
 \hline
-\texttt{retrieve\_app(app\_name)} & Retrieve installation package
-of an application with specified name.\\
+\texttt{retrieve\_app(app\_name)} & 获取应用的安装程序.\\
 
 \hline
-\texttt{resolve\_challenge(challenge)} & Return the response
-to an authentication challenge.\\
-
-\hline
-\texttt{set\_app\_status(app\_name, status)} & Set application status (online,
+\texttt{set\_app\_status(app\_name, status)} & 设置应用状态(online,
 offline, ignore).\\
 
 \hline
-\texttt{get\_app\_status()} & Get application status. \\
+\texttt{get\_app\_status()} & 查询应用状态. \\
+
+\hline
+\texttt{resolve\_challenge(challenge)} & 求解挑战密文（认证代理实现）.\\
 
 \hline
 
@@ -483,7 +493,8 @@ SMON节点与应用的安装程序更新。邻居列表单独保存在一个压�
 
 \section{应用方式}
 \label{sec:smon_app}
-one-hop
+
+我们叙述几种使用SMON的典型方式：
 
 plush
 
@@ -553,7 +564,7 @@ r \approx \frac{1}{f} \ln(n) - \frac{1}{f} \ln(\frac{1}{Y_r} - 1)
   \begin{minipage}{0.8\linewidth}
     \centering
     \includegraphics[width=0.8\linewidth]{Y_r}
-    \caption{xxx}
+    \caption{$Y_r$（被感染人口比率）随$r$变化的曲线}
     \label{fig:self-deploy_Yr}
   \end{minipage}
 \end{figure}
@@ -586,7 +597,7 @@ r \approx \frac{1}{f} \ln(n) - \frac{1}{f} \ln(\frac{1}{Y_r} - 1)
 Planet-Lab节点上部署的SMON系统，从禁止状态转换到启动状态。图~
 \ref{fig:state-transition}显示了转换的进度。对于90\%的节点来说，状态在
 143秒后成功的转换，而状态转换的中值是37秒。可以看出，状态转换过程是非
-常快的，与图~\cite{xxx}的趋势也基本一致。
+常快的，与图~\ref{fig:self-deploy_Yr}的趋势也基本一致。
 
 \begin{figure}
 \centering
@@ -614,6 +625,7 @@ $N$个SMON节点，每个随机选择其它一个节点一次，则对特定一�
 P(X=n) = C(N, n) (\frac{1}{N})^n (1 - \frac{1}{N})^{N-n}
 \end{equation*}
 对本文的例子，$N=159$。考虑到$N$比较大，可以用Poisson分布近似二项分布，
+% xxx 这里还得斟酌，N很大，但不应该说等于159
 参数$\lambda = N \times \frac{1}{N} = 1$，因而
 \begin{equation*}
 P(X=n) \approx \frac{e^{-1}}{n!} \quad (n = 0, 1, \ldots )
@@ -629,19 +641,19 @@ P'(X=n) = P(X=n | X > 0) = \frac{P(X=n)}{1- P(X=0)} \quad (n = 1, 2, \ldots )
   \begin{minipage}{0.8\linewidth}
     \centering
     \includegraphics[width=0.8\linewidth]{overhead_calc}
-    \caption{xxx}
+    \caption{（理论上）自我部署过程中额外开销分布}
     \label{fig:overhead_calc}
   \end{minipage}
 \end{figure}
 
-我们将分析得到的$P'(X=n)$与实际相比较，结果显示在图~
-\ref{fig:overhead_calc}中。可以看出，基本是和实际分布一致的。
+我们将分析得到的$P'(X=n)$的分布显示在图~\ref{fig:overhead_calc}中。可
+以看出，$P'(X=n)$和实际结果大体上是一致的。
 
-我们注意到，使用分析得到的模型，每个节点被选中部署的次数是1，而实际是
-2.31。我们认为主要原因是，分析时，我们实际上假设了部署新的SMON节点可以
-瞬时完成，而在实际中需要一定的时间。因而，在一个机器被某个SMON节点选中
-并部署时，仍然有别的SMON节点选中相同的机器，因此造成实际被选中的次数大
-于理论分析的结果。
+我们注意到，使用分析得到的模型，每个节点被选中部署次数的平均值是1，而
+实际是2.31。我们认为主要原因是，分析时，我们实际上假设了部署新的SMON节
+点可以瞬时完成，而在实际中需要一定的时间。因而，在一个机器被某个SMON节
+点选中并部署时，仍然有别的SMON节点选中相同的机器，因此造成实际被选中的
+次数大于理论分析的结果。
 
 % scalability是符合log关系的。
 
@@ -651,7 +663,7 @@ P'(X=n) = P(X=n | X > 0) = \frac{P(X=n)}{1- P(X=0)} \quad (n = 1, 2, \ldots )
     \centering
     \caption{在不同的规模SMON自我部署性能比较}
     \label{fig:scalability}
-    \begin{tabular}{lcc}
+    \begin{tabular}{ccc}
     \toprule[1.5pt]
            & 24 nodes & 159 nodes\\
     \midrule[1pt]
