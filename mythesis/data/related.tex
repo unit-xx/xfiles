@@ -14,10 +14,6 @@
 
 \section{分布式系统管理}
 
-\ref{xxx}节首先叙述了一些常见的分布式应用管理系统，使读者对基本的管理系统
-设计有所了解。数据分发是可自管理的分布式应用管理系统中的重点，\ref{xxx}节
-介绍了一些重要的数据分发系统。
-
 % 和自管理紧密相关的研究，epidemic algorithm，dissemination，self-*
 
 % \subsection{management overview}
@@ -41,7 +37,11 @@
 分布式应用管理系统或工具对一个分布式计算平台来说是必不可少的。一些可以
 公开或半公开访问的的分布式计算平台有
 Planet-Lab~\cite{Bavier2004}，TeraGrid~\cite{Catlett2002}和Amazon
-EC2~\cite{Garfinkel2007}。在这些平台上，较多使用的管理工具有：
+EC2~\cite{Garfinkel2007}。在这些平台上，研究者或开发者使用管理工具将分
+布式应用部署到一组机器，并监测、控制应用的运行过程。在这些平台上，较多
+使用的管理工具有：
+
+% xxx: motivate self-mon
 
 \subsubsection*{vxargs和pssh}
 
@@ -132,6 +132,14 @@ Globus~\cite{globus}是搭建Grid系统与应用的软件工具包。它包含�
 对资源的需求，使用Globus Resource Allocation Manager (GRAM)为应用分配
 资源。
 
+其它一些常见的管理工具还有cfengine~\cite{cfengine},
+SmartFrog~\cite{smartfrog}和Condor~\cite{condor}。cfengine是一个基于策
+略的配置管理工具。它将系统应该处于的配置状态描述为一个“不动点”，
+cfengine会自动采取相应步骤，将系统配置状态“收敛”到不动点去。
+SmartFrog提供了配置描述语言，用户可以给出非常复杂的系统配置描述，
+SmartFrog会自动完成用户指定的部署与配置任务。Condor是Grid上的一个工作
+流管理系统，主要面向计算密集型任务。
+
 
 % Amazon EC2怎么怎么（就不用开个小标题了）
 
@@ -139,11 +147,20 @@ Globus~\cite{globus}是搭建Grid系统与应用的软件工具包。它包含�
 
 \subsection{数据分发}
 
+将分布式应用与相关的数据部署到一组机器上，这是一个数据分发问题。
+Bullet~\cite{bullet}和Splitstream~\cite{splitstream}使用了树形覆盖网络
+结构分发数据。但是在分布式系统，尤其是广域网环境下，维护一个严格的拓扑
+结构需要花费很大的维护开销。目前，很多工作使用随机结构的网络拓扑完成数
+据分发任务。使用随机拓扑结构不需要维护特定的网络结构，维护开销比较低。
+应用节点通过与随机选取的其它节点通信，互相合作将数据分发出去。一些典型
+的工作包括：
+
 \subsubsection*{BitTorrent}
 
 BitTorrent~\cite{bittorrent}是一个Peer-to-Peer(P2P)文件共享协议，它是
 Internet上使用最广泛的文件分发、共享工具。一些估算表明，它产生的网络通
-信占整个Internet流量的35\%~\cite{bt2004}。
+信占整个Internet流量的35\%~\cite{bt2004}。虽然BitTorrent提出很早，但是
+对数据分发方面的研究产生了重要影响。
 
 Bittorrent由一组节点（peer）和一个tracker构成。初始时，有一个节点包含
 了整个要共享的文件，它被称为种子。其它节点可以从种子下载文件。同时，节
@@ -178,7 +195,7 @@ ACMS~\cite{acms}(The Akamai Configuration Management System)是Akamai的
 
 
 为了同时保证更新能够快速有效的被传送到整个CDN的所有机器上，ACMS将更新
-分为两部进行，如图~\ref{fig:acms_design}所示。更新首先由用户发送到某
+分为两步进行，如图~\ref{fig:acms_design}所示。更新首先由用户发送到某
 一个入口点，这个入口点服务器和其它服务器达成对更新的一致意见后，将更新
 持久化保存到各自的硬盘上，并给用户返回更新成功。其它CDN的节点会定期向
 入口点查询订阅的配置文件的版本，并从入口点机器下载更新。通过利用CDN节
@@ -205,7 +222,14 @@ SharkFS~\cite{sharkfs}使用了合作缓存（Cooperative Caching）技术提高
 盖网络\cite{can, pastry, tapestry, chord, kademlia}，实现了一个分布式
 的tracker。
 
-\subsection{self-*}
+
+\subsection{self-*性质}
+
+% xxx here
+
+分布式系统本质上非常复杂的，人们希望系统能够具备一些self-*性质，包括自
+我管理、自我恢复、自我组织、自我优化等等性质。这样，系统能够自动应对分
+布式系统中频繁发生的错误，优化自己的性能，减少了人工管理的工作。
 
 自稳\cite{Dijkstra1974}（self-stablization）是一个分布式系统中的容错概
 念，在1974年由E.\ W.\ Dijkstra提出。它是指，系统从任何状态开始，都会自动
@@ -220,7 +244,7 @@ IBM在2001年提出了Automatic Computing~\cite{Kephart2003}（AC）的概念。
 
 DHT~\cite{can, pastry, tapestry, chord, kademlia}（Distributed Hash
 Table）能够自动应对系统的节点加入与退出事件，通过调整每个对等节点的路
-由表，自动维护设计的拓扑结构。\note{自动维护replica}
+由表，自动维护设计的拓扑结构。
 
 Rhizoma~\cite{Rhizoma}试图将自我管理功能嵌入到分布式应用内部去。它的研
 究动机是，随着Utility Computing（UC）的出现，将有越来越多的公司将自身
@@ -230,6 +254,9 @@ Rhizoma~\cite{Rhizoma}试图将自我管理功能嵌入到分布式应用内部�
 内嵌到应用来解决这个问题。
 
 % SCAMP self-organizing membership
+
+\subsection{与本文工作对比}
+xxx
 
 \section{分布式系统调试}
 
@@ -447,6 +474,9 @@ CLUEBOX~\cite{cluebox}使用了机器学习方法，对系统的性能日志进�
 Artemis~\cite{artemis}是一个日志分析框架，包含了日志收集、日志存储、可
 视化工具和一组插件定义接口，使用它，用户可以自定义插件，对系统（例如
 Dryad~\cite{dryad}）进行分析。
+
+\subsection{与本文工作对比}
+xxx
 
 \section{本章小结}
 
