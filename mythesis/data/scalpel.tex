@@ -95,11 +95,13 @@ PacificA对网络带宽的利用率只有最大值的70\%。
 本节叙述自动推断系统层次结构任务模型的方法，以及它的原型实现
 \pozhehao{}Scalpel。
 
+% xxx: design step through?
+
 \subsection{收集系统运行trace}
 
 我们使用插装技术透明的观测系统运行，收集运行过程的函数调用，以及调用参
-数，包括应用层函数和系统同步函数（signal/wait）与系统Socket调用
-（send/recv）。默认所有的函数调用都会被收集到trace。
+数，包括应用层函数和系统同步函数（例如signal/wait）与系统Socket调用
+（例如send/recv）。默认所有的函数调用都会被收集到trace。
 
 % xxx: 全序？
 
@@ -199,21 +201,102 @@ Scalpel使用若干启发区分这两种不同的关系。如果系统使用操�
 程序运行记录与回放工具。通过插装操作系统调用与应用函数，R2记录了系统的
 运行过程，这也包括对同步对象（互斥锁和信号等）的同步操作，和socket操作。
 
-在被插装的系统调用与应用函数内，我们输出函数的名称与调用参数。使用这些
-信息，我们可以推断出叶子任务的边界，以及同步操作时的函数调用栈。利用函
-数调用栈，可以给叶子任务提供易于程序员理解的名字标签。
+在被插装的系统调用与应用函数内，我们输出函数的名称与调用参数。这些信息
+用来推断叶子任务的边界，并给出任务边界的函数调用栈。利用函数调用栈，可
+以给叶子任务提供易于程序员理解的名字标签。
 
-叶子任务的因果关系由任务边界的同步操作之间的happened-before关系推断得
-到，反映在trace中，这个关系与同步操作被记录的顺序一致。例如，线程在一
-个event上的wait操作，依赖于另一个线程上的signal操作，后者完成后，前者
-才继续执行。在trace中维持了这个依赖关系，也就是signal操作被记录的顺序
-在wait操作之前。因此，只需要顺序扫描trace中在同一个同步对象上的同步操
-作顺序，我们就能够得到叶子任务之间的happened-before关系。
+% 叶子任务的因果关系由任务边界的同步操作之间的happened-before关系推断
+% 得到，反映在trace中，这个关系与同步操作被记录的顺序一致。例如，线程
+% 在一个event上的wait操作，依赖于另一个线程上的signal操作，后者完成后，
+% 前者才继续执行。在trace中维持了这个依赖关系，也就是signal操作被记录
+% 的顺序在wait操作之前。因此，只需要顺序扫描trace中在同一个同步对象上
+% 的同步操作顺序，我们就能够得到叶子任务之间的happened-before关系。
 
-% xxx total order 直接在
+\begin{figure}
+  \centering
+  \begin{minipage}{0.8\linewidth}
+    \centering
+    \includegraphics[width=0.8\linewidth]{trace_interleaving}
+    \caption{interleaving case}
+    \label{fig:trace_interleaving}
+  \end{minipage}
+\end{figure}
 
-% xxx shadow lock
+我们需要保证trace中记录的同步操作顺序和实际执行完全一致。由于操作系统
+调度会交叉执行不同线程的代码，因而直接在插装函数内输出trace并不能保证
+同步操作记录的顺序与实际执行顺序一致。我们以Windows event同步对象为例
+说明这个问题。如果采用图~\ref{fig:trace_direct}中的插装代码，输出trace
+（printf）和对event对象的操作（WaitForSingleObject，SetEvent）可能存在
+图~\ref{fig:trace_interleaving}显示的执行顺序。可以看出，输出trace的顺
+序，和event操作的顺序是相反的。
 
+\begin{figure}
+\centering
+\begin{lstlisting}[language=C++]
+
+DWORD WaitForSingleObject_hooker(HANDLE hHandle,
+                                   DWORD dwMilliseconds)
+{
+    // output trace
+    printf("WaitForSingleObject %x %d",
+              hHandle, dwMilliseconds);
+    // execute real WaitForSingleObject function
+    WaitForSingleObject(hHandle, dwMilliseconds);
+}
+
+BOOL SetEvent_hooker(HANDLE hEvent)
+{
+    // output trace
+    printf("SetEvent %x", hEvent);
+    // execute real SetEvent
+    SetEvent(hEvent);
+}
+\end{lstlisting}
+\caption{直接输出trace}
+\label{fig:trace_direct}
+\end{figure}
+
+为了解决这个问题，我们为每个同步对象创建一个shadow lock，将
+WaitForSingleObject操作替换为SignalObjectAndWait，保证了同步操作与输出
+trace是一个原子操作。如图~\ref{fig:trace_shadowlock}所示。
+
+\begin{figure}
+\centering
+\begin{lstlisting}[language=C++]
+
+DWORD WaitForSingleObject_hooker(HANDLE hHandle, 
+                                   DWORD dwMilliseconds)
+{
+    HANDLE shadow_lock = lookup_shadow(hHandle);
+    WaitForSingleObject(shadow_lock, INFINITE);
+
+    // output trace
+    printf("WaitForSingleObject %x %d", 
+             hHandle, dwMilliseconds);
+    // execute real WaitForSingleObject function
+    SignalObjectAndWait(shadow_lock, hHandle, 
+                         dwMilliseconds, bAlertable);
+}
+
+BOOL SetEvent_hooker(HANDLE hEvent)
+{
+    HANDLE shadow_lock = lookup_shadow(hEvent);
+    WaitForSingleObject(shadow_lock, INFINITE);
+
+    // output trace
+    printf("SetEvent %x", hEvent);
+    // execute real SetEvent
+    SetEvent(hEvent);
+
+    ReleaseMutex(shadow_lock);
+}
+
+\end{lstlisting}
+\caption{使用shadow lock输出trace}
+\label{fig:trace_shadowlock}
+\end{figure}
+
+% xxx visualize?
 \section{讨论}
 
 Scalpel主要是为系统开发者而设计的，希望能够帮助他们理解、验证与调试搭
@@ -237,10 +320,9 @@ Scalpel利用这些信息追踪函数调用，为叶子任务提供易于理解�
 并未提出在任务模型上进一步分析的方法，我们希望能在将来的工作中完成进一
 步的工作。
 
-\section{验证推断方法}
-
-iocp, event, mutex
-% xxx
+% \section{验证推断方法}
+% iocp, event, mutex
+% xxx: 没什么可说的，貌似。
 
 \section{应用实例}
 
@@ -308,12 +390,12 @@ SVN checkout过程中的一些叶子任务未在图上完全显示，但是它�
 
 % 把secondary也加上
 
-图xxx显示了PacificA的任务模型。PacificA开发者确认了这个模型准确表达了
-用户提交数据在主节点上执行的过程。模型包含了三个高层任务，分别是提交数
-据执行过程的三个主要步骤：一个worker任务，一个本地提交任务和一个确认远
-程提交的任务。在worker任务中，一个socket监听线程循环的等待用户请求
-（\texttt{Session\-::Recv\-Packet}），接受来自用户的消息，并将用户请求
-通过IOCP交给线程池中的worker线程去执行
+图~\ref{fig:pacifica_model}显示了PacificA的任务模型。PacificA开发者确
+认了这个模型准确表达了用户提交数据在主节点上执行的过程。模型包含了三个
+高层任务，分别是提交数据执行过程的三个主要步骤：一个worker任务，一个本
+地提交任务和一个确认远程提交的任务。在worker任务中，一个socket监听线程
+循环的等待用户请求（\texttt{Session\-::Recv\-Packet}），接受来自用户的
+消息，并将用户请求通过IOCP交给线程池中的worker线程去执行
 （\texttt{PA\-Thread\-Pool\-::Thread\-Internal\-::DoWork}）。worker线
 程取到用户请求后，立即执行本地提交任务。它首先将数据在本地存储
 （\texttt{Logic\-Replica\-::Mutate}，并将提交请求使用异步RPC发送给从节
@@ -341,7 +423,7 @@ SVN checkout过程中的一些叶子任务未在图上完全显示，但是它�
 \centering
 \caption{推断算法数据统计。分别统计了叶子任务数目，不同同步对象引起的
 happened-before关系数目，以及顺序执行的因果依赖关系数目。}
-\label{scp:statistics}
+\label{fig:statistics}
 \begin{tabular}{ccc}
 
 \toprule[1.5pt]
@@ -358,15 +440,27 @@ Socket		& 527		& 77 \\
 \end{minipage}
 \end{table}
 
-表~\ref{scp:statistics}小结了推断算法的执行统计。
+表~\ref{fig:statistics}小结了推断算法的执行统计。
 
 接下来，我们评测使用Scalpel得到的任务模型对帮助调试系统是否有效。
 PacificA的开发者希望我们能够使用Scalpel帮助他们解决系统中的一个性能问
 题。开发者注意到了这个问题，并曾经试图使用函数性能概要分析（profiling）
-的办法，但是没有解决问题。我们使用图~\ref{pacifica-model}的模型分析
+的办法，但是没有解决问题。我们使用图~\ref{fig:pacifica-model}的模型分析
 PacificA的性能。对每一个叶子任务，我们使用Scalpel记录它的执行时间，网
 络带宽消耗，CPU使用等信息。对高层任务，我们将它的子任务性能参数聚集得
 到它的性能参数信息。
+
+\begin{figure}
+  \centering
+  \begin{minipage}{0.8\linewidth}
+    \centering
+    \includegraphics[width=0.8\linewidth]{sleep-send}
+    \caption{sleep-send}
+    \label{fig:sleep-send}
+  \end{minipage}
+\end{figure}
+
+% xxx 压力测试说清楚
 
 通过在压力测试中执行数据提交操作，我们很快发现了那个性能问题：提交任务
 很难使用所有的网络带宽，同时它的CPU使用率也很低，远小于100\%（70\%）。
@@ -376,7 +470,7 @@ PacificA的性能。对每一个叶子任务，我们使用Scalpel记录它的�
 PacificA的网络层代码，会对数据发送做流量控制，如果发送消息的缓冲区满了
 的话，流量控制会引起所有发送线程同步sleep一秒，如图~
 \ref{fig:flow_control_code}。这样，四个并发的发送线程就会表现出几乎同步的
-行为来，如图~\ref{fig:sleep_send}所示。
+行为来，如图~\ref{fig:sleep-send}所示。
 
 \begin{figure}
 \centering
@@ -404,21 +498,65 @@ RPC消息。网络层的消息缓冲区很快就会被填满，导致发送线�
 因是RPC层和网络层没有一致的控制逻辑。通过使用层次结构任务模型，我们很
 快能够找到性能问题，并理解造成它的根本原因。
 
+进一步的，我们尝试解决这个性能问题。我们将异步发送RPC消息改为同步发送
+方式，也就是每个线程发送RPC之后，等待RPC结果返回，然后再发送下一个RPC。
+使用相同的压力测试参数，我们看到这一次网络带宽的利用率接近100\%(97\%左
+右)，线程发送RPC的行为模式如图~\ref{fig:event-send}所示。
+
+这个结果与人们的直观预期不太一致。通常，人们会期待异步通信会比同步通信
+的性能优良。针对这个例子，我们认为，造成同步通信的性能更好的原因是，同
+步发送RPC不会触发PacificA网路层的流量控制。使用同步RPC，系统中正在发送
+的RPC数目最多等于发送线程数（本例是4个），因而不会因为发送消息缓冲被填
+满而导致所有线程sleep一秒的情况。
+
+\begin{figure}
+  \centering
+  \begin{minipage}{0.8\linewidth}
+    \centering
+    \includegraphics[width=0.8\linewidth]{event-send}
+    \caption{event-send}
+    \label{fig:event-send}
+  \end{minipage}
+\end{figure}
+
+将RPC通信模式从异步改为同步并没有完美的解决问题。如果网络发生拥塞导致
+同步RPC调用不能很快返回，则系统处理用户请求的速度会受影响。因而需要重
+新设计PacificA中RPC层和网路层代码，改变两个函数抽象层的交互方式，才能
+根本上提高系统性能。
+
 % statistics
 
 \section{性能评测}
 
-由于使用了插装在系统函数和应用函数调用时输出trace，这会对系统性能造成
+Scalpel使用了插装在系统函数和应用函数调用时输出trace，这会对系统性能造成
 一定影响，我们测试了Scalpel对系统带来的额外负载。
 
 具体说，我们测试了相同环境与配置下，应用与不应用Scalpel对系统性能造成
 的影响。对PacificA，我们测试了两种情况下执行一次提交数据花费的时间。对
 Apache实验，我们测试了执行一次svn checkout花费的时间。每组测试都运行5
-次，取平均值作为最终结果。
+次，取平均值作为最终结果。结果显示在表~\ref{fig:perf}中。
 
-结果显示在表~\ref{xxx}中。
+\begin{table}[t!]
+\small
+\centering
+\begin{minipage}{0.8\linewidth}
+\centering
+\caption{Scalpel对Apache和PacificA的性能影响。
+分别原始执行时间和应用Scalpel后的执行时间，以及性能的额外开销。}
+\label{fig:perf}
+\begin{tabular}{ccc}
 
-% xxx hotdep slides
+\toprule[1.5pt]
+  		& Apache	& PacificA \\
+\midrule[1pt]
+%代码行数	& 480170+316942       &   \\ 62996
+执行时间（原始）& 1.564 sec	& 20.792 sec \\
+执行时间（Scalpel）& 2.054 sec	& 28.362 sec \\
+额外开销	& 31.33\%       & 36.41\% \\
+\bottomrule[1.5pt]
+\end{tabular}
+\end{minipage}
+\end{table}
 
 可以看出，对于PacificA和Apache+SVN，由于插装输出trace对性能的影响在可
 以接受的范围以内。
