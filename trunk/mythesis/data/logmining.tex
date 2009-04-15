@@ -71,34 +71,38 @@ ChunkFS的实际运行过程，并解决了ChunkFS中的一个性能问题。经
 
 \section{推断方法设计}
 
-图表 1是推断工具设计概要。我们首先从无结构的系统日志文本中提取出任务信
-息，并用（key, value）形式表示。key是任务名称，value是任务ID。之后，我
-们推断key也就是任务之间的层次关系。我们将层次关系转换为任务模型，并利
-用任务模型分析系统动态行为。
+图~\ref{fig:logmining_design}是推断方法设计概要。我们首先从无结构的系
+统日志文本中提取出任务信息，并用（key, value）形式表示。key是任务名称，
+value是任务ID。之后，我们推断key也就是任务之间的层次关系。我们利用得到
+的任务层次关系分析系统动态行为。
+
+% XXX: design flow
 
 \subsection{提取任务信息}
 
 日志包含了大量系统活动信息。我们需要从无结构日志文本中提取描述任务行为
 与状态的信息。日志中包含的信息通常可以表达成为（key，value）对的形式。
-我们首先提取出所有的（key，value）对，并从中筛选出key是任务名称的（key，
-value）对。我们使用的方法适用于ChunkFS的日志，其原理可以推广应用至其它
-类型的日志。
 
-图表 1顶部是一个ChunkFS日志的例子。不同系统的日志格式也不
-相同，我们的日志格式是一个典型代表。日志头的部分记录了日志的级别、时间
-、类别，紧接着是所在文件、函数和行号，最后是进程号、线程号。日志头是固
-定格式的。日志的后半部分，包含在Notes域里。它是程序员记录的系统状态，
-包含了文字描述与数值表达的系统状态参数。任务信息通常都记录在这里。
+图~\ref{fig:logmining_design}顶部是一个ChunkFS日志的例子。不同系统的日
+志格式也不相同，我们的日志格式是一个典型代表。日志头的部分记录了日志的
+级别、时间、类别，紧接着是所在文件、函数和行号，最后是进程号、线程号。
+日志头是固定格式的。日志的后半部分，包含在Notes域里。它是程序员记录的
+系统状态，包含了文字描述与数值表达的系统状态参数。任务信息通常都记录在
+这里。
 
-由于
-Notes中的内容是无结构的，因此从中提取出（key，value）信息并不容易。我
-们观察到，（key，value）在日志中通常被写成key SEP1 value SEP2的形式。
+由于Notes中的内容是无结构的，因此从中提取出（key，value）信息并不容易。
+
+key不好确定，格式乱。
+
+我们观察到，（key，value）在日志中通常被写成key SEP1 value SEP2的形式。
 其中，SEP1是key和value的分隔符，SEP2是两个（key，value）之间的分隔符。
-SEP1和SEP2的选择很多，可能是空格、逗号，分号等多种形式。从日志中，并不
-容易确定哪个单词是key，因为key和文字描述中的单词可能是相同的形式，例如
-POSTED: 和opId:。
+SEP1和SEP2的选择很多，可能是空格、逗号，分号等多种形式，并且不同的日志
+条目会使用不同的SEP1、SEP2组合。key也有可能和文字描述中的单词可能是相
+同的形式，例如POSTED: 和opId:。
 
-我们使用了一种新颖的办法提取（key，value）信息。基于
+我们使用
+
+提取（key，value）信息。基于
 对日志的观察，我们发现，value部分的格式是有限的，通常包括整数、十六进
 制数和GUID，很容易使用正则表达式来匹配。一旦找到value部分，我们可以在
 文字中向前跳过分隔符SEP1，遇到的第一个单词就是对应的key。
@@ -116,10 +120,10 @@ value也可能是一个单词。但是目前我们只提取value为数值格式�
 依据映射规则，把某些key转换为新名字。
 
 映射规则的形式如（FileX, FuncY,
-key）（newkey），表示如果一个日志条目的所属文件、函数是FileX、FuncY，
+key） xxx （newkey），表示如果一个日志条目的所属文件、函数是FileX、FuncY，
 那么将这个条目中的key转换为新的名字newkey。FileX, FuncY可以使用正规表
-达式。这样，key别名可以用（*, *, alias）（key）映射规则解决，而key冲
-突问题可以用（FileX, FuncY, conflict key）（newkey）映射规则解决，从
+达式。这样，key别名可以用（*, *, alias） xxx （key）映射规则解决，而key冲
+突问题可以用（FileX, FuncY, conflict key） xxx （newkey）映射规则解决，从
 实际经验看，通常只需要指明FuncY就可以解决冲突。
 
 通常来说，并不是每个提取出的（key，value）对都描述任务信息，例如key是
@@ -195,8 +199,8 @@ StreamID）和（opId, ChunkID）也没有层次关系。
 RootTask，我们增加一个新的节点Runtime，令它为RootTask的父节点，表示系
 统运行时行为，由若干RootTask构成。
 
-例如，对图表 2，可以得到两个任务模型，RuntimeSession, SessionopId
-和RuntimeStreamID, StreamIDChunkID。
+例如，对图表 2，可以得到两个任务模型，Runtime xxx Session, Session xxx opId
+和Runtime xxx StreamID, StreamID xxx ChunkID。
 
 我们将任务模型应用在系统日志上，将系统运行时行为分为有层次的任务实例，
 每个实例都由一组系统日志构成，描述一段时间内的系统活动。系统行为首先从
@@ -204,7 +208,7 @@ RootTask，我们增加一个新的节点Runtime，令它为RootTask的父节点
 个新的值，结束于任务ID被赋予另外一个值之前。在每个任务实例内部，被递归
 的分为更低层的任务实例。
 
-对于图表 2中的例子，我们应用RuntimeSession, SessionopId任务模型，
+对于图表 2中的例子，我们应用Runtime xxx Session, Session xxx opId任务模型，
 得到图表 3中的有层次的任务实例。
 
 我们认识到，系统运行时包含若干线程，因此“推断任务层次关系”与“构建分
@@ -212,6 +216,12 @@ RootTask，我们增加一个新的节点Runtime，令它为RootTask的父节点
 [7]将不同线程的任务联系在一起。
 
 \section{应用}
+
+% 是否能有效的提取key value
+
+% 是否能有效挖掘出key的嵌套关系，挖掘出的关系好用不好用
+
+% 应用得到的关系，能够帮助理解系统运行时行为，和调试性能问题
 
 在这一节，我们报告使用第3节中的推断工具，从ChunkFS日志中提取任务模型，
 并应用模型理解ChunkFS动态行为。同时，我们也描述了，如何利用任务模型，
@@ -253,7 +263,7 @@ opId任务，整个四个圆圈代表一个Session任务
 
 
 我们同时观察在primary chunkserver端的运行时行为。Chunkserver端运行时包
-括若干线程，其任务模型是RuntimeChunkID。具体的，创建一个
+括若干线程，其任务模型是Runtime xxx ChunkID。具体的，创建一个
 stream，Chunksever会接到5个RPC调用，如图表 5所示，分别是create chunk,
 3个append chunk和seal chunk。可观察到的chunkserver行为的粒度被限制在对
 chunk操作的级别（ChunkID任务），因此5个RPC处理被认为是同一个任务实例。
@@ -272,7 +282,7 @@ chunk操作的级别（ChunkID任务），因此5个RPC处理被认为是同一�
 因此使用任务标识的变化来确定任务边界，会把初始化部分划分到上一个任务的
 尾部。考虑到初始化部分通常是比较固定的若干步骤，可以对任务边界增加一个
 修正量，解决这一问题。第二、任务的粒度依赖与任务模型的精确程度。例如在
-先前的chunkserver例子中，5个RPC是五个不同的任务，但是由于使用Runtime
+先前的chunkserver例子中，5个RPC是五个不同的任务，但是由于使用Runtime xxx 
 ChunkID模型，且这5个RPC处理是连续的，所以会被认为是同一个任务。
 
 
