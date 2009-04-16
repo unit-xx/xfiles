@@ -2,7 +2,7 @@
 \chapter{相关工作}
 \label{chap:related}
 
-本章介绍与本文内容相关的分布式系统管理与调试方面的研究工作。
+本章介绍与本文研究内容相关的分布式系统管理与调试方面的工作。
 
 % distributed platform
 
@@ -38,8 +38,8 @@
 公开或半公开访问的的分布式计算平台有
 Planet-Lab~\cite{Bavier2004}，TeraGrid~\cite{Catlett2002}和Amazon
 EC2~\cite{Garfinkel2007}。在这些平台上，研究者或开发者使用管理工具将分
-布式应用部署到一组机器，并监测、控制应用的运行过程。在这些平台上，较多
-使用的管理工具有：
+布式应用部署到一组机器，并监测、控制应用的运行过程。一些典型的管理工具
+有：
 
 % xxx: motivate self-mon
 
@@ -100,7 +100,7 @@ Plush~\cite{plush}致力于提供一个全面的管理框架。它首先将管�
     </project>
 <plush>
 \end{lstlisting}
-\caption{Plush应用管理说明}
+\caption{Plush应用管理说明，引自~\cite{plush}}
 \label{fig:plush_spec}
 \end{figure}
 
@@ -244,7 +244,7 @@ IBM在2001年提出了Automatic Computing~\cite{Kephart2003}（AC）的概念。
 
 DHT~\cite{can, pastry, tapestry, chord, kademlia}（Distributed Hash
 Table）能够自动应对系统的节点加入与退出事件，通过调整每个对等节点的路
-由表，自动维护设计的拓扑结构。
+由表，自动维护设计预期的拓扑结构。
 
 Rhizoma~\cite{Rhizoma}试图将自我管理功能嵌入到分布式应用内部去。它的研
 究动机是，随着Utility Computing（UC）的出现，将有越来越多的公司将自身
@@ -255,52 +255,54 @@ Rhizoma~\cite{Rhizoma}试图将自我管理功能嵌入到分布式应用内部�
 
 % SCAMP self-organizing membership
 
-\subsection{与本文工作对比}
-xxx
-
 \section{分布式系统调试}
 
-First, execution of a transaction is often distributed across process
-and machine boundaries. Second, an executing stage may be a process, a
-thread, an event, or a stage worker thread (as in the Staged Event
-Driven Architecture (SEDA) [25]). A transaction needs to be tracked
-across all such stages. Third, threads may pass a particular
-transaction between them- selves via shared memory. Shared memory
-communications are generally harder to track than inter-process
-communication (IPC) via the operating system or middleware. Finally,
-due to concurrent execution, a transaction may cause another
-transaction to wait, e.g., due to lock contention.
+分布式系统难于调试。为了找到系统错误的根本原因，需要追踪系统的具体运行
+过程，理解系统的运行时行为。这其中有若干难点。首先，分布式系统将任务分
+为很多不同的阶段分散在不同的机器、进程与线程上执行。需要将这些一个任务
+不同阶段的执行过程全部跟踪并抓取出来。其次，任务的不同阶段之间会使用多
+种通信方式，包括共享内存、进程间通信、网络消息、操作系统队列、信号、事
+件等等。将所有这些通信方式都很好的跟踪记录，是一件困难的事情。
 
+% 分布式系统调试的难点在于任务会被分为不同的部分或阶段，分散在系统的不同
+% 机器、进程和线程执行。错误：执行顺序，状态变化
+% 
+% topic: task model/execution path reconstruction, inference, graph
+% mining
+% 
+% 我们使用图上的聚类算法研究了自动推断任务模型的方法，涉及到xxx个主题，
+% 任务模型，图聚类，分别叙述相关工作如下。
+% 
+% log mining related
 
-分布式系统调试的难点在于任务会被分为不同的部分或阶段，分散在系统的不同
-机器、进程和线程执行。错误：执行顺序，状态变化
+\subsection{基于因果路径的方法}
 
-topic: task model/execution path reconstruction, inference, graph
-mining
+因果路径描述了分布式系统执行的控制流信息。它将系统执行过程抽象为一组有
+偏序关系的事件。事件代表任务执行的某个阶段，事件的偏序关系描述了阶段之
+间因为通信（广义的，例如共享内存、网络消息、信号等）而产生的因果依赖关
+系。
 
-我们使用图上的聚类算法研究了自动推断任务模型的方法，涉及到xxx个主题，
-任务模型，图聚类，分别叙述相关工作如下。
+为了准确得到系统细粒度的因果路径，一些工具通过对系统插装或在代码中增加
+标注，得到任务执行的边界与阶段之间的交互信息。
 
-log mining related
+一些重要的工作有：
 
-\subsection{task model control flow}
-
-*white box*
-
-获取系统对每个请求的执行路径，也就是请求在系统中被处理的过程，是分析系
-统行为，找到错误根本原因的一个基本方法。
-
-(pinpoint) The path abstraction has been used in many other areas,
-typically as a form of control flow. Paths are used in Scout for a
-single-node OS [38], are the foundation for
-integrated-layer-processing [1], and play a key role in many compiler
-optimization techniques [5]. Several recent systems have also used
-paths to profile distributed systems.
-
-路径：控制路径，数据路径
-
-
-执行路径也可以被称为因果路径（causal path），因为
+% *white box*
+% 
+% 获取系统对每个请求的执行路径，也就是请求在系统中被处理的过程，是分析系
+% 统行为，找到错误根本原因的一个基本方法。
+% 
+% (pinpoint) The path abstraction has been used in many other areas,
+% typically as a form of control flow. Paths are used in Scout for a
+% single-node OS [38], are the foundation for
+% integrated-layer-processing [1], and play a key role in many compiler
+% optimization techniques [5]. Several recent systems have also used
+% paths to profile distributed systems.
+% 
+% 路径：控制路径，数据路径
+% 
+% 
+% 执行路径也可以被称为因果路径（causal path），因为
 
 % Performance Debugging for Distributed Systems of Black Boxes
 % (sosp03)
@@ -355,7 +357,7 @@ Magpie设计的特别之处在于使用用户提供的方案将属于同一请�
 合起来，定义联合属性的有效时间区间，需要用户是专家级人员，例如系统的设
 计与开发者。
 
-\subsubsection*{pip}
+\subsubsection*{Pip}
 
 Pip~\cite{pip}对代码增加标注，得到系统的执行路径。Pip定义了一个声明式
 期望语言（declarative expectation language）。使用期望，用户可以表达系
@@ -364,7 +366,7 @@ Pip~\cite{pip}对代码增加标注，得到系统的执行路径。Pip定义了
 的原因。由于执行路径中包含了结构、时间和资源消耗的信息，Pip可以有效的
 同时检查系统正确性错误与性能错误。
 
-pip的期望示例。
+% xxx pip的期望示例。
 
 \subsubsection*{X-Trace}
 
@@ -375,7 +377,18 @@ X-Trace~\cite{x-trace}是一个网络层的跟踪工具。它将包括任务标�
 这样，一个请求在网上被处理的过程就形成了一个完成的任务树。这能够帮助我
 们理解请求在网络协议层次的因果路径。
 
-图xxx显示了一个HTTP请求通过一个代理被发送到HTTP服务器的因果路径。
+\begin{figure}
+\centering
+\begin{minipage}{0.8\linewidth}
+\includegraphics[width=\linewidth]{x-trace-sample.png}
+\caption{X-Trace追踪得到的Http请求通过代理在网络上被处理的路径。引自文
+章~\cite{x-trace}}
+\label{fig:x-trace}
+\end{minipage}
+\end{figure}
+
+图~\ref{fig:x-trace}显示了一个HTTP请求通过一个代理被发送到HTTP服务器的
+因果路径。
 
 对于一些网络协议，X-Trace可以在消息包头的扩展域内添加任务元数据，这些
 元数据会在处理的过程中自动传播，例如HTTP，SIP，Email和IP协议。TCP协议
@@ -384,7 +397,7 @@ X-Trace~\cite{x-trace}是一个网络层的跟踪工具。它将包括任务标�
 于Chord节点会对消息进行一些复杂处理，才生成新的路由消息，需要对Chord代
 码进行一些更改才能支持元数据自动传播。
 
-\subsection{inference}
+\subsection{基于黑盒假设的因果路径推断方法}
 
 上面这些工作把系统当作白盒，也就是认为我们可以得到系统内部的状态信息，
 或者我们能够通过标注或者插装的方法改变系统行为。这个假设并不一定总能满
@@ -402,7 +415,7 @@ X-Trace~\cite{x-trace}是一个网络层的跟踪工具。它将包括任务标�
 机制，对系统增加标注并不容易，需要花费很长时间。基于黑盒假设的工具可以
 很快的给出系统运行的大概情况，帮助人们尽快理解系统。
 
-\subsection{dataflow}
+\subsection{基于数据流分析的方法}
 
 请求被处理的执行路径，或者因果路径表示了请求处理的控制流信息。还有一些
 工作通过获取系统运行时的数据流信息，分析系统行为。包括
@@ -450,7 +463,7 @@ Data Flow Tomography通过使用虚拟机~\cite{qemu}追踪指令级（ISA）的
 
 % \subsection{graph mining} briefly
 
-\subsection{log mining}
+\subsection{基于系统日志分析的方法}
 
 % see log-mining paper (wasl \& sysml)
 
@@ -475,9 +488,15 @@ Artemis~\cite{artemis}是一个日志分析框架，包含了日志收集、日�
 视化工具和一组插件定义接口，使用它，用户可以自定义插件，对系统（例如
 Dryad~\cite{dryad}）进行分析。
 
-\subsection{与本文工作对比}
-xxx
-
 \section{本章小结}
 
-本章对xxx进行了介绍，虽然xxx，但是xxx问题仍然是xxx面临的挑战。
+本章对分布式系统与调试研究的一些重要问题和系统做了介绍。可以看出：xxx
+
+\begin{enumerate}
+
+  \item 分布式应用管理系统简化了人们部署和维护分布式应用的任务。但是分
+  布式
+
+  \item
+
+\end{enumerate}

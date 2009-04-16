@@ -34,7 +34,7 @@ PacificA是一个类似BigTable的分布式存储系统。图~
     \centering
     \includegraphics[width=\linewidth]{pacifica-task-model}
     \caption{PacificA的层次结构任务模型。包含三个高层任务。图上的节点
-    表示叶子任务，边表示叶子任务之间的因果依赖关系。}
+    表示叶子任务，边表示叶子任务之间的因果依赖关系}
     \label{fig:pacifica_model}
   \end{minipage}
 \end{figure}
@@ -161,10 +161,10 @@ Scalpel使用若干启发区分这两种不同的关系。如果系统使用操�
 对于使用TCP通信产生的因果关系，由于TCP的数据流语意会让消息的边界无法分
 辨，因而目前只能依赖程序员提供额外信息（例如在消息中做标记）连接消息的
 发送者和接受者，否则Scalpel无法准确匹配。然而这会引入手工干预。一些网
-络协议逆向工程方面的工作~\cite{scalpel4, scalpel8}可以从数据流中自动推
-断消息的边界与格式，但是推断的存在错误的可能。本文工作暂时不考虑将TCP
-消息的发送者和接收者联系起来，但是任务的因果关系图和下面叙述的任务层次
-结构推断方法同样适用于包含TCP通信的情况。
+络协议逆向工程方面的工作~\cite{Caballero2007, Cui2007}可以从数据流中自
+动推断消息的边界与格式，但是推断的存在错误的可能。本文工作暂时不考虑将
+TCP消息的发送者和接收者联系起来，但是任务的因果关系图和下面叙述的任务
+层次结构推断方法同样适用于包含TCP通信的情况。
 
 \subsection{推断任务层次结构}
 
@@ -217,7 +217,7 @@ Scalpel使用若干启发区分这两种不同的关系。如果系统使用操�
   \begin{minipage}{0.8\linewidth}
     \centering
     \includegraphics[width=0.8\linewidth]{trace_interleaving}
-    \caption{interleaving case}
+    \caption{由于操作系统调度导致同步操作与输出trace执行顺序不一致}
     \label{fig:trace_interleaving}
   \end{minipage}
 \end{figure}
@@ -252,7 +252,7 @@ BOOL SetEvent_hooker(HANDLE hEvent)
     SetEvent(hEvent);
 }
 \end{lstlisting}
-\caption{直接输出trace}
+\caption{在同步操作的插装代码中直接输出trace}
 \label{fig:trace_direct}
 \end{figure}
 
@@ -292,7 +292,7 @@ BOOL SetEvent_hooker(HANDLE hEvent)
 }
 
 \end{lstlisting}
-\caption{使用shadow lock输出trace}
+\caption{在同步操作的插装代码中使用shadow lock输出trace}
 \label{fig:trace_shadowlock}
 \end{figure}
 
@@ -422,7 +422,7 @@ SVN checkout过程中的一些叶子任务未在图上完全显示，但是它�
 \begin{minipage}{0.8\linewidth}
 \centering
 \caption{推断算法数据统计。分别统计了叶子任务数目，不同同步对象引起的
-happened-before关系数目，以及顺序执行的因果依赖关系数目。}
+happened-before关系数目，以及顺序执行的因果依赖关系数目}
 \label{fig:statistics}
 \begin{tabular}{ccc}
 
@@ -455,7 +455,7 @@ PacificA的性能。对每一个叶子任务，我们使用Scalpel记录它的�
   \begin{minipage}{0.8\linewidth}
     \centering
     \includegraphics[width=0.8\linewidth]{sleep-send}
-    \caption{sleep-send}
+    \caption{4个线程异步调用RPC执行过程}
     \label{fig:sleep-send}
   \end{minipage}
 \end{figure}
@@ -485,7 +485,7 @@ int Session::WSASendPacket(NetworkStream * pkt) {
     ...
 }
 \end{lstlisting}
-\caption{Flow control code in lower layers.}
+\caption{PacificA网络层流量控制代码}
 \label{fig:flow_control_code}
 \end{figure}
 
@@ -514,7 +514,7 @@ RPC消息。网络层的消息缓冲区很快就会被填满，导致发送线�
   \begin{minipage}{0.8\linewidth}
     \centering
     \includegraphics[width=0.8\linewidth]{event-send}
-    \caption{event-send}
+    \caption{4个线程异步调用RPC执行过程}
     \label{fig:event-send}
   \end{minipage}
 \end{figure}
@@ -542,7 +542,7 @@ Apache实验，我们测试了执行一次svn checkout花费的时间。每组�
 \begin{minipage}{0.8\linewidth}
 \centering
 \caption{Scalpel对Apache和PacificA的性能影响。
-分别原始执行时间和应用Scalpel后的执行时间，以及性能的额外开销。}
+分别统计了原始执行时间和应用Scalpel后的执行时间，以及性能的额外开销}
 \label{fig:perf}
 \begin{tabular}{ccc}
 

@@ -36,8 +36,8 @@
 
 \section{本章引言}
 
-分布式系统~\cite{Ghemawat2003,DeCandia2007}是当今Internet服务~
-\cite{google, amazon?}的关键组成部分。随着普通计算机硬件成本越来越低，
+分布式系统~\cite{gfs, bigtable, dynamo}是当今Internet服务~
+\cite{google, amazon}的关键组成部分。随着普通计算机硬件成本越来越低，
 搭建一个规模成百上千的分布式计算平台是很普通的事情。一些常见的分布式计
 算平台包括Planet-Lab~\cite{Bavier2004}, Amazon
 EC2~\cite{Garfinkel2007} and Teragrid~\cite{Catlett2002}。这些计算平台
@@ -91,16 +91,16 @@ SMON能够让任何分布式管理系统具备自管理能力。
 动与远程机器认证并登陆，同时保护用户的认证信息（例如私钥）不会被泄露。
 % 最后，SMON的管理能力应该是能够被拓展的（extensible）。
 
-SMON的设计分别处理了上面的问题，叙述如下。对第一个问题，SMON的节点构
-成一个无结构的覆盖网络，节点间使用epidemic算法相互探测，并相互维护。
-epidemic算法保证了SMON系统具有良好的扩展性（$O(\log N)$），同时
-epidemic算法也带来了额外的好处，首先它易于实现，其次，它使得SMON系统很
-鲁棒，可以很好的应对网络分割（network partition）错误。对于第二个问题，
-我们引入了认证代理机制来自动化SMON节点与远程机器认证。认证代理保存着认
-证过程中需要的认证信息（例如私钥），它并不将认证信息泄露给任何SMON节点，
-或其它外部对象。简单的说，SMON节点会将认证过程中收到的挑战密文
-（challenge）转发给认证代理，并将认证代理回复的应答密文（response）发
-送给远程机器，从而完成了自动认证的过程。
+SMON的设计分别处理了上面的问题，叙述如下。对第一个问题，SMON的节点构成
+一个无结构的覆盖网络，节点间使用epidemic算法~\cite{Demers1987}相互探测，
+并相互维护。epidemic算法保证了SMON系统具有良好的扩展性（$O(\log N)$），
+同时epidemic算法也带来了额外的好处，首先它易于实现，其次，它使得SMON系
+统很鲁棒，可以很好的应对网络分割（network partition）错误。对于第二个
+问题，我们引入了认证代理机制来自动化SMON节点与远程机器认证。认证代理保
+存着认证过程中需要的认证信息（例如私钥），它并不将认证信息泄露给任何
+SMON节点，或其它外部对象。简单的说，SMON节点会将认证过程中收到的挑战密
+文（challenge）转发给认证代理，并将认证代理回复的应答密文（response）
+发送给远程机器，从而完成了自动认证的过程。
 
 % 对于第三个问题，可以使用SMON的自我更新功能，扩展它的管理能力。也可以
 % 使用SMON部署其它管理系统。这样，我们既获得了需要的管理功能，也省去了
@@ -126,7 +126,7 @@ Planet-Lab上评测了SMON系统的性能，并将实测结果与理论分析结
     \caption[SMON系统结构]{SMON系统结构。SMON系统由三部分构成，
     SMON管理节点、认证代理和
     客户端工具。SMON节点构成SMON系统的主要部分，认证代理协助SMON节点与远程
-    机器认证，使用者通过客户端工具与SMON通信。}
+    机器认证，使用者通过客户端工具与SMON通信}
     \label{fig:smon_arch}
   \end{minipage}
 \end{figure}
@@ -268,7 +268,7 @@ SMON的安全机制需要保证如下两个目标：
   SMON节点，或者远程恢复失败的SMON节点。
 
   \item 认证并加密SMON节点间的通信，不让系统被恶意利用，被用来部署
-  恶意应用，例如botnet~\cite{botnet}。
+  恶意应用，例如botnet。
 
 \end{itemize}
 
@@ -284,7 +284,7 @@ SMON的安全机制需要保证如下两个目标：
     \centering
     \includegraphics[width=0.8\linewidth]{auth}
     \caption{SMON节点在认证代理协助下与远程机器认证并登陆的过程。图显示
-    了这一过程中三者的交互过程。}
+    了这一过程中三者的交互过程}
     \label{fig:auth}
   \end{minipage}
 \end{figure}
@@ -432,47 +432,38 @@ slice是Planet-Lab分配分布式资源的方式，一个slice对应分布在不
 \begin{table*}
 \small
 \centering
-\caption{SMON节点与认证代理支持的RPC}
+\caption{SMON节点与认证代理支持的RPC调用语意}
 \label{fig:smon_rpc}
-\begin{tabular}{|l|p{7cm}|}
+%\begin{tabular}{|l|p{7cm}|}
+\begin{tabular}{lp{7cm}}
 
-\hline
+\toprule[1.5pt]
 \textbf{RPC} & \textbf{功能描述} \\
 
-\hline
-\texttt{ping(ver)} & ping其它SMON节点，并互换版本号.\\
+\midrule[1pt]
+\texttt{ping(ver)} & ping其它SMON节点，并互换版本号\\
 
-\hline
-\texttt{retrieve\_peer(ver)} & 获取指定版本的SMON安装程序.\\
+\texttt{retrieve\_peer(ver)} & 获取指定版本的SMON安装程序\\
 
-\hline
 \texttt{exchange\_livetag(tag, ver)} & 与其它SMON节点交换$<$livetag,
-version$>$.\\
+version$>$\\
 
-\hline
-\texttt{exchange\_member(ver)} & 与其它SMON节点交换邻居列表版本.\\
+\texttt{exchange\_member(ver)} & 与其它SMON节点交换邻居列表版本\\
 
-\hline
-\texttt{retreive\_member(ver)} & 获取指定版本的邻居列表.\\
+\texttt{retreive\_member(ver)} & 获取指定版本的邻居列表\\
 
-\hline
-\texttt{exchange\_app(app\_name)} & 与其它SMON节点.\\
+\texttt{exchange\_app(app\_name)} & 与其它SMON节点\\
 
-\hline
-\texttt{retrieve\_app(app\_name)} & 获取应用的安装程序.\\
+\texttt{retrieve\_app(app\_name)} & 获取应用的安装程序\\
 
-\hline
 \texttt{set\_app\_status(app\_name, status)} & 设置应用状态(online,
-offline, ignore).\\
+offline, ignore)\\
 
-\hline
-\texttt{get\_app\_status()} & 查询应用状态. \\
+\texttt{get\_app\_status()} & 查询应用状态\\
 
-\hline
-\texttt{resolve\_challenge(challenge)} & 求解挑战密文（认证代理实现）.\\
+\texttt{resolve\_challenge(challenge)} & 求解挑战密文（认证代理实现）\\
 
-\hline
-
+\bottomrule[1.5pt]
 \end{tabular}
 \end{table*}
 
@@ -531,15 +522,13 @@ scalpel
 个节点被部署的时间是533秒。
 
 
-可以将图~\ref{fig:self-deploy}与理论分析得到的结果~\cite{thebook}进行对比。
-理论上，可以将epidemic算法用分支过程建模，将数据传播（这里是自我部署）
-的过程模拟为病毒散播的过程。假设种群中的人口总数是$n$，初始时有一人感
-染病毒。病毒散播的过程分为同步的很多轮。在每一轮中，感染病毒的人独立随
-机的让其它$f$个人被感染。那么经过$r$轮之后，整个种群中感染病毒的人数占
-总人数比率的期望值$Y_r$是：
-\begin{equation*}
-Y_r \approx \frac{1}{1+ne^{-fr}}
-\end{equation*}
+可以将图~\ref{fig:self-deploy}与理论分析得到的结果~\cite{Bailey1975}进
+行对比。理论上，可以将epidemic算法用分支过程建模，将数据传播（这里是自
+我部署）的过程模拟为病毒散播的过程。假设种群中的人口总数是$n$，初始时
+有一人感染病毒。病毒散播的过程分为同步的很多轮。在每一轮中，感染病毒的
+人独立随机的让其它$f$个人被感染。那么经过$r$轮之后，整个种群中感染病毒
+的人数占总人数比率的期望值$Y_r$是：\begin{equation*} Y_r \approx
+\frac{1}{1+ne^{-fr}} \end{equation*}
 
 如果$Y_r$和$f$固定，可以得到
 \begin{equation*}
@@ -604,7 +593,7 @@ Planet-Lab节点上部署的SMON系统，从禁止状态转换到启动状态。
   \begin{minipage}{0.8\linewidth}
     \centering
     \includegraphics[width=0.8\linewidth]{overhead}
-    \caption{为了解决自我部署过程中的竞争情形而产生的额外开销分布。}
+    \caption{为了解决自我部署过程中的竞争情形而产生的额外开销分布}
     \label{fig:overhead}
   \end{minipage}
 \end{figure}
