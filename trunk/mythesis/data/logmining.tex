@@ -340,11 +340,11 @@ worker线程使用回调函数向client线程报告RPC调用的结果。对worke
 
 我们详细的观察了上传文件至ChunkFS的过程，如图~
 \ref{fig:chunkfs_client}所示。在客户端，创建新stream命令涉及一个
-Session和4个opId，有6个RPC调用，具体过程是（create\_stream），（
-append\_stream，append\_chunk），（append\_chunk），（append\_chunk，
-seal\_chunk）。每个括号代表一个opId任务，括号内是RPC调用。由于文件小于chunk
-大小的最大值，创建的stream只有一个chunk，其内容由3次append chunk RPC调
-用写入。在最后一次append chunk RPC调用之后，chunk被封装，即seal\_chunk
+Session和4个opId，有6个RPC调用，具体过程是（Create\-Stream），（
+Append\-Stream，Append\-Chunk），（Append\-Chunk），（Append\-Chunk，
+Seal\-Chunk）。每个括号代表一个opId任务，括号内是RPC调用。由于文件小于chunk
+大小的最大值，创建的stream只有一个chunk，其内容由3次Append\-Chunk RPC调
+用写入。在最后一次Append\-Chunk RPC调用之后，chunk被封装，即Seal\-Chunk
 RPC调用，之后，chunk不能再能够被写入或追加（append）。
 
 \begin{figure}
@@ -363,8 +363,8 @@ RPC调用，之后，chunk不能再能够被写入或追加（append）。
 
 我们同时观察在主chunkserver的运行时行为。Chunkserver端运行时包括若干线
 程，其任务模型是Runtime$>$ChunkID。具体的，创建一个stream，Chunksever
-会接到5个RPC调用，如图~\ref{fig:chunkserver}所示，分别是create\_chunk,
-3个append\_chunk和seal\_chunk。可观察到的chunkserver行为的粒度被限制在对
+会接到5个RPC调用，如图~\ref{fig:chunkserver}所示，分别是Create\-Chunk,
+3个Append\-Chunk和Aeal\-Chunk。可观察到的chunkserver行为的粒度被限制在对
 chunk操作的级别（ChunkID任务），因此5个RPC处理被认为是同一个任务实例。
 
 \begin{figure}
@@ -411,7 +411,7 @@ chunk操作的级别（ChunkID任务），因此5个RPC处理被认为是同一�
 我们重复了之前的压力测试，并收集任务相关的时间信息和资源使用情况。我们
 确认了网络带宽和CPU资源都远远不能被充分利用。通过使用前面提到的client
 线程和worker线程的任务模型，可以将上传文件操作区分为不同的opId任务。由
-于网络数据传输主要由append\_chunk产生，因而可以认为每次opId任务近似等
+于网络数据传输主要由Append\-Chunk产生，因而可以认为每次opId任务近似等
 于一次RPC调用。
 
 % xxx: profiling process
@@ -455,3 +455,10 @@ RPC调用，并将它们放入一个共享队列，4个worker线程从队列中�
 
 \section{本章小结}
 \label{lm_conclusion}
+
+研究了如何利用系统日志，推断系统任务模型的方法。我们实现了基于日志的任
+务模型推断工具，并使用它分析一个分布式存储系统ChunkFS。我们的工具能够
+推断出合乎逻辑的任务层次结构。应用推断的模型，帮助我们理解ChunkFS的实
+际运行过程，并解决了ChunkFS中的一个性能问题。经验表明，系统日志能够很
+好的反映出上层语意，我们的工具可以有效的推断系统任务模型，帮助理解系统
+设计和运行时行为。
