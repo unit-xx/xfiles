@@ -34,7 +34,7 @@ Scalpel~\cite{scalpel}进一步发展了一种方法，能够从底层系统调�
 
 我们最终的目标是设计一个完全不需要或尽可能少需要人工标注的工具，来自动
 提取系统的分层任务模型，帮助程序员、测试人员和系统管理员理解系统运行时
-行为。基于之前的工作，在本文中，我们重点研究了如何利用系统日志（log）
+行为。基于之前的工作，在本章中，我们重点研究了如何利用系统日志（log）
 来推断应用层任务的层次结构。相比底层trace，应用日志包含了更多的应用层
 任务流的语意。日志是由系统开发人员创建的，因此它们包含了系统执行任务时
 的关键参数与状态，例如，任务的类型，任务执行的关键步骤等等。这些信息可
@@ -166,7 +166,7 @@ key之间的关系，并输出一组（keyS，keyP）二元组，表示keyS$>$ke
 列片段，它的意义是：在任务Session s1中，处理了某个客户端命令，对stream
 x1进行操作，这些操作分成若干opId子任务执行，在opId 1中，首先进行了
 stream层次的操作，例如打开或创建一个stream，之后，opId 2/3对stream的不
-同chunk进行操作。
+同chunk进行操作。stream对应GFS中文件的概念，stream由若干chunk组成。
 
 % stream，chunk是什么
 
@@ -327,7 +327,7 @@ chunkserver。我们向ChunkFS中随机的上传了若干文件，在上传命�
 % 若干文件？
 
 首先分析ChunkFS客户端行为。我们发现ChunkFS客户端运行时有两类线程：一个
-client线程和四个个worker线程。Client线程的任务模型是Runtime$>$Session,
+client线程和四个worker线程。Client线程的任务模型是Runtime$>$Session,
 Session$>$opId，worker线程的任务模型是Runtime$>$opId。
 
 Client线程接收用户命令，每个用户命令，由一个新的Session任务执行，
@@ -364,7 +364,7 @@ RPC调用，之后，chunk不能再能够被写入或追加（append）。
 我们同时观察在主chunkserver的运行时行为。Chunkserver端运行时包括若干线
 程，其任务模型是Runtime$>$ChunkID。具体的，创建一个stream，Chunksever
 会接到5个RPC调用，如图~\ref{fig:chunkserver}所示，分别是Create\-Chunk,
-3个Append\-Chunk和Aeal\-Chunk。可观察到的chunkserver行为的粒度被限制在对
+3个Append\-Chunk和Seal\-Chunk。可观察到的chunkserver行为的粒度被限制在对
 chunk操作的级别（ChunkID任务），因此5个RPC处理被认为是同一个任务实例。
 
 \begin{figure}
@@ -456,9 +456,9 @@ RPC调用，并将它们放入一个共享队列，4个worker线程从队列中�
 \section{本章小结}
 \label{lm_conclusion}
 
-研究了如何利用系统日志，推断系统任务模型的方法。我们实现了基于日志的任
-务模型推断工具，并使用它分析一个分布式存储系统ChunkFS。我们的工具能够
-推断出合乎逻辑的任务层次结构。应用推断的模型，帮助我们理解ChunkFS的实
-际运行过程，并解决了ChunkFS中的一个性能问题。经验表明，系统日志能够很
-好的反映出上层语意，我们的工具可以有效的推断系统任务模型，帮助理解系统
-设计和运行时行为。
+本章研究了如何利用系统日志，推断应用层任务层次结构的方法。我们实现了基
+于日志的推断工具，并使用它分析一个分布式存储系统ChunkFS。我们
+的工具能够推断出合乎逻辑的任务层次结构。应用推断的模型，帮助我们理解
+ChunkFS的实际运行过程，并解决了ChunkFS中的一个性能问题。经验表明，系统
+日志能够很好的反映出上层语意，我们的工具可以有效的推断系统任务模型，帮
+助理解系统设计和运行时行为。

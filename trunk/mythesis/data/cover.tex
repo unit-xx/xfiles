@@ -30,7 +30,7 @@
 %\cdate{\CJKdigits{\the\year}年\CJKnumber{\the\month}月}
 \cdate{\CJKdigits{2009}年\CJKnumber{4}月}
 
-\etitle{Research on Key Problems on Distributed System Management and Debugging}
+\etitle{Research on Key Problems of Distributed System Management and Debugging}
 
 % \edegree{Doctor of Science} 
 \edegree{Doctor of Engineering} 
@@ -55,7 +55,7 @@
 
   \begin{enumerate}
 
-    \item 分布式应用管理系统可自管理的机制研究。分布式系统需要被管理。分
+    \item 分布式应用管理系统可自管理机制的研究。分布式系统需要被管理。分
     布式应用管理系统帮助人们简化了部署与维护分布式系统的负担。为了有效
     的完成管理任务，管理系统本身也是一个分布式应用，需要被管理，已有的
     工作还没有很好的解决这个问题。本文提出了使管理系统具备自管理机制的
@@ -72,8 +72,8 @@
 
     \item 利用系统日志推断系统层次任务模型的方法。日志是由系统开发人
     员创建的，因此它们包含了关键的系统状态和事件信息。利用这些信息，可
-    以帮助推断应用层语意的任务关系。本文的推断方法能够自动从无结构的系
-    统日志中提取任务信息，并推断任务之间的层次结构关系。使用得到的任务
+    以帮助推断应用层语意任务之间的关系。本文的推断方法能够自动从无结构的系
+    统日志文本中提取任务信息，并推断任务之间的层次结构关系。使用得到的任务
     层次关系，可以帮助理解系统设计，解决系统已有的性能问题。
 
   \end{enumerate}
@@ -84,12 +84,12 @@
 
 \begin{eabstract}
   Distributed systems are the key components in today's Internet
-  services. While the system scale goes larger and the processing
+  services. While the system scale goes larger and the design
   logic becomes more complex, it is a challenge to managing and
   debugging large scale distributed systems. While current research
   work makes great progresses, some key problems are still not fully
-  resolved yet. In this thesis, we conducted research on
-  self-management of distributed systems and automatically inference
+  addressed yet. In this thesis, we conducted research on
+  self-management of distributed systems and automatica inference
   of hierarchical task models of distributed systems.
 
   The contributions of this thesis are:
@@ -107,7 +107,7 @@
     application management system is proposed and a self-managed
     distributed application management system (SMON) is designed. SMON
     can automatically and securely deploy itself to a set of machines,
-    recover itself from failure automatically and upgrade itself to
+    recover itself from failures and upgrade itself to
     newer versions online.
 
     \item Methodology of automatic inference of hierarchical tasks
@@ -118,7 +118,7 @@
     bar on the user. In this thesis, an automatic inference
     methodology of hierarchical task models for distributed systems is
     developed. The hierarchical task models help on understanding of
-    system design and implementation, and help on finding root cause
+    system design and implementation, and help on finding root causes
     of system correctness and performance bugs.
 
     \item Methodology of inference of hierarchical task models based
