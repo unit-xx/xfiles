@@ -55,7 +55,7 @@
 
   \begin{enumerate}
 
-    \item 使分布式应用管理系统可自管理的机制。分布式系统需要被管理。分
+    \item 分布式应用管理系统可自管理的机制研究。分布式系统需要被管理。分
     布式应用管理系统帮助人们简化了部署与维护分布式系统的负担。为了有效
     的完成管理任务，管理系统本身也是一个分布式应用，需要被管理，已有的
     工作还没有很好的解决这个问题。本文提出了使管理系统具备自管理机制的
@@ -65,12 +65,12 @@
 
     \item 自动推断系统层次结构任务模型的方法。分布式系统难于调试，理解
     系统的运行时行为是分析解决系统正确性与性能问题关键。已有的方法可以
-    帮助人们理解系统运行时的因果路径，但是需要手工标注代码，使用困难且
-    需要使用者对系统有深入了解。本文提出了一种完全不需要人工帮助，自动
-    推断系统层次结构任务模型的方法。使用得到的层次结构任务模型，可以对
-    系统设计有深入的了解，并帮助分析导致系统缺陷的原因。
+    帮助人们理解系统运行时的因果路径，但是需要程序员手工标注因果路径，
+    使用困难且需要使用者对系统有深入了解。本文提出了一种完全不需要人工
+    帮助，自动推断系统层次结构任务模型的方法。使用得到的层次结构任务模
+    型，可以对系统设计有深入的了解，并帮助分析导致系统缺陷的原因。
 
-    \item 利用系统日志，推断系统层次任务模型的方法。日志是由系统开发人
+    \item 利用系统日志推断系统层次任务模型的方法。日志是由系统开发人
     员创建的，因此它们包含了关键的系统状态和事件信息。利用这些信息，可
     以帮助推断应用层语意的任务关系。本文的推断方法能够自动从无结构的系
     统日志中提取任务信息，并推断任务之间的层次结构关系。使用得到的任务
@@ -83,13 +83,13 @@
 \ckeywords{分布式系统; 自管理; 层次结构任务模型; 日志分析}
 
 \begin{eabstract}
-  Distributed systems are the key components in today's Intertnet
+  Distributed systems are the key components in today's Internet
   services. While the system scale goes larger and the processing
   logic becomes more complex, it is a challenge to managing and
   debugging large scale distributed systems. While current research
   work makes great progresses, some key problems are still not fully
   resolved yet. In this thesis, we conducted research on
-  self-management of distributed systems and automatically inferrence
+  self-management of distributed systems and automatically inference
   of hierarchical task models of distributed systems.
 
   The contributions of this thesis are:
@@ -101,16 +101,16 @@
     management. The distributed application management system
     simplifies tasks in deploying and maintaining distributed systems.
     To efficiently accomplish management tasks, management system is
-    itself an distributed applicaiton, which needs to be managed too.
+    itself an distributed application, which needs to be managed too.
     Existing work doesn't address the problem very well. In this
-    theis, a mechanism to support self-management of distributed
+    thesis, a mechanism to support self-management of distributed
     application management system is proposed and a self-managed
-    distributed application managment system (SMON) is designed. SMON
+    distributed application management system (SMON) is designed. SMON
     can automatically and securely deploy itself to a set of machines,
     recover itself from failure automatically and upgrade itself to
     newer versions online.
 
-    \item Methodology of automatic inferrence of hierarchical tasks
+    \item Methodology of automatic inference of hierarchical tasks
     models for distributed system. It is a challenge to debug
     distributed systems and understanding the runtime behaviour is the
     key to solve the correctness and performance bug. Existing tools
@@ -121,13 +121,13 @@
     system design and implementation, and help on finding root cause
     of system correctness and performance bugs.
 
-    \item Methodology of inferrence of hierarchical task models based
+    \item Methodology of inference of hierarchical task models based
     on system log. Logs are created by system developers and contain
     key information on system states and events. Using the
     information, we can understand the relations among application
     level tasks. The inference methodology can extract task
     information from unstructured system logs automatically and
-    inferrence hierarchical relations among the tasks. The
+    infer hierarchical relations among the tasks. The
     hierarchical task models help on understanding of system design
     and implementation, and help on finding root cause of system
     correctness and performance bugs.
