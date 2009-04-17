@@ -88,9 +88,13 @@ happened-before~\cite{lamport_clock}关系推断得到。
 进一步，Scalpel能够帮助开发者解决PacificA中的一个性能问题，该问题导致
 PacificA对网络带宽的利用率只有最大值的70\%。
 
-\note{文章安排} % xxx
+本文接下来的内容安排如下：\ref{sec:scp:design}节描述了推断算法设计，
+\ref{sec:scp:discussion}节讨论了设计相关的问题，\ref{sec:scp:case}节我
+们描述了应用Scalpel在实际系统上的应用实例，\ref{sec:scp:perf}节测量了
+Scalpel的性能，\ref{sec:scp:conclusion}节为本章小结。
 
 \section{推断方法设计}
+\label{sec:scp:design}
 
 本节叙述自动推断系统层次结构任务模型的方法，以及它的原型实现
 \pozhehao{}Scalpel。
@@ -298,6 +302,7 @@ BOOL SetEvent_hooker(HANDLE hEvent)
 
 % xxx visualize?
 \section{讨论}
+\label{sec:scp:discussion}
 
 Scalpel主要是为系统开发者而设计的，希望能够帮助他们理解、验证与调试搭
 建的系统。因此，我们假设程序的调试信息（主要是符号表）是可以得到的。
@@ -325,6 +330,7 @@ Scalpel利用这些信息追踪函数调用，为叶子任务提供易于理解�
 % xxx: 没什么可说的，貌似。
 
 \section{应用实例}
+\label{sec:scp:case}
 
 在本节，我们使用Scalpel分析一些复杂系统，以评测任务模型是否有效。可以
 从两个方面来评测任务模型。首先，任务模型应该能够表达出系统设计的含义。
@@ -527,6 +533,7 @@ RPC消息。网络层的消息缓冲区很快就会被填满，导致发送线�
 % statistics
 
 \section{性能评测}
+\label{sec:scp:perf}
 
 Scalpel使用了插装在系统函数和应用函数调用时输出trace，这会对系统性能造成
 一定影响，我们测试了Scalpel对系统带来的额外负载。
@@ -561,11 +568,8 @@ Apache实验，我们测试了执行一次svn checkout花费的时间。每组�
 可以看出，对于PacificA和Apache+SVN，由于插装输出trace对性能的影响在可
 以接受的范围以内。
 
-\section{相关工作}
-
-a
-
 \section{本章小结}
+\label{sec:scp:conclusion}
 
 a
 
