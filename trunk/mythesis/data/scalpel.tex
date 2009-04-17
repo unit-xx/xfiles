@@ -206,17 +206,6 @@ TCP消息的发送者和接收者联系起来，但是任务的因果关系图�
 程序运行记录与回放工具。通过插装操作系统调用与应用函数，R2记录了系统的
 运行过程，这也包括对同步对象（互斥锁和信号等）的同步操作，和socket操作。
 
-在被插装的系统调用与应用函数内，我们输出函数的名称与调用参数。这些信息
-用来推断叶子任务的边界，并给出任务边界的函数调用栈。利用函数调用栈，可
-以给叶子任务提供易于程序员理解的名字标签。
-
-% 叶子任务的因果关系由任务边界的同步操作之间的happened-before关系推断
-% 得到，反映在trace中，这个关系与同步操作被记录的顺序一致。例如，线程
-% 在一个event上的wait操作，依赖于另一个线程上的signal操作，后者完成后，
-% 前者才继续执行。在trace中维持了这个依赖关系，也就是signal操作被记录
-% 的顺序在wait操作之前。因此，只需要顺序扫描trace中在同一个同步对象上
-% 的同步操作顺序，我们就能够得到叶子任务之间的happened-before关系。
-
 \begin{figure}
   \centering
   \begin{minipage}{0.8\linewidth}
@@ -227,13 +216,16 @@ TCP消息的发送者和接收者联系起来，但是任务的因果关系图�
   \end{minipage}
 \end{figure}
 
-我们需要保证trace中记录的同步操作顺序和实际执行完全一致。由于操作系统
-调度会交叉执行不同线程的代码，因而直接在插装函数内输出trace并不能保证
-同步操作记录的顺序与实际执行顺序一致。我们以Windows event同步对象为例
-说明这个问题。如果采用图~\ref{fig:trace_direct}中的插装代码，输出trace
-（printf）和对event对象的操作（WaitForSingleObject，SetEvent）可能存在
-图~\ref{fig:trace_interleaving}显示的执行顺序。可以看出，输出trace的顺
-序，和event操作的顺序是相反的。
+在被插装的系统调用与应用函数内，我们输出函数的名称与调用参数。这些信息
+用来推断叶子任务的边界，并给出任务边界的函数调用栈。利用函数调用栈，可
+以给叶子任务提供易于程序员理解的名字标签。
+
+% 叶子任务的因果关系由任务边界的同步操作之间的happened-before关系推断
+% 得到，反映在trace中，这个关系与同步操作被记录的顺序一致。例如，线程
+% 在一个event上的wait操作，依赖于另一个线程上的signal操作，后者完成后，
+% 前者才继续执行。在trace中维持了这个依赖关系，也就是signal操作被记录
+% 的顺序在wait操作之前。因此，只需要顺序扫描trace中在同一个同步对象上
+% 的同步操作顺序，我们就能够得到叶子任务之间的happened-before关系。
 
 \begin{figure}
 \centering
@@ -260,6 +252,14 @@ BOOL SetEvent_hooker(HANDLE hEvent)
 \caption{在同步操作的插装代码中直接输出trace}
 \label{fig:trace_direct}
 \end{figure}
+
+我们需要保证trace中记录的同步操作顺序和实际执行完全一致。由于操作系统
+调度会交叉执行不同线程的代码，因而直接在插装函数内输出trace并不能保证
+同步操作记录的顺序与实际执行顺序一致。我们以Windows event同步对象为例
+说明这个问题。如果采用图~\ref{fig:trace_direct}中的插装代码，输出trace
+（printf）和对event对象的操作（WaitForSingleObject，SetEvent）可能存在
+图~\ref{fig:trace_interleaving}显示的执行顺序。可以看出，输出trace的顺
+序，和event操作的顺序是相反的。
 
 \begin{figure}
 \centering
