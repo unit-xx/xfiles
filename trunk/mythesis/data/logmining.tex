@@ -431,14 +431,6 @@ RPC调用，并将它们放入一个共享队列，4个worker线程从队列中�
   \end{minipage}
 \end{figure}
 
-从图上立刻可以发现。Worker线程的执行过程呈现出被序列化的现象。虽然有4
-个worker线程，但是他们调用RPC的任务的过程没有重叠，每一个时刻，只有一
-个worker线程在工作。通过检查worker线程的设计与编码，我们发现了问题的根
-源。为了使系统具有可扩展性（extensibility），worker线程不直接调用RPC，
-而是使用processor对象去处理RPC调用。Processor对象是在worker线程间共享
-的，并且对每个TCP连接只创建一个processor对象。因此，processor对象成为
-了资源瓶颈，由于它只有一个，导致了若干worker线程被迫以序列化的方式工作。
-
 \begin{figure}
   \centering
   \begin{minipage}{0.8\linewidth}
@@ -448,6 +440,14 @@ RPC调用，并将它们放入一个共享队列，4个worker线程从队列中�
     \label{fig:rpc_worker}
   \end{minipage}
 \end{figure}
+
+从图上立刻可以发现。Worker线程的执行过程呈现出被序列化的现象。虽然有4
+个worker线程，但是他们调用RPC的任务的过程没有重叠，每一个时刻，只有一
+个worker线程在工作。通过检查worker线程的设计与编码，我们发现了问题的根
+源。为了使系统具有可扩展性（extensibility），worker线程不直接调用RPC，
+而是使用processor对象去处理RPC调用。Processor对象是在worker线程间共享
+的，并且对每个TCP连接只创建一个processor对象。因此，processor对象成为
+了资源瓶颈，由于它只有一个，导致了若干worker线程被迫以序列化的方式工作。
 
 \textbf{经验}：任务模型在帮助推断、解释系统问题时非常有用。通过分析任
 务之间的依赖关系，共享资源（包括CPU、I/O，共享数据、变量、锁等）的使用
