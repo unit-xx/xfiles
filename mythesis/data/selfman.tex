@@ -87,8 +87,8 @@ SMON能够让任何分布式管理系统具备自管理能力。
 设计SMON需要解决以下几个挑战性问题。
 
 首先，SMON需要有良好的可扩展性。其次，为了让SMON节点能够自动在远程机器
-上安装新的SMON节点，或者恢复失败的节点，需要有安全机制使SMON节点能够自
-动与远程机器认证并登陆，同时保护用户的认证信息（例如私钥）不会被泄露。
+上部署安装新的SMON节点，或者恢复运行失败的节点，需要有安全机制使SMON节点能够自
+动与远程机器认证并登陆，同时保护认证信息（例如私钥）不会被泄露。
 % 最后，SMON的管理能力应该是能够被拓展的（extensible）。
 
 SMON的设计分别处理了上面的问题，叙述如下。对第一个问题，SMON的节点构成
@@ -111,8 +111,7 @@ SMON节点，或其它外部对象。简单的说，SMON节点会将认证过程
 \ref{sec:smon_impl}节描述了如何在Planet-Lab上实现
 SMON。\ref{sec:smon_app}节描述了SMON系统的一些应用方式。我们在
 Planet-Lab上评测了SMON系统的性能，并将实测结果与理论分析结果进行了对比，
-在\ref{sec:smon_eval}节中叙述。\ref{sec:smon_related}节讨论了相关工作。
-\ref{sec:smon_conclusion}为本章小结。
+在\ref{sec:smon_eval}节中叙述。\ref{sec:smon_conclusion}为本章小结。
 
 
 \section{系统设计}
@@ -253,8 +252,9 @@ SMON的自我管理功能应该是能够被显式的禁止或者启动的。考�
 \texttt{livetag}变量有一个关联的版本号，每个SMON节点维护着变量的一个复
 本。两个随机节点会定期交换\texttt{$<$livetag, version$>$}对，并且更新
 \texttt{livetag}到最新的版本。需要注意到，节点交换\texttt{livetag}的行
-为也是收到\texttt{livetag}值的控制的。当\texttt{livetag}值为假，节点不
-会主动要求交换\texttt{$<$livetag, version$>$}对，但是任然会回复交换消
+为也是受到\texttt{livetag}值的控制的。当\texttt{livetag}值为假，节点不
+会主动要求交换\texttt{$<$livetag, version$>$}对，但是仍然会回复来自其
+它节点的消
 息，这能够加快更新\texttt{livetag}的速度。
 
 \subsection{安全机制}
@@ -644,7 +644,7 @@ P'(X=n) = P(X=n | X > 0) = \frac{P(X=n)}{1- P(X=0)} \quad (n = 1, 2, \ldots )
 以看出，$P'(X=n)$和实际结果大体上是一致的。
 
 我们注意到，使用分析得到的模型，每个节点被选中部署次数的平均值是1，而
-实际是2.31。我们认为主要原因是，分析时，我们实际上假设了部署新的SMON节
+实际是4.30。我们认为主要原因是，分析时，我们实际上假设了部署新的SMON节
 点可以瞬时完成，而在实际中需要一定的时间。因而，在一个机器被某个SMON节
 点选中并部署时，仍然有别的SMON节点选中相同的机器，因此造成实际被选中的
 次数大于理论分析的结果。
