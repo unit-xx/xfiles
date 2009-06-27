@@ -4,3 +4,9 @@
 
 4. other technical points in scichina review.
 5. analysis
+
+- optimazation: biased neighbour selection, directional gossip,
+  Efficient and Adaptive Epidemic-style Protocols for Reliable
+  and Scalable Multicast, hier scamp
+
+It employs epidemic algorithm

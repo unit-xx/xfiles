@@ -95,16 +95,17 @@ environments, such as network partition.
 
 In this paper, we propose Self-Managed Overlay Network
 (SMON) that addresses the problem of deployment and
-maintenance of distributed management systems. SMON is a
+maintenance of distributed management systems.  SMON is a
 distributed management system with built-in self-management
 capability, namely, self-deployment, self-recovery and
 self-upgrade. It consists of peers on every target machines
 where applications will be deployed and maintained. The
-peers monitor each other and automatically deploy new peers
-on fresh machines, recover failed peers, or upgrade peers of
-old versions. The collective behavior of all peers gives
-rise to a distributed system that can deploy itself to a set
-of machines, recover failed peers and update itself to new
+peers of SMON monitor and maintain others running on
+different machines. A SMON peer will automatically deploy
+new peers on fresh machines, recover failed peers, or
+upgrade peers of old versions. The collective behavior of
+all peers gives rise to a distributed system that can deploy
+itself, recover failed peers and update itself to new
 versions. SMON can also manage a set of applications.
 %especially another distributed application management
 %system. In this way, SMON's management functionality can

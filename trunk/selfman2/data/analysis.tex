@@ -1,0 +1,64 @@
+\section{Analysis}
+\label{sec:analysis}
+
+We analyze performance of SMON in this section. In the analysis,
+we assume that SMON works in sychronized way, that is each peer
+performs its epidemic activities in synchronized rounds and the
+activities finish almost instantaneously. Although the real SMON
+system works asynchronously, the analysis can still give
+insights on performance of SMON design. We will also evaluate
+SMON in real conditions (see section~\ref{sec:eval}) and
+validate our analysis in this section.
+
+% performance and scalability
+
+SMON leverages epidemic algorithm (anti-entropy) to deploy
+and maintain itself and the managed applications. The
+epidemic algorithm works in three ways: called push, pull
+and push-pull. Although they differ in details, existing
+studies~\cite{xxx} show that each one of the three methods
+can eventually infect the entire population. The studies
+also show that starting from a single peer, this is achieved
+in expected time (the rounds number) propotional to the log
+of the population size ($\log N$).
+
+The management activities performed by SMON chooses
+different epidemic implementations (xxx: wording, modle?).
+xxx use xxx, yyy works by yyy and it fits yyy model
+natually.  Similiarly, zzz also uses zzz model. They are
+summarized in table qqq.
+
+self-deployment: push
+
+upgrade: push-pull
+
+recovery: push
+
+enable: push
+
+disable: pull
+
+appman: push-pull
+
+We analyze self-deployment in detail. Take self-deployment
+as an example.
+
+others should have the similar performance. The differences
+are: barbar
+
+% overhead number
+
+We then analyze the overhead introduced in self-deployment.
+recall why overhead occur.
+
+verify the expression is right.
+
+
+% ping overhead
+
+binomial -> poisson distribution
+
+% recover speed?
+
+
+% vim:foldmethod=marker:textwidth=60

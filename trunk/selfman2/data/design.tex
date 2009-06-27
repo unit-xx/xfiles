@@ -318,7 +318,7 @@ state consistently and efficiently among all peers.
 
 We need mechanism to disable self-management functionality
 of SMON to stop it from running. When self-management is
-enabled, we cannot stop SMON by shutdown peers one by one.
+enabled, we cannot stop SMON by shutdown peers individually.
 If a peer is stopped by user, it will be started soon by
 another peer. The only solution under such condition is to
 stop all the SMON peers simultaneously, which is not
@@ -327,8 +327,8 @@ feasible at large scale.
 We use a boolean variable called \texttt{livetag} to control epidemic
 monitoring among peers. If the value is false, a peer will
 stop sending periodic ping message to others and the whole
-SMON system stops maintaining itself. We can now stop SMON
-peers one by one.
+SMON system stops maintaining itself. 
+%We can now stop SMON peers one by one.
 
 The \texttt{livetag} variable has an associated version
 number and is maintained on each peer distributedly. The
@@ -339,6 +339,13 @@ controlled by the value of \texttt{livetag}.  When
 \texttt{livetag} is false, peers still respond
 to incoming messages, so as to
 help disseminating the update to \texttt{livetag}.
+
+Suggested by epidemic algorithm, the whole SMON system will
+be finally disabled when the \texttt{livetag} value of any
+peer is set to false and peers will not send messages to
+each other. A peer will stop itself from running if no
+messages is received for enough long time. In this way, a
+SMON system can be shutdown automatically.
 
 %\note{the complete execution of a peer}
 
