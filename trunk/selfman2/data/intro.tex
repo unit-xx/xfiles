@@ -11,9 +11,9 @@ Planet-Lab~\cite{Bavier2004}, Amazon
 EC2~\cite{Garfinkel2007} and Teragrid~\cite{Catlett2002}.
 These platforms can provide huge amount of storage and
 computing capabilities that boost performance of distributed
-applications significantly. However, it is still difficult to
-design and manage distriubted applications at large scale
-and fully utilize the resources.
+applications significantly. However, it is still difficult
+to design, deploy and manage distriubted applications at
+large scale and fully utilize the resources.
 %handle frequent and inevitable failures at host,
 %application and network levels.
 
@@ -28,10 +28,26 @@ and fully utilize the resources.
 %Administrators may also want to send commands to control
 %the application on demand.
 
+% describe as a scenario
 Managing a distributed application faces several challenges.
 The application must be first deployed to a set of machines.
-The deployment process should scale well so that it still
-works on thousands of machines. During deployment, 
+The deployment process should have good scalability so that
+it can work on thousands of machines. During the deployment,
+failures---such as machine or network failures---are
+inevitable. They must be handled at any time during file
+transfer and application installation. Only when the application
+is deployed and configured successfully can the execution
+begin. After the application is started, certain mechanisms
+are need to monitor and recover application from failures.
+Depending on application's semantic, the recovery may be
+simply restarting the failed processes. For some cases,
+failures may lead to aborting and restarting the whole
+application on many machines. For all the applications,
+quick failure detection and recovery is required to ensure
+that applications are running successfully. Distributed
+applications are commonly upgraded for bug fixes and
+performance improvement. xxx
+
 %After the application is configured and started, its status
 %need to be monitored for detecting and recovering from
 %failures, ensuring sustained performance or just for
@@ -49,22 +65,55 @@ works on thousands of machines. During deployment,
 
 Distributed application management system is designed to
 simplify tasks involved in deploying and maintaining the
-applications after they are designed and implemented.
-To
-efficiently manage distributed applications at large scale,
-the management system is designed in distributed approach.
-It consists of many ``peers''\footnote{The word peer here
-will refer to client if the management system is in
-client/sever architecture.} on each machine where
-application will be deployed. The peers form an overlay
-network, and they work corporately to deploy application to
-a set of machines.  After the application is started, each
-peer monitors and maintains application's processes within
-the same machine box. User can query the applications status
-and control them on demand with the help of management
-system.
+applications after they are designed and implemented. They
+hide the underlying details and provide a user-friendly
+interface for developers to manage applications on many
+machines automatically. The developers can focus on
+bug-fixing and performance tunning of their applications,
+rather than deploying, monitoring and upgrading the
+applications on a set of distributed machines.
+
+To manage distributed applications at large scale, the
+management systems are special distributed applications in
+effect. They either adopt centralized (or
+client/server-like) or P2P (peer-to-peer) approach.
+Generally, a distributed management system consists of many
+``peers''\footnote{The word peer here will refer to client
+if the management system is in client/sever architecture.}
+on each machine where application will be deployed. The
+peers form an overlay network, and they work corporately to
+deploy application to a set of machines. After the
+application is started, each peer monitors and maintains
+application's processes within the same machine box. User
+can query the applications status and control them on demand
+with the help of management system.
 %User can send messages into the overlay to query
 %application status and execute control commands on demand.
+
+% the caveat
+
+There is one important caveat regarding the use of an
+application management system: the management system itself
+should be deployed first and maintained continually
+throughout its lifecycle, which is not easier than managing
+any other distributed applications. And what's more, 
+
+1. the management system must be managed, this is ok, any
+distributed application requires that
+
+2. management of the management system is not well
+supported: a) using another p2p tool? b) using another
+centralized tool?
+
+3. the management system is critical, if it has problem
+because of itself's management, all the applications will be
+affected. Any example?
+
+4. the self-man problem is common for ALL management
+systems.
+
+5. prevent it from automating every steps in app management
+
 
 The distributed design makes management system a distributed
 application in essential and it introduces an important
