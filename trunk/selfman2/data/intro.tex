@@ -121,7 +121,7 @@ throughout its lifecycle, which is not easier than managing
 any other distributed applications. Intuitively, we can use
 an existing management system $M'$ to depoy and maintain
 another management tools $M$. But this approach doesn't
-\emph{solve} but just \emph{mitigate} the problem.
+\emph{solve} but just \emph{migrate} the problem.
 Currently, developers resort to writing scripts---which
 leverage OS services such as sshd on Unix/Linux---to
 maintain management systems centrally. This approach is very
@@ -207,13 +207,13 @@ distributed management system with built-in self-management
 capability, namely, self-deployment, self-recovery and
 self-upgrade. It consists of peers on every target machines
 where applications will be deployed and maintained. The
-peers of SMON monitor and maintain other peers running on
+peers of SMON monitor and maintain other ones running on
 different machines. A SMON peer will automatically deploy
 new peers on fresh machines, recover failed peers, or
 upgrade peers of old versions. The collective behavior of
 all peers gives rise to a distributed system that can deploy
-itself, recover failed peers and upgrade itself to new
-versions. SMON can also manage a set of applications.
+, recover  and upgrade itself automatically. SMON can also
+manage a set of applications.
 %especially another distributed application management
 %system. In this way, SMON's management functionality can
 %extended greatly.

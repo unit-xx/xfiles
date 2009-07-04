@@ -11,5 +11,38 @@
 
 It employs epidemic algorithm
 
+intro 说smon是什么，能做什么，
+
+design说怎么做
+
+两个问题：
+
+1. smon能解决的问题说得太小
+
+a. 针对tool说
+
+challenges:
+
+a. scalable and runs reliably with little human intervention
+b. secure
+c. reasonable application management semantic
 
 
+2. smon如何工作说的黏糊，不畅快
+
+SMON is a distributed application management system with
+built-in self-management capability. It consists of peers on a
+set of machines where applications will be deployed and running.
+Peers of SMON monitor and maintain each other. They will
+automatically deploy new peers on fresh machines, or recover
+failed peers. SMON peers exchange their associated version
+numbers and upgrade themselves to latest version. 
+
+
+SMON deploys and maintains itself using epidemic algorithm.
+
+(can be used at address challenge part)
+SMON works by maintaining several global states consistently by
+all the peers using epidemic algorithm. For example, . A peer
+performs several maintainence tasks each of which maintains a
+dedicated state.

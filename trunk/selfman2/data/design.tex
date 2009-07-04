@@ -1,10 +1,13 @@
 \section{Design}
 \label{sec:design}
 
+% XXX: epidemic: too general, anti-entropy
+% more tech details
+
 \begin{figure}
 \centering
 \includegraphics[width=3.0in]{smon_arch}
-\caption{Architecture of SMON system. SMON peers monitor each
+\caption{SMON system design. SMON peers monitor each
 other by sending ping messages. User can send query or control messages
 to any peer. Authentication agent resolves authentication
 chanllenge from peers to help them login into other machines
@@ -12,36 +15,42 @@ automatically.}
 \label{fig:smon_arch}
 \end{figure}
 
-The architecture of SMON is presented in
+The design of SMON system is presented in
 figure~\ref{fig:smon_arch}.  It consists of three parts: SMON
-peers, client utility and authentication agent.
+peers, authentication agent and client utility.
 
 The SMON peers run on a set of target machines where
 distributed applications will be deployed. Each peer
 maintains the full list of target machines as its membership
-list. The peers monitor and maintain each other
-epidemically. A peer periodically chooses a random peer
-and sends it a ping message.
-If the pong message is not
-replied within a timeout interval, it is
+list. The peers monitor and maintain each other using
+epidemic algorithm. A peer periodically chooses a random
+peer and sends it a ping message.  If the pong message is
+not replied within a timeout interval, the remote peer is
 considered as failed. The peer will try to recover the
-failed peer by restarting it remotely, or deploying and
-starting a new peer on fresh machines. Each peer has an
+failed one by restarting it remotely, or deploying and
+starting a new peer on a fresh machine. Each peer has an
 associated version number. The peers exchanges their version
 numbers epidemically and peers of lower version upgrade
-themselves to the latest versions.
+themselves to the latest versions. The epidemic algorithm
+ensures that the entire SMON system will keep running and
+staying at the latest version eventually.
 
 The authentication agent holds the credential (e.g. private
 key) used to authenticate with the target machines. When
-SMON peers try to deploy or restart another peer, it can
+a SMON peer tries to deploy or restart another peer, it can
 automatically login into the remote machine with the help of
 the agent. The credential is never known to the peers or
 leaked out.
 
+% XXX: quite basic?
 With the help of client utility, user can instruct SMON to
-manage a set of distributed applications, including other
-distributed management systems. In this way, the management
-functionalities of SMON can be extended greatly.
+manage a set of distributed applications. SMON deploys and
+maintains distributed applications using epidemic
+algorithms too. The application management semantic of SMON
+is quite basic. User can extend the management semantic by
+deploying another management system upon SMON.
+
+
 
 \comment{
 \subsection{Monitor-reaction model}
@@ -175,7 +184,8 @@ facilities (e.g. lock file). So only the first installation
 process will finish and others will abort. In solving the
 problem, some overhead is introduced because multiple
 installation packages may be copied, which wastes network
-bandwidth and storage resources. Through the evaluation, it
+bandwidth and storage resources. Through mathematical
+analysis and evaluation in Planet-Lab platform, it
 is shown that the overhead is low on most machines. Since
 the size of the installation package is small (122KB), the
 overhead can be considered as insignificant.
@@ -206,6 +216,7 @@ there is a difference, the peer with lower version will
 retrieve the installation package from the other and upgrade
 itself automatically.
 
+% XXX limit the number of ...?
 It is possible that a peer of new version is
 known by many peers of old version quickly. To avoid flash
 crowd, the peer of new version will limit the number of
@@ -345,7 +356,8 @@ be finally disabled when the \texttt{livetag} value of any
 peer is set to false and peers will not send messages to
 each other. A peer will stop itself from running if no
 messages is received for enough long time. In this way, a
-SMON system can be shutdown automatically.
+SMON system can be shutdown automatically by setting
+\texttt{livetag} to false.
 
 %\note{the complete execution of a peer}
 
