@@ -1,7 +1,25 @@
 epidemic, anti-entropy
 
-epidemic activities
-
 self-deployment activity, process
 
 SMON peers moni
+
+? self-mangement activities
+
+? epidemic activities
+
+self-management is implemented upon epidemic algorithm.
+
+self-management is implemented by several activities? task?
+
+self-management is implemented by SMON peers as several threads,
+each maintains a specific state of 
+
+
+epidemic monitoring among peers
+
+self-management functionality
+
+exchange \texttt{$<$livetag, version$>$} tuples epidemically
+
+peers exchanges their version numbers epidemically
