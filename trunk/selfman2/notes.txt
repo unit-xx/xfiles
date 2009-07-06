@@ -46,3 +46,25 @@ SMON works by maintaining several global states consistently by
 all the peers using epidemic algorithm. For example, . A peer
 performs several maintainence tasks each of which maintains a
 dedicated state.
+
+TODO:
+
+a) make up
+
+challeng @ intro
+discussion
+eval
+more tech @ design
+
+b) idea
+
+goal and meaning of smon
+
+c) 体力活
+
+a better design demo
+check spelling and grammer
+check reference
+
+title and abstract
+
