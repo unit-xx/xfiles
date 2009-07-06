@@ -8,19 +8,19 @@ tasks finish almost instantaneously. Although the real SMON
 system works asynchronously, the analysis can still give
 insights on performance of SMON design. We will also evaluate
 SMON in real conditions (see section~\ref{sec:eval}) and
-validate our analysis in this section.
+validate our analysis.
 
 % performance and scalability
 
 SMON leverages epidemic algorithm (anti-entropy) to deploy
 and maintain itself and the managed applications. The
-epidemic algorithm works in three variants: called push, pull
-and push-pull. Although they differ in details, existing
-studies~\cite{xxx} show that each one of the three methods
-can eventually infect the entire population. The studies
-also show that starting from a single peer, this is achieved
-in expected time (the rounds number) propotional to the log
-of the population size ($\log N$).
+epidemic algorithm works in three variants: called push,
+pull and push-pull. Although they differ in details, the
+basic result of epidemic theory shows that each one of the
+three methods can eventually infect the entire population.
+The studies also show that starting from a single peer, this
+is achieved in expected time (the rounds number) propotional
+to the log of the population size ($\log N$).
 
 The maintenance tasks performed by SMON chooses
 different variant of epidemic algorithm. They are summarized
@@ -42,10 +42,10 @@ It is expected that all the maintenance tasks should have
 good scalability and performance. Take self-deployment
 process as an example. Starting from a single SMON peer, all
 the target machines will be deployed with a SMON peer.
-According to existing studies~\ref{xxx}, the self-deployment
-process can be modeled as a branching process with
-population $n$. After $r$ rounds, the expected fraction of
-deployed machines is:
+According to existing studies~\cite{Eugster2004}, the
+self-deployment process can be modeled as a branching
+process with population $n$. After $r$ rounds, the expected
+fraction of deployed machines is:
 
 \begin{equation*}
 Y_r \approx \frac{1}{1+ne^{-r}} 
