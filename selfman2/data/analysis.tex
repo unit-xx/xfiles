@@ -1,58 +1,91 @@
 \section{Analysis}
 \label{sec:analysis}
 
-We analyze performance of SMON in this section. In the analysis,
-we assume that SMON works in sychronized way, that is each peer
-performs its maintenance tasks in synchronized rounds and the
-tasks finish almost instantaneously. Although the real SMON
-system works asynchronously, the analysis can still give
-insights on performance of SMON design. We will also evaluate
-SMON in real conditions (see section~\ref{sec:eval}) and
-validate our analysis.
+We analyze performance of SMON in this section.
+
+SMON uses epidemic algorithm to maintain itself. Peers will
+initiate periodic communication to other random peers. We
+will show that these maintenance tasks have good
+performance and scalability. In the analysis, we assume that
+SMON works in sychronized way, that is each peer performs
+its maintenance tasks in synchronized rounds and the tasks
+finish almost instantaneously. Although the real SMON system
+works asynchronously, the analysis can still give insights
+on performance of SMON design. We will also evaluate SMON in
+real conditions (see section~\ref{sec:eval}) and validate
+our analysis.
 
 % performance and scalability
 
-SMON leverages epidemic algorithm (anti-entropy) to deploy
-and maintain itself and the managed applications. The
-epidemic algorithm works in three variants: called push,
-pull and push-pull. Although they differ in details, the
-basic result of epidemic theory shows that each one of the
-three methods can eventually infect the entire population.
-The studies also show that starting from a single peer, this
-is achieved in expected time (the rounds number) propotional
-to the log of the population size ($\log N$).
+The epidemic algorithm has three variants, called push, pull
+and push-pull, and they are used by different maintenance
+tasks of SMON as summarized in table~\ref{tbl:tasks}.
+Although they differ in details, the basic result of
+epidemic theory shows that each one of the three methods can
+eventually infect the entire population.  The studies also
+show that starting from a single peer, this is achieved in
+expected time (the rounds number) propotional to the log of
+the population size ($\log N$).
 
-The maintenance tasks performed by SMON chooses
-different variant of epidemic algorithm. They are summarized
-in table~\ref{tbl:tasks}
+\begin{table}
+\centering
+\begin{tabular}{|l|l|}
 
-self-deployment: push
+\hline
+Self-deployment & push \\
 
-upgrade: push-pull
+\hline
+Self-upgrade & push-pull \\
 
-recovery: push
+\hline
+Self-recovery & push \\
 
-enable: push
+\hline
+Enable SMON & push \\
 
-disable: pull
+\hline
+Disable SMON & pull \\
 
-appman: push-pull
+\hline
+Application deployment & push-pull \\
 
-It is expected that all the maintenance tasks should have
-good scalability and performance. Take self-deployment
-process as an example. Starting from a single SMON peer, all
-the target machines will be deployed with a SMON peer.
-According to existing studies~\cite{Eugster2004}, the
-self-deployment process can be modeled as a branching
-process with population $n$. After $r$ rounds, the expected
-fraction of deployed machines is:
+\hline
+\end{tabular}
+\caption{Different variants of epidemic algorithm used by
+maintenance task of SMON.}
+\label{tbl:tasks}
+\end{table}
+
+Take self-deployment process as an example. Starting from a
+single SMON peer, all the target machines will be deployed
+with a SMON peer.  According to existing
+studies~\cite{Eugster2004}, the self-deployment process can
+be modeled as a branching process with population $n$. After
+$r$ rounds, the expected fraction of deployed machines is:
 
 \begin{equation*}
 Y_r \approx \frac{1}{1+ne^{-r}} 
 \end{equation*}
 
-Or to say, to deploy a fix fraction of machines, the
-expected round number $r$ is:
+The relation of $Y_r$ and $r$ is demostrated in
+figure~\ref{fig:yr}.
+
+\begin{figure}
+\centering
+\includegraphics[scale=0.618]{Y_r}
+\caption{Relation of expected infected population $Y_r$ with
+round number $r$.}
+\label{fig:yr}
+\end{figure}
+
+
+The ratio of deployed machines to undeployed ones increases
+exponentially, on average, by a factor of $e$ in each round.
+This indicates that the self-deployment has good
+performance.
+
+To deploy a fix fraction of machines, the expected round
+number $r$ is:
 
 \begin{equation*}
 r \approx \ln(n) - \ln(\frac{1}{Y_r} - 1)
@@ -86,7 +119,10 @@ the overhead small on average.
 
 % ping overhead
 
-binomial -> poisson distribution
+% At last, we show that the communication cost caused by
+% maintenance tasks is small. At each round, a SMON peer will
+% selecte a random peer and send it two messages: a ping
+% piggybacked with version number
 
 % recover speed?
 
