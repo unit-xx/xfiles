@@ -275,13 +275,13 @@ SMON's design addresses the challenges as follows. For the
 first challenge, SMON peers monitor and maintain each other
 using epidemic approach. This ensures good scalability
 ($O(\log N)$) when system goes large. A SMON system
-maintains several global states consistently by all the
-peers using epidemic algorithm. For example, all peers
-should be in ``running'' state and their version should be
-the latest one. A peer performs several maintainence tasks
-simultaneously. Each task communicates with other random
-selected peers periodically and keep the states consistent
-eventually among all SMON peers. 
+maintains several global invariants using epidemic
+algorithm. For example, all peers should be in ``running''
+state and their version should be the latest one. A peer
+performs several maintainence tasks simultaneously. Each
+task communicates with other random selected peers
+periodically and maintain the invariants with all SMON
+peers. 
 
 For the second challenge, a separate authentication agent is
 used to store and protect login credentials. When a peer
@@ -294,22 +294,26 @@ agent can support a number of peers.  We use a symmetric key
 to authenticate and encrypt access to SMON peers. 
 
 For the third challenge, SMON defines its management
-semantic for long running services. The ``long
-running services'' are applications sharing these management
-requirements: a) peers of the application can be deployed and
-started independently without a synchronization, b) the
+semantic for long running services. The ``long running
+services'' are applications sharing these management
+requirements: a) peers of the application can be deployed
+and started independently without synchronization, b) the
 failure of a single peer doesn't affect the whole
 application from running and the failed peer can be
 recovered by simply restarting it. An example of long
-running services is SWORD~\cite{sword_toit} which is a resource
-discovery service on Planet-Lab. The applications considered
-as long running services includes many distributed systems
-with well defined failure handling mechanism. And most
-application management systems, such as Plush~\cite{Albrecht2007},
-application-manager~\cite{appmanager}, SmartFrog~\cite{smartfrog}, are also
-considered as long running services. Thus, to adopt more
-management functionalities, user can deploy another
-management system upon SMON and XXX. 
+running services is SWORD~\cite{sword_toit} which is a
+resource discovery service on Planet-Lab.
+% The applications considered as long running services
+% includes many distributed systems with well defined
+% failure handling mechanism. 
+And most application management systems, such as
+Plush~\cite{Albrecht2007},
+application-manager~\cite{appmanager},
+SmartFrog~\cite{smartfrog}, are also considered as long
+running services. Thus, to adopt more management
+functionalities, user can deploy another management system
+upon SMON.
+% and XXX. 
 
 %It is of great challenge to manage distributed application
 %when the scale is large. Distributed application management
@@ -340,8 +344,9 @@ that SMON system has achieves good performance and
 scalability.
 
 The rest of paper is organized as follows. We describe SMON
-design in section~\ref{sec:design} and discuss on
-section~\ref{sec:discuss}. Section~\ref{sec:impl} describes
+design in section~\ref{sec:design}.
+%and discuss on section~\ref{sec:discuss}.
+Section~\ref{sec:impl} describes
 SMON implementation on Planet-Lab platform. We analyze
 performance and scalability of SMON in
 section~\ref{sec:analysis}. We present evaluation of SMON in
