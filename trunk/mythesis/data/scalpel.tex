@@ -90,6 +90,7 @@ happened-before~\cite{lamport_clock}关系推断得到。
 PacificA对网络带宽的利用率只有最大值的70\%。
 
 本文接下来的内容安排如下：\ref{sec:scp:design}节描述了推断算法设计，
+\ref{sec:scp:optimization}节叙述了对Scalpel实现的优化，
 \ref{sec:scp:discussion}节讨论了设计相关的问题，\ref{sec:scp:case}节我
 们描述了Scalpel在实际系统上的应用实例，\ref{sec:scp:perf}节测量了
 Scalpel的性能，\ref{sec:scp:conclusion}节为本章小结。
@@ -300,6 +301,88 @@ BOOL SetEvent_hooker(HANDLE hEvent)
 为了解决这个问题，我们为每个同步对象创建一个shadow lock，将
 WaitForSingleObject操作替换为SignalObjectAndWait，保证了同步操作与输出
 trace是一个原子操作。如图~\ref{fig:trace_shadowlock}所示。
+
+\section{性能优化}
+\label{sec:scp:optimization}
+
+Scalpel使用R2获取与记录函数调用事件。对系统运行时的每一个线程，都创建
+一个单独的文件，记录这个线程的运行trace。在Scalpel的初始实现中，采用了
+基本的方法记录每个线程的运行时trace。我们使用字典对象（STL map）保存每
+个线程trace的文件句柄。对每一次函数调用，首先通过系统调用得到当前线程
+号，并使用线程号为键值查询对应线程的trace文件句柄，将函数调用事件记录
+到trace中。
+
+在多线程情况下，这个方法存在性能问题。在每一次函数调用时，需要使用互斥
+锁（mutex）同步多个线程访问trace文件字典对象的过程。由于实际系统运行时
+可能会频繁的发生函数调用，这样的实现会对性能产生很大的额外负载。这个实
+现方法不是最优的，因为每个线程的trace文件都是相互独立的，并不交叉访问，
+因而存在改进的空间。
+
+\begin{figure}
+\centering
+\begin{lstlisting}[language=C++]
+
+void empty(void)
+{
+	// as empty function purposely
+}
+
+DWORD WINAPI hello(LPVOID param)
+{
+	int looptime = 1000000;
+	DWORD  ts = GetTickCount();
+	for(int i = 0; i < looptime; i++)
+	{
+		empty();
+	}
+	DWORD  te = GetTickCount();
+
+	DWORD *mytime = (DWORD*)param;
+	*mytime = te - ts;
+
+	return 0;
+}
+\end{lstlisting}
+\caption{测试Scalpel输出trace的额外负载的代码}
+\label{fig:scp_perfcode}
+\end{figure}
+
+我们对之前的方法进行了优化，改进了性能。具体的，我们使用线程局部存储（
+Thread Local Storage，TLS）技术保存每个线程的trace文件句柄，在记录函数
+调用事件时，直接从线程局部存储中得到trace文件句柄即可。这样就不必使用
+字典对象统一保存所有线程的trace文件句柄，在记录函数调用事件时，也就不
+必要使用互斥锁同步线程的执行。
+
+通过对比测试，我们能够看到优化后由于Scalpel给应用带来的额外负载有显著
+降低。
+
+在测试中，我们使用多个线程，并行执行图~\ref{fig:scp_perfcode}中的代码，
+对比优化前后，执行时间的差别。由于empty函数的执行体是空，因而可以认为
+相比原始代码的执行时间，应用Scalpel后增加的执行时间全部是因为输出trace
+所导致的，或者说图~\ref{fig:scp_perfcode}中的代码可以测试得到输出trace
+产生额外负载的最大值。在实际系统执行时，并不会发生如测试中“频繁”的函
+数调用，在函数调用之间还会执行其他代码，因而产生的额外负载远小于图~
+\ref{fig:scp_perfcode}中的代码得到的结果。在第~\ref{sec:scp:case}节中
+我们将Scalpel应用于Apache和PacificA系统，并测试了Scalpel在这两个系统上
+产生的实际额外负载。
+
+\begin{figure}
+  \centering
+  \begin{minipage}{0.8\linewidth}
+    \centering
+    \includegraphics[width=0.8\linewidth]{scp_perfopt}
+    \caption{优化前后输出trace的性能额外负载情况}
+    \label{fig:scpperf_opt}
+  \end{minipage}
+\end{figure}
+
+图~\ref{fig:scpperf_opt}显示了优化前后额外负载的变化。测试是在如下机器
+配置上进行的：2.0 GHz Xeon双核CPU，4 GB内存，运行Windows Server 2003
+SP2操作系统。分别测试了采用与不采用优化时，不同数量线程线程同时执行
+hello函数的时间消耗平均值。可以看出，优化带来的性能提升是明显的。在单
+线程时，两种方法并没有明显性能差异。在多线程时，优化后性能提升很明显，
+在5、10、20个并行线程情况下，执行时间分别提高了8.8、7.0和7.7倍。
+
 
 % xxx visualize?
 \section{讨论}
