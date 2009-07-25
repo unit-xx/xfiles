@@ -5,9 +5,29 @@
 4. other technical points in scichina review.
 5. analysis
 
-- optimazation: biased neighbour selection, directional gossip,
-  Efficient and Adaptive Epidemic-style Protocols for Reliable
-  and Scalable Multicast, hier scamp
+- intro要让人明白，哦，原来是这样的啊
+
+- discussion on optimazation: biased neighbour selection,
+  directional gossip, Efficient and Adaptive Epidemic-style
+  Protocols for Reliable and Scalable Multicast, hier scamp
+
+- emphasize on how epidemic algorithm is applied to managment.
+  why self-man is important, and why epidemic is the right
+  choice? 
+
+- stateless, crash-only design in self-recovery
+
+- selfmanagement开头就说general design，再说deploy，recovery等等
+  的具体问题。intro部分对selfman的介绍（challenge 1）应该更一般
+  一些，design部分再说abstract as global invariants(有点太扯的感
+  觉）
+
+- 解释为什么设计的很简单
+
+- 有了合适的management semantic，smon就能被应用到很多地方。
+- 有了agent，就能想怎么manage就怎么manage
+- 有了epidemic就能有很好的scalability，另外也easy to implement
+  and deploy, 更robust, resilient to failure
 
 It employs epidemic algorithm
 
