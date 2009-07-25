@@ -9,8 +9,8 @@ distributed computing platforms to contain hundreds or
 thousands of computers, such as
 Planet-Lab~\cite{Bavier2004}, Amazon
 EC2~\cite{Garfinkel2007} and Teragrid~\cite{Catlett2002}.
-These platforms can provide huge amount of storage and
-computing capabilities that boost performance of distributed
+These platforms provide huge amount of storage and computing
+capabilities that can boost performance of distributed
 applications significantly. However, it is still difficult
 to design, deploy and manage distriubted applications at
 large scale and fully utilize the resources.
@@ -32,8 +32,8 @@ large scale and fully utilize the resources.
 % this way
 Managing a distributed application faces several challenges.
 The application must be first deployed to a set of machines.
-The deployment process should have good scalability so that
-it can work on thousands of machines. During the deployment,
+The deployment should have good scalability so that it can
+work at large scale. During the deployment,
 failures---such as machine or network failures---are
 inevitable. They must be handled at any time during file
 transfer and application installation. Only when the
@@ -45,7 +45,7 @@ may be simply restarting the failed processes. For some
 cases, failures may lead to aborting and restarting the
 whole application on many machines. For all the
 applications, quick failure detection and recovery is
-required to ensure that applications are running
+required to ensure that applications can run
 successfully. Distributed applications are also commonly
 upgraded for bug fixes and performance improvement.
 
@@ -116,23 +116,22 @@ the same machine box.
 % centralized way -> not efficient and very preliminary
 There is one important caveat regarding the use of an
 application management system: the management system itself
-should be deployed first and maintained continually
-throughout its lifecycle, which is not easier than managing
-any other distributed applications. Intuitively, we can use
-an existing management system $M'$ to depoy and maintain
-another management tools $M$. But this approach doesn't
-\emph{solve} but just \emph{migrate} the problem.
-Currently, developers usually resort to writing
-scripts---which leverage OS services such as sshd on
-Unix/Linux---to maintain management systems centrally. This
-approach is very preliminary and has several disadvantages.
-First, it is not scalable, especially at transfering
-large amount of data or managing many application on many
-machines. Second, it cannot handle failures well. When
-network partition happens, it losts control of machines in
-different partition. Third, the management functionality is
-limited by underlying OS services (e.g. sshd) at some
-extent.
+have to be deployed first and maintained continually
+throughout its lifecycle. Intuitively, we can use an
+existing management system $M'$ to depoy and maintain a new
+management system $M$. But this approach doesn't
+\emph{solve} but just \emph{migrate} the problem, $M'$ still
+faces the same problem recursively.  Currently, developers
+usually resort to writing scripts---which leverage OS
+services such as sshd on Unix/Linux---to maintain management
+systems centrally. This approach is very preliminary and has
+several disadvantages.  First, it is not scalable,
+especially at transfering large amount of data or managing
+distribute systems on many machines. Second, it cannot
+handle failures well. When network partition happens, it
+losts control of machines in different partition. Third, the
+management functionality is limited by underlying OS
+services (e.g. sshd) at some extent.
 
 % Developers resort to
 % xxx (simple script leveraging OS services like sshd to
@@ -207,21 +206,20 @@ extent.
 %managment loop here, and we automate the loop within peers
 %in SMON}
 
-In this paper, we propose Self-Managed Overlay Network
-(SMON) that addresses the problem of deployment and
-maintenance of distributed management systems.  SMON is a
-distributed management system with built-in self-management
-capability, namely, self-deployment, self-recovery and
-self-upgrade. User of SMON has little work to do on
-maintaining a SMON system. A SMON system consists of peers
-on every target machines where applications will be deployed
-and maintained. The peers of SMON monitor and maintain other
-ones running on different machines. A SMON peer will
-automatically deploy new peers on fresh machines, recover
-failed peers, or upgrade peers of old versions. The
-collective behavior of all peers gives rise to a distributed
-system that can deploy, monitor, recover and upgrade itself
-automatically. SMON can also manage a set of applications.
+In this paper, we argue that a management system should have
+self-management capability and not rely on external tools to
+manage itself. We implement the idea as Self-Managed Overlay
+Network (SMON). SMON is a distributed management system with
+built-in self-management capability, namely,
+self-deployment, self-recovery and self-upgrade. User of
+SMON has little work to do on maintaining it. A SMON peer
+monitors and maintains other ones running on different
+machines. It will automatically deploy new peers on fresh
+machines, recover failed peers, and upgrade itself to newer
+versions. The collective behavior of all peers gives rise to
+a management system that can deploy, monitor, recover and
+upgrade itself automatically. SMON can also manage a set of
+applications.
 %especially another distributed application management
 %system. In this way, SMON's management functionality can
 %extended greatly.
@@ -261,11 +259,11 @@ by running ones automatically.
 In designing SMON there are several challenges.
 
 The first challenge is that SMON should have good
-scalability.  Second, there should be certain security
-mechanism so that peers can automatically login into other
-machines to deploy new peers or recover failed peers. And
+scalability. Second, to enable automatic deployment and
+recovery, it need certain security mechanism so that peers
+can login into other machines without manual assistant. And
 access to SMON should be authenticated and encrypted to
-avoid misuse of the system for malicious activities.  The
+avoid misuse of the system for malicious activities. The
 Third challenge is that SMON should define reasonable
 application management semantic.
 % XXX: and has the way to extend the management
@@ -273,25 +271,26 @@ application management semantic.
 
 SMON's design addresses the challenges as follows. For the
 first challenge, SMON peers monitor and maintain each other
-using epidemic approach. This ensures good scalability
-($O(\log N)$) when system goes large. A SMON system
-maintains several global invariants using epidemic
-algorithm. For example, all peers should be in ``running''
-state and their version should be the latest one. A peer
-performs several maintainence tasks simultaneously. Each
-task communicates with other random selected peers
-periodically and maintain the invariants with all SMON
-peers. 
+using epidemic approach. Periodically, a peer will choose a
+random one from its membership list and monitor its running
+status. It will deploy new SMON peer on a fresh machine or
+recover the failed peer. By exchanging version number with
+remote peers, it will upgrade itself to lastest version.
+This epidemic approach ensures good scalability
+($O(\log N)$) when system goes large.
 
 For the second challenge, a separate authentication agent is
-used to store and protect login credentials. When a peer
-needs to login into a machine, it redirects the
-authentication challenge from remote machine to the agent
-and replies the response solved by the agent back to the
-machine.  The credential is never leaked out of the agent.
-The authentication load on the agent is light and a single
-agent can support a number of peers.  We use a symmetric key
-to authenticate and encrypt access to SMON peers. 
+used to assist peers in login into remote machines
+automatically. When a peer 
+
+login into a machine, it
+redirects the authentication challenge from remote machine
+to the agent and replies the response solved by the agent
+back to the machine.  The credential is never leaked out of
+the agent.  The authentication load on the agent is light
+and a single agent can support a number of peers.  We use a
+symmetric key to authenticate and encrypt access to SMON
+peers.
 
 For the third challenge, SMON defines its management
 semantic for long running services. The ``long running
