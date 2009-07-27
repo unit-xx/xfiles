@@ -316,6 +316,8 @@ remotely, with help from authentication agent. It is safe to
 start multiple instances of SMON peer, but it is idempotent
 to start only one instance.
 
+XXX: crash-only design
+
 Network partitions can also be handled by SMON easily. When
 network partition occurs, SMON peers are splitted into
 several sub-systems, each of which is connected internally.
@@ -325,17 +327,6 @@ the version of SMON peers. When two partitions rejoin, the
 peers in different part will be able to contact and
 communicate with each other, leading to the mergence of
 the whole system.
-
-\subsubsection*{Combine them together}
-
-A SMON peer monitors and maintains other ones by combining
-above-mentioned three functionalities together.  Two points are
-worth mentioning. First, as an optimization, the version
-number of SMON is piggybacked in ping/pong messages among
-peers.  Second, when peer $A$ considers another one $B$ as
-failed, there are two possible reasons: no SMON peer is
-deployed or $B$ is stopped. $A$ will restart $B$ directly
-if it is already installed. 
 
 % In this way, a peer can choose which action to take based
 % on result of a ping message.
@@ -364,13 +355,13 @@ state consistently and efficiently among all peers.
 \subsubsection*{Disable/enable self-management}
 \label{subsec:livetag}
 
-We need mechanism to disable self-management functionality
-of SMON to stop it from running. When self-management is
-enabled, we cannot stop SMON by shutdown peers individually.
-If a peer is stopped by user, it will be started soon by
-another peer. The only solution under such condition is to
-stop all the SMON peers simultaneously, which is not
-feasible at large scale.
+We need mechanism to enable or disable self-management
+capability of SMON to stop it from running. When
+self-management is enabled, we cannot stop SMON by shutdown
+peers individually.  If a peer is stopped by user, it will
+be started soon by another peer. The only solution under
+such condition is to stop all the SMON peers simultaneously,
+which is not feasible at large scale.
 
 We use a boolean variable called \texttt{livetag} to control epidemic
 monitoring among peers. If the value is false, a peer will
@@ -395,6 +386,17 @@ to each other. A peer will stop itself from running if no
 messages is received for enough long time. In this way, a
 SMON system can be shutdown automatically by setting
 \texttt{livetag} to false.
+
+\subsubsection*{Combine them together}
+
+A SMON peer monitors and maintains other ones by combining
+above-mentioned activities together.  Two points are
+worth mentioning. First, as an optimization, the version
+number of SMON is piggybacked in ping/pong messages among
+peers.  Second, when peer $A$ considers another one $B$ as
+failed, there are two possible reasons: no SMON peer is
+deployed or $B$ is stopped. $A$ will restart $B$ directly
+if it is already installed. 
 
 %\note{the complete execution of a peer}
 
