@@ -250,8 +250,6 @@ remotely, with help from authentication agent. It is safe to
 start multiple instances of SMON peer, but it is idempotent
 to start only one instance.
 
-xxx
-
 Network partitions can also be handled by SMON easily. When
 network partition occurs, SMON peers are splitted into
 several sub-systems, each of which is connected internally.
@@ -364,7 +362,7 @@ such condition is to stop all the SMON peers simultaneously,
 which is not feasible at large scale.
 
 We use a boolean variable called \texttt{livetag} to control epidemic
-monitoring among peers. If the value is false, a peer will
+ping among peers. If the value is false, a peer will
 stop sending periodic ping message to others and the whole
 SMON system stops maintaining itself. 
 %We can now stop SMON peers one by one.
@@ -389,9 +387,9 @@ SMON system can be shutdown automatically by setting
 
 \subsubsection*{Combine them together}
 
-Each SMON peer runs monitoring and maintaining tasks
+Each SMON peer runs monitoring and maintenance tasks
 mentioned above and self-management capacity of the whole
-SMON is achieved. Basically, a peer can run four maintaining
+SMON is achieved. Basically, a peer can run four maintenance
 tasks: one for peer deployment, one for peer recovery, one
 for self-upgrade and one for \texttt{livetag} maintenance.
 As an optimization, we combine first three tasks into one.
@@ -400,6 +398,12 @@ messages among peers. And when peer $A$ considers another
 one $B$ as failed, it will choose from deploying a new peer
 or recover the installed peer by detecting installation
 status of $B$ on remote machine.
+
+xxx
+
+self-version, livetag/ver, app name/setting, agent,
+membership ver, k\_e: put to ``combine together''
+
 
 %\note{the complete execution of a peer}
 
@@ -442,13 +446,13 @@ SMON should have security mechanism to achieve two goals:
 %others automatically in a distributed approach.
 
 We describe how we design security mechanism to achieve the
-two goals on Planet-Lab platform and explain how to apply
-the mechanism on other distributed platforms.  Planet-Lab
-uses public-key system to authenticate access to the
-platform. A user access his slice (a set of distributed
-virtual machines) by using ssh. The private key is kept in
-user's computer and the public key is distributed to all
-virtual machines of his slice.
+two goals on Planet-Lab platform and explain how to apply it
+on other distributed platforms.  Planet-Lab uses public-key
+system to authenticate access to the platform. A user access
+his slice (a set of distributed virtual machines) by using
+ssh. The private key is kept in user's computer and the
+public key is distributed to all virtual machines of his
+slice.
 
 %SMON system is designed for distributed platforms that are
 %semi-open---like Planet-Lab or grid, or for proprietary
@@ -537,23 +541,24 @@ local file systems.
 
 Each SMON peer maintains a list of machines as its
 membership list.  The membership maintenance of SMON system
-is different from other distributed systems. While others
-maintains a list of peers that are currently running, SMON
-maintain a list machines on which there should be peers
-running. The failure of SMON peers will not affect the
-membership list at all. The list is specified by user and
-should not changes very often. And an important requirement
-of SMON is, even when there is only one SMON peer running,
-it should be able to know all the target machines that SMON
-need to be deployed.  The implication is that every running
-SMON peer should be able to know the full list of target
-machines.
+is different from other distributed systems such as
+DHT~\cite{xxx}, file sharing~\cite{xxx},
+streaming~\cite{xxx}. While others maintains a list of peers
+that are currently online, SMON maintains a list of machines
+on which there should be peers running. The failure of SMON
+peers will not affect the membership list at all. The list
+is specified by user and should not changes very often. And
+an important requirement of SMON is, even when there is only
+one SMON peer running, it should be able to know all the
+target machines where SMON should be deployed.  The
+implication is that every running SMON peer should be able
+to know the full list of target machines.
 
 In current design, a simple scheme is used: each SMON peer
 will store a replica of the full list of target machines
 persistently in compressed format. The list also has an
 associated version number. SMON peers exchanges their
-membership version epidemically and update the list. User
+membership versions epidemically and update the list. User
 can update the membership list to change the set of machines
 on which SMON runs.
 %To reduce the communication overhead in updating membershit
@@ -568,22 +573,21 @@ about 100K bytes, which is an acceptable result.
 When membership changes, newly added machines will be
 deployed with new SMON peers. The peer running on removed
 machines will receive the new machine list and find that
-they are not in the list. It will only reply to incoming
-messages to help spreading membership changes. And it will
-stop maintaining any SMON peer and deployed applications.
-After most peers update their membership list, the peers in
-removed machines will kill themselves after they don't
-receive any messages for enough long time.
+they are not in the list. It will then only reply to
+incoming messages to help spreading membership changes. And
+it will stop maintaining any SMON peer.  After most peers
+update their membership list, the peers in removed machines
+will kill themselves after they don't receive any messages
+for enough long time.
 
 \subsection{Application management}
-
-XXX: define long running services
 
 SMON can manage one or more distributed applications. It
 designs management semantic for long running services. The
 peers of an application is deployed and started
 independently. A SMON peer will monitor and maintain
-application peer in the same machine.
+application peer in the same machine. When an application
+peer is failed, it will be restarted for recovery.
 
 SMON deploys applications using epidemic algorithm.  An
 application is uniquely identified by its name.
@@ -622,9 +626,10 @@ machine. The choices can be:
   that.
 \end{itemize}
 
-A SMON peer will report the application states to a central
-server timely. And whenever the application state changes,
-the SMON peer will report the changes immediately.
+A SMON peer may report the application states to a central
+server timely if specified in configuration. And whenever
+the application state changes, the SMON peer will report the
+changes immediately.
 
 % It is obvious that the application monitoring and
 % maintenance semantic provided by SMON is very basic. It
@@ -635,31 +640,33 @@ the SMON peer will report the changes immediately.
 
 If more management semantic or features are required, user
 can first deploy another management or monitoring system on
-top of SMON. In this way, management functionalities can be
-extend greatly. For example, D3S~\cite{Liu2008} is a
-monitoring tool which uses instrumentation~\cite{Guo2008} to
-monitor application's internal states. It calculates user
-specified predicates on global snapshots of application
-states and reports when predicates are false. User can delay
-D3S on top of SMON and define safety or liveness predicates
-to check application states in detail.
-
+top of SMON. In this way, management semantic can be
+enriched greatly. And the ``combined'' management system
+still preserve self-managment capacity. For example,
+D3S~\cite{Liu2008} is a monitoring tool which uses
+distributed predicates to monitor application's internal
+states. It exports application's states using
+instrumentation~\cite{Guo2008} and calculates user specified
+predicates on global snapshots. Whenever a predicate is
+false, the event is reported. User can delay D3S on top of
+SMON and define safety or liveness predicates to check
+application states in detail.
 
 \subsection{Client utility}
 \label{subsec:client}
 
 A client utility is provided for user to control SMON. The
 communication between the utility and any peers is
-authenticated and encrypted by share key $K_E$. To deploy
-SMON, the utility will copy the installation package of SMON
-peer to a machine and start the package, then SMON will
-deploy itself automatically. To upgrade SMON, the utility
-mimics itself as a SMON peer and notifies a random SMON peer
-that a new version available.  The peer will then retrieve
-the installation package from utility's machine and upgrade
-itself. Then SMON will be upgraded.  Similarly, the utility
-can notify a random peer to install an application, update
-the member list and enable or disable self-management
+authenticated and encrypted by the share key $K_E$. To
+deploy SMON, the utility will copy the installation package
+of SMON peer to a machine and start the package, then SMON
+will deploy itself automatically. To upgrade SMON, the
+utility mimics itself as a SMON peer and notifies a random
+SMON peer that a new version available.  The peer will then
+retrieve the installation package from utility's machine and
+upgrade itself. Then SMON will be upgraded.  Similarly, the
+utility can notify a random peer to install an application,
+update the member list and enable or disable self-management
 capability of SMON. The latest version numbers of SMON peer,
 membership list and \texttt{livetag} are stored locally on
 user's machine.  User can query any SMON peer with the help

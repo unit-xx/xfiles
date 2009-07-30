@@ -97,7 +97,7 @@ peer-to-peer (P2P) approach.  Generally, a distributed
 management system consists of many ``peers''\footnote{The
 word peer here will refer to client if the management system
 is in client/sever architecture.} on each machine where
-application will be deployed. The peers form an overlay
+applications will be deployed. The peers form an overlay
 network, and they work corporately to deploy application to
 a set of machines. After the application is started, each
 peer monitors and maintains application's processes within
@@ -120,7 +120,7 @@ have to be deployed first and maintained continually
 throughout its lifecycle. Intuitively, we can use an
 existing management system $M'$ to depoy and maintain a new
 management system $M$. But this approach doesn't
-\emph{solve} but just \emph{migrate} the problem, $M'$ still
+\emph{solve} but just \emph{migrate} the problem: $M'$ still
 faces the same problem recursively.  Currently, developers
 usually resort to writing scripts---which leverage OS
 services such as sshd on Unix/Linux---to maintain management
@@ -319,8 +319,8 @@ Plush~\cite{Albrecht2007},
 application-manager~\cite{appmanager},
 SmartFrog~\cite{smartfrog}, are also considered as long
 running services. Thus user can deploy another management
-system upon SMON to enrich more management functionalities,
-while the whole system is still self-managed.
+system upon SMON to enrich management semantic, while the
+``combined'' management system is still self-managed.
 % and XXX. 
 
 %It is of great challenge to manage distributed application
@@ -345,9 +345,9 @@ while the whole system is still self-managed.
 
 In summary, the paper makes following contributions.  We
 design a scalable and secure distributed management system
-with built-in self-management capability leveraging epidemic
-algorithm.  We implement it on Planet-Lab platform.  The
-mathematical analysis and evaluation on Planet-Lab shows
+with built-in self-management capability by leveraging
+epidemic algorithm.  We implement it on Planet-Lab platform.
+The mathematical analysis and evaluation on Planet-Lab shows
 that SMON system has achieves good performance and
 scalability.
 

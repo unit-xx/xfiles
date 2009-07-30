@@ -1,7 +1,7 @@
 \section{Implementation}
 \label{sec:impl}
 
-We implement a prototype of SMON system on Planet-Lab.  The
+We implement the prototype of SMON system on Planet-Lab.  The
 source is written in Python, and the final installation
 package size of a BON peer is about 122KB, with 1000+ lines
 of code.
@@ -63,7 +63,7 @@ agent}
 \label{fig:rpc}
 \end{table*}
 
-The epidemic activities of a SMON peer is implemented in
+The epidemic maintenance tasks of a SMON peer is implemented in
 several
 threads, including one for monitoring and maintaining other
 peers, one for updating membership list, one for update
@@ -83,15 +83,14 @@ described in table~\ref{fig:rpc}.
 
 The parameters used at SMON runtime is stored in a
 configuration file. It stores the time intervals among
-consecutive epidemic activities, the version numbers for
-SMON peer and membership list, the $<$livetag, version$>$
-tuple, the address of authentication agent. Each application
-can specify an address to which the application's states
-changes should be reported. The configuration file is
-implemented as a SQLite database file to avoid data loss at
-machine crash. It is updated by
-installation package of SMON and applications.  The
-membership list is stored separately in compressed format.
+consecutive epidemic tasks, the version numbers for SMON
+peer and membership list, the $<$livetag, version$>$ tuple,
+the address of authentication agent. Each application can
+specify an address to which the application's states changes
+should be reported. The configuration file is implemented as
+a SQLite database file to avoid data loss at machine crash.
+The membership list is stored separately in compressed
+format.
 
 %SMON makes a predefined and consistent directory layout of
 %peer installation and it is critical for peers to perform
