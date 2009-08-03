@@ -31,3 +31,5 @@ self-management capacity can be disabled so that SMON can be
 stopped from running. SMON uses a boolean variable to control
 enable and disable of itself, the variable is maintained
 distributedly among peers using epidemic algorithm.
+
+among xxx space, we choose long-running services.

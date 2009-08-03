@@ -29,11 +29,11 @@ automatically. With the help of authentication agent, a SMON
 peer can login into remote machines automatically to recover
 failed peers or deploy new peers. A SMON system can manage a
 set of distributed applications. It defines the management
-semantic for long running services.  User can use the client
-utility to instruct SMON on application management. The
-utility can also be used to control a SMON system, such as
-upgrading it to new version, or query running states of SMON
-peers.
+semantic for long running internet services.  User can use
+the client utility to instruct SMON on application
+management. The utility can also be used to control a SMON
+system, such as upgrading it to new version, or query
+running states of SMON peers.
 
 % The epidemic algorithm is used extensively in designing
 % SMON. A SMON system must hold several distributed invariants
@@ -399,10 +399,11 @@ one $B$ as failed, it will choose from deploying a new peer
 or recover the installed peer by detecting installation
 status of $B$ on remote machine.
 
-xxx
-
-self-version, livetag/ver, app name/setting, agent,
-membership ver, k\_e: put to ``combine together''
+% SMON adopts ``crash-only'' design. When SMON peer fails, it
+% can be recovered by simply restarting. SMON stores the 
+% 
+% self-version, livetag/ver, app name/setting, agent,
+% membership ver, k\_e: put to ``combine together''
 
 
 %\note{the complete execution of a peer}
@@ -582,12 +583,80 @@ for enough long time.
 
 \subsection{Application management}
 
-SMON can manage one or more distributed applications. It
-designs management semantic for long running services. The
-peers of an application is deployed and started
-independently. A SMON peer will monitor and maintain
-application peer in the same machine. When an application
-peer is failed, it will be restarted for recovery.
+SMON can manage one or more distributed applications. The
+management semantic is defined in the following four
+dimensions~\cite{plush?}, which is a framework for
+describing general application management requirements.
+
+\begin{itemize}
+
+  \item resource requirement: different applications put
+  various demands on computing resouces, such as CPU load,
+  free disk space and memory, network bandwidth and latency,
+  etc. Besides from characteristics on current resource
+  usage, user may be also interested in resouce availability
+  and reliability which can be inferred by summarizing
+  historic data. The management system should find best set
+  of resources as described in specification.
+
+  \item deployment: The management system follows
+  instructions given by user to copy, unpack and install
+  applications on acquired resouces. The management system
+  should also support a variety of file transfer mechanisms.
+
+  \item synchronization: distributed applications may work
+  in multi-phases, such as scientific parallel programs.
+  The management system should have barrier mechanism to
+  execute application workflow in steps.
+
+  \item maintenance and recovery: While application is running,
+  the resource usage may vary and failures of different
+  levels may happen. The management system should monitor
+  dynamic resource conditions and react according
+  specification.
+
+\end{itemize}
+
+SMON support management semantic for P2P long running
+internet services. Such services include P2P
+streaming~\cite{xxx}, DHTs~\cite{xxx}, Content Distribution
+Networks~\cite{xxx}, etc. These services may run for months
+or years and must robust to a variety of failures. After the
+services are deployed, the application peers can be
+started independently without particular sequences. The
+peers organize themselves into structured or random overlays
+and handles network churns and failures automatically. When
+a peer fails, the overlay can re-organize itself. The failed
+peer should be restored as quickly as possible to maintain
+service availability.
+
+To manage a long running service, SMON will deploy the
+application to a set of machines. It is up to the user to
+decide the machines list using resource discovery services.
+The application peers are started by SMON once they are
+deployed without synchronization. A SMON peer will monitor
+and maintain application peer in the same machine. When an
+application peer is failed, it will be restarted for
+recovery.
+
+all managment systems are long running?
+
+1. monitoring
+2. synch by flush
+3. shark for deployment
+
+a graph? ( layered, which part is self-managed)
+
+
+To enrich xxx for xxx like applications.
+
+decouple?
+
+application specification.
+
+
+The
+peers of 
 
 SMON deploys applications using epidemic algorithm.  An
 application is uniquely identified by its name.
@@ -638,19 +707,33 @@ changes immediately.
 % is enough for maintaining long running services whose peers
 % should be running as long as possible.
 
-If more management semantic or features are required, user
-can first deploy another management or monitoring system on
-top of SMON. In this way, management semantic can be
-enriched greatly. And the ``combined'' management system
-still preserve self-managment capacity. For example,
-D3S~\cite{Liu2008} is a monitoring tool which uses
-distributed predicates to monitor application's internal
-states. It exports application's states using
-instrumentation~\cite{Guo2008} and calculates user specified
-predicates on global snapshots. Whenever a predicate is
-false, the event is reported. User can delay D3S on top of
-SMON and define safety or liveness predicates to check
-application states in detail.
+appname, state, report machine, start/stop/restart binary,
+report interval, report url (appname=xxx, status=xxx) (or
+report binary?)
+
+include/exclude machine?
+
+bin/conf/data
+
+state can be modified per machine, but has an initial value.
+
+show current semantic is still powerful. dht, streaming,
+cdn, monitoring, also plush-like
+
+powerful and easily extensible
+
+To enrich more advanced management semantic, user can first
+deploy another management or monitoring system on top of
+SMON. The ``combined'' management system still preserve
+self-managment capacity. For example, D3S~\cite{Liu2008} is
+a monitoring tool which uses distributed predicates to
+monitor application's internal states. It exports
+application's states using instrumentation~\cite{Guo2008}
+and calculates user specified predicates on global
+snapshots. Whenever a predicate is false, the event is
+reported. User can delay D3S on top of SMON and define
+safety or liveness predicates to check application states in
+detail.
 
 \subsection{Client utility}
 \label{subsec:client}
