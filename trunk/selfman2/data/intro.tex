@@ -303,24 +303,26 @@ symmetric key to authenticate and encrypt access to SMON
 peers and the authentication agent.
 
 For the third challenge, SMON defines its management
-semantic for long running services. The ``long running
-services'' shares these management requirements: a) peers of
-the application can be deployed and started independently
-without synchronization, b) the failure of a single peer
-doesn't affect the whole application from running and the
-failed peer can be recovered by simply restarting it. An
-example of long running services is SWORD~\cite{sword_toit}
-which is a resource discovery service on Planet-Lab.
-% The applications considered as long running services
-% includes many distributed systems with well defined
-% failure handling mechanism. 
+semantic for long running internet services. The ``long
+running internet services'' shares these management
+requirements: a) peers of the application can be deployed
+and started independently without synchronization, b) the
+failure of a single peer doesn't affect the whole
+application from running and the failed peer can be
+recovered by simply restarting it. An example of long
+running internet services is SWORD~\cite{sword_toit} which
+is a resource discovery service on Planet-Lab.
+% The applications considered as long running internet
+% services includes many distributed systems with well
+% defined failure handling mechanism. 
 And most application management systems, such as
 Plush~\cite{Albrecht2007},
 application-manager~\cite{appmanager},
 SmartFrog~\cite{smartfrog}, are also considered as long
-running services. Thus user can deploy another management
-system upon SMON to enrich management semantic, while the
-``combined'' management system is still self-managed.
+running internet services. Thus user can deploy another
+management system upon SMON to enrich management semantic,
+while the ``combined'' management system is still
+self-managed.
 % and XXX. 
 
 %It is of great challenge to manage distributed application
