@@ -20,6 +20,12 @@ world.
 %overhead caused by race condition is small and the active
 %state transition is fast.
 
+We evaluate the performance of self-management design. As
+the maintenance tasks performed by SMON peer to deploy,
+recover and upgrade the system use the same epidemic
+algorithm, we only present the results on self-deployment
+and enabling a disabled SMON system. 
+
 First, we evaluate the performance of self-deployment of
 SMON.  We choose 159 nodes in Planet-Lab platform and start
 a SMON peer. SMON then start deploying itself on all 159
@@ -124,13 +130,13 @@ Obviously, most of nodes have a deployment overhead within
 average overhead of these nodes is 2.31. The average
 overhead for all nodes is 4.30 which is an acceptable
 number. The number 4.30 is larger than the analysis result
-(no greater than 1) in section~\ref{sec:analysis}. Because
-in the analysis, we assume that SMON works synchronously and
-the real system works asynchronously. When a peer chooses a
-machine to deploy a new peer, other peers will choose the
-same machine and don't notice the simultaneous deployment.
-This will cause greater overhead number than analysis.
-
+(1.582) in section~\ref{sec:analysis}. The reason is that,
+in the analysis we assume that SMON works synchronously but
+the real system works asynchronously and the deployment
+takes time. During the time a peer chooses a machine to
+deploy a new peer, other peers will choose the same machine
+and don't notice the simultaneous deployment. This will
+cause greater overhead number than analysis.
 
 \begin{figure}
 \centering
