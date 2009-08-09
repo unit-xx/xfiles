@@ -10,7 +10,7 @@
 \caption{SMON system design. SMON peers monitor each
 other by sending ping messages. User can send query or control messages
 to any peer. Authentication agent resolves authentication
-chanllenge from peers to help them login into other machines
+challenge from peers to help them login into other machines
 automatically.}
 \label{fig:smon_arch}
 \end{figure}
@@ -418,16 +418,15 @@ status of $B$ on remote machine.
 \subsection{Security mechanism}
 \label{subsec:security}
 
-SMON should have security mechanism to achieve two goals:
+SMON's security mechanism should achieve two goals:
 
 \begin{itemize}
 
-  \item Help peers to authenticate with remote machines
-  automatically so as to deploy new peers or recover failed
-  peers.
+  \item Assist peers to authenticate with remote machines so
+  as to deploy new peers or recover failed peers.
 
-  \item Authenticate and encrypt access to SMON peers so it
-  will not be misused (e.g. deploying malwares).
+  \item Authenticate and encrypt access to SMON peers so
+  that it will not be misused (e.g. deploying malwares).
 
 \end{itemize}
 
@@ -447,8 +446,8 @@ SMON should have security mechanism to achieve two goals:
 %others automatically in a distributed approach.
 
 We describe how we design security mechanism to achieve the
-two goals on Planet-Lab platform and explain how to apply it
-on other distributed platforms.  Planet-Lab uses public-key
+two goals on Planet-Lab platform and discuss design issues
+on other distributed platforms. Planet-Lab uses public-key
 system to authenticate access to the platform. A user access
 his slice (a set of distributed virtual machines) by using
 ssh. The private key is kept in user's computer and the
@@ -478,28 +477,27 @@ and a remote machine when the peer login into the machine.}
 \label{fig:auth}
 \end{figure}
 
-To achieve above-mentioned two goals, SMON includes an
-separate authentication agent who holds user's private key
-to help peers login into other machines automatically, while
-user's private key is kept secret. As described in
-figure~\ref{fig:auth}, whenever a SMON peer needs to login
-into a machine, it will first connects to the sshd server of
-remote machine and sends a login request. The sshd server
-will pose an authentication challenge encrypted by user's
-public key. The peer will indirect the authentication
-challenge from sshd to the agent and reply the sshd server
-with the solved response from the agent. In this way, a peer
-can login into any machine in his slice and the private key
-is kept secret for all the times. A symmetric key $K_E$ is
-shared among all the SMON peers and the authentication
-agent. It is used to authenticate peers and agent within the
-same SMON system, and establish confidential communication
-channels among them. The shared key $K_E$ is included within
-the installation package of the SMON peer. When a SMON peer
-is deployed, $K_E$ is deployed along. Note that $K_E$ is
-never leaked out of network during deployment. $K_E$ is safe
-to be stored within local machines because the storage
-resource among virtual machines are well isolated.
+To achieve above-mentioned two goals, SMON runs an separate
+authentication agent who holds user's private key securely.
+As described in figure~\ref{fig:auth}, whenever a SMON peer
+needs to login into a machine, it will first connects to the
+sshd server of remote machine and sends a login request. The
+sshd server will pose an authentication challenge encrypted
+by user's public key. The peer will indirect the
+authentication challenge from sshd to the agent and reply to
+the sshd server with the solved response from the agent. In
+this way, a peer can login into any machine in his slice and
+the private key is kept secret for all the times. A
+symmetric key $K_E$ is shared by all the SMON peers and the
+authentication agent. It is used to authenticate peers and
+agent within the same SMON system, and establish
+confidential communication channels among them. The shared
+key $K_E$ is included within the installation package of the
+SMON peer. When a SMON peer is deployed, $K_E$ is deployed
+along. Because the deployment is encrypted by ssh, $K_E$ is
+not leaked out of the network. $K_E$ is safe to be stored
+within user's slice because the storage resource among
+virtual machines are well isolated.
 
 \comment{
 It is not necessary to keep authentication agent running for
@@ -517,8 +515,10 @@ scales, there can be multiple instances of authenticate
 agent for performance considerations. SMON peers can be
 directed to their nearest agents by DNS server.
 
-The above security mechanism can be applies the distributed
-platforms fulfilling two requirements:
+The above agent-based scheme works for challenge-based
+authentication method, e.g. password or public-key
+authentication, which is commonly used in many systems.
+It relies on two key factors:
 
 \begin{itemize}
 
@@ -617,8 +617,9 @@ application management requirements.
 
 \end{itemize}
 
-The management requirements for two common kinds of
-distributed applications are summarized in
+Two common kinds of distributed applications are long
+running internet services and grid style computation
+programs. The management requirements are summarized in
 table~\ref{fig:app-man-req}.
 
 \begin{table*}
@@ -733,7 +734,7 @@ Periodically, a SMON peer $A$ will choose one locally
 deployed application and exchange the application name with
 a random peer $B$. If $B$ knows an undeployed application,
 it will try to retrieve the installation package from $A$
-and deploy the application.
+and install the application.
 
 %There is a set of implemented RPC calls for control and
 %monitoring of managed applications.
@@ -751,7 +752,7 @@ and deploy the application.
 
 After application is deployed and started, it is monitored
 and maintained by SMON peer in the same machine. SMON reads
-application specification on management options. User can
+application specification for management options. User can
 specify application's default running state and change the
 setting using client utility provided by SMON.
 
@@ -768,13 +769,13 @@ The application's running states can be:
 
 In the specification, user should specify three scripts to
 start, stop and restart the application. The restart script
-is called to recover the failed processes, and may including
-clean up commands before application is restarted.
+is called to recover the failed processes, and may include
+clean up steps before application is restarted.
 
 A SMON peer may report the application states to a central
-server timely if specified in configuration. And whenever
-the application state changes, the SMON peer will report the
-changes immediately.
+server timely if specified. And whenever the application
+state changes, the SMON peer will report the changes
+immediately.
 
 % It is obvious that the application monitoring and
 % maintenance semantic provided by SMON is very basic. It
