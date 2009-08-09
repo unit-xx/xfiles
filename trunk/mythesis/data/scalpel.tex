@@ -104,15 +104,66 @@ Scalpel的性能，\ref{sec:scp:conclusion}节为本章小结。
 
 % xxx: design step through?
 
-\subsection{收集系统运行trace}
-
-我们使用插装技术透明的观测系统运行，收集运行过程的函数调用，以及调用参
-数，包括应用层函数和系统同步函数（例如signal/wait）与系统Socket调用
-（例如send/recv）。默认所有的函数调用都会被收集到trace。
-
 % xxx: 全序？
 
 \subsection{确定叶子任务}
+
+我们使用插装技术透明的观测系统运行，收集运行过程的函数调用，包括函数名
+称、调用线程号以及调用参数。函数调用既包括应用层函数也包括操作系统同步
+函数（例如signal/wait）与系统Socket调用（例如send/recv）。默认所有的函
+数调用都会被收集到trace。
+
+表~\ref{fig:sync_func}小结了trace中包含的常见同步对象和相关同步操作。
+
+\begin{table}
+\centering
+\begin{minipage}{0.8\linewidth}
+\centering
+\caption{常见系统同步对象与相关操作列表}
+\label{fig:sync_func}
+\begin{tabular}{lll}
+
+\toprule[1.5pt]
+同步对象 & 函数名称 & 函数语意 \\
+\midrule[1pt]
+\multirow{4}{*}{Mutex} & CreateMutex & 创建Mutex对象 \\
+                       & WaitForSingleObject & 等待获取Mutex对象 \\
+                       & ReleaseMutex & 释放Mutex对象 \\
+                       & CloseHandle & 删除Mutex对象 \\
+\midrule[1pt]
+
+\multirow{5}{*}{Event} & CreateEvent & 创建Event对象 \\
+                       & WaitForSingleObject & 等待Event对象状态为signal \\
+                       & SetEvent & 设置Event对象状态为signal状态 \\
+                       & ResetEvent & 设置Event对象为未signal状态 \\
+                       & CloseHandle & 删除Event对象 \\
+\midrule[1pt]
+
+\multirow{5}{*}{Critical section} & InitializeCriticalSection & 创建临界区 \\
+                                  & EnterCriticalSection & 进入临界区 \\
+                                  & LeaveCriticalSection & 离开临界区 \\
+                                  & TryEnterCriticalSection & 尝试进入临界区 \\
+                                  & DeleteCriticalSection & 删除临界区 \\
+\midrule[1pt]
+
+\multirow{4}{*}{Semaphore} & CreateSemaphore & 创建Semaphore对象 \\
+                           & WaitForSingleObject & 等待Semaphore对象 \\
+                           & ReleaseSemaphore & 增加Semaphore计数 \\
+                           & CloseHandle & 删除Semaphore对象 \\
+\midrule[1pt]
+
+\multirow{3}{*}{IOCP\footnote{I/O Completion Port}} & CreateIoCompletionPort & 创建IOCP对象 \\
+                           & GetQueuedCompletionStatus & 从IOCP获取消息 \\
+                           & PostQueuedCompletionStatus & 向IOCP发送消息\\
+\midrule[1pt]
+
+\multirow{2}{*}{Socket} & WSASend & 发送socket消息 \\
+                        & WSARecv & 接收socket消息 \\
+
+\bottomrule[1.5pt]
+\end{tabular}
+\end{minipage}
+\end{table}
 
 在系统运行trace的基础上，我们首先需要确定叶子任务的边界。Scalpel使用
 \emph{同步点}作为启发定义任务边界。同步点是两个线程同步相互执行，从而
@@ -127,6 +178,19 @@ Scalpel的性能，\ref{sec:scp:conclusion}节为本章小结。
 任务的一个自然定义。另外，因为采用了同步点定义叶子任务的边界，叶子任务
 之间的依赖关系也只发生在边界之间。
 
+作为示例，图~\ref{fig:sync_point_demo}显示了一段代码的执行过程，是如何
+对应到不同的叶子任务的。
+
+\begin{figure}
+  \centering
+  \begin{minipage}{1.0\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{ph}
+    \caption{xxx}
+    \label{fig:sync_point_demo}
+  \end{minipage}
+\end{figure}
+
 Scalpel通过插装系统函数库中的同步原语（锁、信号、事件等）与socket操作
 \footnote{我们认为通信也是一种同步操作。}记录同步点操作。在实际系统中
 的应用经验表明，插装这些系统操作是足够的。如果系统使用spin-lock或
@@ -140,13 +204,90 @@ Scalpel通过插装系统函数库中的同步原语（锁、信号、事件等�
 % xxx: recall the happened-before relation somewhere?
 
 为了推断任务的层次结构，我们首先要连接叶子任务之间的因果关系。我们使用
-有向图表示任务之间的关系。这个图中，节点表示叶子任务，有向边表示叶子任
+有向图表示任务之间的关系。在图中，节点表示叶子任务，有向边表示叶子任
 务之间的的因果依赖关系。例如在PacificA中（图
 ~\ref{fig:pacifica_model}），当存储的主节点收到用户提交数据的消息后，
 首先将数据在本地持久化存储（\texttt{Logic\-Replica\-::Mutate}），之后
 将数据用异步RPC的方式发送给次节点
 （\texttt{Rpc\-Client\-::RpcAsync\-Call\-Chain}）。因此这两个叶子任务
 之间用有向边连接。
+
+Scalpel使用happened-before关系推断任务的因果依赖关系。happened-before
+关系由Lamport首先提出，它给出了分布式系统中发生的事件的偏序关系。一般
+的，happened-before关系定义如下：
+
+\begin{definition}
+
+事件集合$E$上的happened-beofre关系$\to$，是满足如下三个条件的最小关系：
+1) 如果$a$和$b$事件同属于同一线程\footnote{Lamport原始定义是进程，因为
+当时操作系统的调度单位是进程。现代操作系统的调度单位是线程，同属于一个
+进程的线程共享某些系统资源，但是执行相互独立。}，如果$a$比$b$早发生，
+则$a \to b$。2) 如果$a$是发送消息事件，$b$是接收同一消息的事件，则$a
+\to b$。3) （传递性）如果$a \to b$且$b \to c$，有$a \to c$。
+
+\end{definition}
+
+可以看出，关系$\to$满足传递性，却不满足自反性和对称性。对于两个事件$a$
+和$b$，如果它们既不满足$a \to b$也不满足$b \to a$，则称$a$和$b$是同时
+的。
+
+在Scalpel中，我们使用happened-before关系推断叶子任务的因果依赖关系。对
+于同一线程内相继执行的叶子任务，自然的形成happened-before关系。对于不
+同线程间执行的叶子任务，由于使用同步对象协调相互执行过程，产生相互依赖
+关系，这等价于原始定义中的消息传递。对于表~\ref{fig:sync_func}中列举的
+同步对象，表~\ref{fig:sync_dependency}说明了不同线程由于同步操作形成
+happened-before关系的条件。
+
+\begin{table}
+\centering
+\begin{minipage}{0.8\linewidth}
+\centering
+\caption{同步操作形成happened-before关系的条件}
+\label{fig:sync_dependency}
+\begin{tabular}{lp{8cm}}
+
+\toprule[1.5pt]
+同步对象 & 形成happened-before关系条件 \\
+\midrule[1pt]
+Mutex & 线程$a$使用ReleaseMutex释放的Mutex被线程$b$使用
+WaitForSingleObject得到 \\
+
+\midrule[1pt]
+Event & 线程$a$使用SetEvent使Event对象转换为signal对象，线程$b$使用
+WaitForSingleObject得知这个消息从而继续执行 \\
+
+\midrule[1pt]
+Critical section & 线程$a$使用LeaveCriticalSection离开临界区，线程$b$使用
+EnterCriticalSection进入相同临界区 \\
+
+\midrule[1pt]
+Semaphore & 线程$a$使用ReleaseSemaphore增加信号量，使等待
+（WaitForSingleObject）在相同Semaphore对象上的线程$b$继续执行 \\
+
+\midrule[1pt]
+IOCP & 线程$a$使用PostQueuedCompletionStatus发送的消息被线程$b$使用
+GetQueuedCompletionStatus得到 \\
+
+\midrule[1pt]
+Socket & 线程$a$使用WSASend发送消息，线程$b$使用WSARecv收到相同消息 \\
+
+\bottomrule[1.5pt]
+\end{tabular}
+\end{minipage}
+\end{table}
+
+作为示例，图~\ref{fig:taskgraph_demo}中显示了两个线程执行过程中形成
+的happened-before关系。
+
+\begin{figure}
+  \centering
+  \begin{minipage}{1.0\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{ph}
+    \caption{xxx}
+    \label{fig:taskgraph_demo}
+  \end{minipage}
+\end{figure}
 
 Scalpel使用happened-before关系推断任务的因果依赖关系，这包括同一线程内
 顺序执行的两个叶子任务，以及因为同步而依次执行的叶子任务。并不是所有因
@@ -199,8 +340,9 @@ TCP消息的发送者和接收者联系起来，但是任务的因果关系图�
 这个方法忽略了叶子任务一些不重要的区别，例如函数的参数与线程号。从经验
 来看，这个方法很好的区分了同一类别的叶子任务。
 
-% xxx \note{具体算法（伪代码）}
+% 具体算法（伪代码）
 
+% 示例？
 
 \subsection{实现}
 
