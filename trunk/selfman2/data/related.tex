@@ -2,18 +2,20 @@
 \label{sec:related}
 
 Many systems have been proposed to help managing distributed
-applications. Plush~\cite{Albrecht2007} is a management
-system which support deploying, monitoring and controlling
-applications centrally. Plush can bootstrap
-(self-deployment) its clients automatically, but the
-centralized approach limits its scalability.
-Plush-M~\cite{Topilski2008} further improved Plush's
-scalability on managing applications by replacing star
-topology in Plush with RanSub~\cite{Kostic2003}, but the
-management of Plush clients is still in centralized
-approach. SMON addresses the self-management property of
-distributed systems using epidemic algorithm. It can be used
-to manage other management systems efficiently.
+applications. Plush~\cite{Albrecht2007} and Application
+Manager~\cite{appmanager} are management systems which
+support deploying, monitoring and controlling applications
+centrally. Plush can bootstrap (self-deployment) its clients
+automatically, but the centralized approach limits its
+scalability.  Plush-M~\cite{Topilski2008} further improved
+Plush's scalability on managing applications by replacing
+star topology in Plush with RanSub~\cite{Kostic2003}, but
+the management of Plush clients is still in centralized
+approach. Condor-G~\cite{condorg} is a workload management
+system for compute-intensive jobs on grid infrastructure.
+None of the above management systems fully address
+self-management issue, while SMON addresses the problem
+using epidemic algorithm.
 
 Researchers have been studying self-* properties of
 distributed systems for long time.
@@ -30,8 +32,9 @@ releases resources dynamically and automatically deploys the
 system to acquired resources (as real or virtual machines)
 using underling system management tools. SMON is
 complementary to these systems and these techniques can be
-combined together to build distributed systems which is more
-stable and efficient with little human management efforts.
+combined together to build distributed systems which are
+more stable and efficient with little human management
+efforts.
 
 \comment{
 DHT (self-organization),

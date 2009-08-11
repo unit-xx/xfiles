@@ -26,18 +26,18 @@ recover and upgrade the system use the same epidemic
 algorithm, we only present the results on self-deployment
 and enabling a disabled SMON system. 
 
-First, we evaluate the performance of self-deployment of
-SMON.  We choose 159 nodes in Planet-Lab platform and start
-a SMON peer. SMON then start deploying itself on all 159
-nodes.
-
-\begin{figure}
+\begin{figure}[t]
 \centering
 \includegraphics[scale=0.618]{self-deploy.png}
 \caption{Progress of self-deployment process on 159
 nodes.}
 \label{fig:self-deploy}
 \end{figure}
+
+First, we evaluate the performance of self-deployment of
+SMON.  We choose 159 nodes in Planet-Lab platform and start
+a SMON peer. SMON then start deploying itself on all 159
+nodes.
 
 In our configuration, A SMON peer detects a random nodes and
 sleep for 5 seconds. We finally collected data from 154
@@ -66,14 +66,6 @@ Figure~\ref{fig:state-transition}. For 90\%
 percentile of peers, the states changes after 143
 seconds and the median state transition time is 37 seconds.
 
-\begin{figure}
-\centering
-\includegraphics[scale=0.618]{state-trans.png}
-\caption{Progress of state transition of self-management from disabled to
-enabled.}
-\label{fig:state-transition}
-\end{figure}
-
 %\begin{table}
 %\centering
 %\begin{tabular}{|l|c|}
@@ -86,6 +78,14 @@ enabled.}
 %\caption{Statistics for state transition experiment in seconds}
 %\label{tbl:state-transition}
 %\end{table}
+
+\begin{figure}[t]
+\centering
+\includegraphics[scale=0.618]{state-trans.png}
+\caption{Progress of state transition of self-management from disabled to
+enabled.}
+\label{fig:state-transition}
+\end{figure}
 
 To evaluate the scalability of self-deployment process, we deploy
 a new instance of SMON system at a different scale (24 nodes) and
