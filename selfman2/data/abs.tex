@@ -4,21 +4,23 @@ Self-management, distributed system, epidemic algorithm
 \section*{Abstract}
 
 Distributed application management system is important for
-managing applications on distributed environments. The
-management system is designed in distributed approach and
-also need to be well monitored and maintained throughout its
-lifecycle. Currently, distributed management systems are
-monitored and maintained using centralized approach, which
-is not scalable and efficient.
-
-We propose SMON (Self-Managed Overlay Network) in this
-paper. SMON is a distributed system with built-in
-self-management capability. It manages itself using epidemic
-approach at runtime. SMON can automatically deploys itself
-on a set of machines and recovers failed peers securely. It
-can also upgrade itself to new versions online. SMON can
-manage a set of distributed applications. By deploying other
-management system on top of SMON, its management capability
-can be extended greatly.
+managing applications on distributed computing platforms. 
+% The management system is designed in distributed approach
+% and also need to be well monitored and maintained
+% throughout its lifecycle. Currently, distributed
+% management systems are monitored and maintained using
+% centralized approach, which is not scalable and efficient.
+One of the main caveat of using a distributed management
+system is that the management system itself need to be
+deployed and maintained continually.  In this papar, we
+propose Self-Managed Overlay Network (SMOM) and explore the
+challenges associated with designing a management system
+with self-management capability. SMON manages itself using
+epidemic approach at runtime. SMON can automatically deploys
+itself on a set of machines and recovers failed peers
+\emph{securely}. It can also upgrade itself to new versions
+online. Through mathematical analysis and evaluation on
+PlanetLab platform, we show that SMON achieves good
+performance and scalability.
 
 % vim:foldmethod=marker:textwidth=60

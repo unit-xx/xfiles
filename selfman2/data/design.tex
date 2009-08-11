@@ -7,11 +7,11 @@
 \begin{figure}
 \centering
 \includegraphics[width=3.0in]{smon_arch}
-\caption{SMON system design. SMON peers monitor each
-other by sending ping messages. User can send query or control messages
-to any peer. Authentication agent resolves authentication
-challenge from peers to help them login into other machines
-automatically.}
+\caption{SMON system design. SMON peers monitor each other
+by sending ping messages. User can send query or control
+messages using client utility. Authentication agent resolves
+authentication challenge from peers to help them log into
+other machines automatically.}
 \label{fig:smon_arch}
 \end{figure}
 
@@ -26,7 +26,7 @@ membership list. They will deploy new peers on fresh
 machines, recover failed peers and upgrade themselves to new
 version. In this way, a SMON system can manage itself
 automatically. With the help of authentication agent, a SMON
-peer can login into remote machines automatically to recover
+peer can log into remote machines automatically to recover
 failed peers or deploy new peers. A SMON system can manage a
 set of distributed applications. It defines the management
 semantic for long running internet services.  User can use
@@ -69,14 +69,14 @@ long time. Third, it is robust and resilient to failure.
 % themselves to the latest versions. The epidemic algorithm
 % ensures that the entire SMON system will keep running and
 % staying at the latest version eventually.
-% 
+%
 % The authentication agent holds the credential (e.g. private
 % key) used to authenticate with the target machines. When
 % a SMON peer tries to deploy or restart another peer, it can
 % automatically login into the remote machine with the help of
 % the agent. The credential is never known to the peers or
 % leaked out.
-% 
+%
 % % XXX: quite basic?
 % With the help of client utility, user can instruct SMON to
 % manage a set of distributed applications. SMON deploys and
@@ -114,7 +114,7 @@ consider it as failed and try to recover it by login into
 the machine and restart it, otherwise, an empty reaction is
 performed. The model is shown in figure~\ref{fig:recover}.
 
-The monitor-reaction model can have varations. First, one
+The monitor-reaction model can have variations. First, one
 model can be nested in the reaction part of another model.
 Using previous example, when we know that a peer is failed,
 there can be another reason: the machine is crashed and
@@ -135,7 +135,7 @@ is shown in figure~\ref{fig:combine}.
 One peer may implements several models. They run
 concurrently and need to be well coordinated. In the upgrade
 model, after a new version is retrieved, the peer need to
-start the new verison and stop itself. Before it execute the
+start the new version and stop itself. Before it execute the
 action, other models may be running also. The upgrade model
 has to wait others until all of them finish actions part.
 The coordination can be implemented by using locks, and in
@@ -144,7 +144,7 @@ this case, a reader-writer lock may be more suitable.
 The models are required to be stateless in the sense that
 the execution of a model is independent with it previous
 executions. In this way, the implementation of the model is
-as simple as possbile and improves peer's reliablity.
+as simple as possible and improves peer's reliability.
 
 \note{transaction? the membership list update should be
 atomic.}
@@ -164,10 +164,10 @@ automatically.
 
 \subsubsection*{Self-deployment}
 
-For a list of target machines, SMON can deploy itself to all
-the machines automatically. At the very beginning, there is
-no SMON peer deployed and running yet. A first peer have to
-be deployed and started manually. It then pings other
+Given a list of target machines, SMON can deploy itself to
+all the machines automatically. At the very beginning, there
+is no SMON peer deployed and running yet. A first peer have
+to be deployed and started manually. It then pings other
 machines in its membership list and deploys new peers. The
 new peers repeat the same ping-and-deploy process. While
 there are more SMON peers deployed and running, this process
@@ -187,11 +187,11 @@ eventually\cite{Eugster2004}.
 %The ping-and-deploy process of a SMON peer implements the
 %upper part of the ping model in figure~\ref{fig:combine}.
 In detail, a peer $P$ will periodically choose a random
-machine $M$ from its membership list and sends a ping
+machine $M$ from its membership list and send a ping
 message. If a pong message is not received within predefined
 timeout intervals, it will start the deployment procedure on
 machine $M$. $P$ first authenticates itself with $M$ and
-login into $M$ with help of the authentication agent
+log into $M$ with help of the authentication agent
 (described in \ref{subsec:security}), then it copies the
 installation package of SMON peer to $M$, starts the package
 remotely and logout. The installation package first
@@ -200,30 +200,30 @@ in case of transfer errors during remote copy, then it
 installs and starts SMON peer.
 
 There may be failures (e.g. connection corrupted, machine
-crashed) at any time when peer $P$ logins
+crashed) at any time when peer $P$ logs
 into $M$, copies and starts installation package remotely.
 When failure happens, $P$ will just abort the deployment
 procedure. $M$ will be chosen by another SMON peer at later
 time. It is expected that a new SMON peer will be deployed
 on $M$ eventually.
 
-Because peers communicate with each other epidemically, it
-is possible that two or more peers try to deploy a SMON peer
-on the same machine $M$ simultaneously. This race-condition
-is solved without direct coordination among peers. The
+Since peers communicate with each other epidemically, it is
+possible that two or more peers try to deploy a SMON peer on
+the same machine $M$ simultaneously. This race-condition is
+solved without direct coordination among peers. The
 installation packages from different peers will be copied to
 different directories of $M$ and they will not overwrite
 each other. The execution of simultaneously started
 installation packages are synchronized using OS provided
 synchronization facilities (e.g. lock file). So only one of
-the installation process will finish and others will abort.
-In solving the problem, some overhead is introduced because
+the installation will finish and others will abort.  In
+solving the problem, some overhead is introduced because
 multiple installation packages may be copied, which wastes
 network bandwidth and storage resources. Through
 mathematical analysis and evaluation on Planet-Lab platform,
-it is shown that the overhead is low on most machines. Since
-the size of the installation package is small (122KB), the
-overhead can be considered as insignificant.
+it is shown that the overhead is low (a constant value) on
+average. Since the size of the installation package is small
+(122KB), the overhead can be considered as insignificant.
 
 It is not easy to define when self-deployment is finished
 globally. Ideally, it is finished when all the target
@@ -246,19 +246,17 @@ SMON, namely, machine failure and network partition.
 When a machine fails, the SMON peer running on it is stopped
 also. Other peers know this event through periodic pings and
 they will try to recover the failed peer by restarting it
-remotely, with help from authentication agent. It is safe to
-start multiple instances of SMON peer, but it is idempotent
-to start only one instance.
+remotely. It is safe to start multiple instances of SMON
+peer, but it is idempotent to start only one instance.
 
 Network partitions can also be handled by SMON easily. When
 network partition occurs, SMON peers are splitted into
 several sub-systems, each of which is connected internally.
 Implied by epidemic algorithm, each partitioned part will
-eventually converges to consistent state regarding to
-the version of SMON peers. When two partitions rejoin, the
-peers in different part will be able to contact and
-communicate with each other, leading to the mergence of
-the whole system.
+keep manage itself. When two partitions rejoin, the peers in
+different partition will be able to contact and communicate
+with each other, leading to the mergence of the whole
+system.
 
 % In this way, a peer can choose which action to take based
 % on result of a ping message.
@@ -291,15 +289,15 @@ version automatically. The upgrade goes online while SMON is
 running. User needs not to stop SMON before upgrade.
 
 Each SMON peer has an associated version number and it is
-stored persistently in configuration file with the peer.  A
-peer will exchange and compare its version with other epidemically. If
-there is a difference, the peer with lower version will
-retrieve the installation package from the other and upgrade
-itself automatically.
+stored persistently with the peer.  A peer will exchange and
+compare its version with others epidemically. If there is a
+difference, the peer with lower version will retrieve the
+installation package from the remote peer and upgrade itself
+automatically.
 
 % XXX limit the number of ...?
 It is possible that a peer of new version is known by many
-peers of old version quickly. To avoid flash crowd, the peer
+peers of old version quickly. To avoid flash crowd, a peer
 will limit the number of simultaneous request for retrieving
 installation package.
 
@@ -354,17 +352,17 @@ one is stopped.
 \label{subsec:livetag}
 
 We need mechanism to enable or disable self-management
-capability of SMON to stop it from running. When
-self-management is enabled, we cannot stop SMON by shutdown
-peers individually.  If a peer is stopped by user, it will
-be started soon by another peer. The only solution under
-such condition is to stop all the SMON peers simultaneously,
+capability to stop SMON from running. When self-management
+is enabled, we cannot stop SMON by shutting down peers
+individually.  If a peer is stopped by user, it will be
+restarted soon by another peer. The only solution under such
+condition is to stop all the SMON peers simultaneously,
 which is not feasible at large scale.
 
 We use a boolean variable called \texttt{livetag} to control epidemic
 ping among peers. If the value is false, a peer will
 stop sending periodic ping message to others and the whole
-SMON system stops maintaining itself. 
+SMON system stops maintaining itself.
 %We can now stop SMON peers one by one.
 
 The \texttt{livetag} variable has an associated version
@@ -396,12 +394,14 @@ As an optimization, we combine first three tasks into one.
 The version number of SMON is piggybacked in ping/pong
 messages among peers. And when peer $A$ considers another
 one $B$ as failed, it will choose from deploying a new peer
-or recover the installed peer by detecting installation
+or recovering the installed peer by detecting installation
 status of $B$ on remote machine.
 
+% xxx elabrate on random here
+
 % SMON adopts ``crash-only'' design. When SMON peer fails, it
-% can be recovered by simply restarting. SMON stores the 
-% 
+% can be recovered by simply restarting. SMON stores the
+%
 % self-version, livetag/ver, app name/setting, agent,
 % membership ver, k\_e: put to ``combine together''
 
@@ -473,11 +473,11 @@ slice.
 \centering
 \includegraphics[width=3.0in]{auth}
 \caption{Interactions among SMON peer, authentication agent
-and a remote machine when the peer login into the machine.}
+and a remote machine when the peer logs into the machine.}
 \label{fig:auth}
 \end{figure}
 
-To achieve above-mentioned two goals, SMON runs an separate
+To achieve above-mentioned two goals, SMON employs an
 authentication agent who holds user's private key securely.
 As described in figure~\ref{fig:auth}, whenever a SMON peer
 needs to login into a machine, it will first connects to the
@@ -489,8 +489,8 @@ the sshd server with the solved response from the agent. In
 this way, a peer can login into any machine in his slice and
 the private key is kept secret for all the times. A
 symmetric key $K_E$ is shared by all the SMON peers and the
-authentication agent. It is used to authenticate peers and
-agent within the same SMON system, and establish
+authentication agent. It is used to authenticate with peers
+and agent within the same SMON system, and establish
 confidential communication channels among them. The shared
 key $K_E$ is included within the installation package of the
 SMON peer. When a SMON peer is deployed, $K_E$ is deployed
@@ -502,7 +502,7 @@ virtual machines are well isolated.
 \comment{
 It is not necessary to keep authentication agent running for
 all the time.  When the self-deployment process is finished,
-the agent can be closed, and re-open timely for maintennace
+the agent can be closed, and re-open timely for maintenance
 purpose.  It is also a security concern to offline
 authentication agent to protect user authentication
 credentials.
@@ -542,18 +542,19 @@ local file systems.
 
 Each SMON peer maintains a list of machines as its
 membership list.  The membership maintenance of SMON system
-is different from other distributed systems such as
-DHT~\cite{xxx}, file sharing~\cite{xxx},
-streaming~\cite{xxx}. While others maintains a list of peers
-that are currently online, SMON maintains a list of machines
-on which there should be peers running. The failure of SMON
-peers will not affect the membership list at all. The list
-is specified by user and should not changes very often. And
-an important requirement of SMON is, even when there is only
-one SMON peer running, it should be able to know all the
-target machines where SMON should be deployed.  The
-implication is that every running SMON peer should be able
-to know the full list of target machines.
+is different from other distributed systems such as file
+sharing~\cite{bittorrent}, streaming~\cite{Kostic2003a},
+Content Distribution Network~\cite{coral}. While others
+maintains a list of peers that are currently online, SMON
+maintains a list of machines on which there should be peers
+running. The failure of SMON peers will not affect the
+membership list at all.  The list is specified by user and
+should not changes very often. And an important requirement
+of SMON is, even when there is only one SMON peer running,
+it should be able to know all the target machines where SMON
+should be deployed.  The implication is that every running
+SMON peer should be able to know the full list of target
+machines.
 
 In current design, a simple scheme is used: each SMON peer
 will store a replica of the full list of target machines
@@ -585,23 +586,23 @@ for enough long time.
 
 SMON can manage one or more distributed applications. The
 management semantic is defined in the following four
-dimensions, which is a framework for describing general
+dimensions, which is a general framework for describing
 application management requirements.
 
 \begin{itemize}
 
   \item resource requirement: different applications put
-  various demands on computing resouces, such as CPU load,
+  various demands on computing resources, such as CPU load,
   free disk space and memory, network bandwidth and latency,
   etc. Besides from characteristics on current resource
-  usage, user may be also interested in resouce availability
+  usage, user may be also interested in resource availability
   and reliability which can be inferred by summarizing
   historic data. The management system should find best set
   of resources as described in specification.
 
   \item deployment: The management system follows
   instructions given by user to copy, unpack and install
-  applications on acquired resouces. The management system
+  applications on acquired resources. The management system
   should also support a variety of file transfer mechanisms.
 
   \item synchronization: distributed applications may work
@@ -671,18 +672,18 @@ programs.}
 \end{table*}
 
 
-SMON support management semantic for long running
-internet services. Such services include P2P
-streaming~\cite{xxx}, DHTs~\cite{xxx}, Content Distribution
-Networks~\cite{xxx}, etc. These services may run for months
-or years and must robust to a variety of failures. After the
-services are deployed, the application peers can be started
-independently without particular sequences. The peers
-organize themselves into structured or random overlays and
-handles network churns and failures. When a peer fails, the
-overlay can re-organize itself. The failed peer should be
-restored as quickly as possible to maintain service
-availability and performance.
+SMON support management semantic for long running internet
+services. Such services include file
+sharing~\cite{bittorrent}, streaming~\cite{Kostic2003a},
+Content Distribution Network~\cite{coral}, etc. These
+services may run for months or years and must robust to a
+variety of failures. After the services are deployed, the
+application peers can be started independently without
+particular sequences. The peers organize themselves into
+structured or random overlays and handles network churns and
+failures. When a peer fails, the overlay can re-organize
+itself. The failed peer should be restored as quickly as
+possible to maintain service availability and performance.
 
 To manage a long running service, SMON will deploy the
 application to a set of machines. It is up to the user to
@@ -696,24 +697,25 @@ recovery.
 \begin{figure}
 \centering
 \includegraphics[width=3in]{extend_smon}
-\caption{Enrich managment semantic by deploying other
+\caption{Enrich management semantic by deploying other
 management systems upon SMON.}
 \label{fig:extend_smon}
 \end{figure}
 
 Because distributed application management systems fit in
-the catelogue of long running services, we can easily enrich
+the catalogue of long running services, we can easily enrich
 the management semantic by deploying another management
 system upon SMON. In this way, the management functionality
 can be ``extended'' greatly, while the combined management
 system keeps self-management capability. For example, we can
-layer plush upon SMON to manage grid style computing
-programs with barrier support for dividing computations in
-steps, as shown in figure~\ref{fig:extend_smon}. Or we can
-layer D3S~\cite{d3s} on SMON to monitor and debug
-correctness of distributed applications as a set of
-predicates, which are defined on runtime states of
-application processes on many machines.
+layer Plush~\cite{Albrecht2007} upon SMON to manage grid
+style computing programs with barrier support for dividing
+computations in phases, as shown in
+figure~\ref{fig:extend_smon}. Or we can layer
+D3S~\cite{Liu2008} on SMON to monitor and debug correctness
+of distributed applications as a set of predicates, which
+are defined on runtime states of application processes on
+many machines.
 
 % To enrich more advanced management semantic, user can first
 % deploy another management or monitoring system on top of
@@ -732,7 +734,7 @@ SMON deploys applications using epidemic algorithm.  An
 application is uniquely identified by its name.
 Periodically, a SMON peer $A$ will choose one locally
 deployed application and exchange the application name with
-a random peer $B$. If $B$ knows an undeployed application,
+a random peer $B$. If $B$ knows an un-deployed application,
 it will try to retrieve the installation package from $A$
 and install the application.
 
@@ -787,11 +789,11 @@ immediately.
 % appname, state, report machine, start/stop/restart binary,
 % report interval, report url (appname=xxx, status=xxx) (or
 % report binary?)
-% 
+%
 % include/exclude machine?
-% 
+%
 % bin/conf/data
-% 
+%
 % state can be modified per machine, but has an initial value.
 
 \subsection{Client utility}

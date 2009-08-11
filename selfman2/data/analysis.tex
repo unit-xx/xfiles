@@ -7,7 +7,7 @@ SMON uses epidemic algorithm to maintain itself. Peers will
 initiate periodic communication to other random peers. We
 will show that these maintenance tasks have good
 performance and scalability. In the analysis, we assume that
-SMON works in sychronized way, that is each peer performs
+SMON works in synchronized way, that is each peer performs
 its maintenance tasks in synchronized rounds and the tasks
 finish almost instantaneously. Although the real SMON system
 works asynchronously, the analysis can still give insights
@@ -24,7 +24,7 @@ Although they differ in details, the basic result of
 epidemic theory shows that each one of the three methods can
 eventually infect the entire population.  The studies also
 show that starting from a single peer, this is achieved in
-expected time (the rounds number) propotional to the log of
+expected time (the rounds number) proportional to the log of
 the population size ($\log N$).
 
 \begin{table}
@@ -64,10 +64,10 @@ be modeled as a branching process with population $n$. After
 $r$ rounds, the expected fraction of deployed machines is:
 
 \begin{equation*}
-Y_r \approx \frac{1}{1+ne^{-r}} 
+Y_r \approx \frac{1}{1+ne^{-r}}
 \end{equation*}
 
-The relation of $Y_r$ and $r$ is demostrated in
+The relation of $Y_r$ and $r$ is demonstrated in
 figure~\ref{fig:yr}.
 
 \begin{figure}
@@ -79,7 +79,7 @@ round number $r$.}
 \end{figure}
 
 
-The ratio of deployed machines to undeployed ones increases
+The ratio of deployed machines to un-deployed ones increases
 exponentially, on average, by a factor of $e$ in each round.
 This indicates that the self-deployment has good
 performance.
@@ -103,13 +103,13 @@ machine. Although there will be only one instance running,
 the duplicated deployment will waste network resource and
 disk storage at some extent.
 
-We next show that the overhead is small on average. Assuming
-that there are $n$ machines in tatal, and $m$ machines have
-been deployed already. For any one of $n-m$ un-deployed
-machines, it may be selected by $k, (k <= m)$ peers as the
-deployment target in the next round.  The distribution of
-$k$ is can be expressed as binomial distribition with
-parameter $(m, \frac{1}{n})$.
+We next show that the overhead is small on average (constant
+actually). Assuming that there are $n$ machines in total,
+and $m$ machines have been deployed already. For any one of
+$n-m$ un-deployed machines, it may be selected by $k, (k <=
+m)$ peers as the deployment target in the next round.  The
+distribution of $k$ is can be expressed as binomial
+distribition with parameter $(m, \frac{1}{n})$.
 
 \begin{equation*}
 P(X=k) = C_m^k (\frac{1}{n})^k (1 - \frac{1}{n})^{m - k}
@@ -122,7 +122,7 @@ when $k > 0$.
 \begin{equation*}
 \begin{aligned}
 P(X' = k) &= P(X=k | X > 0) \\
-&= P(X = k) / (1 - P(X = 0)) \\ 
+&= P(X = k) / (1 - P(X = 0)) \\
 &= P(X = k) / (1 - (1 - \frac{1}{n})^{m}) \qquad (k > 0)
 \end{aligned}
 \end{equation*}
@@ -137,7 +137,7 @@ E(X') &= \sum_{k=1}^m k \cdot P(X=k|X>0)  \\
 \end{equation*}
 
 Further, note that when $n$ is large, and $m$ is approaching
-$n$, we have 
+$n$, we have
 
 \begin{equation*}
 \lim_{n \to \infty, m \to n} (1 - \frac{1}{n})^{m} = 1 / e
