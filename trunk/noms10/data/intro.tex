@@ -1,0 +1,387 @@
+\section{Introduction}
+
+% flow没太大问题。
+
+Distributed systems~\cite{Ghemawat2003, DeCandia2007} are at
+the heart of today's Internet services. While the cost of
+commodity computers continues to drop, it is common for
+distributed computing platforms to contain hundreds or
+thousands of computers, such as
+Planet-Lab~\cite{Bavier2004}, Amazon
+EC2~\cite{Garfinkel2007} and Teragrid~\cite{Catlett2002}.
+These platforms provide huge amount of storage and computing
+capabilities that can boost performance of distributed
+applications significantly. However, it is still difficult
+to design, deploy and manage distributed applications at
+large scale and fully utilize the resources.
+%handle frequent and inevitable failures at host,
+%application and network levels.
+
+%As the scale of distributed applications become larger than
+%ever, it is hard to manage them efficiently on distributed
+%platforms.  Managing a distributed application involves
+%several tasks.  The application must be first deployed to a
+%set of computers. After the application is configured and
+%started, its status need to be monitored for detecting and
+%recovering from failures, ensuring sustained performance or
+%just for collecting runtime data and statistics.
+%Administrators may also want to send commands to control
+%the application on demand.
+
+% describe as a scenario: management system is needed in
+% this way
+Managing a distributed application faces several challenges.
+The application must be first deployed to a set of machines.
+The deployment should have good scalability so that it can
+work at large scale. During the deployment, failures---such
+as machine or network failures---are inevitable. They must
+be handled at any time during file transfer and application
+installation. Only when the application is deployed and
+configured successfully can the execution begin. After the
+application is started, certain mechanisms are need to
+monitor and recover application from failures.  Depending on
+the application's semantic, the recovery may be simply
+restarting the failed processes. For some cases, failures
+may lead to aborting and restarting the whole application on
+many machines. For all the applications, quick failure
+detection and recovery are required to ensure that
+applications can run successfully. Distributed applications
+are also commonly upgraded for bug fixes and performance
+improvement.
+
+%After the application is configured and started, its status
+%need to be monitored for detecting and recovering from
+%failures, ensuring sustained performance or just for
+%collecting runtime data and statistics.  Administrators may
+%also want to send commands to control the application on
+%demand.
+
+
+% Distributed application management system is designed to
+% simplify tasks involved in deploying and maintaining the
+% applications after they are designed and implemented.  The
+% management system needs to deploy a distributed
+% application to a set of machines and start it. After that,
+% it monitors the application and
+
+% Distributed application management system is designed to
+% simplify tasks involved in deploying and maintaining the
+% applications after they are designed and implemented. They
+% hide the underlying details and provide a user-friendly
+% interface for developers to manage applications on many
+% machines automatically. The developers can focus on
+% bug-fixing and performance tunning of their applications,
+% rather than deploying, monitoring and upgrading the
+% applications on a set of distributed machines.
+
+% automation: the importance of management system
+Distributed application management system is designed to
+ease the burdens of managing applications on many machines.
+It automates many aspects in deploying and maintaining
+applications. By hiding the underlying details and providing
+a user-friendly interface, distributed applications can be
+deployed, monitored, recovered and upgraded automatically
+given instructions from developers. The developers can focus
+on bug-fixing and performance tuning of their applications,
+rather than managing the applications on a set of
+distributed resources.
+
+% ok here, just ignore the simple tools like vxargs. Don't
+% regard them as `system' the root cause: they are
+% distributed applications in fact.
+To manage distributed applications at large scale, the
+management systems have to take distributed designs, or to
+say, they are also distributed applications. A management
+system either adopts centralized (i.e. client/server-like)
+or peer-to-peer (P2P) approach.  Generally, a distributed
+management system consists of many ``peers''\footnote{The
+word peer here will refer to client if the management system
+is in client/sever architecture.} on each machine where
+applications will be deployed. The peers form an overlay
+network, and they work corporately to deploy applications to
+a set of machines. After applications are started, each peer
+monitors and maintains applications' processes within the
+same machine box.
+%User can query the applications status and control them on
+%demand with the help of management system. XXX: need to say
+%this?  User can send messages into the overlay to query
+%application status and execute control commands on demand.
+
+% the caveat: XXX we still need to prove it is really a big
+% problem without selfman: we have idea to manage app, but
+% we cannot do as better to manage manager.  have to be
+% vivid: how about an example of bt? appman?  plush?  how
+% about this: bt as example -> plush do bootstrap in
+% centralized way -> not efficient and very preliminary
+There is one important caveat regarding the use of an
+application management system: the management system itself
+have to be deployed first and maintained continually
+throughout its lifecycle. Intuitively, we can use an
+existing management system $M'$ to deploy and maintain a new
+management system $M$. But this approach doesn't
+\emph{solve} but just \emph{migrate} the problem: $M'$ still
+faces the same problem recursively.  Currently, developers
+usually resort to writing scripts---which leverage OS
+services such as sshd on Unix/Linux---to maintain management
+systems centrally. This approach is very preliminary and has
+several disadvantages.  First, it is not scalable,
+especially at transferring large amount of data or managing
+distribute systems on many machines. Second, it cannot
+handle failures well. When network partition happens, it
+loses control of machines in different partitions. Third, the
+management functionality is limited by underlying OS
+services (e.g. sshd) at some extent.
+
+% Developers resort to
+% xxx (simple script leveraging OS services like sshd to
+% deploy, recover and upgrade the management system).
+% More complex and advanced tools deosn't help xxx. (倒腾
+% 清楚目前的办法，和他们的不足) Using other tools or services
+% don't solve but just mitigate the problem. Because they all
+% have clients/peers to take care of.
+%
+% what we want? combine the virtues (maybe not the virtues). And then we have
+% self-man. what's selfman, how it works (the general idea),
+% the key challenges.
+%
+%
+% 1. the management system must be managed, this is ok, any
+% distributed application requires that
+%
+% 2. management of the management system is not well
+% supported: a) using another p2p tool? b) using another
+% centralized tool?
+%
+% 3. the management system is critical, if it has problem
+% because of itself's management, all the applications will be
+% affected. Any example?
+% 3.5 find a scenario to motivate self-man
+%
+% 4. the self-man problem is common for ALL management
+% systems.
+%
+% 5. prevent it from automating every steps in app management
+% 6. not scalable using centralized
+% 7. management tools need bootstrap, while they bootstrap
+% other applications.
+%
+% 现状：1. 用codeploy，sharkfs
+% 2. 用vxargs
+% 3. 用plush，cfengine
+%
+% 无论用别人的service还是tool，都有人需要维护管理系统，这个工
+% 作职能用centralized的方法做，不管是使用外部工具，还是管理工
+% 具本身集成了一些自管理的能力。
+%
+% 问题：使用已有的稳定的service管理其他service？
+%
+% 问题：在计算平台上，已有一套管理系统，使用者不用费力，管理者
+% 也只有一套系统需要维护，并没多大问题。
+
+% The distributed design makes management system a distributed
+% application in essential and it introduces an important
+% problem: the management system need to be deployed first and
+% maintained continually through its lifecycle. Currently,
+% this problem is addressed by using centralized approach. A
+% central controller first deploys and starts the peers of
+% management system on a set of machines. After that, the
+% controller periodically monitors the peers and recovers the
+% failed ones. If a crashed machine is replaced by a new one,
+% the controller has to deploy a new instance of peer on the
+% fresh machine. The controller can also upgrade peers to new
+% versions with bug fixes and improved performance. The
+% centralized approach has several disadvantages. First, it is
+% not scalable at deploying peers. Second, it is not efficient
+% at monitoring the peers. Frequent monitoring detects peers
+% failures quickly, but it puts heavy burden on network
+% resource of the central controller when establishing
+% connections and sending messages to remote machines. Third,
+% The static star topology from central controller to peers
+% cannot handle changes or failures in network
+% environments, such as network partition.
+%What is more, trying to use more advanced management
+%systems which use their own peers to manage another one
+%will introduce the same problem recursively.  \note{define
+%managment loop here, and we automate the loop within peers
+%in SMON}
+
+In this paper, we argue that a distributed management system
+should have self-management capability and not rely on
+external tools to manage itself. We implement the idea as
+Self-Managed Overlay Network (SMON). SMON is a distributed
+management system with built-in self-management capability,
+namely, self-deployment, self-recovery and self-upgrade.
+User of SMON has little work to do on maintaining it. A SMON
+peer monitors and maintains other ones running on different
+machines. It will automatically deploy new peers on fresh
+machines, recover failed peers, and upgrade itself to newer
+versions. The collective behavior of all peers gives rise to
+a management system that can deploy, monitor, recover and
+upgrade itself automatically. SMON can also manage a set of
+applications.
+%especially another distributed application management
+%system. In this way, SMON's management functionality can
+%extended greatly.
+
+% XXX: the advantage of selfman are:
+
+\comment{
+Running SMON peers will automatically deploy
+and start new instances of SMON peers on machines where SMON
+peers are not installed.  In this way, operator only needs
+to deploy and start one SMON peer and SMON will be deployed
+to all the target machines quickly.
+
+Each SMON peer has an associated version number and it is
+stored persistently in configuration file. The version
+number can be used to update SMON ``online'' to newer
+versions.  When two peers communicate with each other and
+find a difference in version, they work corporately to
+update the lower version to the latest version. Using
+epidemic communication, the whole SMON system will be
+updated eventually once a single peer is updated.
+
+SMON may be stopped because of machine failures or other
+reasons. The failed peers will be detected and started
+by running ones automatically.
+}
+
+
+%SMON can deploy itself to a set of target machines
+%automatically. While it is running, it monitors itself and
+%recovers failed peers. If a new version of SMON is
+%available, it will update itself online. SMON can also
+%deploy and maintain a set of distributed applications. User
+%can use a set of management interfaces to query status and
+%set parameters of SMON and managed applications.
+
+In designing SMON there are several challenges.
+
+The first challenge is that SMON should have good
+scalability. Second, to enable automatic deployment and
+recovery, it need security mechanism support so that peers
+can login into other machines without manual assistant. And
+access to SMON should be authenticated and encrypted to
+avoid misuse of the system for malicious activities. The
+Third challenge is that SMON should define reasonable
+application management semantic.
+% XXX: and has the way to extend the management
+% functionalities?
+
+SMON's design addresses the challenges as follows. For the
+first challenge, SMON peers use epidemic algorithm to
+monitor and maintain each other. Periodically, a peer will
+choose a random one from its membership list and monitor its
+running status. It will deploy new SMON peer on a fresh
+machine or recover failed peer. The simultaneous deployment
+or recovery for the same peer from multiple peers is
+idempotent, which means only one deployment or recovery is
+actually performed. By exchanging version number with remote
+peers, a peer will upgrade itself to the latest version.
+This epidemic approach ensures good scalability ($O(\log
+N)$) when system goes large. While self-management capacity
+keeps all peers running as long as possible, it needs
+mechanism to be disabled so that SMON can be stopped. A
+global boolean variable \texttt{livetag} is used to indicate
+enabling or disabling status of self-management capacity. The
+\texttt{livetag} variable is also maintained consistently
+using epidemic algorithm by all peers.
+
+For the second challenge, we employ a separate
+authentication agent to assist peers to log into remote
+machines automatically. When a peer needs to log into a
+machine, it redirects the authentication challenge from
+remote machine to the agent. The agent stores the credential
+used to authenticate with the remote machine. It will
+resolve the challenge on behalf of the peer. The peer
+replies the response from the agent back to the machine and
+login successfully. The credential will be never leaked out
+of the agent. The authentication load on the agent is light
+and a single agent can support a number of peers.  We use a
+symmetric key to authenticate and encrypt access to SMON
+peers and the authentication agent.
+
+For the third challenge, SMON defines its management
+semantic for long running internet services. The ``long
+running internet services'' shares these management
+requirements: a) peers of the application can be deployed
+and started independently without synchronization, b) the
+failure of a single peer doesn't affect the whole
+application from running and the failed peer can be
+recovered by simply restarting it. An example of long
+running internet services is SWORD~\cite{sword_toit} which
+is a resource discovery service on Planet-Lab.
+% The applications considered as long running internet
+% services includes many distributed systems with well
+% defined failure handling mechanism.
+And most application management systems, such as
+Plush~\cite{Albrecht2007},
+application-manager~\cite{appmanager},
+SmartFrog~\cite{smartfrog}, are also considered as long
+running internet services. To enrich management semantic,
+user can deploy another management system upon SMON, and the
+``combined'' management system still keeps self-management
+capability.
+% and XXX.
+
+%It is of great challenge to manage distributed application
+%when the scale is large. Distributed application management
+%system is designed to ease the burdens of deploying and
+%maintaining distributed applications in large-scale
+%computing platforms. It provides user-friendly interfaces for
+%people to deploy, configure, monitor and control distributed
+%applications.
+
+%To achieve
+%these goals, a management system faces several challenges.
+%It must have good scalability so as to deploy applications
+%and broadcast control commands efficiently.  Host or network
+%failures must be carefully handled to reduce their negative
+%effects on application management to near minimum. When
+%application is started, the management system monitors its
+%running status. It must provide a extensible way for
+%developers to define abnormal status of the application and
+%the corresponding actions to peformance against abnormal
+%status.
+
+In summary, the paper makes following contributions.  We
+design a scalable and secure distributed management system
+with built-in self-management capability by leveraging
+epidemic algorithm.  We implement it on Planet-Lab platform.
+The mathematical analysis and evaluation on Planet-Lab shows
+that SMON system achieves good performance and scalability.
+
+The rest of paper is organized as follows. We describe SMON
+design in section~\ref{sec:design}.
+%and discuss on section~\ref{sec:discuss}.
+Section~\ref{sec:impl} describes
+SMON implementation on Planet-Lab platform. We analyze
+performance and scalability of SMON in
+section~\ref{sec:analysis}. We present evaluation of SMON in
+section~\ref{sec:eval}.  Section~\ref{sec:related} relates
+SMON with previous systems and section~\ref{sec:conclusion}
+concludes.
+
+\comment{
+\note{what is involved in management activity}
+
+\note{the problem in current management tools:}
+
+\note{our solution}
+
+\note{the challenges}
+
+scalable, robust and simple (simple made robust possible)
+
+and extensible?
+
+\note{how we address these challenges}
+
+\note{a short summary on BON status/results}
+
+\note{contribution}
+
+\note{paper layout}
+}
+% vim:foldmethod=marker:textwidth=60
+
