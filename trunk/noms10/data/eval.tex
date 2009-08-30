@@ -5,9 +5,15 @@ We conducted experiments on Planet-Lab platform to evaluate
 SMON. Planet-Lab is a global research network consisting of
 900+ nodes at 400+ sites around the world.
 
-<the basic results>
-
-agent configuration
+We evaluate SMON by first study its performance, especially
+the performance of self-deployment and disabling a deployed
+SMON system. In the evaluation, We confirm that the overhead
+introduced in self-deployment is low. By comparing the
+performance of SMON at different scales, we show that SMON
+design achieves good scalability. At last, we show that the
+load on authentication agent to slove the authentication
+challenge is low and a single agent can support nearly 1000
+SMON peers on a moderate Planetlab node.
 
 %let SMON start self-deployment. We study the performance of
 %the self-deployment process, and measure the overhead
@@ -142,16 +148,19 @@ nodes.}
 
 We monitor the CPU usage on the authentication agent while
 SMON is deploying itself to 117 nodes, and summarize the
-result as figure~\ref{fig:agentload}. It can be seen that
-the CPU load is about 13\% at maximum. The load on the agent
-is proportional to the frequency of authentication requests,
-and the frequency reaches its maximum value when half of the
-nodes are deployed with SMON peer. The maximum frequency is
-also proportional to the scale of the nodes in theory. Thus
-we can conclude that a single authentication agent is able
-to support nearly a thousand of nodes to accomplish
-self-deployment. After SMON is deployed, the frequency of
-authentication requests depends on frequency of nodes
-failures and is usually low.
+result as figure~\ref{fig:agentload}. The authentication
+agent runs on node \texttt{planetlab3.ucsd.edu}, which is
+not in the set of 117 nodes.
+
+It can be seen that the CPU load is about 13\% at maximum.
+The load on the agent is proportional to the frequency of
+authentication requests, and the frequency reaches its
+maximum value when half of the nodes are deployed with SMON
+peer. The maximum frequency is also proportional to the
+scale of the nodes in theory. Thus we can conclude that a
+single authentication agent is able to support nearly a
+thousand of nodes to accomplish self-deployment. After SMON
+is deployed, the frequency of authentication requests
+depends on frequency of nodes failures and is usually low.
 
 % vim:foldmethod=marker:textwidth=60
