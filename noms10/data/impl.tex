@@ -2,7 +2,7 @@
 \label{sec:impl}
 
 We implement the prototype of SMON system in Python, and the
-final installation package size of a BON peer is about
+final installation package size of the SMON peer is about
 122KB, with 1000+ lines of code.
 
 \begin{table*}
@@ -70,14 +70,13 @@ separate thread will be started for maintaining the
 application.
 
 The communication of SMON peers and agents are implemented
-as RPCs, and they are summarized in table~\ref{fig:rpc}.
+as XML-RPCs, and they are summarized in table~\ref{fig:rpc}.
 
-SMON peer spawns a ssh/scp process to deploy on remote
-machines. A modified \texttt{ssh-agent} is started which
-forwards the authentication challenge from ssh/scp to the
-remote authenticate agent. The agent only implements one RPC
-interface \texttt{resolve\_challenge} described in
-table~\ref{fig:rpc}.
+SMON peer uses paramiko\footnote{a ssh library implemented
+in Python} to copy files or send commands to remote machines
+using ssh protocol. It will redirect the authentication
+challenge to the authentication agent using
+\texttt{resolve\_challenge} XML-RPC interface.
 
 The configuration parameters used at SMON runtime is stored
 in a configuration file. It stores the time intervals among
@@ -86,7 +85,7 @@ peer and membership list, the $<$livetag, version$>$ tuple,
 the address of authentication agent. The configuration file
 is implemented as a SQLite database file to avoid data loss
 at machine crash. The membership list is stored separately
-in compressed format.
+as a compressed file.
 
 %SMON makes a predefined and consistent directory layout of
 %peer installation and it is critical for peers to perform

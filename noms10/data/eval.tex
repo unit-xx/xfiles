@@ -2,10 +2,12 @@
 \label{sec:eval}
 
 We conducted experiments on Planet-Lab platform to evaluate
-SMON system, and compare the results with analysis in
-section~\ref{sec:analysis}. Planet-Lab is a global research network
-consisting of 900+ nodes at 400+ sites around the
-world.
+SMON. Planet-Lab is a global research network consisting of
+900+ nodes at 400+ sites around the world.
+
+<the basic results>
+
+agent configuration
 
 %let SMON start self-deployment. We study the performance of
 %the self-deployment process, and measure the overhead
@@ -20,96 +22,99 @@ world.
 %overhead caused by race condition is small and the active
 %state transition is fast.
 
-We evaluate the performance of self-management design. As
-the maintenance tasks performed by SMON peer to deploy,
-recover and upgrade the system use the same epidemic
-algorithm, we only present the results on self-deployment
-and enabling a disabled SMON system. 
+\subsection{Performance}
 
-\begin{figure}[t]
+First we evaluate the performance of SMON. We concentrate on
+two representitive activities: deploying a new SMON system
+and disabling it. We select 117 nodes on PlanetLab, all of
+which are university nodes in North America. To deploy a
+SMON system, we use the client utility of SMON to deploy a
+peer on \texttt{planet\-lab2.ucsd.edu} (shortened as
+\texttt{ucsd2} node) and start it. Then SMON will deploy
+itself to other 116 nodes automatically. After the
+deployment is accomplished, we just disable it by issuing a
+RPC call to \texttt{ucsd2} to set the \texttt{livetag} to
+false.  The ping interval of the SMON peer is configured as
+5 seconds.
+
+Figure~\ref{fig:smonperf} summarizes the progress of
+deploying and disabling SMON on 117 nodes, and they take
+111 seconds and 34 seconds in total, respectively. The
+progress curves show similar trends with analysis result
+(Figure~\ref{fig:yr}). The difference in two curves are
+mainly caused by the time cost to ``infect'' a new peer. It
+takes longer time to deploy a new peer than to set
+\texttt{livetag} of another peer to false. Our experience
+of using SMON also shows that progress curve may exhibit
+long tail when some nodes are less responsive because the
+network connection to the nodes are slow or the nodes are
+overloaded.
+
+\begin{figure}%[t]
 \centering
 \includegraphics[scale=0.618]{self-deploy.png}
 \caption{Progress of self-deployment process on 159
 nodes.}
-\label{fig:self-deploy}
+\label{fig:smonperf}
 \end{figure}
 
-First, we evaluate the performance of self-deployment of
-SMON.  We choose 159 nodes in Planet-Lab platform and start
-a SMON peer. SMON then start deploying itself on all 159
-nodes.
-
-In our configuration, A SMON peer detects a random nodes and
-sleep for 5 seconds. We finally collected data from 154
-nodes out of 159 nodes. There are 5 nodes unreachable at
-data-collecting stage and their data are omitted in the
-result. This kind of failure is common for large scale
-distributed systems.  Figure~\ref{fig:self-deploy} shows the
-progress of self-deployment. We can see that 90\% (143) of
-nodes are deployed successfully with a SMON peer within 149
-seconds. The median deployment time is 93 seconds while the
-largest one is 533 seconds. As a comparison,
-figure~\ref{fig:self-deploy} has similar trends with
-analysis result (figure~\ref{fig:yr}). But
-figure~\ref{fig:self-deploy} exhibits an obvious long tail.
-The long tail in figure~\ref{fig:self-deploy} are caused by
-two reasons: either the network to the machine is slow or
-the the machine itself is overloaded and doesn't respond
-quickly.
-
-We then evaluate the performance of enable/disable
-self-management functionality of SMON system. We first
-disable self-management of SMON system deployed on 159
-Planet-Lab and then enable it again. The progress of state
-transition from disabled to enabled is shown in
-Figure~\ref{fig:state-transition}. For 90\%
-percentile of peers, the states changes after 143
-seconds and the median state transition time is 37 seconds.
-
-%\begin{table}
-%\centering
-%\begin{tabular}{|l|c|}
-%\hline
-%median & 37 \\
-%\hline
-%90\% percentile & 143 \\
-%\hline
-%\end{tabular}
-%\caption{Statistics for state transition experiment in seconds}
-%\label{tbl:state-transition}
-%\end{table}
-
-\begin{figure}[t]
-\centering
-\includegraphics[scale=0.618]{state-trans.png}
-\caption{Progress of state transition of self-management from disabled to
-enabled.}
-\label{fig:state-transition}
-\end{figure}
-
-To evaluate the scalability of self-deployment process, we deploy
-a new instance of SMON system at a different scale (24 nodes) and
-compare the performance of self-deployment process.
-Table~\ref{tbl:scalability} summarizes the statistics results.
-We can see from the table that the scalability is good.
-While scale difference between two systems is about 6.6
-(159/24) times, the
-90-percentile deployment time is only 1.75 (149/85) times of
-difference, while the median value is 1.41 (82/58) times of
-difference. The above two ratios is close to the ratio of
-logarithm of system scales ($\log 159 / \log 24 = 1:59$).
+When SMON deploy itself, multiple peers may try to deploy
+and start a new peer on the same nodes simultaneously. This
+introduces some overhead, although only one peer is started
+at last. In the analysis, we show that the average overhead
+is a constant value of 1.582, and we validate the analysis
+here. Table~\ref{tbl:overhead} summarized the statistics for
+the overhead number. On most of nodes (72 of 117 nodes, or
+64.54\%), there's exactly one deployment. The largest
+overhead number is 23. On average, the overhead number is
+1.88, with an error of 18.84\% comparing to analysis result.
 
 \begin{table}
 \centering
 \begin{tabular}{|l|c|c|}
 \hline
-  & 24 nodes & 159 nodes\\
+overhead & nodes & \% \\
 \hline
-median & 58 sec & 82 sec \\
+1 & 72 & 61.54 \\
+2 & 26 & 22.22 \\
+3 & 12 & 10.26 \\
+4 & 3 & 2.56 \\
+5 & 2 & 1.71 \\
+15 & 1 & 0.85 \\
+23 & 1 & 0.85 \\
 \hline
-90\% percentile & 85 sec & 149 sec\\
+\end{tabular}
+\caption{Comparison of self-deployment process at different
+scales in seconds.}
+\label{tbl:overhead}
+\end{table}
+
+\subsection{Scalability}
+
+To evaluate the scalability of self-deployment process, we
+deploy a new instance of SMON system at a different scale
+(24 random nodes out of 117 nodes) and compare the
+performance of self-deployment process.
+Table~\ref{tbl:scalability} summarizes the statistics
+results.  We can see from the table that the scalability is
+good.  While scale difference between two systems is about
+4.88 (117/24) times, the 90-percentile deployment time is
+only 1.57 (91/58) times of difference, while the median
+value is 1.31 (63/48) times of difference.  The above two
+ratios is close to the ratio of logarithm of system scales
+($\log 117 / \log 24 = 1.49$).
+
+\begin{table}
+\centering
+\begin{tabular}{|l|c|c|}
 \hline
-Final & 103 sec & 533 sec\\
+  & 24 nodes & 117 nodes\\
+\hline
+median & 48 sec & 63 sec \\
+\hline
+90\% percentile & 58 sec & 91 sec\\
+\hline
+Final & 61 sec & 111 sec\\
 \hline
 \end{tabular}
 \caption{Comparison of self-deployment process at different
@@ -117,35 +122,36 @@ scales in seconds.}
 \label{tbl:scalability}
 \end{table}
 
-During the self-deployment process, there are cases that
-multiple SMON peers try to deploy an instance on the same
-node and this can cause extra overhead. The overhead wastes
-network bandwidth and the storage at the deployed node. We
-evaluate the overhead by count the simultaneous deployment
-happened at each node. The result is shown in
-Figure~\ref{fig:overhead}. We can see that for 43.71\% of
-nodes there is exactly one deployment on each of them.
-Obviously, most of nodes have a deployment overhead within
-10. These nodes account for 92.04\% of all nodes and the
-average overhead of these nodes is 2.31. The average
-overhead for all nodes is 4.30 which is an acceptable
-number. The number 4.30 is larger than the analysis result
-(1.582) in section~\ref{sec:analysis}. The reason is that,
-in the analysis we assume that SMON works synchronously but
-the real system works asynchronously and the deployment
-takes time. During the time a peer chooses a machine to
-deploy a new peer, other peers will choose the same machine
-and don't notice the simultaneous deployment. This will
-cause greater overhead number than analysis.
+\subsection{Load on authentication agent}
 
-\begin{figure}
+SMON employs an authentication agent to help peers
+automatically log into another node to deploy a new peer or
+recover a failed peer. It solves the authentication
+challenge on behalf of the requested peer. Solving the
+authentication challenge involves expensive computations and
+it is a reasonable to ask whether the agent a possible
+performance bottleneck.
+
+\begin{figure}%[t]
 \centering
-\includegraphics[scale=0.5]{overhead.png}
-\caption{Overhead (copy number of simultaneous deployment)
-introduced by race condition during
-self-deployment process}
-\label{fig:overhead}
+\includegraphics[scale=0.618]{self-deploy.png}
+\caption{Progress of self-deployment process on 159
+nodes.}
+\label{fig:agentload}
 \end{figure}
 
+We monitor the CPU usage on the authentication agent while
+SMON is deploying itself to 117 nodes, and summarize the
+result as figure~\ref{fig:agentload}. It can be seen that
+the CPU load is about 13\% at maximum. The load on the agent
+is proportional to the frequency of authentication requests,
+and the frequency reaches its maximum value when half of the
+nodes are deployed with SMON peer. The maximum frequency is
+also proportional to the scale of the nodes in theory. Thus
+we can conclude that a single authentication agent is able
+to support nearly a thousand of nodes to accomplish
+self-deployment. After SMON is deployed, the frequency of
+authentication requests depends on frequency of nodes
+failures and is usually low.
 
 % vim:foldmethod=marker:textwidth=60

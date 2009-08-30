@@ -47,13 +47,6 @@ running states of SMON peers.
 % epidemic algorithm is also used to hold other invariants.
 % XXX: for example?
 
-The design of self-management capacity uses epidemic
-algorithm for several reasons.  First, it has inherent
-scalability. Second, the epidemic algorithm is simple and
-easy to implement. By its simplicity, the SMON system is
-less prone to runtime errors so that it can run reliably for
-long time. Third, it is robust and resilient to failure.
-
 % The SMON peers run on a set of target machines where
 % distributed applications will be deployed. Each peer
 % maintains the full list of target machines as its membership
@@ -159,10 +152,58 @@ problem in subsection~\ref{subsec:livetag}.
 
 \subsection{Self-management}
 
-We describe how SMON deploys, recovers and upgrades itself
-automatically.
+SMON uses epidemic approach to manage itself. A SMON peer
+will periodically select a random machine in membership list
+and maintains the peer running on that machine.  The
+epidemic approach is selected for several reasons.  First,
+it has inherent scalability. Second, the epidemic algorithm
+is simple and easy to implement. By its simplicity, the SMON
+system is less prone to runtime errors so that it can run
+reliably for long time. Third, it is robust and resilient to
+failure.
 
-\subsubsection*{Self-deployment}
+In detail, a SMON peer runs the pseudo-code in
+figure~\ref{fig:peerflow} to manage other peers. We start
+from line 5 and explain line 2 and 3 later. A SMON peer will
+choose a random machine and send it a ping message (line
+5-7). If timeout happens, it will try to deploy a new peer
+or recover the failed peer on the remote machine (line
+10-16). If the remote peer is running, it will reply with a
+pong message. The version number of two peers are
+piggybacked in the ping/pong messages and the peer with
+lower version will upgrade itself automatically.
+
+We describe how SMON deploys, recovers and upgrades itself
+automatically as follow.
+
+
+\begin{figure}
+\centering
+\begin{lstlisting}[language=Python,morekeywords={True,False},frame=tb,basicstyle=\small,numbers=right,numbersep=-5pt,numberstyle=\tiny]
+while(1):
+    if(livetag==False):
+        continue
+
+    p = random.choice(membership_list)
+    try:
+        remote_ver = ping(p, my_ver)
+        if(remote_ver > my_ver):
+            upgrade_myself()
+    except Timeout:
+        conn = Connect(p, auth_agent)
+        if(conn.is_peer_installed()==True):
+            conn.recover_peer()
+        else:
+            conn.deploy_peer()
+        conn.close()
+
+    sleep(WAIT_INTERVAL)
+\end{lstlisting}
+\caption{SMON peer working flow}
+\label{fig:peerflow}
+\end{figure}
+
+\subsubsection{Self-deployment}
 
 Given a list of target machines, SMON can deploy itself to
 all the machines automatically. At the very beginning, there
@@ -238,7 +279,7 @@ the `finish' definition to user. The user can query how many
 or which peers are deployed, and determine whether it is
 appropriate to consider the situation as a finish.
 
-\subsubsection*{Self-recovery}
+\subsubsection{Self-recovery}
 
 Two kinds of failures may happen and must be handled by
 SMON, namely, machine failure and network partition.
@@ -282,7 +323,7 @@ locally.  The epidemic algorithm is used to maintain the
 state consistently and efficiently among all peers.
 }
 
-\subsubsection*{Self-upgrade}
+\subsubsection{Self-upgrade}
 
 As a distributed system, SMON can upgrade itself to a new
 version automatically. The upgrade goes online while SMON is
@@ -348,7 +389,7 @@ Otherwise, the new SMON system can only be deployed after the old
 one is stopped.
 }
 
-\subsubsection*{Disable/enable self-management}
+\subsubsection{Disable/enable self-management}
 \label{subsec:livetag}
 
 We need mechanism to enable or disable self-management
@@ -362,7 +403,8 @@ which is not feasible at large scale.
 We use a boolean variable called \texttt{livetag} to control epidemic
 ping among peers. If the value is false, a peer will
 stop sending periodic ping message to others and the whole
-SMON system stops maintaining itself.
+SMON system stops maintaining itself (line 2-3 in
+figure~\ref{fig:peerflow}).
 %We can now stop SMON peers one by one.
 
 The \texttt{livetag} variable has an associated version
@@ -382,20 +424,6 @@ to each other. A peer will stop itself from running if no
 messages is received for enough long time. In this way, a
 SMON system can be shutdown automatically by setting
 \texttt{livetag} to false.
-
-\subsubsection*{Combine them together}
-
-Each SMON peer runs monitoring and maintenance tasks
-mentioned above and self-management capacity of the whole
-SMON is achieved. Basically, a peer can run four maintenance
-tasks: one for peer deployment, one for peer recovery, one
-for self-upgrade and one for \texttt{livetag} maintenance.
-As an optimization, we combine first three tasks into one.
-The version number of SMON is piggybacked in ping/pong
-messages among peers. And when peer $A$ considers another
-one $B$ as failed, it will choose from deploying a new peer
-or recovering the installed peer by detecting installation
-status of $B$ on remote machine.
 
 % xxx elabrate on random here
 

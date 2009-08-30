@@ -30,24 +30,6 @@ large scale and fully utilize the resources.
 
 % describe as a scenario: management system is needed in
 % this way
-Managing a distributed application faces several challenges.
-The application must be first deployed to a set of machines.
-The deployment should have good scalability so that it can
-work at large scale. During the deployment, failures---such
-as machine or network failures---are inevitable. They must
-be handled at any time during file transfer and application
-installation. Only when the application is deployed and
-configured successfully can the execution begin. After the
-application is started, certain mechanisms are need to
-monitor and recover application from failures.  Depending on
-the application's semantic, the recovery may be simply
-restarting the failed processes. For some cases, failures
-may lead to aborting and restarting the whole application on
-many machines. For all the applications, quick failure
-detection and recovery are required to ensure that
-applications can run successfully. Distributed applications
-are also commonly upgraded for bug fixes and performance
-improvement.
 
 %After the application is configured and started, its status
 %need to be monitored for detecting and recovering from
@@ -75,7 +57,8 @@ improvement.
 % applications on a set of distributed machines.
 
 % automation: the importance of management system
-Distributed application management system is designed to
+Managing a distributed application faces several challenges
+and distributed application management system is designed to
 ease the burdens of managing applications on many machines.
 It automates many aspects in deploying and maintaining
 applications. By hiding the underlying details and providing
