@@ -19,7 +19,8 @@ our analysis.
 
 The epidemic algorithm has three variants, called push, pull
 and push-pull, and they are used by different maintenance
-tasks of SMON as summarized in table~\ref{tbl:tasks}.
+tasks of SMON.
+%as summarized in table~\ref{tbl:tasks}.
 Although they differ in details, the basic result of
 epidemic theory shows that each one of the three methods can
 eventually infect the entire population.  The studies also
@@ -27,34 +28,34 @@ show that starting from a single peer, this is achieved in
 expected time (the rounds number) proportional to the log of
 the population size ($\log N$).
 
-\begin{table}
-\centering
-\begin{tabular}{|l|l|}
-
-\hline
-Self-deployment & push \\
-
-\hline
-Self-upgrade & push-pull \\
-
-\hline
-Self-recovery & push \\
-
-\hline
-Enable SMON & push \\
-
-\hline
-Disable SMON & pull \\
-
-\hline
-Application deployment & push-pull \\
-
-\hline
-\end{tabular}
-\caption{Different variants of epidemic algorithm used by
-maintenance task of SMON.}
-\label{tbl:tasks}
-\end{table}
+%\begin{table}
+%\centering
+%\begin{tabular}{|l|l|}
+%
+%\hline
+%Self-deployment & push \\
+%
+%\hline
+%Self-upgrade & push-pull \\
+%
+%\hline
+%Self-recovery & push \\
+%
+%\hline
+%Enable SMON & push \\
+%
+%\hline
+%Disable SMON & pull \\
+%
+%\hline
+%Application deployment & push-pull \\
+%
+%\hline
+%\end{tabular}
+%\caption{Different variants of epidemic algorithm used by
+%maintenance task of SMON.}
+%\label{tbl:tasks}
+%\end{table}
 
 Take self-deployment process as an example. Starting from a
 single SMON peer, all the target machines will be deployed
@@ -78,21 +79,19 @@ round number $r$.}
 \label{fig:yr}
 \end{figure}
 
-
-The ratio of deployed machines to un-deployed ones increases
-exponentially, on average, by a factor of $e$ in each round.
-This indicates that the self-deployment has good
-performance.
-
-To deploy a fix fraction of machines, the expected round
-number $r$ is:
-
-\begin{equation*}
-r \approx \ln(n) - \ln(\frac{1}{Y_r} - 1)
-\end{equation*}
-
-$r$ is in the logarithm of total population $n$, which
-implies good scalability of self-deployment process.
+From the equation above, the ratio of deployed machines to
+un-deployed ones increases exponentially, on average, by a
+factor of $e$ in each round.  This indicates that the
+self-deployment has good performance.
+%
+%To deploy a fix fraction of machines, the expected round
+%number $r$ is:
+%
+%\begin{equation*} r \approx \ln(n) - \ln(\frac{1}{Y_r} - 1)
+%\end{equation*}
+%
+%$r$ is in the logarithm of total population $n$, which
+%implies good scalability of self-deployment process.
 
 % overhead number
 
@@ -122,7 +121,7 @@ when $k > 0$.
 \begin{equation*}
 \begin{aligned}
 P(X' = k) &= P(X=k | X > 0) \\
-&= P(X = k) / (1 - P(X = 0)) \\
+%&= P(X = k) / (1 - P(X = 0)) \\
 &= P(X = k) / (1 - (1 - \frac{1}{n})^{m}) \qquad (k > 0)
 \end{aligned}
 \end{equation*}

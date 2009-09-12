@@ -7,11 +7,13 @@
 \begin{figure}
 \centering
 \includegraphics[width=3.0in]{smon_arch}
-\caption{SMON system design. SMON peers monitor each other
-by sending ping messages. User can send query or control
-messages using client utility. Authentication agent resolves
-authentication challenge from peers to help them log into
-other machines automatically.}
+\caption{SMON system design.
+%SMON peers monitor each other by sending ping messages.
+%User can send query or control messages using client
+%utility. Authentication agent resolves authentication
+%challenge from peers to help them log into other machines
+%automatically.
+}
 \label{fig:smon_arch}
 \end{figure}
 
@@ -22,18 +24,19 @@ peers, authentication agent and client utility.
 The SMON peers run on a set of target machines where
 distributed applications will be deployed. The peers
 periodically monitor and maintain each other in their
-membership list. They will deploy new peers on fresh
-machines, recover failed peers and upgrade themselves to new
-version. In this way, a SMON system can manage itself
-automatically. With the help of authentication agent, a SMON
-peer can log into remote machines automatically to recover
-failed peers or deploy new peers. A SMON system can manage a
-set of distributed applications. It defines the management
-semantic for long running internet services.  User can use
-the client utility to instruct SMON on application
-management. The utility can also be used to control a SMON
-system, such as upgrading it to new version, or query
-running states of SMON peers.
+membership list. 
+%They will deploy new peers on fresh machines, recover
+%failed peers and upgrade themselves to new version. In this
+%way, a SMON system can manage itself And automatically. 
+With the help of authentication agent, a SMON peer can log
+into remote machines automatically to recover failed peers
+or deploy new peers. A SMON system can manage a set of
+distributed applications. It defines the management semantic
+for long running internet services.  User can use the client
+utility to instruct SMON on application management. The
+utility can also be used to control a SMON system, such as
+upgrading it to new version, or query running states of SMON
+peers.
 
 % The epidemic algorithm is used extensively in designing
 % SMON. A SMON system must hold several distributed invariants
@@ -152,17 +155,7 @@ problem in subsection~\ref{subsec:livetag}.
 
 \subsection{Self-management}
 
-SMON uses epidemic approach to manage itself. A SMON peer
-will periodically select a random machine in membership list
-and maintains the peer running on that machine.  The
-epidemic approach is selected for several reasons.  First,
-it has inherent scalability. Second, the epidemic algorithm
-is simple and easy to implement. By its simplicity, the SMON
-system is less prone to runtime errors so that it can run
-reliably for long time. Third, it is robust and resilient to
-failure.
-
-In detail, a SMON peer runs the pseudo-code in
+A SMON peer runs the pseudo-code in
 figure~\ref{fig:peerflow} to manage other peers. We start
 from line 5 and explain line 2 and 3 later. A SMON peer will
 choose a random machine and send it a ping message (line
@@ -207,7 +200,7 @@ while(1):
 
 Given a list of target machines, SMON can deploy itself to
 all the machines automatically. At the very beginning, there
-is no SMON peer deployed and running yet. A first peer have
+is no SMON peer deployed and running. A first peer have
 to be deployed and started manually. It then pings other
 machines in its membership list and deploys new peers. The
 new peers repeat the same ping-and-deploy process. While
@@ -266,18 +259,18 @@ it is shown that the overhead is low (a constant value) on
 average. Since the size of the installation package is small
 (122KB), the overhead can be considered as insignificant.
 
-It is not easy to define when self-deployment is finished
-globally. Ideally, it is finished when all the target
-machines are reached and deployed with SMON peers.  However,
-considering some machines may be unreachable or shutdown
-from time to time, the `finished-globally' situation is
-rare. Even after a machine is deployed with SMON peer, it
-may crash and be replaced with a new machine with the same
-host name. The peers then have to continue the
-ping-and-deploy process as long as they are live and leave
-the `finish' definition to user. The user can query how many
-or which peers are deployed, and determine whether it is
-appropriate to consider the situation as a finish.
+%It is not easy to define when self-deployment is finished
+%globally. Ideally, it is finished when all the target
+%machines are reached and deployed with SMON peers.  However,
+%considering some machines may be unreachable or shutdown
+%from time to time, the `finished-globally' situation is
+%rare. Even after a machine is deployed with SMON peer, it
+%may crash and be replaced with a new machine with the same
+%host name. The peers then have to continue the
+%ping-and-deploy process as long as they are live and leave
+%the `finish' definition to user. The user can query how many
+%or which peers are deployed, and determine whether it is
+%appropriate to consider the situation as a finish.
 
 \subsubsection{Self-recovery}
 
@@ -400,10 +393,10 @@ restarted soon by another peer. The only solution under such
 condition is to stop all the SMON peers simultaneously,
 which is not feasible at large scale.
 
-We use a boolean variable called \texttt{livetag} to control epidemic
-ping among peers. If the value is false, a peer will
-stop sending periodic ping message to others and the whole
-SMON system stops maintaining itself (line 2-3 in
+We use a boolean variable called \texttt{livetag} to control
+epidemic ping among peers. If the value is false, a peer
+will stop sending periodic ping message to others and the
+whole SMON system stops maintaining itself (line 2-3 in
 figure~\ref{fig:peerflow}).
 %We can now stop SMON peers one by one.
 
@@ -600,15 +593,15 @@ names or IPs are stored in the list.  An estimation shows
 that, storing 15000+ machines names in zip format takes
 about 100K bytes, which is an acceptable result.
 
-When membership changes, newly added machines will be
-deployed with new SMON peers. The peer running on removed
-machines will receive the new machine list and find that
-they are not in the list. It will then only reply to
-incoming messages to help spreading membership changes. And
-it will stop maintaining any SMON peer.  After most peers
-update their membership list, the peers in removed machines
-will kill themselves after they don't receive any messages
-for enough long time.
+%When membership changes, newly added machines will be
+%deployed with new SMON peers. The peer running on removed
+%machines will receive the new machine list and find that
+%they are not in the list. It will then only reply to
+%incoming messages to help spreading membership changes. And
+%it will stop maintaining any SMON peer.  After most peers
+%update their membership list, the peers in removed machines
+%will kill themselves after they don't receive any messages
+%for enough long time.
 
 \subsection{Application management}
 
