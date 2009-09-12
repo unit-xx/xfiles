@@ -10,7 +10,7 @@ thousands of computers, such as
 Planet-Lab~\cite{Bavier2004}, Amazon
 EC2~\cite{Garfinkel2007} and Teragrid~\cite{Catlett2002}.
 These platforms provide huge amount of storage and computing
-capabilities that can boost performance of distributed
+capabilities that can boost performance of users'
 applications significantly. However, it is still difficult
 to design, deploy and manage distributed applications at
 large scale and fully utilize the resources.
@@ -242,8 +242,8 @@ In designing SMON there are several challenges.
 
 The first challenge is that SMON should have good
 scalability. Second, to enable automatic deployment and
-recovery, it need security mechanism support so that peers
-can login into other machines without manual assistant. And
+recovery, certain security mechanism is needed so that peers
+can log into other machines without manual assistant. And
 access to SMON should be authenticated and encrypted to
 avoid misuse of the system for malicious activities. The
 Third challenge is that SMON should define reasonable
@@ -256,32 +256,38 @@ first challenge, SMON peers use epidemic algorithm to
 monitor and maintain each other. Periodically, a peer will
 choose a random one from its membership list and monitor its
 running status. It will deploy new SMON peer on a fresh
-machine or recover failed peer. The simultaneous deployment
-or recovery for the same peer from multiple peers is
-idempotent, which means only one deployment or recovery is
-actually performed. By exchanging version number with remote
-peers, a peer will upgrade itself to the latest version.
-This epidemic approach ensures good scalability ($O(\log
-N)$) when system goes large. While self-management capacity
-keeps all peers running as long as possible, it needs
-mechanism to be disabled so that SMON can be stopped. A
-global boolean variable \texttt{livetag} is used to indicate
-enabling or disabling status of self-management capacity. The
-\texttt{livetag} variable is also maintained consistently
-using epidemic algorithm by all peers.
+machine or recover failed peer. 
+%The simultaneous deployment or recovery for the same peer
+%from multiple peers is idempotent, which means only one
+%deployment or recovery is actually performed. 
+By exchanging version number with remote peers, a peer will
+upgrade itself to the latest version.  This epidemic
+approach ensures good scalability ($O(\log N)$) when system
+goes large, and it is simple and easy to implement. By its
+simplicity, the SMON system is less prone to runtime errors
+so that it can run reliably for long time. Also, the
+epidemic approach is robust and resilient to failure.
+
+%While self-management capacity keeps all peers
+%alive as long as possible, it needs to be disabled so that
+%SMON can be stopped. A global boolean variable
+%\texttt{livetag} is used to indicate enabling or disabling
+%status of self-management capacity. The \texttt{livetag}
+%variable is also maintained consistently using epidemic
+%algorithm by all peers.
 
 For the second challenge, we employ a separate
 authentication agent to assist peers to log into remote
-machines automatically. When a peer needs to log into a
-machine, it redirects the authentication challenge from
-remote machine to the agent. The agent stores the credential
-used to authenticate with the remote machine. It will
-resolve the challenge on behalf of the peer. The peer
-replies the response from the agent back to the machine and
-login successfully. The credential will be never leaked out
-of the agent. The authentication load on the agent is light
-and a single agent can support a number of peers.  We use a
-symmetric key to authenticate and encrypt access to SMON
+machines automatically. To log into a machine, a peer will
+redirect the authentication challenge from remote machine to
+the agent. The agent stores the credential used to
+authenticate with the remote machine. It will resolve the
+challenge on behalf of the peer. The peer replies the
+response from the agent back to the machine and login
+successfully. The credential will be never leaked out of the
+agent. The authentication load on the agent is light and a
+single agent can support a number of peers.  We use a
+symmetric key to authenticate and protect access to SMON
 peers and the authentication agent.
 
 For the third challenge, SMON defines its management
@@ -290,21 +296,21 @@ running internet services'' shares these management
 requirements: a) peers of the application can be deployed
 and started independently without synchronization, b) the
 failure of a single peer doesn't affect the whole
-application from running and the failed peer can be
-recovered by simply restarting it. An example of long
-running internet services is SWORD~\cite{sword_toit} which
-is a resource discovery service on Planet-Lab.
+application from running and the peer can be recovered
+independently.
 % The applications considered as long running internet
 % services includes many distributed systems with well
 % defined failure handling mechanism.
-And most application management systems, such as
+Most application management systems, such as
 Plush~\cite{Albrecht2007},
-application-manager~\cite{appmanager},
-SmartFrog~\cite{smartfrog}, are also considered as long
-running internet services. To enrich management semantic,
-user can deploy another management system upon SMON, and the
-``combined'' management system still keeps self-management
-capability.
+%application-manager~\cite{appmanager},
+%SmartFrog~\cite{smartfrog}, 
+are considered as long running internet services. To enrich
+management semantic, user can deploy another management
+system upon SMON, and the ``combined'' management system
+still keeps self-management capability. In this sense, SMON
+becomes a ``kernel'' which bootstraps other management
+systems.
 % and XXX.
 
 %It is of great challenge to manage distributed application

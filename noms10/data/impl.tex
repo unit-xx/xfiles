@@ -5,62 +5,62 @@ We implement the prototype of SMON system in Python, and the
 final installation package size of the SMON peer is about
 122KB, with 1000+ lines of code.
 
-\begin{table*}
-\small
-\centering
-\begin{tabular}{|l|l|}
-
-\hline
-\textbf{RPC} & \textbf{Description} \\
-
-\hline
-\texttt{ping(ver)} & Call with local SMON peer's version and
-return remote peer's version.\\
-
-\hline
-\texttt{retrieve\_peer(ver)} & Retrieve installation package
-of SMON peer with specified version.\\
-
-\hline
-\texttt{exchange\_livetag(tag, ver)} & Call with local
-$<$livetag, version$>$, and return remote peer's $<$livetag,
-version$>$.\\
-
-\hline
-\texttt{exchange\_member(ver)} & Call with local membership
-list version and return remote peer's membership list.\\
-
-\hline
-\texttt{retreive\_member(ver)} & Retrive membership list of
-specified version.\\
-
-\hline
-\texttt{exchange\_app(app\_name)} & Call with an application
-name, return true if remote peer has installed the
-application.\\
-
-\hline
-\texttt{retrieve\_app(app\_name)} & Retrieve installation package
-of an application with specified name.\\
-
-\hline
-\texttt{resolve\_challenge(challenge)} & Return the response
-to an authentication challenge.\\
-
-\hline
-\texttt{set\_app\_status(app\_name, status)} & Set application status (online,
-offline, ignore).\\
-
-\hline
-\texttt{get\_app\_status(app\_name)} & Get application status. \\
-
-\hline
-
-\end{tabular}
-\caption{RPC interfaces implemented by SMON peer and authentication
-agent}
-\label{fig:rpc}
-\end{table*}
+%\begin{table*}
+%\small
+%\centering
+%\begin{tabular}{|l|l|}
+%
+%\hline
+%\textbf{RPC} & \textbf{Description} \\
+%
+%\hline
+%\texttt{ping(ver)} & Call with local SMON peer's version and
+%return remote peer's version.\\
+%
+%\hline
+%\texttt{retrieve\_peer(ver)} & Retrieve installation package
+%of SMON peer with specified version.\\
+%
+%\hline
+%\texttt{exchange\_livetag(tag, ver)} & Call with local
+%$<$livetag, version$>$, and return remote peer's $<$livetag,
+%version$>$.\\
+%
+%\hline
+%\texttt{exchange\_member(ver)} & Call with local membership
+%list version and return remote peer's membership list.\\
+%
+%\hline
+%\texttt{retreive\_member(ver)} & Retrive membership list of
+%specified version.\\
+%
+%\hline
+%\texttt{exchange\_app(app\_name)} & Call with an application
+%name, return true if remote peer has installed the
+%application.\\
+%
+%\hline
+%\texttt{retrieve\_app(app\_name)} & Retrieve installation package
+%of an application with specified name.\\
+%
+%\hline
+%\texttt{resolve\_challenge(challenge)} & Return the response
+%to an authentication challenge.\\
+%
+%\hline
+%\texttt{set\_app\_status(app\_name, status)} & Set application status (online,
+%offline, ignore).\\
+%
+%\hline
+%\texttt{get\_app\_status(app\_name)} & Get application status. \\
+%
+%\hline
+%
+%\end{tabular}
+%\caption{RPC interfaces implemented by SMON peer and authentication
+%agent}
+%\label{fig:rpc}
+%\end{table*}
 
 The maintenance tasks of a SMON peer is implemented in
 several threads, including one for monitoring and
@@ -69,8 +69,9 @@ one for update \texttt{livetag}. For each application, a
 separate thread will be started for maintaining the
 application.
 
-The communication of SMON peers and agents are implemented
-as XML-RPCs, and they are summarized in table~\ref{fig:rpc}.
+The communication interface of SMON peers and agents are
+implemented as XML-RPCs, which are not listed for space
+limitation.
 
 SMON peer uses paramiko\footnote{a ssh library implemented
 in Python} to copy files or send commands to remote machines
