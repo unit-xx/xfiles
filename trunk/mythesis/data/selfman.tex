@@ -41,7 +41,7 @@
 搭建一个规模成百上千的分布式计算平台是很普通的事情。一些常见的分布式计
 算平台包括Planet-Lab~\cite{Bavier2004}, Amazon
 EC2~\cite{Garfinkel2007} and Teragrid~\cite{Catlett2002}。这些计算平台
-可以提供大容量的存贮能力和巨大的计算能力，因此，设计良好的应用可以充
+可以提供大容量的存贮能力和巨大的计算能力，设计良好的应用可以充
 分利用这些资源来提升自己的性能。
 
 随着分布式应用的规模越来越大，有效的管理它们越来越有挑战性。分布式应用
@@ -563,11 +563,12 @@ SMON节点与应用的安装程序更新。邻居列表单独保存在一个压�
 \section{应用方式}
 \label{sec:smon_app}
 
-如图~\ref{fig:}所示，我们叙述几种使用SMON的典型方式：
+如图~\ref{fig:extend_smon}所示，我们叙述几种使用SMON的典型方式：
 
 \begin{figure}
 \centering
 \begin{minipage}{0.8\linewidth}
+\centering
 \includegraphics[width=3in]{extend_smon}
 \caption{通过在SMON上部署新的管理系统扩充管理语意}
 \label{fig:extend_smon}
@@ -753,44 +754,6 @@ E(p) = n \cdot 1/n = 1
 的节点，在149秒内被成功的部署了SMON节点。部署时间的中值是93秒，最后一
 个节点被部署的时间是533秒。
 
-
-可以将图~\ref{fig:self-deploy}与理论分析得到的结果~\cite{Bailey1975}进
-行对比。理论上，可以将epidemic算法用分支过程建模，将数据传播（这里是自
-我部署）的过程模拟为病毒散播的过程。假设种群中的人口总数是$n$，初始时
-有一人感染病毒。病毒散播的过程分为同步的很多轮。在每一轮中，感染病毒的
-人独立随机的让其它$f$个人被感染。那么经过$r$轮之后，整个种群中感染病毒
-的人数占总人数比率的期望值$Y_r$是：\begin{equation*} Y_r \approx
-\frac{1}{1+ne^{-fr}} \end{equation*}
-
-如果$Y_r$和$f$固定，可以得到
-\begin{equation*}
-r \approx \frac{1}{f} \ln(n) - \frac{1}{f} \ln(\frac{1}{Y_r} - 1)
-\end{equation*}
-也就是传染$Y_r$比率的人口需要的轮数$r$和总人口$n$是$O(\log(n))$关系的。
-这意味着自我部署过程具有很好的可扩展性。
-
-需要指出，上面得到的$Y_r$是基于push的。也就是感染病毒的人会寻找其他人，
-主动让病毒散播，而未感染的人只被动的等待被感染。还有基于pull的散播过程，
-未感染的人会主动接触别人让自己被感染，而已感染病毒的人并不主动感染别人。
-将push和pull结合起来，基于push-pull的散播过程是，所有人都主动接触别人，
-未感染病毒的人让自己感染，已感染病毒的人让更多的人被感染。
-
-自我部署过程显然是基于push的散播过程，每一轮随机“感染”一个人
-（$f=1$）。但是与理论分析不同，自我部署时SMON节点部署新节点的过程是异
-步的，并不存在同步的每一轮。因而理论上得到的$Y_r$只能看做实际过程的近
-似。
-
-\begin{figure}
-\centering
-  \begin{minipage}{0.8\linewidth}
-    \centering
-    \includegraphics[width=0.8\linewidth]{Y_r}
-    \caption{$Y_r$（被感染人口比率）随$r$变化的曲线}
-    \label{fig:self-deploy_Yr}
-  \end{minipage}
-\end{figure}
-
-
 我们将理论分析的结果与实际结果做对比。$f=1$时，$Y_r$随$r$变化的关系如
 图~\ref{fig:self-deploy_Yr}所示。可以看出，$Y_r$在小于大约50\%之前，增
 长速度逐渐增快，在超过50\%之后，增长速度逐渐放慢。这与图~
@@ -839,43 +802,11 @@ Planet-Lab节点上部署的SMON系统，从禁止状态转换到启动状态。
 署次数是2.31。这样的结果表明，为解决竞争情形而引发的额外开销是可以接受
 的。
 
-理论上，我们可以将自我部署过程中的额外开销近似用二项分布描述。若共有
-$N$个SMON节点，每个随机选择其它一个节点一次，则对特定一个节点来说，被$n$个
-节点同时选中的概率符合参数为$(N, \frac{1}{N})$的二项分布。也就是：
-\begin{equation*}
-P(X=n) = C(N, n) (\frac{1}{N})^n (1 - \frac{1}{N})^{N-n}
-\end{equation*}
-% 对本文的例子，$N=159$。
-考虑到对于本文的例子，$N$比较大，可以用Poisson分布近似二项分布，
-% xxx 这里还得斟酌，N很大，但不应该说等于159
-参数$\lambda = N \times \frac{1}{N} = 1$，因而
-\begin{equation*}
-P(X=n) \approx \frac{e^{-1}}{n!} \quad (n = 0, 1, \ldots )
-\end{equation*}
-在实际中，不存在$X=0$的情况，也就是所有机器上都会被部署SMON节点。因为
-SMON会不停的相互探测，因而，我们得到的应该是一个条件概率：
-\begin{equation*}
-P'(X=n) = P(X=n | X > 0) = \frac{P(X=n)}{1- P(X=0)} \quad (n = 1, 2, \ldots )
-\end{equation*}
-
-\begin{figure}
-\centering
-  \begin{minipage}{0.8\linewidth}
-    \centering
-    \includegraphics[width=0.8\linewidth]{overhead_calc}
-    \caption{（理论上）自我部署过程中额外开销分布}
-    \label{fig:overhead_calc}
-  \end{minipage}
-\end{figure}
-
-我们将分析得到的$P'(X=n)$的分布显示在图~\ref{fig:overhead_calc}中。可
-以看出，$P'(X=n)$和实际结果大体上是一致的。
-
-我们注意到，使用分析得到的模型，每个节点被选中部署次数的平均值是1，而
-实际是4.30。我们认为主要原因是，分析时，我们实际上假设了部署新的SMON节
-点可以瞬时完成，而在实际中需要一定的时间。因而，在一个机器被某个SMON节
-点选中并部署时，仍然有别的SMON节点选中相同的机器，因此造成实际被选中的
-次数大于理论分析的结果。
+我们注意到，使用分析得到的模型，每个节点被选中部署次数的平均值是1.582，
+而实际是4.30。我们认为主要原因是，分析时，我们实际上假设了部署新的SMON
+节点可以瞬时完成，而在实际中需要一定的时间。因而，在一个机器被某个SMON
+节点选中并部署时，仍然有别的SMON节点选中相同的机器，因此造成实际被选中
+的次数大于理论分析的结果。
 
 % scalability是符合log关系的。
 
