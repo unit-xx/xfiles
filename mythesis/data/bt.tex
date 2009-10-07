@@ -19,29 +19,118 @@ swarm-like? cooperative caching?
 bt, fastreplica, coblitz
 
 
-\section{文件分发方法概述}
+\section{大文件分发概述}
 
 
-\section{或者：临近节点选择、带宽分配、文件块选择}
+%\section{或者：临近节点选择、带宽分配、文件块选择}
 
-\section{优化方法与实现}
+\section{优化方法概述}
 
+128M
+
+\section{优化方法评测}
+
+\subsection{评测方法}
 1. cluster来做neighbour selection
 2. 增加慢节点的优先级
 
 可行的节点测量方法：existing measurement infrastructure(iplane, p4p), ad hoc
 landmark
 
-\section{性能评测}
+\subsection{biased neighbour}
 
-模拟方法
+% 现象、趋势、小结论、原因、前提条件
+% 每个subsection后给出一个总结
+% 直接看图和表就能说明问题
 
-cluster的结果
+我们首先测试了邻居节点选择优化对文件分发性能的影响。在测试中，节点每次
+向tracker报告自己状态时，tracker返回分发系统内的若干节点，典型配置下是
+50。这些节点中的80\%是以网络延迟为距离定义，离报告节点最近的一组节点，
+剩下20\%是从系统中随机选择的若干节点。这样做的原因是避免由于全部邻居节
+点都按照最近距离选择，造成网络分割的现象。
 
-cluster的影响
+\begin{figure}
+  \centering
+  \begin{minipage}{0.8\linewidth}
+    \centering
+    \includegraphics[width=1.0\linewidth]{ph}
+    \caption{bias80}
+    \label{fig:bias80}
+  \end{minipage}
+\end{figure}
 
-提高优先级的效果
+图~\ref{fig:bias80}是节点完整下载整个文件所用时间的累积分布函数（CDF），
+在图中分别显示了正常的BitTorrent实现的结果和采用邻居节点优化后的结果。
+从整体上来看，采用邻居节点选择优化后，曲线相比正常实现向左有明显移动。
+这意味着相同数量的节点完成下载所需的时间更少了。为方便对比，图
+~\ref{fig:bias80}上一些重要点的数据总结在表~\ref{tbl:bias80}中。可以看
+出，
 
-整体效果
+\begin{table}
+\centering
+\begin{minipage}{0.8\linewidth}
+\centering
+\caption{bias80}
+\label{tbl:bias80}
+\begin{tabular}{ccc}
+
+\toprule[1.5pt]
+ header \\
+\midrule[1pt]
+body \\
+\bottomrule[1.5pt]
+\end{tabular}
+\end{minipage}
+\end{table}
+
+这样的结果是符合我们的预期的。
+
+
+1. 80\% bias: download time distribution, neighbour latency(需要重新测
+的), download rate from neighbours(可以从下载统计推导出)
+2. 不同bias
+3. 只保留若干长连接的bias
+
+\subsection{带宽分配}
+1. vs normal
+2. 提高了整体throughput, 
+3. 下载一个truck时间不好测，可以看从邻居下载速度是否增加
+4. 原因：因为这个方法会选择上传的节点，和bias用latency选择类似。只不过
+tracker没有帮助选择节点。比bias更好是因为分发truck的速度更快，考虑了自
+身上传带宽的因素。
+
+\subsection{lrf的影响}
+1. 对bias的影响
+2. 对带宽分配的影响
+3. 原因: a) lrf会增进性能 b)对带宽分配优化影响相对小: bias以后，相近的
+节点会有聚类效应，lrf能够很快的把类外的新的trunk拉回来。如果用random，
+则很可能得到的trunk是类内的，分发数据的效率受影响。
+
+
+\subsection{seed的影响}
+1. 还没做
+
+\subsection{bias+带宽分配}
+1. vs normal
+2. 不具有叠加效果: xxx
+
+\section{实际应用的考量}
+实现方式，优化效果
+
+ISP的带宽分配、节流策略.
+
+\section{相关工作对比}
+
+1. 用bias优化bt：已有工作只是选择了一种bias方法使用，重点在如何实现
+bias，例如用cdn，用landmark，但是我们系统评测了可能的bias方法，并给出
+了最优结论：选择k=1
+
+2. 带宽选择
+
+3. lrf, seed对优化方法的影响
+
+4. 两种优化方法不具有叠加效果。
+
+5. 不同系统应用优化方法的建议
 
 \section{结论}
