@@ -42,7 +42,8 @@
 算平台包括Planet-Lab~\cite{Bavier2004}, Amazon
 EC2~\cite{Garfinkel2007} and Teragrid~\cite{Catlett2002}。这些计算平台
 可以提供大容量的存贮能力和巨大的计算能力，设计良好的应用可以充
-分利用这些资源来提升自己的性能。
+分利用这些资源来提升自己的性能。然而，有效的设计、部署和管理大规模分布
+式应用以充分利用硬件资源仍然是一件困难的事情。
 
 随着分布式应用的规模越来越大，有效的管理它们越来越有挑战性。分布式应用
 管理系统能够帮助人们简化部署和维护分布式应用的管理工作。为了有效的完成
@@ -57,7 +58,9 @@ EC2~\cite{Garfinkel2007} and Teragrid~\cite{Catlett2002}。这些计算平台
 我们注意到，由于管理系统实际上也是一个分布式系统，或者说分布式应用，这
 引出了一个重要的问题：管理系统也需要被管理。使用者需要把管理节点部署到
 一组机器上去，在管理系统被启动后，需要持续监测它的运行状态，并将它从失
-败中恢复。% 恢复管理系统的方法？
+败中恢复。
+
+% 恢复管理系统的方法？
 
 目前，人们使用集中式方式管理与维护需要使用的管理系统，然而集中式方式包
 含很多缺点。首先，扩展性不好，效率低下。使用者从中心控制节点部署与维护
@@ -151,6 +154,39 @@ SMON节点在远程机器上部署新的SMON节点，或者恢复失败的SMON�
 
 \subsection{自我管理设计}
 
+\begin{figure}
+\centering
+\begin{lstlisting}[language=Python,morekeywords={True,False},frame=tb,basicstyle=\small,numbers=right,numbersep=-5pt,numberstyle=\tiny]
+while(1):
+    if(livetag==False):
+        continue
+
+    p = random.choice(membership_list)
+    try:
+        remote_ver = ping(p, my_ver)
+        if(remote_ver > my_ver):
+            upgrade_myself()
+    except Timeout:
+        conn = Connect(p, auth_agent)
+        if(conn.is_peer_installed()==True):
+            conn.recover_peer()
+        else:
+            conn.deploy_peer()
+        conn.close()
+
+    sleep(WAIT_INTERVAL)
+\end{lstlisting}
+\caption{SMON peer working flow}
+\label{fig:peerflow}
+\end{figure}
+
+SMON节点的行为可以用图~\ref{fig:peerflow}中的伪代码描述。我们从第五行
+开始解释，第2、3行的作用在后文中解释。SMON节点定期选择一个任意机器，并
+向它发送ping消息（5-7行）。如果超时没有收到回应，它会尝试部署一个新的
+节点或者恢复失败的节点（10-16行）。如果远程的SMON节点运行正常，则会返
+回pong消息。ping/pong消息中包含两个通信的节点的版本号，它们会比较版本
+的差异，并自动升级自己。
+
 我们分别描述SMON自我管理的三个方面：自我部署，自我更新和自我恢复。
 
 \subsubsection*{自我部署}
@@ -237,6 +273,7 @@ SMON系统可能遇到两种分布式环境中产生的错误：机器失败和�
 断远程机器上是否部署了SMON，然后决定需要执行的动作。
 
 \subsubsection*{禁止、启动自我管理功能}
+\label{sec:disablesmon}
 
 SMON的自我管理功能应该是能够被显式的禁止或者启动的。考虑如下场景：某个
 研究人员使用SMON部署了一个分布式系统原型，在进行一些实验后，他决定停止
@@ -383,6 +420,8 @@ SMON可以管理若干个分布式应用。管理语意可以从用下四个维�
 \begin{table*}
 \small
 \centering
+\caption{长期运行的internet服务和grid方式的计算程序的管理需求对比}
+\label{fig:app-man-req}
 \begin{tabular}{lp{5cm}p{5cm}}
 
 \toprule[1.5pt]
@@ -421,8 +460,6 @@ SMON可以管理若干个分布式应用。管理语意可以从用下四个维�
 \bottomrule[1.5pt]
 
 \end{tabular}
-\caption{长期运行的internet服务和grid方式的计算程序的管理需求对比}
-\label{fig:app-man-req}
 \end{table*}
 
 SMON的管理语意支持长期运行的internet服务。这类的服务包括P2P流媒体、
@@ -575,15 +612,21 @@ SMON节点与应用的安装程序更新。邻居列表单独保存在一个压�
 \end{minipage}
 \end{figure}
 
-首先，可以在SMON上部署其它分布式管理系统，例如Plush，扩展管理语意。
-Plush提供了控制分布式应用运行同步的语意，可以控制系统的不同节点同时运
-行，以及等待所有节点运行到相同的同步点（barrier）后，再允许节点继续运
-行。这对于提供服务的分布式系统（例如CDN）可能是不必要的，但是在Grid平
-台上，这能定义科学计算需要的工作流。
+首先，可以在SMON上部署其它分布式管理系统。SMON的管理语意针对长期运行的
+Internet服务。这对目前常见的分布式系统都是适用的，然而并不适合Grid应用
+管理。对这种情况，可以在SMON之上部署其它管理系统，以支持Grid上的任务流
+语意。Plush就是一个可能的选择。Plush提供了控制分布式应用运行同步的语意，
+可以控制应用在不同节点同时启动，并等待应用运行到相同的同步点
+（barrier）后，再允许应用继续运行。这对于提供服务的分布式系统（例如CDN）
+可能是不必要的，但是在Grid平台上，这能定义科学计算需要的工作流。
 
-SMON只监测了应用的外部状态：运行或停止运行。为了监测系统内部的运行状态，
-可以部署D3S~\cite{d3s}。D3S使用插装技术透明的获取系统内部状态，通过使
-用谓词，检查系统是否满足一定的safety和liveness属性。
+其次，可以扩展SMON的应用监测语意。SMON只监测了应用的外部状态：运行或停
+止运行。为了监测系统内部的运行状态，可以部署D3S~\cite{d3s}。D3S使用插
+装技术透明的获取系统内部状态，通过使用谓词，检查系统是否满足一定的
+safety和liveness属性。由于谓词的计算考虑了分布在不同机器运行的进程，因
+而D3S能够有效的发现系统是否满足或者违背系统设计预期的约束。一个典型的
+例子是，对于一个分布式锁服务，D3S能够持续检查每个共享锁或者独享锁，是
+否满足在任何情况下，都能够正确被共享或者独享的约束。
 
 \section{性能分析}
 \label{sec:smon_analysis}
@@ -604,6 +647,8 @@ epidemic算法有三种变化，分别是push，pull和push-pull。不同的维�
 
 \begin{table}
 \centering
+\caption{SMON维护任务使用epidemic算法变种。}
+\label{fig:smon_tasks}
 \begin{tabular}{ll}
 
 \toprule[1.5pt]
@@ -623,8 +668,6 @@ epidemic算法有三种变化，分别是push，pull和push-pull。不同的维�
 
 \bottomrule[1.5pt]
 \end{tabular}
-\caption{SMON维护任务使用epidemic算法变种。}
-\label{fig:smon_tasks}
 \end{table}
 
 
@@ -724,35 +767,34 @@ E(X') &\approx 1.582 \cdot E(X) \\
 E(p) = n \cdot 1/n = 1
 \end{equation*}
 
-
-
 \section{性能评测}
 \label{sec:smon_eval}
 
 我们在Planet-Lab平台上实际评测了SMON系统自我管理的性能，并将实验结果与
 理论分析做对比。由于自我管理中的管理与维护任务都采用了epidemic算法，因
-此我们选择其中一部分进行测试：自我部署，禁止与启动自我管理。通过评
+此我们选择其中典型操作进行测试：自我部署，禁止与启动自我管理。通过评
 测，我们能够看出，SMON系统的自我管理性能是优良的，并且有很好的可扩展性。
-在自我部署过程中由于竞争情形引发的额外开销是足够小的。
+在自我部署过程中由于竞争情形引发的额外开销是足够小的，作为中心的认证代
+理并不会成为性能瓶颈。
 
-\begin{figure}
+\subsection{性能}
+
+首先，我们评测SMON的性能。我们让SMON在117台Planet-Lab节点上完成自我部
+署，并观测部署性能。我们在随机选取的一个Planet-Lab节点上，部署并启动了
+一个SMON节点，自我部署过程开始。在目前设计中，SMON节点每隔5秒种，随机
+探测其它1个节点。图~ \ref{fig:self-deploy}显示了部署过程的进度。我们可
+以看出，90\%的节点，在95秒内被成功的部署了SMON节点。部署时间的中值是63
+秒，最后一个节点被部署的时间是111秒。
+
+\begin{figure}[h]
 \centering
   \begin{minipage}{0.8\linewidth}
     \centering
-    \includegraphics[width=0.8\linewidth]{self-deploy}
-    \caption{SMON在159个Planet-Lab机器上自我部署的进度}
+    \includegraphics[width=0.8\linewidth]{self-deploy117}
+    \caption{SMON在117个Planet-Lab机器上自我部署的进度}
     \label{fig:self-deploy}
   \end{minipage}
 \end{figure}
-
-首先，我们让SMON在159台Planet-Lab节点上完成自我部署，并观测部署性能。
-我们在随机选取的一个Planet-Lab节点上，部署并启动了一个SMON节点，自我部
-署过程开始。在目前设计中，SMON节点每隔5秒种，随机探测其它1个节点。我们
-最终收集到154个节点上的数据，其它5个节点由于连接不上，因此它们的结果不
-能取得。这种情况在大规模分布式系统中是很常见的。图~
-\ref{fig:self-deploy}显示了部署过程的进度。我们可以看出，90\%（143个）
-的节点，在149秒内被成功的部署了SMON节点。部署时间的中值是93秒，最后一
-个节点被部署的时间是533秒。
 
 我们将理论分析的结果与实际结果做对比。$f=1$时，$Y_r$随$r$变化的关系如
 图~\ref{fig:self-deploy_Yr}所示。可以看出，$Y_r$在小于大约50\%之前，增
@@ -762,48 +804,56 @@ E(p) = n \cdot 1/n = 1
 在很多人都感染后，随机选择一个人很有可能是已经感染病毒的，因而病毒扩张
 的速度会放缓。
 
-与理论结果不同的是，自我部署的过程的“尾巴”要比图~\ref{fig:self-deploy_Yr}长。
-这是因为，一些机器由于负载太重，因此反应迟
-钝，另外连接至一些机器的网络速度太慢，因此这些机器上部署的过程比较慢。
+%与理论结果不同的是，自我部署的过程的“尾巴”要比图~\ref{fig:self-deploy_Yr}长。
+%这是因为，一些机器由于负载太重，因此反应迟
+%钝，另外连接至一些机器的网络速度太慢，因此这些机器上部署的过程比较慢。
 
-
-\begin{figure}
-\centering
-  \begin{minipage}{0.8\linewidth}
-    \centering
-    \includegraphics[width=0.8\linewidth]{state-trans}
-    \caption{SMON的自我管理功能从禁止到启动过程转换的进度}
-    \label{fig:state-transition}
-  \end{minipage}
-\end{figure}
-
-我们进一步测试SMON的自我管理功能从禁止到启动的过程。我们让在159个
-Planet-Lab节点上部署的SMON系统，从禁止状态转换到启动状态。图~
+我们进一步测试SMON的自我管理功能从禁止到启动的过程。我们让在117个
+Planet-Lab节点上部署的SMON系统，从启动状态转换到禁止状态。图~
 \ref{fig:state-transition}显示了转换的进度。对于90\%的节点来说，状态在
-143秒后成功的转换，而状态转换的中值是37秒。可以看出，状态转换过程是非
+29秒后成功的转换，而状态转换的中值是20秒。可以看出，状态转换过程是非
 常快的，与图~\ref{fig:self-deploy_Yr}的趋势也基本一致。
 
-\begin{figure}
+\begin{figure}[h]
 \centering
   \begin{minipage}{0.8\linewidth}
     \centering
-    \includegraphics[width=0.8\linewidth]{overhead}
-    \caption{为了解决自我部署过程中的竞争情形而产生的额外开销分布}
-    \label{fig:overhead}
+    \includegraphics[width=0.8\linewidth]{state-trans117}
+    \caption{SMON的自我管理功能从启动到禁止过程转换的进度}
+    \label{fig:state-transition}
   \end{minipage}
 \end{figure}
 
 在自我部署过程中，存在着竞争情形，也就是多个SMON节点可能会在同一个机器
 上部署新的SMON节点，这将引发额外开销。这个开销将会浪费网络和节点的存储
-资源。我们计算了在每个机器上，发生的同时部署个数。结果显示在图~
-\ref{fig:overhead}中。可以看出，有43.71\%的机器，只被部署了一次，对于
-大部分机器，部署次数都在10以内，这样的机器覆盖了机器总数的92.04\%。平
-均来说，每个机器被部署了4.30次，而部署次数在10以内的机器，它们的平均部
-署次数是2.31。这样的结果表明，为解决竞争情形而引发的额外开销是可以接受
+资源。我们计算了在每个机器上，发生的同时部署个数。结果显示在表~
+\ref{fig:overhead}中。可以看出，有61.54\%的机器，只被部署了一次，对于
+大部分机器，部署次数都在5以内，这样的机器覆盖了机器总数的98.3\%。平
+均来说，每个机器被部署了1.88次，而部署次数在5以内的机器，它们的平均部
+署次数是1.58。这样的结果表明，为解决竞争情形而引发的额外开销是可以接受
 的。
 
+\begin{table}
+\centering
+\caption{额外负载分布}
+\label{fig:overhead}
+\begin{tabular}{|l|c|c|}
+\hline
+额外负载 & 节点数 & \% \\
+\hline
+1 & 72 & 61.54 \\
+2 & 26 & 22.22 \\
+3 & 12 & 10.26 \\
+4 & 3 & 2.56 \\
+5 & 2 & 1.71 \\
+15 & 1 & 0.85 \\
+23 & 1 & 0.85 \\
+\hline
+\end{tabular}
+\end{table}
+
 我们注意到，使用分析得到的模型，每个节点被选中部署次数的平均值是1.582，
-而实际是4.30。我们认为主要原因是，分析时，我们实际上假设了部署新的SMON
+而实际是1.88。我们认为主要原因是，分析时，我们实际上假设了部署新的SMON
 节点可以瞬时完成，而在实际中需要一定的时间。因而，在一个机器被某个SMON
 节点选中并部署时，仍然有别的SMON节点选中相同的机器，因此造成实际被选中
 的次数大于理论分析的结果。
@@ -818,23 +868,49 @@ Planet-Lab节点上部署的SMON系统，从禁止状态转换到启动状态。
     \label{fig:scalability}
     \begin{tabular}{ccc}
     \toprule[1.5pt]
-           & 24 nodes & 159 nodes\\
+           & 24 nodes & 117 nodes\\
     \midrule[1pt]
-    50\%完成 & 58 sec & 82 sec \\
-    90\%完成 & 85 sec & 149 sec\\
-    最终完成 & 103 sec & 533 sec\\
+    50\%完成 & 48 sec & 63 sec \\
+    90\%完成 & 58 sec & 91 sec\\
+    最终完成 & 61 sec & 111 sec\\
     \bottomrule[1.5pt]
     \end{tabular}
   \end{minipage}
 \end{table}
 
-最后评测自我部署过程的可扩展性，我们比较了在不同规模下部署SMON系统的性
+\subsection{可扩展性}
+
+其次评测自我部署过程的可扩展性，我们比较了在不同规模下部署SMON系统的性
 能。我们在另外的24个节点上部署了新的SMON系统。表~\ref{fig:scalability}
 总结并对比了在两个规模下的部署性能。从表中我们可以看出，两个系统规模的
-比例是6.6（159/24），但是90\%进度的部署时间比例只有1.75（149/85），而
-部署时间中值的比例是1.41（82/58）。这两个比值与两个系统规模对数的比值
-近似相等（$\ln 159/\ln 24 = 1.59$）。可以看出，SMON系统具有良
+比例是4.88（117/24），但是90\%进度的部署时间比例只有1.57（91/58），而
+部署时间中值的比例是1.31（63/48）。这两个比值与两个系统规模对数的比值
+近似相等（$\ln 117/\ln 24 = 1.49$）。可以看出，SMON系统具有良
 好的扩展性。
+
+\subsection{认证代理负载}
+
+SMON使用认证代理帮助节点自动登陆到远程机器，以完成对其他节点的管理任务
+。认证代理帮助求解挑战密文。求解的过程涉及了复杂的计算，因而需要确认认
+证代理是否会成为性能瓶颈。
+
+我们监测在SMON117个机器上自我部署时，认证代理上的CPU负载，并将结果小结
+如图~\ref{fig:agentload}。认证代理运行在一台普通PC上，PC的配置是AMD双
+核CPU 2.1GHz，2GB内存，运行Windows XP操作系统。
+
+\begin{figure}
+\centering
+\includegraphics[width=0.8\linewidth]{cpuload}
+\caption{认证代理上的CPU负载}
+\label{fig:agentload}
+\end{figure}
+
+可以看出，CPU负载最高是13\%，通常低于10\%。认证代理上的负载是正比于认
+证请求的频率的，而这一频率在一半机器被部署时达到最大，可以证明，这一最
+大频率正比于系统的规模。因而我们可以得出，单个认证代理可以支撑将近千个
+（$117 \times 100\%/13\%$）SMON节点完成自我部署。在SMON部署后，认证请
+求的频率与节点失败的频率相关，通常情况下这个频率值较低。总的来说，认证
+代理不会成为性能瓶颈。
 
 \section{本章小结}
 \label{sec:smon_conclusion}
