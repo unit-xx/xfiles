@@ -92,9 +92,9 @@ PacificA对网络带宽的利用率只有最大值的70\%。
 
 本文接下来的内容安排如下：\ref{sec:scp:design}节描述了推断算法设计，
 \ref{sec:scp:optimization}节叙述了对Scalpel实现的优化，
-\ref{sec:scp:discussion}节讨论了设计相关的问题，\ref{sec:scp:case}节我
-们描述了Scalpel在实际系统上的应用实例，\ref{sec:scp:perf}节测量了
-Scalpel的性能，\ref{sec:scp:conclusion}节为本章小结。
+\ref{sec:scp:discussion}节讨论了推断方法设计相关问题，
+\ref{sec:scp:case}节我们描述了Scalpel在实际系统上的实际应用，说明了推
+断方法的有效性，\ref{sec:scp:conclusion}节为本章小结。
 
 \section{推断方法设计}
 \label{sec:scp:design}
@@ -759,7 +759,7 @@ RPC消息。网络层的消息缓冲区很快就会被填满，导致发送线�
 
 % statistics
 
-\section{性能评测}
+\subsection{性能评测}
 \label{sec:scp:perf}
 
 Scalpel使用了插装在系统函数和应用函数调用时输出trace，这会对系统性能造成
