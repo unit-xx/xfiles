@@ -22,7 +22,7 @@
 与系统的分层体系结构设计一致。任务模型中的任务表示在系统不同函数抽象层
 次的执行过程。高层任务的执行被分为若干低层子任务。以
 PacificA~\cite{pacifica}为例，PacificA是一个类似
-BigTable~\cite{bigtable}的分布式存储系统。图~ \ref{fig:pacifica_model}
+BigTable~\cite{bigtable}的分布式存储系统。图~\ref{fig:pacifica_model}
 显示了用户向PacificA提交数据的任务执行层次。数据提交任务被分为两步（图
 的右边），分别处理本地数据提交和远程数据提交。每个任务分别由若干{叶子
 任务}构成，叶子任务的边界由{同步点}确定。基于任务模型，开发人员可以
@@ -36,8 +36,8 @@ BigTable~\cite{bigtable}的分布式存储系统。图~ \ref{fig:pacifica_model}
     \includegraphics[width=\linewidth]{pacifica-task-model}
     \parbox{0.8\linewidth}{\caption{PacificA的层次结构任务模型。包含三
     个高层任务。图上的节点表示叶子任务，边表示叶子任务之间的因果依赖关
-    系}}
-    \label{fig:pacifica_model}
+    系}
+    \label{fig:pacifica_model}}
   \end{minipage}
 \end{figure}
 
