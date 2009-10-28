@@ -108,13 +108,6 @@ PacificA对网络带宽的利用率只有最大值的70\%。
 
 \subsection{确定叶子任务}
 
-我们使用插装技术透明的观测系统运行，收集运行过程的函数调用，包括函数名
-称、调用线程号以及调用参数。函数调用既包括应用层函数也包括操作系统同步
-函数（例如signal/wait）与系统Socket调用（例如send/recv）。默认所有的函
-数调用都会被收集到trace。
-
-表~\ref{fig:sync_func}小结了trace中包含的常见同步对象和相关同步操作。
-
 \begin{table}
 \centering
 \begin{minipage}{0.8\linewidth}
@@ -165,6 +158,13 @@ PacificA对网络带宽的利用率只有最大值的70\%。
 \end{minipage}
 \end{table}
 
+我们使用插装技术透明的观测系统运行，收集运行过程的函数调用，包括函数名
+称、调用线程号以及调用参数。函数调用既包括应用层函数也包括操作系统同步
+函数（例如signal/wait）与系统Socket调用（例如send/recv）。默认所有的函
+数调用都会被收集到trace。
+
+表~\ref{fig:sync_func}小结了trace中包含的常见同步对象和相关同步操作。
+
 在系统运行trace的基础上，我们首先需要确定叶子任务的边界。Scalpel使用
 \emph{同步点}作为启发定义任务边界。同步点是两个线程同步相互执行，从而
 具有happened-before关系的地方。在同步点，线程可能因为互斥或者相互协同
@@ -178,18 +178,18 @@ PacificA对网络带宽的利用率只有最大值的70\%。
 任务的一个自然定义。另外，因为采用了同步点定义叶子任务的边界，叶子任务
 之间的依赖关系也只发生在边界之间。
 
-作为示例，图~\ref{fig:sync_point_demo}显示了一段代码的执行过程，是如何
-对应到不同的叶子任务的。
-
-\begin{figure}
-  \centering
-  \begin{minipage}{1.0\linewidth}
-    \centering
-    \includegraphics[width=\linewidth]{ph}
-    \caption{xxx}
-    \label{fig:sync_point_demo}
-  \end{minipage}
-\end{figure}
+%作为示例，图~\ref{fig:sync_point_demo}显示了一段代码的执行过程，是如何
+%对应到不同的叶子任务的。
+%
+%\begin{figure}
+%  \centering
+%  \begin{minipage}{1.0\linewidth}
+%    \centering
+%    \includegraphics[width=\linewidth]{ph}
+%    \caption{xxx}
+%    \label{fig:sync_point_demo}
+%  \end{minipage}
+%\end{figure}
 
 Scalpel通过插装系统函数库中的同步原语（锁、信号、事件等）与socket操作
 \footnote{我们认为通信也是一种同步操作。}记录同步点操作。在实际系统中
@@ -276,18 +276,18 @@ Socket & 线程$a$使用WSASend发送消息，线程$b$使用WSARecv收到相同
 \end{minipage}
 \end{table}
 
-作为示例，图~\ref{fig:taskgraph_demo}中显示了两个线程执行过程中形成
-的happened-before关系。
-
-\begin{figure}
-  \centering
-  \begin{minipage}{1.0\linewidth}
-    \centering
-    \includegraphics[width=\linewidth]{ph}
-    \caption{xxx}
-    \label{fig:taskgraph_demo}
-  \end{minipage}
-\end{figure}
+%作为示例，图~\ref{fig:taskgraph_demo}中显示了两个线程执行过程中形成
+%的happened-before关系。
+%
+%\begin{figure}
+%  \centering
+%  \begin{minipage}{1.0\linewidth}
+%    \centering
+%    \includegraphics[width=\linewidth]{ph}
+%    \caption{xxx}
+%    \label{fig:taskgraph_demo}
+%  \end{minipage}
+%\end{figure}
 
 Scalpel使用happened-before关系推断任务的因果依赖关系，这包括同一线程内
 顺序执行的两个叶子任务，以及因为同步而依次执行的叶子任务。并不是所有因
@@ -332,6 +332,16 @@ TCP消息的发送者和接收者联系起来，但是任务的因果关系图�
 个最高层的任务模型。通过将超级节点展开为构成它们的子图，我们可以得到任
 务的整个层次结构。
 
+\begin{figure}
+  \centering
+  \begin{minipage}{0.8\linewidth}
+    \centering
+    \includegraphics[width=0.6\linewidth]{trace_interleaving}
+    \caption{由于操作系统调度导致同步操作与输出trace执行顺序不一致}
+    \label{fig:trace_interleaving}
+  \end{minipage}
+\end{figure}
+
 算法中使用相似度将子图聚类为不同的模式，目前，我们使用精确匹配来定义两
 个子图相似，也就是两个子图完全同构。我们使用确定性的序列化算法，将子图
 编码，并使用编码的哈希值将子图聚类。这个聚类算法非常有效。当编码叶子任
@@ -349,27 +359,6 @@ TCP消息的发送者和接收者联系起来，但是任务的因果关系图�
 我们使用R2~\cite{r2}在Windows平台上实现了Scalpel。R2是一个基于函数库的
 程序运行记录与回放工具。通过插装操作系统调用与应用函数，R2记录了系统的
 运行过程，这也包括对同步对象（互斥锁和信号等）的同步操作，和socket操作。
-
-\begin{figure}
-  \centering
-  \begin{minipage}{0.8\linewidth}
-    \centering
-    \includegraphics[width=0.8\linewidth]{trace_interleaving}
-    \caption{由于操作系统调度导致同步操作与输出trace执行顺序不一致}
-    \label{fig:trace_interleaving}
-  \end{minipage}
-\end{figure}
-
-在被插装的系统调用与应用函数内，我们输出函数的名称与调用参数。这些信息
-用来推断叶子任务的边界，并给出任务边界的函数调用栈。利用函数调用栈，可
-以给叶子任务提供易于程序员理解的名字标签。
-
-% 叶子任务的因果关系由任务边界的同步操作之间的happened-before关系推断
-% 得到，反映在trace中，这个关系与同步操作被记录的顺序一致。例如，线程
-% 在一个event上的wait操作，依赖于另一个线程上的signal操作，后者完成后，
-% 前者才继续执行。在trace中维持了这个依赖关系，也就是signal操作被记录
-% 的顺序在wait操作之前。因此，只需要顺序扫描trace中在同一个同步对象上
-% 的同步操作顺序，我们就能够得到叶子任务之间的happened-before关系。
 
 \begin{figure}
 \centering
@@ -397,6 +386,17 @@ BOOL SetEvent_hooker(HANDLE hEvent)
 \label{fig:trace_direct}
 \end{figure}
 
+在被插装的系统调用与应用函数内，我们输出函数的名称与调用参数。这些信息
+用来推断叶子任务的边界，并给出任务边界的函数调用栈。利用函数调用栈，可
+以给叶子任务提供易于程序员理解的名字标签。
+
+% 叶子任务的因果关系由任务边界的同步操作之间的happened-before关系推断
+% 得到，反映在trace中，这个关系与同步操作被记录的顺序一致。例如，线程
+% 在一个event上的wait操作，依赖于另一个线程上的signal操作，后者完成后，
+% 前者才继续执行。在trace中维持了这个依赖关系，也就是signal操作被记录
+% 的顺序在wait操作之前。因此，只需要顺序扫描trace中在同一个同步对象上
+% 的同步操作顺序，我们就能够得到叶子任务之间的happened-before关系。
+
 我们需要保证trace中记录的同步操作顺序和实际执行完全一致。由于操作系统
 调度会交叉执行不同线程的代码，因而直接在插装函数内输出trace并不能保证
 同步操作记录的顺序与实际执行顺序一致。我们以Windows event同步对象为例
@@ -405,9 +405,14 @@ BOOL SetEvent_hooker(HANDLE hEvent)
 图~\ref{fig:trace_interleaving}显示的执行顺序。可以看出，输出trace的顺
 序，和event操作的顺序是相反的。
 
+为了解决这个问题，我们为每个同步对象创建一个shadow lock，将
+WaitForSingleObject操作替换为SignalObjectAndWait，保证了同步操作与输出
+trace是一个原子操作。如图
+~\ref{fig:trace_shadowlock1}和图~\ref{fig:trace_shadowlock2}所示。
+
 \begin{figure}
 \centering
-\begin{lstlisting}[language=C++]
+\begin{lstlisting}[language=C++, basicstyle=\small]
 
 DWORD WaitForSingleObject_hooker(HANDLE hHandle, 
                                    DWORD dwMilliseconds)
@@ -422,6 +427,14 @@ DWORD WaitForSingleObject_hooker(HANDLE hHandle,
     SignalObjectAndWait(shadow_lock, hHandle, 
                          dwMilliseconds, bAlertable);
 }
+\end{lstlisting}
+\caption{在同步操作的插装代码中使用shadow lock输出trace}
+\label{fig:trace_shadowlock1}
+\end{figure}
+
+\begin{figure}
+\centering
+\begin{lstlisting}[language=C++, basicstyle=\small]
 
 BOOL SetEvent_hooker(HANDLE hEvent)
 {
@@ -438,12 +451,8 @@ BOOL SetEvent_hooker(HANDLE hEvent)
 
 \end{lstlisting}
 \caption{在同步操作的插装代码中使用shadow lock输出trace}
-\label{fig:trace_shadowlock}
+\label{fig:trace_shadowlock2}
 \end{figure}
-
-为了解决这个问题，我们为每个同步对象创建一个shadow lock，将
-WaitForSingleObject操作替换为SignalObjectAndWait，保证了同步操作与输出
-trace是一个原子操作。如图~\ref{fig:trace_shadowlock}所示。
 
 \section{性能优化}
 \label{sec:scp:optimization}
@@ -461,9 +470,28 @@ Scalpel使用R2获取与记录函数调用事件。对系统运行时的每一�
 现方法不是最优的，因为每个线程的trace文件都是相互独立的，并不交叉访问，
 因而存在改进的空间。
 
+我们对之前的方法进行了优化，改进了性能。具体的，我们使用线程局部存储（
+Thread Local Storage，TLS）技术保存每个线程的trace文件句柄，在记录函数
+调用事件时，直接从线程局部存储中得到trace文件句柄即可。这样就不必使用
+字典对象统一保存所有线程的trace文件句柄，在记录函数调用事件时，也就不
+必要使用互斥锁同步线程的执行。
+
+通过对比测试，我们能够看到优化后由于Scalpel给应用带来的额外负载有显著
+降低。
+
+在测试中，我们使用多个线程，并行执行图~\ref{fig:scp_perfcode}中的代码，
+对比优化前后，执行时间的差别。由于empty函数的执行体是空，因而可以认为
+相比原始代码的执行时间，应用Scalpel后增加的执行时间全部是因为输出trace
+所导致的，或者说图~\ref{fig:scp_perfcode}中的代码可以测试得到输出trace
+产生额外负载的最大值。在实际系统执行时，并不会发生如测试中“频繁”的函
+数调用，在函数调用之间还会执行其他代码，因而产生的额外负载远小于图~
+\ref{fig:scp_perfcode}中的代码得到的结果。在第~\ref{sec:scp:case}节中
+我们将Scalpel应用于Apache和PacificA系统，并测试了Scalpel在这两个系统上
+产生的实际额外负载。
+
 \begin{figure}
 \centering
-\begin{lstlisting}[language=C++]
+\begin{lstlisting}[language=C++,basicstyle=\small]
 
 void empty(void)
 {
@@ -490,42 +518,12 @@ DWORD WINAPI hello(LPVOID param)
 \label{fig:scp_perfcode}
 \end{figure}
 
-我们对之前的方法进行了优化，改进了性能。具体的，我们使用线程局部存储（
-Thread Local Storage，TLS）技术保存每个线程的trace文件句柄，在记录函数
-调用事件时，直接从线程局部存储中得到trace文件句柄即可。这样就不必使用
-字典对象统一保存所有线程的trace文件句柄，在记录函数调用事件时，也就不
-必要使用互斥锁同步线程的执行。
-
-通过对比测试，我们能够看到优化后由于Scalpel给应用带来的额外负载有显著
-降低。
-
-在测试中，我们使用多个线程，并行执行图~\ref{fig:scp_perfcode}中的代码，
-对比优化前后，执行时间的差别。由于empty函数的执行体是空，因而可以认为
-相比原始代码的执行时间，应用Scalpel后增加的执行时间全部是因为输出trace
-所导致的，或者说图~\ref{fig:scp_perfcode}中的代码可以测试得到输出trace
-产生额外负载的最大值。在实际系统执行时，并不会发生如测试中“频繁”的函
-数调用，在函数调用之间还会执行其他代码，因而产生的额外负载远小于图~
-\ref{fig:scp_perfcode}中的代码得到的结果。在第~\ref{sec:scp:case}节中
-我们将Scalpel应用于Apache和PacificA系统，并测试了Scalpel在这两个系统上
-产生的实际额外负载。
-
-\begin{figure}
-  \centering
-  \begin{minipage}{0.8\linewidth}
-    \centering
-    \includegraphics[width=0.8\linewidth]{scp_perfopt}
-    \caption{优化前后输出trace的性能额外负载情况}
-    \label{fig:scpperf_opt}
-  \end{minipage}
-\end{figure}
-
 图~\ref{fig:scpperf_opt}显示了优化前后额外负载的变化。测试是在如下机器
 配置上进行的：2.0 GHz Xeon双核CPU，4 GB内存，运行Windows Server 2003
 SP2操作系统。分别测试了采用与不采用优化时，不同数量线程线程同时执行
 hello函数的时间消耗平均值。可以看出，优化带来的性能提升是明显的。在单
 线程时，两种方法并没有明显性能差异。在多线程时，优化后性能提升很明显，
 在5、10、20个并行线程情况下，执行时间分别提高了8.8、7.0和7.7倍。
-
 
 % xxx visualize?
 \section{讨论}
@@ -540,6 +538,16 @@ Scalpel利用这些信息追踪函数调用，为叶子任务提供易于理解�
 推断任务结构。因此，无论有没有调试信息，我们都可以推断出同样结构的层次
 任务模型来。如果没有调试信息，叶子任务的名字不易于人去理解，但是不妨碍
 使用其他调试工具分析任务模型。
+
+\begin{figure}
+  \centering
+  \begin{minipage}{0.8\linewidth}
+    \centering
+    \includegraphics[width=0.8\linewidth]{scp_perfopt}
+    \caption{优化前后输出trace的性能额外负载情况}
+    \label{fig:scpperf_opt}
+  \end{minipage}
+\end{figure}
 
 人们习惯上使用因果路径分析~\cite{pinpoint, project5, pip, magpie}去分
 析系统行为，这种方法将系统的运行过程抽象为单层的因果路径。我们认为，作
