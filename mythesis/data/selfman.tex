@@ -1,5 +1,5 @@
 % vim:textwidth=70
-\chapter{可自管理的分布式应用管理系统}
+\chapter{分布式管理系统的可自管理性研究}
 \label{chap:selfman}
 
 %问题，相关工作，创新点，基本\textbf{方法}，实验
@@ -114,8 +114,8 @@ SMON节点，或其它外部对象。简单的说，SMON节点会将认证过程
 \ref{sec:smon_impl}节描述了如何在Planet-Lab上实现
 SMON。\ref{sec:smon_app}节描述了SMON系统的一些应用方式。我们在理论上分
 析SMON的性能（\ref{sec:smon_analysis}节），并在Planet-Lab上评测了SMON
-系统的性能（\ref{sec:smon_eval}），并将实测结果与理论分析结果进行了对
-比，\ref{sec:smon_eval}。\ref{sec:smon_conclusion}为本章小结。
+系统的性能（\ref{sec:smon_eval}节），并将实测结果与理论分析结果进行了
+对比。\ref{sec:smon_conclusion}节为本章小结。
 
 \section{系统设计}
 \label{sec:smon_design}
@@ -828,10 +828,10 @@ Planet-Lab节点上部署的SMON系统，从启动状态转换到禁止状态。
 \centering
 \caption{额外负载分布}
 \label{fig:overhead}
-\begin{tabular}{|l|c|c|}
-\hline
+\begin{tabular}{lcc}
+    \toprule[1.5pt]
 额外负载 & 节点数 & \% \\
-\hline
+    \midrule[1pt]
 1 & 72 & 61.54 \\
 2 & 26 & 22.22 \\
 3 & 12 & 10.26 \\
@@ -839,7 +839,7 @@ Planet-Lab节点上部署的SMON系统，从启动状态转换到禁止状态。
 5 & 2 & 1.71 \\
 15 & 1 & 0.85 \\
 23 & 1 & 0.85 \\
-\hline
+    \bottomrule[1.5pt]
 \end{tabular}
 \end{table}
 
