@@ -1,5 +1,5 @@
 % vim:textwidth=70
-\chapter{自动推断系统层次结构任务模型的方法}
+\chapter{系统层次结构任务模型的自动推断方法}
 \label{chap:scalpel}
 
 \section{本章引言}
@@ -767,11 +767,14 @@ RPC消息。网络层的消息缓冲区很快就会被填满，导致发送线�
 
 % statistics
 
-\subsection{性能评测}
+\subsection{性能额外负载}
 \label{sec:scp:perf}
 
 Scalpel使用了插装在系统函数和应用函数调用时输出trace，这会对系统性能造成
-一定影响，我们测试了Scalpel对系统带来的额外负载。
+一定影响，我们测试了Scalpel对系统带来的额外负载。额外负载的大小依赖于
+程序执行过程中函数调用的频率。在性能优化章节中，我们测试了极端的情况，
+也就是函数调用频率接近最快值的情况。然而实际系统中不可能有如此快的函数
+调用，需要测试Scalpel对实际系统的影响。
 
 具体说，我们测试了相同环境与配置下，应用与不应用Scalpel对系统性能造成
 的影响。对PacificA，我们测试了两种情况下执行一次提交数据花费的时间。对
@@ -802,6 +805,17 @@ Apache实验，我们测试了执行一次svn checkout花费的时间。每组�
 
 可以看出，对于PacificA和Apache+SVN，由于插装输出trace对性能的影响在可
 以接受的范围以内。
+
+在Apache+SVN实验中，额外负载由两部分构成，Apache本身的函数调用和SVN模
+块的函数调用。为了了解额外负载的构成，我们测试不包含SVN模块时，运行
+Apache的性能变化情况。
+
+在试验中，我们使用ab （apache benchmark）程序测试Apache的吞吐量。测试
+使用了10个并行线程，发送100个http请求，每个http请求返回的数据量是373KB，
+其内容是Lamport的发表著作。在运行干净的Aapche时，ab需要消耗3.76秒，而
+加上Scalpel以后，需要运行3.88秒，额外负载是3.2\%。对比Apache+SVN的情况
+可以看出，Apache本身的设计是比较简洁的。加上SVN模块以后，函数调用的数
+量明显增多，额外负载由3.2\%增加到了31.33\%。
 
 \section{本章小结}
 \label{sec:scp:conclusion}
