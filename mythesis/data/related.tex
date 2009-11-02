@@ -53,25 +53,28 @@ EC2~\cite{Garfinkel2007}。在这些平台上，研究者或开发者使用管�
 
 % xxx: motivate self-mon
 
-\subsubsection*{vxargs和pssh}
-
+\textbf{vxargs和pssh}：
 vxargs~\cite{vxargs}和pssh~\cite{pssh}是两个集中式管理工具，用一组脚本
 实现。使用时，只需要将工具的脚本复制到发起管理的中心节点即可。它们利用
-Unix/Linux平台安装的ssh/scp工具远程复制文件或执行控制命令。
+Unix/Linux平台安装的ssh/scp工具远程复制文件或执行控制命令。这两个工具
+没有自己的客户端，它们利用了Linux操作系统上的sshd服务远程复制文件并执
+行控制台命令，因而管理功能有限。
 
-\subsubsection*{Application Manager}
-
+\textbf{Application Manager}：
 Application Manager~\cite{appmanager}（简称appmanager）也是一个集中管
-理工具。它稍微复杂一点，有了自己的客户端。使用者首先将appmanager的客户
+理工具。它稍微复杂一点，有了自己的客户端。使用者需要将appmanager的客户
 端安装到一组机器上并启动。客户端在运行时定期和服务器通信，询问有没有尚
 未执行的用户命令。用户可以使用appmanager安装、查询与控制在客户端机器上
-运行着的应用节点状态。
+运行着的应用节点状态。相比vxargs和pssh，appmanager同样使用了集中式管理，
+但是有了自己的客户端，因而管理语意有了很大丰富。
 
-\subsubsection*{Plush}
-
+\textbf{Plush} ：
 Plush~\cite{plush}致力于提供一个全面的管理框架。它首先将管理
 一个分布式应用的过程分为资源发现与获取、应用部署、应用维护三大部分。用
 户使用XML语言描述应用管理涉及的这三部分内容，让Plush自动完成管理工作。
+相比appmanager，Plush的应用管理语意更加丰富，除了支持长期运行的
+Internet服务，Plush增加了同步操作语意，可以支持节点间任务的同步操作，
+因而Plush也可以用来管理Grid类型的并行程序。
 
 \begin{figure}
 \centering
@@ -135,8 +138,7 @@ Plush-M~\cite{plush-m}注意到了Plush采用集中式算法的问题。它将Pl
 统的可扩展性，与应对网络分割错误的能力。需要注意到，这仅仅改变了Plush
 管理其它应用的方式，并没有改变Plush自管理的方式。
 
-\subsubsection*{Globus}
-
+\textbf{Globus} ：
 Globus~\cite{globus}是搭建Grid系统与应用的软件工具包。它包含了应用管理
 的组件。例如，可以使用Globus Resource Specification Language (RSL)描述
 对资源的需求，使用Globus Resource Allocation Manager (GRAM)为应用分配
@@ -154,84 +156,6 @@ SmartFrog会自动完成用户指定的部署与配置任务。Condor是Grid上�
 % Amazon EC2怎么怎么（就不用开个小标题了）
 
 % smartfrog cfengine
-
-\subsection{数据分发}
-\label{sec:related:datadistro}
-
-将分布式应用与相关的数据部署到一组机器上，这是一个数据分发问题。
-Bullet~\cite{bullet}和Splitstream~\cite{splitstream}使用了树形覆盖网络
-结构分发数据。但是在分布式系统，尤其是广域网环境下，维护一个严格的拓扑
-结构需要花费较大的维护开销。目前，很多工作使用随机结构的网络拓扑完成数
-据分发任务。使用随机拓扑结构不需要维护特定的网络结构，维护开销比较低。
-应用节点通过与随机选取的其它节点通信，互相合作将数据分发出去。一些典型
-的工作包括：
-
-\subsubsection*{BitTorrent}
-
-BitTorrent~\cite{bittorrent}是一个Peer-to-Peer(P2P)文件共享协议，它是
-Internet上使用最广泛的文件分发、共享工具。一些估算表明，它产生的网络通
-信占整个Internet流量的35\%~\cite{bt2004}。虽然BitTorrent提出很早，但是
-对数据分发方面的研究产生了重要影响。
-
-Bittorrent由一组节点（peer）和一个tracker构成。初始时，有一个节点包含
-了整个要共享的文件，它被称为种子。其它节点可以从种子下载文件。同时，节
-点还可以通过tracker获取其它节点的列表，并相互交换没有的文件块。这样，
-不仅加速了文件共享传输的速度，也减轻了种子节点的带宽消耗。
-
-由于Bittorrent出色的性能，它也被用来在Planet-Lab平台上部署
-分发数据~\cite{plDist}。
-
-\subsubsection*{ACMS}
-
-Akamai~\cite{akamai}是运营着一个全球范围的内容分发网络（Content
-Distribution Network, CDN），包括了部署在60多个国家的1200多个ISP的超过
-15000个服务器。用户可以使用Akamai分发自己的网络内容与服务，提高应用的
-性能和可靠性。
-
-ACMS~\cite{acms}(The Akamai Configuration Management System)是Akamai的
-配置管理工具。它将用户对分发内容的配置部署到CDN网络内。这面临着很多挑
-战。使用ACMS的用户来自世界各地，可以在任何时间访问系统。首先需要保证服
-务可用性。ACMS使用了多个服务入口点（entry point）接受配置文件更新的请
-求，入口点分布在不同的ISP内。其次，同一配置，可能会被不同的人同时更新，
-更新请求可能会同时到达不同的入口点。需要保证更新的一致性。ACMS使用了基
-于向量交换（Vector Exchange）的quorum算法，让入口点之间对更
-新顺序达成一致意见，保证了更新的正确性。
-
-\begin{figure}
-\centering
-\includegraphics[width=0.8\linewidth]{acms_design}
-\caption{ACMS系统结构}
-\label{fig:acms_design}
-\end{figure}
-
-
-为了同时保证更新能够快速有效的被传送到整个CDN的所有机器上，ACMS将更新
-分为两步进行，如图~\ref{fig:acms_design}所示。更新首先由用户发送到某
-一个入口点，这个入口点服务器和其它服务器达成对更新的一致意见后，将更新
-持久化保存到各自的硬盘上，并给用户返回更新成功。其它CDN的节点会定期向
-入口点查询订阅的配置文件的版本，并从入口点机器下载更新。通过利用CDN节
-点的HTTP缓存机制，更新可以快速的被传递到所有的CDN机器上。
-
-ACMS使用的分层部署方法将更新的正确性和性能问题分开解决。入口点机器通过
-使用quorum算法解决了正确性问题，其它节点向入口点机器订阅更新，解决了更
-新传递的性能问题。
-
-\subsubsection*{CoDeploy}
-
-CoDeploy~\cite{codeploy}利用了CoDeeN~\cite{codeen}内容分发网络帮助人们
-在Planet-Lab平台上部署应用与数据。由于部署的内容可能很大，而CoDeeN使用
-了基于HTTP缓存的内容分发技术，因此CoDeploy首先将要部署的内容打成碎片。
-在部署的目标节点上分别下载各个碎片后，再将原来的部署数据复原。
-
-\subsubsection*{SharkFS}
-
-SharkFS~\cite{sharkfs}使用了合作缓存（Cooperative Caching）技术提高了
-网络文件系统的可扩展性。通常在网络文件系统中，客户端会向文件系统服务器
-所要数据，服务器会成为性能瓶颈。SharkFS让客户端之间相互下载自己没有对
-方有的文件块来解决这个问题。这个方式类似于Bittorrent。与Bittorrent不同
-的是，SharkFS中没有集中的tracker，而是让所有客户端之间形成一个结构化覆
-盖网络\cite{can, pastry, tapestry, chord, kademlia}，实现了一个分布式
-的tracker。
 
 \subsection{self-*性质}
 \label{sec:related:selfstart}
@@ -256,13 +180,92 @@ IBM在2001年提出了Automatic Computing~\cite{Kephart2003}（AC）的概念。
 DHT~\cite{can, pastry, tapestry, chord, kademlia}（Distributed Hash
 Table）能够自动应对系统的节点加入与退出事件，通过调整每个对等节点的路
 由表，自动维护设计预期的拓扑结构。
-
 Rhizoma~\cite{Rhizoma}试图将自我管理功能嵌入到分布式应用内部去。它的研
 究动机是，随着Utility Computing（UC）的出现，将有越来越多的公司将自身
 的计算需求外包给计算服务提供商，例如Amazon EC2~\cite{Garfinkel2007}。
 运行在UC计算平台的应用有依据资源使用状况、节点失败和计费等情况迁移到其
 它节点的需求。这个问题可以利用管理工具实现，Rhizoma试图将自我管理功能
 内嵌到应用来解决这个问题。
+
+\subsection{数据分发}
+\label{sec:related:datadistro}
+
+将分布式应用与相关的数据部署到一组机器上，这是一个数据分发问题。
+Bullet~\cite{bullet}和Splitstream~\cite{splitstream}等工作使用了树形覆
+盖网络分发数据。但是在分布式系统，尤其是广域网环境下，维护一个严格的拓
+扑结构需要花费较大的维护开销。目前，很多工作使用随机结构的网络拓扑完成
+数据分发任务。使用随机拓扑结构不需要维护特定的网络结构，维护开销比较低。
+应用节点通过与随机选取的其它节点通信，互相合作将数据分发出去。在分发数
+据时，使用的基本技术是将文件分为逻辑上连续的若干块，系统用户或者节点交
+换相互拥有的文件块，而不是直接向数据源服务器请求数据。这样做的好处是显
+然的，首先降低了服务的压力，其次，这样的设计具有很好的可扩展性，随着系
+统规模增大，总体的传输带宽也会增大。再次，文件块级别的操作提供了更细粒
+度的负载均衡，从而系统节点能够动态的调整下载策略，绕开可能的网络错误，
+以及获取更高下载性能。一些典型的分发系统包括：
+
+\textbf{BitTorrent} ：
+BitTorrent~\cite{bittorrent}是一个Peer-to-Peer(P2P)文件共享协议，它是
+Internet上使用最广泛的文件分发、共享工具。一些估算表明，它产生的网络通
+信占整个Internet流量的35\%~\cite{bt2004}。BitTorrent提出很早，
+对数据分发方面的研究产生了重要影响。
+
+Bittorrent由一组节点（peer）和一个tracker构成。初始时，有一个节点包含
+了整个要共享的文件，它被称为种子。其它节点可以从种子下载文件。节点可以
+通过tracker获取其它节点的列表，并相互交换没有的文件块。这样，不仅加速
+了文件共享传输的速度，也减轻了种子节点的带宽消耗。目前，一些基于
+BitTorrent协议的客户端也利用了DHT~\cite{kademlia}技术，实现了分布式结
+构的目录服务器。
+
+由于Bittorrent出色的性能，它也被用来在Planet-Lab平台上部署
+分发数据~\cite{plDist}。
+
+\textbf{ACMS}：
+Akamai~\cite{akamai}是运营着一个全球范围的内容分发网络（Content
+Distribution Network, CDN），包括了部署在60多个国家的1200多个ISP的超过
+15000个服务器。用户可以使用Akamai分发自己的网络内容与服务，提高应用的
+性能和可靠性。
+
+ACMS~\cite{acms}(The Akamai Configuration Management System)是Akamai的
+配置管理工具。它将用户对分发内容的配置部署到CDN网络内。这面临着很多挑
+战。使用ACMS的用户来自世界各地，可以在任何时间访问系统。首先需要保证服
+务可用性。ACMS使用了多个服务入口点（entry point）接受配置文件更新的请
+求，入口点分布在不同的ISP内。其次，同一配置，可能会被不同的人同时更新，
+更新请求可能会同时到达不同的入口点。需要保证更新的一致性。ACMS使用了基
+于向量交换（Vector Exchange）的quorum算法，让入口点之间对更
+新顺序达成一致意见，保证了更新的正确性。
+
+\begin{figure}
+\centering
+\includegraphics[width=0.6\linewidth]{acms_design}
+\caption{ACMS系统结构}
+\label{fig:acms_design}
+\end{figure}
+
+
+为了同时保证更新能够快速有效的被传送到整个CDN的所有机器上，ACMS将更新
+分为两步进行，如图~\ref{fig:acms_design}所示。更新首先由用户发送到某
+一个入口点，这个入口点服务器和其它服务器达成对更新的一致意见后，将更新
+持久化保存到各自的硬盘上，并给用户返回更新成功。其它CDN的节点会定期向
+入口点查询订阅的配置文件的版本，并从入口点机器下载更新。通过利用CDN节
+点的HTTP缓存机制，更新可以快速的被传递到所有的CDN机器上。
+
+ACMS使用的分层部署方法将更新的正确性和性能问题分开解决。入口点机器通过
+使用quorum算法解决了正确性问题，其它节点向入口点机器订阅更新，解决了更
+新传递的性能问题。
+
+\textbf{CoDeploy} ：
+CoDeploy~\cite{codeploy}利用了CoDeeN~\cite{codeen}内容分发网络帮助人们
+在Planet-Lab平台上部署应用与数据。由于部署的内容可能很大，而CoDeeN使用
+了基于HTTP缓存的内容分发技术，因此CoDeploy首先将要部署的内容打成碎片。
+在部署的目标节点上分别下载各个碎片后，再将原来的部署数据复原。
+
+\textbf{SharkFS} ：
+SharkFS~\cite{sharkfs}使用了合作缓存（Cooperative Caching）技术提高了
+网络文件系统的可扩展性。通常在网络文件系统中，客户端会向文件系统服务器
+所要数据，服务器会成为性能瓶颈。SharkFS让客户端之间相互下载自己没有对
+方有的文件块来解决这个问题。这个方式类似于Bittorrent。与Bittorrent不同
+的是，SharkFS中没有集中的tracker，而是让所有客户端之间形成一个结构化覆
+盖网络\cite{coral}，实现了一个分布式的tracker。
 
 % SCAMP self-organizing membership
 
@@ -304,7 +307,6 @@ Rhizoma~\cite{Rhizoma}试图将自我管理功能嵌入到分布式应用内部�
 
 为了准确得到系统细粒度的因果路径，一些工具通过对系统插装或在代码中增加
 标注，得到任务执行的边界与阶段之间的交互信息。
-
 一些重要的工作有：
 
 % *white box*
@@ -327,10 +329,8 @@ Rhizoma~\cite{Rhizoma}试图将自我管理功能嵌入到分布式应用内部�
 % Performance Debugging for Distributed Systems of Black Boxes
 % (sosp03)
 
-\subsubsection*{Pinpoint}
-
 % see related in reynolds thesis
-
+\textbf{Pinpoint} ：
 Pinpoint~\cite{pinpoint}通过对系统增加标注的办法，为J2EE应用的每个用户
 请求附加了一个唯一标识。标注就是对系统代码进行一定修改，在适当的地方输
 出与传递任务标识。随着请求被处理，和它关联的标识也在系统中传播，从而我
@@ -347,8 +347,7 @@ Pinpoint记录了执行路径上的事件会以什么概率导致其它事件发
 事件$A$发生后，可能会接着发生事件$B$或$C$。所以，如果观测到$A \to D$，
 则这是一个异常事件。
 
-\subsubsection*{Magpie}
-
+\textbf{Magpie} ：
 与Pinpoint不同，Magpie~\cite{magpie}并不对每个请求增加标注，而是使用用
 户提供的方案（schema）将观测到的系统事件联系成为任务执行路径。Magpie将
 得到的执行路径用聚类算法分类，每一类称为一个负载模型，描述了某一种请求
@@ -377,8 +376,7 @@ Magpie设计的特别之处在于使用用户提供的方案将属于同一请�
 合起来，定义联合属性的有效时间区间，需要用户是专家级人员，例如系统的设
 计与开发者。
 
-\subsubsection*{Pip}
-
+\textbf{Pip} ：
 Pip~\cite{pip}对代码增加标注，得到系统的执行路径。Pip定义了一个声明式
 期望语言（declarative expectation language）。使用期望，用户可以表达系
 统的运行时行为应该是什么样子的，通过将期望与实际运行获得的执行路径进行
@@ -388,8 +386,7 @@ Pip~\cite{pip}对代码增加标注，得到系统的执行路径。Pip定义了
 
 % xxx pip的期望示例。
 
-\subsubsection*{X-Trace}
-
+\textbf{X-Trace} ：
 X-Trace~\cite{x-trace}是一个网络层的跟踪工具。它将包括任务标示符的任务
 元数据嵌入用户请求（例如一个web请求）中，随着用户请求在网络上被向前传
 送与处理，我们就能够得到这个请求在网络上处理的整个过程。任务元数据不仅
@@ -443,8 +440,7 @@ X-Trace~\cite{x-trace}是一个网络层的跟踪工具。它将包括任务标�
 工作通过获取系统运行时的数据流信息，分析系统行为。包括
 Whodunit~\cite{whodunit} 和Data Flow Tomography~\cite{dft}等。
 
-\subsubsection*{Whodunit}
-
+\textbf{Whodunit} ：
 Whodunit~\cite{whodunit}提出了事务概要分析（transactional profiling）
 的概念和方法，这是对调用图概要分析（call graph
 profiling）~\cite{Graham2004}和调用路径概要分析（call path profiling）~
@@ -467,8 +463,7 @@ Whodunit借助虚拟机~\cite{qemu}截取所有的内存操作汇编指令做到
 \texttt{receive}函数包装，并让应用调用包装后的\texttt{send}和
 \texttt{receive}函数做到这一点。
 
-\subsubsection*{Data Flow Tomography}
-
+\textbf{Data Flow Tomography} ：
 Data Flow Tomography~\cite{dft}的想法受到正电子发射断层扫描（Positron
 Emission Tomography）的启发。正电子发射断层扫描技术将存活期短的放射性
 同位素注入人体，通过观测它在人体内流动的过程，能够对病况进行诊断。
@@ -491,22 +486,17 @@ Data Flow Tomography通过使用虚拟机~\cite{qemu}追踪指令级（ISA）的
 % see log-mining paper (wasl \& sysml)
 
 系统日志是系统运行过程中产生的、对系统运行活动的描述，包含了很多应用层
-任务流的语意，它是理解系统运行，调试系统问题的重要资源。
-
-\subsubsection*{SALSA}
+任务流的语意，它是理解系统运行，调试系统问题的重要资源。使用日志分析系
+统运行时行为结合了日志分析和分布式系统调试两方面的研究，是一个比较新的
+研究方向，结合具体的系统日志，挖掘系统的逻辑、性能问题是目前研究的主要
+内容。
 
 SALSA~\cite{salsa}在Hadoop~\cite{hadoop}日志上，提取出分布式系统的控制
 流和数据流，并导出系统在每个节点上的状态机形式的运行过程。利用产生的结
 果，SALSA可以对系统失败原因进行检查，并将系统的分布式行为可视化。
-
-\subsubsection*{CLUEBOX}
-
 CLUEBOX~\cite{cluebox}使用了机器学习方法，对系统的性能日志进行分析，提
 取出系统的负载-性能模型。对于性能问题，CLUEBOX能够很快的将问题定位于相
 关的一组性能计数器（performance counter）。
-
-\subsubsection*{Artemis}
-
 Artemis~\cite{artemis}是一个日志分析框架，包含了日志收集、日志存储、可
 视化工具和一组插件定义接口，使用它，用户可以自定义插件，对系统（例如
 Dryad~\cite{dryad}）进行分析。
