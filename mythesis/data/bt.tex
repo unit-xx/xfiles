@@ -1,5 +1,5 @@
 % vim:textwidth=70
-\chapter{分布式数据分发系统的优化方法}
+\chapter{分布式数据分发系统的优化方法研究}
 \label{chap:bt}
 
 \section{本章引言}
@@ -254,7 +254,7 @@ $v_1$将带宽全部分给$v_2$，在时刻1，$v_2$得到了整个数据块，�
 际运行，因而难以设计实现相一致的模拟器。
 
 bitsim模拟了标准的BitTorrent分发协议，包括choking/unchoking，乐观
-choking，LRF块选择算法等。bitsim可以根据输入网络参数，模拟网络层的传输
+unchoke，LRF块选择算法等。bitsim可以根据输入网络参数，模拟网络层的传输
 延迟、TCP吞吐量和最大上传带宽。TCP的吞吐量依据流行的PFTK~\cite{pftk}模
 型计算，模型中用到的窗口大小是$2^{16}$~Bytes。
 
