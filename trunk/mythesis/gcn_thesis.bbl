@@ -1,0 +1,833 @@
+\begin{thebibliography}{100}
+
+\bibitem{google}
+Google.
+\newblock \url{http://www.google.com/}
+\thudot
+
+\bibitem{yahoo}
+Yahoo.
+\newblock \url{http://www.yahoo.com/}
+\thudot
+
+\bibitem{baidu}
+Baidu.
+\newblock \url{http://www.baidu.com/}
+\thudot
+
+\bibitem{gmail}
+Gmail.
+\newblock \url{http://www.gmail.com}
+\thudot
+
+\bibitem{gdoc}
+Google Docs.
+\newblock \url{http://docs.google.com/}
+\thudot
+
+\bibitem{facebook}
+Facebook.
+\newblock \url{http://www.facebook.com}
+\thudot
+
+\bibitem{gfs}
+Ghemawat S, Gobioff H, Leung S~T.
+\newblock The {Google} file system.
+\newblock Proceedings of The ACM Symposium on Operating Systems Principles
+  (SOSP), 2003
+\thudot
+
+\bibitem{bigtable}
+Chang F, Dean J, Ghemawat S, et~al.
+\newblock Bigtable: A Distributed Storage System for Structured Data.
+\newblock ACM Transactions on Computer Systems, 2008, 26(2):1--26
+\thudot
+
+\bibitem{dynamo}
+DeCandia G, Hastorun D, Jampani M, et~al.
+\newblock Dynamo: amazon's highly available key-value store.
+\newblock Proceedings of The ACM Symposium on Operating Systems Principles
+  (SOSP), New York, NY, USA: ACM, 2007.
+\newblock  205--220
+\thudot
+
+\bibitem{akamai}
+Akamai Technologies.
+\newblock \url{http://www.akamai.com/}
+\thudot
+
+\bibitem{coral}
+Freedman M~J, Freudenthal E, Mazi\`{e}res D.
+\newblock Democratizing content publication with coral.
+\newblock Proceedings of USENIX Symposium on Networked Systems Design and
+  Implementation (NSDI), Berkeley, CA, USA: USENIX Association, 2004
+\thudot
+
+\bibitem{bittorrent}
+BitTorrent.
+\newblock \url{http://bittorrent.org/}
+\thudot
+
+\bibitem{sharkfs}
+Annapureddy S, Freedman M~J, Mazi{\`e}res D.
+\newblock Shark: Scaling File Servers via Cooperative Caching.
+\newblock Proceedings of USENIX Symposium on Networked Systems Design and
+  Implementation (NSDI), 2005
+\thudot
+
+\bibitem{chainsaw}
+Pai V, Kumar K, Tamilmani K, et~al.
+\newblock Chainsaw: Eliminating Trees from Overlay Multicast.
+\newblock Proceedings of International Workshop on Peer-to-Peer Systems
+  (IPTPS), 2005.
+\newblock  127--140
+\thudot
+
+\bibitem{coolstreaming}
+Zhang X, Liu J, Peter~Yum T.
+\newblock Coolstreaming/donet: A data-driven overlay network for peer-to-peer
+  live media streaming.
+\newblock Proceedings of IEEE Conference on Computer Communications (Infocom),
+  2005
+\thudot
+
+\bibitem{bullet}
+C D~K, Rodriguez A, Albrecht J, et~al.
+\newblock Bullet: High Bandwidth Data Dissemination Using an Overlay Mesh.
+\newblock Proceedings of The ACM Symposium on Operating Systems Principles
+  (SOSP), 2003
+\thudot
+
+\bibitem{splitstream}
+Castro M, Druschel P, Kermarrec A~M, et~al.
+\newblock SplitStream: high-bandwidth multicast in cooperative environments.
+\newblock Proceedings of ACM symposium on Operating systems principles (SOSP),
+  New York, NY, USA: ACM, 2003.
+\newblock  298--313
+\thudot
+
+\bibitem{s3}
+Amazon Simple Storage Service (S3).
+\newblock \url{https://s3.amazonaws.com/}
+\thudot
+
+\bibitem{idisk}
+Apple iDisk.
+\newblock \url{http://www.mac.com/}
+\thudot
+
+\bibitem{archie}
+Archie search engine.
+\newblock \url{http://archie.icm.edu.pl/archie-adv_eng.html}
+\thudot
+
+\bibitem{how_google_works}
+How google works.
+\newblock
+  \url{http://www.baselinemag.com/c/a/Infrastructure/How-Google-Works-1/}
+\thudot
+
+\bibitem{cnbeta_bigtable}
+Google spotlights data center inner workings.
+\newblock \url{http://news.cnet.com/webware/?keyword=BigTable}
+\thudot
+
+\bibitem{pacifica}
+Lin W, Yang M, Zhang L, et~al.
+\newblock PacificA: Replication in Log-Based Distributed Storage Systems.
+\newblock Technical report, Microsoft Research Asia, 2008
+\thudot
+
+\bibitem{mapreduce}
+Dean J, Ghemawat S.
+\newblock MapReduce: Simplified Data Processing on Large Clusters.
+\newblock Proceedings of USENIX Symposium on Operating Systems Design and
+  Implementation (OSDI), 2004
+\thudot
+
+\bibitem{sawzall}
+Pike R, Dorward S, Griesemer R, et~al.
+\newblock Interpreting the Data: Parallel Analysis with Sawzall.
+\newblock Scientific Programming Journal, 2005, 13(4):227--298
+\thudot
+
+\bibitem{dryad}
+Isard M, Budiu M, Yu Y, et~al.
+\newblock Dryad: distributed data-parallel programs from sequential building
+  blocks.
+\newblock Proceedings of ACM SIGOPS/EuroSys European Conference on Computer
+  Systems (EuroSys), New York, NY, USA: ACM, 2007.
+\newblock  59--72
+\thudot
+
+\bibitem{dryadlinq}
+Yu Y, Isard M, Fetterly D, et~al.
+\newblock DryadLINQ: A System for General-Purpose Distributed Data-Parallel
+  Computing Using a High-Level Language.
+\newblock Proceedings of USENIX Symposium on Operating System Design and
+  Implementation (OSDI), 2008
+\thudot
+
+\bibitem{chubby}
+Burrows M.
+\newblock The Chubby lock service for loosely-coupled distributed systems.
+\newblock Proceedings of USENIX symposium on Operating systems design and
+  implementation, Berkeley, CA, USA: USENIX Association, 2006.
+\newblock  335--350
+\thudot
+
+\bibitem{sinfonia}
+Aguilera M~K, Merchant A, Shah M, et~al.
+\newblock Sinfonia: a new paradigm for building scalable distributed systems.
+\newblock Proceedings of The ACM Symposium on Operating Systems Principles
+  (SOSP), New York, NY, USA: ACM, 2007.
+\newblock  159--174
+\thudot
+
+\bibitem{boxwood}
+MacCormick J, Murphy N, Najork M, et~al.
+\newblock Boxwood: abstractions as the foundation for storage infrastructure.
+\newblock Proceedings of The ACM Symposium on Operating Systems Principles
+  (SOSP), Berkeley, CA, USA: USENIX Association, 2004.
+\newblock  8--8
+\thudot
+
+\bibitem{seda}
+Welsh M, Culler D, Brewer E.
+\newblock {SEDA}: an architecture for well-conditioned, scalable internet
+  services.
+\newblock Proceedings of The ACM Symposium on Operating Systems Principles
+  (SOSP), New York, NY, USA: ACM, 2001.
+\newblock  230--243
+\thudot
+
+\bibitem{mace}
+Killian C~E, Anderson J~W, Braud R, et~al.
+\newblock Mace: language support for building distributed systems.
+\newblock Proceedings of ACM SIGPLAN conference on Programming language design
+  and implementation (PLDI), New York, NY, USA: ACM, 2007.
+\newblock  179--188
+\thudot
+
+\bibitem{macedon}
+Rodriguez A, Killian C, Bhat S, et~al.
+\newblock MACEDON: methodology for automatically creating, evaluating, and
+  designing overlay networks.
+\newblock Proceedings of USENIX Symposium on Networked Systems Design and
+  Implementation (NSDI), Berkeley, CA, USA: USENIX Association, 2004.
+\newblock  20--20
+\thudot
+
+\bibitem{p2}
+Loo B~T, Condie T, Hellerstein J~M, et~al.
+\newblock Implementing declarative overlays.
+\newblock Proceedings of The ACM Symposium on Operating Systems Principles
+  (SOSP), New York, NY, USA: ACM, 2005.
+\newblock  75--90
+\thudot
+
+\bibitem{Bavier2004}
+Bavier A, Bowman M, Chun B, et~al.
+\newblock Operating system support for planetary-scale network services.
+\newblock Proceedings of USENIX Symposium on Networked Systems Design and
+  Implementation (NSDI), 2004
+\thudot
+
+\bibitem{sword_toit}
+Albrecht J, Oppenheimer D, Vahdat A, et~al.
+\newblock Design and implementation trade-offs for wide-area resource
+  discovery.
+\newblock ACM Transactions on Internet Technology (TOIT), 2008, 8(4):1--44
+\thudot
+
+\bibitem{xenosearch}
+Spence D, Harris T.
+\newblock Xenosearch: Distributed resource discovery in the xenoserver open
+  platform.
+\newblock Proceedings of High Performance Distributed Computing (HPDC), 2003
+\thudot
+
+\bibitem{vxargs}
+vxargs.
+\newblock \url{http://dharma.cis.upenn.edu/planetlab/vxargs/}
+\thudot
+
+\bibitem{pssh}
+pssh.
+\newblock \url{http://www.theether.org/pssh/}
+\thudot
+
+\bibitem{codeploy}
+Biskeborn B, Golightly M, Park K, et~al.
+\newblock (Re)design considerations for scalable large-file content
+  distribution.
+\newblock Proceedings of USENIX Workshop on Real, Large Distributed Systems
+  (WORLDS), Berkeley, CA, USA: USENIX Association, 2005.
+\newblock  31--36
+\thudot
+
+\bibitem{plush}
+Albrecht J, Braud R, Dao D, et~al.
+\newblock Remote Control: Distributed Application Configuration, Management,
+  and Visualization with Plush.
+\newblock Proceedings of Large Installation System Administration Conference
+  (LISA), 2007
+\thudot
+
+\bibitem{smartfrog}
+SmartFrog.
+\newblock \url{http://www.smartfrog.org/}
+\thudot
+
+\bibitem{comon}
+CoMon.
+\newblock \url{http://comon.cs.princeton.edu/}
+\thudot
+
+\bibitem{sdims}
+Yalagandula P.
+\newblock A scalable distributed information management system.
+\newblock Proceedings of SIGCOMM, 2004.
+\newblock  379--390
+\thudot
+
+\bibitem{somo}
+Zhang Z, Shi S~M, Zhu J.
+\newblock SOMO: Self-Organized Metadata Overlay for Resource Management.
+\newblock Proceedings of International Workshop on Peer-to-Peer Systems
+  (IPTPS), 2003
+\thudot
+
+\bibitem{sanfermin}
+Cappos J, Hartman J~H.
+\newblock San Ferm\'{\i}n: aggregating large data sets using a binomial swap
+  forest.
+\newblock Proceedings of USENIX Symposium on Networked Systems Design and
+  Implementation (NSDI), Berkeley, CA, USA: USENIX Association, 2008.
+\newblock  147--160
+\thudot
+
+\bibitem{astrolabe}
+Van~Renesse R, Birman K~P, Vogels W.
+\newblock Astrolabe: A robust and scalable technology for distributed system
+  monitoring, management, and data mining.
+\newblock ACM Transactions on Computer Systems, 2003, 21(2):164--206
+\thudot
+
+\bibitem{Jain2004}
+Jain A, Hellerstein J~M, Wetherall S~R~D.
+\newblock A Wakeup Call for Internet Monitoring Systems: The Case for
+  Distributed Triggers.
+\newblock Proceedings of Hot Topics in Networks (HotNets), 2004
+\thudot
+
+\bibitem{Huang2006}
+Huang L, Garofalakis M, Hellerstein J, et~al.
+\newblock Toward sophisticated detection with distributed triggers.
+\newblock Proceedings of MineNet '06: Proceedings of the 2006 SIGCOMM workshop
+  on Mining network data, New York, NY, USA: ACM, 2006.
+\newblock  311--316
+\thudot
+
+\bibitem{Keralapura2006}
+Keralapura R, Cormode G, Ramamirtham J.
+\newblock Communication-efficient distributed monitoring of thresholded counts.
+\newblock Proceedings of SIGMOD '06: Proceedings of the 2006 ACM SIGMOD
+  international conference on Management of data, New York, NY, USA: ACM, 2006.
+\newblock  289--300
+\thudot
+
+\bibitem{Sharfman2007}
+Sharfman I, Schuster A, Keren D.
+\newblock A geometric approach to monitoring threshold functions over
+  distributed data streams.
+\newblock ACM Trans. Database Syst., 2007, 32(4):23
+\thudot
+
+\bibitem{Cormode2005}
+Cormode G, Garofalakis M, Muthukrishnan S, et~al.
+\newblock Holistic aggregates in a networked world: distributed tracking of
+  approximate quantiles.
+\newblock Proceedings of SIGMOD '05: Proceedings of the 2005 ACM SIGMOD
+  international conference on Management of data, New York, NY, USA: ACM, 2005.
+\newblock  25--36
+\thudot
+
+\bibitem{Das2004}
+Das A, Ganguly S, Garofalakis M, et~al.
+\newblock Distributed set-expression cardinality estimation.
+\newblock Proceedings of VLDB '04: Proceedings of the Thirtieth international
+  conference on Very large data bases. VLDB Endowment, 2004.
+\newblock  312--323
+\thudot
+
+\bibitem{pinpoint}
+Chen M~Y, Accardi A, Kiciman E, et~al.
+\newblock Path-based faliure and evolution management.
+\newblock Proceedings of USENIX Symposium on Networked Systems Design and
+  Implementation (NSDI), Berkeley, CA, USA: USENIX Association, 2004.
+\newblock  23--23
+\thudot
+
+\bibitem{magpie}
+Barham P, Donnelly A, Isaacs R, et~al.
+\newblock Using {Magpie} for request extraction and workload modelling.
+\newblock Proceedings of USENIX Symposium on Operating Systems Design and
+  Implementation (OSDI), 2004
+\thudot
+
+\bibitem{pip}
+Reynolds P, Killian C, Wiener J~L, et~al.
+\newblock Pip: Detecting the Unexpected in Distributed Systems.
+\newblock Proceedings of USENIX Symposium on Networked Systems Design and
+  Implementation (NSDI), 2006
+\thudot
+
+\bibitem{x-trace}
+Fonseca R, Porter G, Katz R~H, et~al.
+\newblock X-Trace: A Pervasive Network Tracing Framework.
+\newblock Proceedings of USENIX Symposium on Networked Systems Design and
+  Implementation (NSDI), 2007
+\thudot
+
+\bibitem{project5}
+Aguilera M~K, Mogul J~C, Wiener J~L, et~al.
+\newblock Performance debugging for distributed systems of black boxes.
+\newblock Proceedings of The ACM Symposium on Operating Systems Principles
+  (SOSP), 2003
+\thudot
+
+\bibitem{d3s}
+Liu X, Guo Z, Wang X, et~al.
+\newblock D3S: debugging deployed distributed systems.
+\newblock Proceedings of USENIX Symposium on Networked Systems Design and
+  Implementation (NSDI), Berkeley, CA, USA: USENIX Association, 2008.
+\newblock  423--437
+\thudot
+
+\bibitem{liblog}
+Geels D, Altekar G, Shenker S, et~al.
+\newblock Replay debugging for distributed applications.
+\newblock Proceedings of USENIX Annual Technical Conference, Berkeley, CA, USA:
+  USENIX Association, 2006.
+\newblock  27--27
+\thudot
+
+\bibitem{friday}
+Geels D, Altekar G, Maniatis P, et~al.
+\newblock Friday: Global comprehension for distributed replay.
+\newblock Proceedings of USENIX Symposium on Networked Systems Design and
+  Implementation (NSDI), 2007
+\thudot
+
+\bibitem{r2}
+Guo Z, Wang X, Tang J, et~al.
+\newblock {R2}: An application-level kernel for record and replay.
+\newblock Proceedings of USENIX Symposium on Operating Systems Design and
+  Implementation (OSDI), 2008
+\thudot
+
+\bibitem{mpiwiz}
+Xue R, Liu X, Wu M, et~al.
+\newblock {MPIWiz}: subgroup reproducible replay of mpi applications.
+\newblock Proceedings of ACM SIGPLAN symposium on Principles and practice of
+  parallel programming (PPoPP), New York, NY, USA: ACM, 2008.
+\newblock  251--260
+\thudot
+
+\bibitem{Catlett2002}
+Catlett C.
+\newblock The Philosophy of {TeraGrid}: Building an Open, Extensible,
+  Distributed TeraScale Facility.
+\newblock Proceedings of IEEE/ACM International Symposium on Cluster Computing
+  and the Grid (CCGRID), Washington, DC, USA: IEEE Computer Society, 2002.
+\newblock ~8
+\thudot
+
+\bibitem{Garfinkel2007}
+Garfinkel S.
+\newblock Commodity grid computing with {Amazon}'s {S3} and {EC2}.
+\newblock {;login:} (The USENIX Magazine), 2007.
+\thudot
+
+\bibitem{appmanager}
+Planet-Lab Application Manager.
+\newblock \url{http://appmanager.berkeley.intel-research.net/}
+\thudot
+
+\bibitem{sword_worlds}
+Oppenheimer D, Albrecht J, Patterson D, et~al.
+\newblock Distributed resource discovery on {PlanetLab} with {SWORD}.
+\newblock Proceedings of USENIX Workshop on Real, Large Distributed Systems
+  (WORLDS), 2004
+\thudot
+
+\bibitem{plush-m}
+Topilski N, Albrecht J, Vahdat A.
+\newblock Improving Scalability and Fault Tolerance in an Application
+  Management Infrastructure.
+\newblock Proceedings of USENIX Workshop on Large-Scale Computing (LASCO), 2008
+\thudot
+
+\bibitem{ransub}
+Kostic D, Rodriguez A, Albrecht J, et~al.
+\newblock Using Random Subsets to Build Scalable Network Services.
+\newblock Proceedings of USENIX Symposium on Internet Technologies and Systems
+  (USITS), 2003
+\thudot
+
+\bibitem{globus}
+Globus Toolkit.
+\newblock \url{http://www.globus.org/toolkit/}
+\thudot
+
+\bibitem{cfengine}
+Cfengine.
+\newblock \url{http://www.cfengine.org/}
+\thudot
+
+\bibitem{condor}
+The Condor Project.
+\newblock \url{http://www.cs.wisc.edu/condor/}
+\thudot
+
+\bibitem{bt2004}
+"LIVEWIRE - File-sharing network thrives beneath the radar".
+\newblock
+  \url{http://www.interesting-people.org/archives/interesting-people/200411/ms%
+g00078.html}
+\thudot
+
+\bibitem{plDist}
+plDist.
+\newblock \url{http://www.arl.wustl.edu/~mgeorg/plDist.html}
+\thudot
+
+\bibitem{acms}
+Sherman A, Lisiecki P~A, Berkheimer A, et~al.
+\newblock {ACMS}: the Akamai configuration management system.
+\newblock Proceedings of USENIX Symposium on Networked Systems Design and
+  Implementation (NSDI), Berkeley, CA, USA: USENIX Association, 2005.
+\newblock  245--258
+\thudot
+
+\bibitem{codeen}
+Wang L, Park K~S, Pang R, et~al.
+\newblock Reliability and security in the {CoDeeN} content distribution
+  network.
+\newblock Proceedings of USENIX Annual Technical Conference (ATC), Berkeley,
+  CA, USA: USENIX Association, 2004.
+\newblock  14--14
+\thudot
+
+\bibitem{can}
+Ratnasamy S, Francis P, Handley M, et~al.
+\newblock A scalable content-addressable network.
+\newblock Proceedings of SIGCOMM '01: Proceedings of the 2001 conference on
+  Applications, technologies, architectures, and protocols for computer
+  communications, New York, NY, USA: ACM, 2001.
+\newblock  161--172
+\thudot
+
+\bibitem{pastry}
+Rowstron A, Druschel P.
+\newblock Pastry: Scalable decentralized object location and routing for
+  large-scale peer-to-peer systems.
+\newblock Proceedings of IFIP/ACM International Conference on Distributed
+  Systems Platforms (Middleware), 2001
+\thudot
+
+\bibitem{tapestry}
+Zhao B~Y, Huang L, Stribling J, et~al.
+\newblock Tapestry: A Resilient Global-Scale Overlay for Service Deployment.
+\newblock IEEE Journal on Selected Areas in Communications, 2004, 22:41--53
+\thudot
+
+\bibitem{chord}
+Stoica I, Morris R, Karger D, et~al.
+\newblock Chord: A scalable peer-to-peer lookup service for internet
+  applications.
+\newblock Proceedings of SIGCOMM '01: Proceedings of the 2001 conference on
+  Applications, technologies, architectures, and protocols for computer
+  communications, New York, NY, USA: ACM, 2001.
+\newblock  149--160
+\thudot
+
+\bibitem{kademlia}
+Maymounkov P, Mazi\`{e}res D.
+\newblock Kademlia: A Peer-to-Peer Information System Based on the XOR Metric.
+\newblock Proceedings of International Workshop on Peer-to-Peer Systems
+  (IPTPS), London, UK: Springer-Verlag, 2002.
+\newblock  53--65
+\thudot
+
+\bibitem{Dijkstra1974}
+Dijkstra E.
+\newblock Self-stabilization in spite of distributed control.
+\newblock Communications of the ACM, 1974, 17(11):643--644
+\thudot
+
+\bibitem{Kephart2003}
+Kephart J~O, Chess D~M.
+\newblock The Vision of Autonomic Computing.
+\newblock IEEE Computer Magazine, 2003, 36:41--50
+\thudot
+
+\bibitem{Rhizoma}
+Yin Q, Cappos J, Baumann A, et~al.
+\newblock Dependable Self-Hosting Distributed Systems Using Constraints.
+\newblock Proceedings of Hot Topics in System Dependability (HotDep), 2008
+\thudot
+
+\bibitem{Manning1999}
+Manning C, Schutze H.
+\newblock Foundations of Statistical Natural Language Processing.
+\newblock Cambridge, MA, USA: MIT Press, 1999
+\thudot
+
+\bibitem{etw}
+{Microsoft Corp}.
+\newblock Event Tracing for Windows.
+\newblock
+  \url{http://msdn.microsoft.com/library/en-us/perfmon/base/event_tracing.asp},
+  2002
+\thudot
+
+\bibitem{Park2003}
+Park I, Raghuraman M.
+\newblock Server diagnosis using request tracking.
+\newblock Proceedings of Workshop on the Design of Self-Managing Systems, in
+  conjunction with DSN 2003, 2003
+\thudot
+
+\bibitem{Gao2005}
+Gao D, Jensen S, Snodgrass T, et~al.
+\newblock Join operations in temporal databases.
+\newblock The VLDB Journal, 2005, 14(1):2--29
+\thudot
+
+\bibitem{wap5}
+Reynolds P, Wiener J~L, Mogul J~C, et~al.
+\newblock {WAP5}: Blackbox Performance Debugging for WideArea Systems.
+\newblock Proceedings of International conference on World Wide Web (WWW), 2006
+\thudot
+
+\bibitem{sherlock}
+Bahl P, Chandra R, Greenberg A, et~al.
+\newblock Towards highly reliable enterprise network services via inference of
+  multi-level dependencies.
+\newblock Proceedings of SIGCOMM, 2007
+\thudot
+
+\bibitem{whodunit}
+Chanda A, Cox A~L, Zwaenepoel W.
+\newblock Whodunit: Transactional profiling for multi-tier applications.
+\newblock Proceedings of ACM SIGOPS/EuroSys European Conference on Computer
+  Systems (EuroSys), 2007
+\thudot
+
+\bibitem{dft}
+Mysore S, Mazloom B, Agrawal B, et~al.
+\newblock Understanding and visualizing full systems with data flow tomography.
+\newblock Proceedings of International Conference on Architectural Support for
+  Programming Languages and Operating Systems (ASPLOS), 2008
+\thudot
+
+\bibitem{Graham2004}
+Graham S~L, Kessler P~B, McKusick M~K.
+\newblock gprof: a call graph execution profiler.
+\newblock SIGPLAN Notice, 2004, 39(4):49--57
+\thudot
+
+\bibitem{Hall1992}
+Hall R~J.
+\newblock Call path profiling.
+\newblock Proceedings of International Conference on Software Engineering, New
+  York, NY, USA: ACM, 1992.
+\newblock  296--306
+\thudot
+
+\bibitem{Hall1993}
+Hall R~J, Goldberg A~J.
+\newblock Call path profiling of monotonic program resources in UNIX.
+\newblock Proceedings of USENIX Summer 1993 Technical Conference on Summer
+  Technical Conference, Berkeley, CA, USA: USENIX Association, 1993.
+\newblock  1--19
+\thudot
+
+\bibitem{qemu}
+Bellard F.
+\newblock QEMU open source processor emulator.
+\newblock \url{http://fabrice.bellard.free.fr/qemu/}
+\thudot
+
+\bibitem{salsa}
+Tan J, Pan X, Kavulya S, et~al.
+\newblock {SALSA}: {A}nalyzing {L}ogs as {S}t{A}te Machines.
+\newblock Proceedings of USENIX Workshop on the Analysis of System Workshops,
+  2008
+\thudot
+
+\bibitem{hadoop}
+Hadoop.
+\newblock \url{http://hadoop.apache.org/}
+\thudot
+
+\bibitem{cluebox}
+Sandeep S~R, Swapna M, Niranjan T, et~al.
+\newblock {CLUEBOX}: A Performance Log Analyzer for Automated Troubleshooting.
+\newblock Proceedings of USENIX Workshop on the Analysis of System Workshops,
+  2008
+\thudot
+
+\bibitem{artemis}
+Cretu-Ciocarlie G~F, Budiu M, Goldszmidt M.
+\newblock Hunting for Problems with Artemis.
+\newblock Proceedings of USENIX Workshop on the Analysis of System Workshops,
+  2008
+\thudot
+
+\bibitem{amazon}
+Amazon.
+\newblock \url{http://www.amazon.com}
+\thudot
+
+\bibitem{Demers1987}
+Demers A, Greene D, Hauser C, et~al.
+\newblock Epidemic algorithms for replicated database maintenance.
+\newblock Proceedings of ACM Symposium on Principles of distributed computing
+  (PODC), New York, NY, USA: ACM, 1987.
+\newblock  1--12
+\thudot
+
+\bibitem{Eugster2004}
+Eugster P~T, Guerraoui R, Kermarrec A~M, et~al.
+\newblock Epidemic Information Dissemination in Distributed Systems.
+\newblock Computer, 2004, 37(5):60--67
+\thudot
+
+\bibitem{dns_akamai}
+How Akamai Works.
+\newblock \url{http://research.microsoft.com/en-us/um/people/ratul/akamai.html}
+\thudot
+
+\bibitem{Bailey1975}
+Bailey N~T~J.
+\newblock The mathematical theory of infectious diseases and its applications.
+\newblock London: Griffin, 1975
+\thudot
+
+\bibitem{fastreplica}
+Cherkasova L, Lee J.
+\newblock FastReplica: efficient large file distribution within content
+  delivery networks.
+\newblock Proceedings of USITS'03: Proceedings of the 4th conference on USENIX
+  Symposium on Internet Technologies and Systems, Berkeley, CA, USA: USENIX
+  Association, 2003
+\thudot
+
+\bibitem{coblitz}
+Park K, Pai V~S.
+\newblock Scale and performance in the CoBlitz large-file distribution service.
+\newblock Proceedings of NSDI'06: Proceedings of the 3rd conference on
+  Networked Systems Design \& Implementation, Berkeley, CA, USA: USENIX
+  Association, 2006.
+\newblock  3--3
+\thudot
+
+\bibitem{bns}
+Bindal R, Cao P, Chan W, et~al.
+\newblock Improving Traffic Locality in BitTorrent via Biased Neighbor
+  Selection.
+\newblock Proceedings of ICDCS '06: Proceedings of the 26th IEEE International
+  Conference on Distributed Computing Systems, Washington, DC, USA: IEEE
+  Computer Society, 2006
+\thudot
+
+\bibitem{taming}
+Choffnes D~R, Bustamante F~E.
+\newblock Taming the torrent: a practical approach to reducing cross-isp
+  traffic in peer-to-peer systems.
+\newblock Proceedings of SIGCOMM '08: Proceedings of the ACM SIGCOMM 2008
+  conference on Data communication, New York, NY, USA: ACM, 2008.
+\newblock  363--374
+\thudot
+
+\bibitem{zeroday}
+Slot M, Costa P, Pierre G, et~al.
+\newblock Zero-Day Reconciliation of BitTorrent Users with Their ISPs.
+\newblock Proceedings of Euro-Par '09: Proceedings of the 15th International
+  Euro-Par Conference on Parallel Processing, Berlin, Heidelberg:
+  Springer-Verlag, 2009.
+\newblock  561--573
+\thudot
+
+\bibitem{Bharambe2006}
+Bharambe A~R, Herley C, Padmanabhan V~N.
+\newblock Analyzing and Improving a BitTorrent Networks Performance Mechanisms.
+\newblock Proceedings of INFOCOM 2006. 25th IEEE International Conference on
+  Computer Communications. Proceedings, 2006.
+\newblock  1--12
+\thudot
+
+\bibitem{pftk}
+Padhye J, Firoiu V, Towsley D, et~al.
+\newblock Modeling TCP throughput: A simple model and its empirical validation.
+\newblock Proceedings of SIGCOMM, 1998
+\thudot
+
+\bibitem{iplane}
+Madhyastha H~V, Katz-Bassett E, Anderson T, et~al.
+\newblock iPlane Nano: path prediction for peer-to-peer applications.
+\newblock Proceedings of NSDI'09: Proceedings of the 6th USENIX symposium on
+  Networked systems design and implementation, Berkeley, CA, USA: USENIX
+  Association, 2009.
+\newblock  137--152
+\thudot
+
+\bibitem{lamport_clock}
+Lamport L.
+\newblock Time, clocks, and the ordering of events in a distributed system.
+\newblock Communications of the ACM, 1978, 21(7):558--565
+\thudot
+
+\bibitem{Caballero2007}
+Caballero J, Yin H, Liang Z, et~al.
+\newblock Polyglot: automatic extraction of protocol message format using
+  dynamic binary analysis.
+\newblock Proceedings of CCS '07: Proceedings of the 14th ACM conference on
+  Computer and communications security, New York, NY, USA: ACM, 2007.
+\newblock  317--329
+\thudot
+
+\bibitem{Cui2007}
+Cui W, Kannan J, Wang H~J.
+\newblock Discoverer: automatic protocol reverse engineering from network
+  traces.
+\newblock Proceedings of SS'07: Proceedings of 16th USENIX Security Symposium
+  on USENIX Security Symposium, Berkeley, CA, USA: USENIX Association, 2007.
+\newblock  1--14
+\thudot
+
+\bibitem{wpp}
+Larus J~R.
+\newblock Whole program paths.
+\newblock Proceedings of ACM SIGPLAN conference on Programming language design
+  and implementation (PLDI), New York, NY, USA: ACM, 1999.
+\newblock  259--269
+\thudot
+
+\bibitem{apache}
+{The Apache Software Foundation}.
+\newblock Apache HTTP Server.
+\newblock \url{http://httpd.apache.org/}
+\thudot
+
+\bibitem{scalpel}
+Mai H, Gao C, Liu X, et~al.
+\newblock Towards Automatic Inference of Task Hierarchies in Complex Systems.
+\newblock Proceedings of Workshop on Hot Topics in System Dependability
+  (HotDep), 2008
+\thudot
+
+\end{thebibliography}
