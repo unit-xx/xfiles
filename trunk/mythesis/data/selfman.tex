@@ -786,7 +786,7 @@ E(p) = n \cdot 1/n = 1
 以看出，90\%的节点，在95秒内被成功的部署了SMON节点。部署时间的中值是63
 秒，最后一个节点被部署的时间是111秒。
 
-\begin{figure}[h]
+\begin{figure}[htbp]
 \centering
   \begin{minipage}{0.6\linewidth}
     \centering
@@ -814,7 +814,7 @@ Planet-Lab节点上部署的SMON系统，从启动状态转换到禁止状态。
 29秒后成功的转换，而状态转换的中值是20秒。可以看出，状态转换过程是非
 常快的，与图~\ref{fig:self-deploy_Yr}的趋势也基本一致。
 
-\begin{figure}[h]
+\begin{figure}[htbp]
 \centering
   \begin{minipage}{0.6\linewidth}
     \centering
@@ -832,8 +832,7 @@ Planet-Lab节点上部署的SMON系统，从启动状态转换到禁止状态。
 均来说，每个机器被部署了1.88次，而部署次数在5以内的机器，它们的平均部
 署次数是1.58。这样的结果表明，为解决竞争情形而引发的额外开销是可以接受
 的。
-
-\begin{table}
+\begin{table}[htbp]
 \centering
 \caption{额外负载分布}
 \label{fig:overhead}
@@ -851,7 +850,6 @@ Planet-Lab节点上部署的SMON系统，从启动状态转换到禁止状态。
     \bottomrule[1.5pt]
 \end{tabular}
 \end{table}
-
 我们注意到，使用分析得到的模型，每个节点被选中部署次数的平均值是1.582，
 而实际是1.88。我们认为主要原因是，分析时，我们实际上假设了部署新的SMON
 节点可以瞬时完成，而在实际中需要一定的时间。因而，在一个机器被某个SMON
@@ -869,8 +867,7 @@ Planet-Lab节点上部署的SMON系统，从启动状态转换到禁止状态。
 部署时间中值的比例是1.31（63/48）。这两个比值与两个系统规模对数的比值
 近似相等（$\ln 117/\ln 24 = 1.49$）。可以看出，SMON系统具有良
 好的扩展性。
-
-\begin{table}
+\begin{table}[htbp]
 \centering
   \begin{minipage}{0.8\linewidth}
     \centering
@@ -898,7 +895,7 @@ SMON使用认证代理帮助节点自动登陆到远程机器，以完成对其�
 如图~\ref{fig:agentload}。认证代理运行在一台普通PC上，PC的配置是AMD双
 核CPU 2.1GHz，2GB内存，运行Windows XP操作系统。
 
-\begin{figure}
+\begin{figure}[htbp]
 \centering
 \includegraphics[width=0.6\linewidth]{cpuload}
 \caption{认证代理上的CPU负载}

@@ -491,33 +491,16 @@ The Condor Project.
 \newblock \url{http://www.cs.wisc.edu/condor/}
 \thudot
 
-\bibitem{bt2004}
-"LIVEWIRE - File-sharing network thrives beneath the radar".
-\newblock
-  \url{http://www.interesting-people.org/archives/interesting-people/200411/ms%
-g00078.html}
+\bibitem{Dijkstra1974}
+Dijkstra E.
+\newblock Self-stabilization in spite of distributed control.
+\newblock Communications of the ACM, 1974, 17(11):643--644
 \thudot
 
-\bibitem{plDist}
-plDist.
-\newblock \url{http://www.arl.wustl.edu/~mgeorg/plDist.html}
-\thudot
-
-\bibitem{acms}
-Sherman A, Lisiecki P~A, Berkheimer A, et~al.
-\newblock {ACMS}: the Akamai configuration management system.
-\newblock Proceedings of USENIX Symposium on Networked Systems Design and
-  Implementation (NSDI), Berkeley, CA, USA: USENIX Association, 2005.
-\newblock  245--258
-\thudot
-
-\bibitem{codeen}
-Wang L, Park K~S, Pang R, et~al.
-\newblock Reliability and security in the {CoDeeN} content distribution
-  network.
-\newblock Proceedings of USENIX Annual Technical Conference (ATC), Berkeley,
-  CA, USA: USENIX Association, 2004.
-\newblock  14--14
+\bibitem{Kephart2003}
+Kephart J~O, Chess D~M.
+\newblock The Vision of Autonomic Computing.
+\newblock IEEE Computer Magazine, 2003, 36:41--50
 \thudot
 
 \bibitem{can}
@@ -561,22 +544,39 @@ Maymounkov P, Mazi\`{e}res D.
 \newblock  53--65
 \thudot
 
-\bibitem{Dijkstra1974}
-Dijkstra E.
-\newblock Self-stabilization in spite of distributed control.
-\newblock Communications of the ACM, 1974, 17(11):643--644
-\thudot
-
-\bibitem{Kephart2003}
-Kephart J~O, Chess D~M.
-\newblock The Vision of Autonomic Computing.
-\newblock IEEE Computer Magazine, 2003, 36:41--50
-\thudot
-
 \bibitem{Rhizoma}
 Yin Q, Cappos J, Baumann A, et~al.
 \newblock Dependable Self-Hosting Distributed Systems Using Constraints.
 \newblock Proceedings of Hot Topics in System Dependability (HotDep), 2008
+\thudot
+
+\bibitem{bt2004}
+"LIVEWIRE - File-sharing network thrives beneath the radar".
+\newblock
+  \url{http://www.interesting-people.org/archives/interesting-people/200411/ms%
+g00078.html}
+\thudot
+
+\bibitem{plDist}
+plDist.
+\newblock \url{http://www.arl.wustl.edu/~mgeorg/plDist.html}
+\thudot
+
+\bibitem{acms}
+Sherman A, Lisiecki P~A, Berkheimer A, et~al.
+\newblock {ACMS}: the Akamai configuration management system.
+\newblock Proceedings of USENIX Symposium on Networked Systems Design and
+  Implementation (NSDI), Berkeley, CA, USA: USENIX Association, 2005.
+\newblock  245--258
+\thudot
+
+\bibitem{codeen}
+Wang L, Park K~S, Pang R, et~al.
+\newblock Reliability and security in the {CoDeeN} content distribution
+  network.
+\newblock Proceedings of USENIX Annual Technical Conference (ATC), Berkeley,
+  CA, USA: USENIX Association, 2004.
+\newblock  14--14
 \thudot
 
 \bibitem{Manning1999}
@@ -828,6 +828,18 @@ Mai H, Gao C, Liu X, et~al.
 \newblock Towards Automatic Inference of Task Hierarchies in Complex Systems.
 \newblock Proceedings of Workshop on Hot Topics in System Dependability
   (HotDep), 2008
+\thudot
+
+\bibitem{paxos}
+Lamport L.
+\newblock The part-time parliament.
+\newblock ACM Trans. Comput. Syst., 1998, 16(2):133--169
+\thudot
+
+\bibitem{paxossimple}
+Lamport L.
+\newblock Paxos made simple.
+\newblock ACM SIGACT News, 2001, 32(4):18--25
 \thudot
 
 \end{thebibliography}

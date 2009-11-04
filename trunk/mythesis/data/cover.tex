@@ -1,4 +1,4 @@
-% vim:textwidth=70
+% vim:textwidth=70:lines=42
 
 %%% Local Variables:
 %%% mode: latex
@@ -48,39 +48,39 @@
   分布式系统成为了支撑Internet服务的关键组成部分，随着系统规模越来越大，
   系统处理逻辑日趋复杂，有效的管理与调试分布式系统成为了挑战。目前相关
   研究取得了一些进展，但很多关键问题尚待解决。本文针对分布式系统自管理
-  机制、自动推断分布式系统层次结构任务模型的方法等方面进行了研究，取得
-  了有价值的研究成果。
+  机制、分布式数据分发系统优化、自动推断分布式系统层次结构任务模型的方
+  法等方面进行了研究，取得了有价值的研究成果。
 
   本文主要贡献包括：
 
   \begin{enumerate}
 
-    \item 分布式应用管理系统可自管理机制的研究。分布式系统需要被管理。分
-    布式应用管理系统帮助人们简化了部署与维护分布式系统的负担。为了有效
-    的完成管理任务，管理系统本身也是一个分布式应用，需要被管理，已有的
-    工作还没有很好的解决这个问题。本文提出了使管理系统具备自管理机制的
-    方法，并实现了一个可自管理的分布式应用管理系统SMON。SMON能够自动将
-    自己安全部署到一组指定的机器上去，将自己从运行错误中恢复，并在线升
-    级自己至新版本。
+    \item 提出了使管理系统具备自管理机制的方法，此方法基于epidemic算
+    法和认证代理技术。设计并实现了一个自管理的分布式应用管理系统SMON。
+    SMON能够自动将自己安全部署到一组指定的机器上去，将自己从运行错误中
+    恢复，并在线升级自己至新版本。SMON支持长期运行的Internet服务管理语
+    意，用户可以通过在SMON上部署新的管理系统扩展管理语意。
 
-    \item 自动推断系统层次结构任务模型的方法。分布式系统难于调试，理解
-    系统的运行时行为是分析解决系统正确性与性能问题关键。已有的方法可以
-    帮助人们理解系统运行时的因果路径，但是需要程序员手工标注因果路径，
-    使用困难且需要使用者对系统有深入了解。本文提出了一种完全不需要人工
-    帮助，自动推断系统层次结构任务模型的方法。使用得到的层次结构任务模
-    型，可以对系统设计有深入的了解，并帮助分析导致系统缺陷的原因。
+    \item 研究了分布式分发系统的优化问题。通过在真实Internet测量数据上
+    的广泛细致评测，研究了邻近邻居优化和动态上传带宽分配两种优化方法的
+    特性、优化方法受数据块选择算法的影响和合并两种优化方法的效果。对实
+    际系统中应用优化方法提出了建议。
 
-    \item 利用系统日志推断系统任务层次结构的方法。日志是由系统开发人
-    员创建的，因此它们包含了关键的系统状态和事件信息。利用这些信息，可
-    以帮助推断应用层语意任务之间的关系。本文的推断方法能够自动从无结构的系
-    统日志文本中提取任务信息，并推断任务之间的层次结构关系。使用得到的任务
-    层次关系，可以帮助理解系统设计，解决系统已有的性能问题。
+    \item 提出了一自动推断系统层次结构任务模型的方法。推断方法在系统运
+    行时trace上，自动推断任务边界、任务的因果依赖关系和任务的层次结构。
+    使用得到的层次结构任务模型，可以对系统设计有深入的了解，并帮助分析
+    导致系统缺陷的原因。
+
+    \item 提出了从系统日志中推断任务层次结构的方法。推断方法能够自动从
+    无结构的系统日志文本中提取任务信息，并推断任务之间的层次结构关系。
+    使用得到的任务层次关系，可以帮助理解系统设计，解决系统已有的性能问
+    题。
 
   \end{enumerate}
 
 \end{cabstract}
 
-\ckeywords{分布式系统; 自管理; 层次结构任务模型; 日志分析}
+\ckeywords{分布式系统; 自管理; 数据分发; 层次结构任务模型; 日志分析}
 
 \begin{eabstract}
   Distributed systems are the key components in today's Internet
@@ -96,45 +96,41 @@
 
   \begin{enumerate}
 
-    \item Mechanism of adding self-management property for distributed
-    application management systems. Distributed systems need
-    management. The distributed application management system
-    simplifies tasks in deploying and maintaining distributed systems.
-    To efficiently accomplish management tasks, management system is
-    itself an distributed application, which needs to be managed too.
-    Existing work doesn't address the problem very well. In this
-    thesis, a mechanism to support self-management of distributed
+    \item A mechanism to support self-management of distributed
     application management system is proposed and a self-managed
     distributed application management system (SMON) is designed. SMON
     can automatically and securely deploy itself to a set of machines,
-    recover itself from failures and upgrade itself to
-    newer versions online.
+    recover itself from failures and upgrade itself to newer versions
+    online. SMON supports management semantic for long running
+    internet servies and can be extended easily.
 
-    \item Methodology of automatic inference of hierarchical tasks
-    models for distributed system. It is a challenge to debug
-    distributed systems and understanding the runtime behaviour is the
-    key to solve the correctness and performance bug. Existing tools
-    require manual annotation, which is hard to use and poses a high
-    bar on the user. In this thesis, an automatic inference
-    methodology of hierarchical task models for distributed systems is
-    developed. The hierarchical task models help on understanding of
-    system design and implementation, and help on finding root causes
-    of system correctness and performance bugs.
+    \item Emperical study on performance optimization of distributed
+    data distribution is presented. Based on real Internet
+    measurements, the effect of two optimization method---biased
+    neighbour selection and dynamic upload bandwidth allocation---is
+    studies extensively. The interaction between the optimization
+    methods and the piece selection method, and the effect of
+    combining two optimization methods is studied.
+
+    \item An automatic inference methodology of hierarchical task
+    models for distributed systems is developed. The inference method
+    can automatically infer task boundaries, correctly associate task
+    dependencies and infer task hierarchies.  The hierarchical task
+    models help on understanding of system design and implementation,
+    and help on finding root causes of system correctness and
+    performance bugs.
 
     \item Methodology of inference of hierarchical task models based
-    on system log. Logs are created by system developers and contain
-    key information on system states and events. Using the
-    information, we can understand the relations among application
-    level tasks. The inference methodology can extract task
-    information from unstructured system logs automatically and
-    infer hierarchical relations among the tasks. The
-    hierarchical task models help on understanding of system design
-    and implementation, and help on finding root cause of system
+    on system log is proposed. The inference methodology can extract
+    task information from unstructured system logs automatically and
+    infer hierarchical relations among the tasks. The hierarchical
+    task models help on understanding of system design and
+    implementation, and help on finding root cause of system
     correctness and performance bugs.
 
   \end{enumerate}
 
 \end{eabstract}
 
-\ekeywords{Distribute System; Self-Management; Hierarchical Task
-Model; Log Analysis}
+\ekeywords{Distribute System; Self-Management; Data Distribution;
+Hierarchical Task Model; Log Analysis}
