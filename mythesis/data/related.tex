@@ -1,4 +1,4 @@
-% vim:textwidth=70
+% vim:textwidth=70:lines=42
 \chapter{相关工作}
 \label{chap:related}
 
@@ -120,7 +120,7 @@ Internet服务，Plush增加了同步操作语意，可以支持节点间任务�
     </project>
 <plush>
 \end{lstlisting}
-\caption{Plush应用管理说明，引自~\cite{plush}}
+\caption{Plush应用管理规范，引自~\cite{plush}}
 \label{fig:plush_spec}
 \end{figure}
 
@@ -139,7 +139,6 @@ Plush也采用了集中式管理的策略，有自己的客户端，通过客户
 器上没有运行Plush客户端，服务器端会自动将Plush客户端安装至远程机器。然
 而这个过程也是使用集中式算法实现，因而可扩展性不好，也不能应对网络分割
 问题。
-
 Plush-M~\cite{plush-m}注意到了Plush采用集中式算法的问题。它将Plush中服
 务器到客户端之间的星型拓扑，替换为RanSub~\cite{ransub}组播树。提高了系
 统的可扩展性，与应对网络分割错误的能力。需要注意到，这仅仅改变了Plush
@@ -268,11 +267,12 @@ ACMS使用的分层部署方法将更新的正确性和性能问题分开解决�
 使用quorum算法解决了正确性问题，其它节点向入口点机器订阅更新，解决了更
 新传递的性能问题。
 
-\textbf{CoDeploy} ：
-CoDeploy~\cite{codeploy}利用了CoDeeN~\cite{codeen}内容分发网络帮助人们
-在Planet-Lab平台上部署应用与数据。由于部署的内容可能很大，而CoDeeN使用
-了基于HTTP缓存的内容分发技术，因此CoDeploy首先将要部署的内容打成碎片。
-在部署的目标节点上分别下载各个碎片后，再将原来的部署数据复原。
+\textbf{CoDeploy} ：CoDeploy~\cite{codeploy}利用了CoDeeN~\cite{codeen}
+内容分发网络帮助人们在Planet-Lab平台上部署应用与数据。由于部署的内容可
+能很大，而CoDeeN使用了基于HTTP缓存的内容分发技术，因此CoDeploy首先将要
+部署的内容打成碎片。在部署的目标节点上分别下载各个碎片后，再将原来的部
+署数据复原。由于将文件内容分块，CoDeploy让任何支持HTTP缓存的内容分发网
+络都可以支持大文件缓存，而不会使内存中的小文件缓存大规模被替换。
 
 \textbf{SharkFS} ：SharkFS~\cite{sharkfs}使用了合作缓存（Cooperative
 Caching）技术提高了网络文件系统的可扩展性。通常在网络文件系统中，客户
