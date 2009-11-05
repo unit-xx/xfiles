@@ -1,4 +1,4 @@
-% vim:textwidth=70
+% vim:textwidth=70:lines=42
 \chapter{分布式管理系统的自管理方法研究}
 \label{chap:selfman}
 
@@ -129,7 +129,7 @@ SMON。\ref{sec:smon_app}节描述了SMON系统的一些应用方式。我们在
 \section{系统设计}
 \label{sec:smon_design}
 
-\begin{figure}
+\begin{figure}[bthp]
   \centering
   \begin{minipage}{0.8\linewidth}
     \centering
@@ -163,7 +163,7 @@ SMON节点在远程机器上部署新的SMON节点，或者恢复失败的SMON�
 
 \subsection{自我管理设计}
 
-\begin{figure}
+\begin{figure}[bthp]
 \centering
 \begin{lstlisting}[language=Python,morekeywords={True,False},frame=tb,basicstyle=\small,numbers=right,numbersep=-5pt,numberstyle=\tiny]
 while(1):
@@ -185,7 +185,7 @@ while(1):
 
     sleep(WAIT_INTERVAL)
 \end{lstlisting}
-\caption{SMON peer working flow}
+\caption{SMON节点运行伪代码}
 \label{fig:peerflow}
 \end{figure}
 
@@ -324,7 +324,7 @@ SMON的安全机制需要保证如下两个目标：
 用户的一组分布式资源，表现形式是一组分布式虚拟机。}。用户私钥保存在
 自己的机器上，对应的公钥被分发到用户slice的所有虚拟机里。
 
-\begin{figure}
+\begin{figure}[bthp]
 \centering
   \begin{minipage}{0.8\linewidth}
     \centering
@@ -426,7 +426,7 @@ SMON可以管理若干个分布式应用。管理语意可以从用下四个维�
 两类常见的分布式应用有长期运行的internet服务和grid方式的计算程序。它们
 的管理需求小结在表~\ref{fig:app-man-req}
 
-\begin{table*}
+\begin{table*}[bthp]
 \small
 \centering
 \caption{长期运行的internet服务和grid方式的计算程序的管理需求对比}
@@ -609,9 +609,10 @@ SMON节点与应用的安装程序更新。邻居列表单独保存在一个压�
 \section{应用方式}
 \label{sec:smon_app}
 
-如图~\ref{fig:extend_smon}所示，我们叙述几种使用SMON的典型方式：
+如图~\ref{fig:extend_smon}所示，我们叙述几种使用SMON的典型方式，同时也
+是扩展SMON管理能力的典型方式：
 
-\begin{figure}
+\begin{figure}[htbp]
 \centering
 \begin{minipage}{0.8\linewidth}
 \centering

@@ -35,7 +35,7 @@ BigTable~\cite{bigtable}的分布式存储系统。图~\ref{fig:pacifica_model}
 更好的理解系统层次模块间的结构，以及不同模块间的依赖关系，并验证处于不
 同层次任务的行为。
 
-\begin{figure}
+\begin{figure}[htbp]
   \centering
   \begin{minipage}{1.0\linewidth}
     \centering
@@ -111,7 +111,14 @@ PacificA对网络带宽的利用率只有最大值的70\%。
 
 \subsection{确定叶子任务}
 
-\begin{table}
+我们使用插装技术透明的观测系统运行，收集运行过程的函数调用，包括函数名
+称、调用线程号以及调用参数。函数调用既包括应用层函数也包括操作系统同步
+函数（例如signal/wait）与系统Socket调用（例如send/recv）。默认所有的函
+数调用都会被收集到trace。
+
+表~\ref{fig:sync_func}小结了trace中包含的常见同步对象和相关同步操作。
+
+\begin{table}[htbp]
 \centering
 \begin{minipage}{0.8\linewidth}
 \centering
@@ -160,13 +167,6 @@ PacificA对网络带宽的利用率只有最大值的70\%。
 \end{tabular}
 \end{minipage}
 \end{table}
-
-我们使用插装技术透明的观测系统运行，收集运行过程的函数调用，包括函数名
-称、调用线程号以及调用参数。函数调用既包括应用层函数也包括操作系统同步
-函数（例如signal/wait）与系统Socket调用（例如send/recv）。默认所有的函
-数调用都会被收集到trace。
-
-表~\ref{fig:sync_func}小结了trace中包含的常见同步对象和相关同步操作。
 
 在系统运行trace的基础上，我们首先需要确定叶子任务的边界。Scalpel使用
 \emph{同步点}作为启发定义任务边界。同步点是两个线程同步相互执行，从而
@@ -241,7 +241,7 @@ Scalpel使用happened-before关系推断任务的因果依赖关系。happened-b
 同步对象，表~\ref{fig:sync_dependency}说明了不同线程由于同步操作形成
 happened-before关系的条件。
 
-\begin{table}
+\begin{table}[htbp]
 \centering
 \begin{minipage}{0.8\linewidth}
 \centering
@@ -333,7 +333,7 @@ Scalpel使用若干启发区分这两种不同的关系。如果系统使用操�
 个最高层的任务模型。通过将超级节点展开为构成它们的子图，我们可以得到任
 务的整个层次结构。
 
-\begin{figure}
+\begin{figure}[htbp]
   \centering
   \begin{minipage}{0.8\linewidth}
     \centering
@@ -361,7 +361,7 @@ Scalpel使用若干启发区分这两种不同的关系。如果系统使用操�
 程序运行记录与回放工具。通过插装操作系统调用与应用函数，R2记录了系统的
 运行过程，这也包括对同步对象（互斥锁和信号等）的同步操作，和socket操作。
 
-\begin{figure}
+\begin{figure}[htbp]
 \centering
 \begin{lstlisting}[language=C++]
 
@@ -411,7 +411,7 @@ WaitForSingleObject操作替换为SignalObjectAndWait，保证了同步操作与
 trace是一个原子操作。如图
 ~\ref{fig:trace_shadowlock1}和图~\ref{fig:trace_shadowlock2}所示。
 
-\begin{figure}
+\begin{figure}[htbp]
 \centering
 \begin{lstlisting}[language=C++, basicstyle=\small]
 
@@ -433,7 +433,7 @@ DWORD WaitForSingleObject_hooker(HANDLE hHandle,
 \label{fig:trace_shadowlock1}
 \end{figure}
 
-\begin{figure}
+\begin{figure}[htbp]
 \centering
 \begin{lstlisting}[language=C++, basicstyle=\small]
 
@@ -490,7 +490,7 @@ Thread Local Storage，TLS）技术保存每个线程的trace文件句柄，在�
 我们将Scalpel应用于Apache和PacificA系统，并测试了Scalpel在这两个系统上
 产生的实际额外负载。
 
-\begin{figure}
+\begin{figure}[htbp]
 \centering
 \begin{lstlisting}[language=C++,basicstyle=\small]
 
@@ -540,7 +540,7 @@ Scalpel利用这些信息追踪函数调用，为叶子任务提供易于理解�
 任务模型来。如果没有调试信息，叶子任务的名字不易于人去理解，但是不妨碍
 使用其他调试工具分析任务模型。
 
-\begin{figure}
+\begin{figure}[htbp]
   \centering
   \begin{minipage}{0.8\linewidth}
     \centering
@@ -595,7 +595,7 @@ Scalpel追踪每个系统的运行，并推断任务模型。两个实验都是�
 为了易于理解，在本文中，我们只显示了调用栈尾部调用同步函数的那个函数名
 称。
 
-\begin{figure}
+\begin{figure}[htbp]
 \centering
 \includegraphics[width=\linewidth]{apache-task-model}
 \caption{执行SVN checkout得到的Apache任务模型}
@@ -658,7 +658,7 @@ SVN checkout过程中的一些叶子任务未在图上完全显示，但是它�
 两次\texttt{DoWork}任务触发执行，因此，挖掘算法能够将每个任务正确的区
 分开来。
 
-\begin{table}[t!]
+\begin{table}[htbp]
 \small
 \centering
 \begin{minipage}{0.8\linewidth}
@@ -692,7 +692,7 @@ PacificA的性能。对每一个叶子任务，我们使用Scalpel记录它的�
 络带宽消耗，CPU使用等信息。对高层任务，我们将它的子任务性能参数聚集得
 到它的性能参数信息。
 
-\begin{figure}
+\begin{figure}[htbp]
   \centering
   \begin{minipage}{0.8\linewidth}
     \centering
@@ -714,7 +714,7 @@ PacificA的网络层代码，会对数据发送做流量控制，如果发送消
 \ref{fig:flow_control_code}。这样，四个并发的发送线程就会表现出几乎同步的
 行为来，如图~\ref{fig:sleep-send}所示。
 
-\begin{figure}
+\begin{figure}[htbp]
 \centering
 \begin{lstlisting}[language=C++]
 int Session::WSASendPacket(NetworkStream * pkt) {    
@@ -751,12 +751,12 @@ RPC消息。网络层的消息缓冲区很快就会被填满，导致发送线�
 的RPC数目最多等于发送线程数（本例是4个），因而不会因为发送消息缓冲被填
 满而导致所有线程sleep一秒的情况。
 
-\begin{figure}
+\begin{figure}[htbp]
   \centering
   \begin{minipage}{0.8\linewidth}
     \centering
     \includegraphics[width=0.8\linewidth]{event-send}
-    \caption{4个线程异步调用RPC执行过程}
+    \caption{4个线程同步调用RPC执行过程}
     \label{fig:event-send}
   \end{minipage}
 \end{figure}
@@ -782,7 +782,7 @@ Scalpel使用了插装在系统函数和应用函数调用时输出trace，这�
 Apache实验，我们测试了执行一次svn checkout花费的时间。每组测试都运行5
 次，取平均值作为最终结果。结果显示在表~\ref{fig:perf}中。
 
-\begin{table}[t!]
+\begin{table}[htbp]
 \small
 \centering
 \begin{minipage}{0.8\linewidth}
