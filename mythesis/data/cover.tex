@@ -6,7 +6,7 @@
 %%% End:
 \secretlevel{绝密} \secretyear{2100}
 
-\ctitle{分布式系统管理与调试若干关键问题研究}
+\ctitle{分布式系统运营准备中的若干关键问题研究}
 % 根据自己的情况选，不用这样复杂
 \makeatletter
 \ifthu@bachelor\relax\else
@@ -30,7 +30,8 @@
 %\cdate{\CJKdigits{\the\year}年\CJKnumber{\the\month}月}
 \cdate{\CJKdigits{2009}年\CJKnumber{11}月}
 
-\etitle{Research on Key Problems of Distributed System Management and Debugging}
+\etitle{Research on Key Problems of Distributed System Operational
+Readiness}
 
 % \edegree{Doctor of Science} 
 \edegree{Doctor of Engineering} 
@@ -45,21 +46,21 @@
 
 % 800-1000汉字
 
-  分布式系统成为了支撑Internet服务的关键组成部分，随着系统规模越来越大，
-  系统处理逻辑日趋复杂，有效的管理与调试分布式系统成为了挑战。目前相关
-  研究取得了一些进展，但很多关键问题尚待解决。本文针对分布式系统自管理
-  机制、分布式数据分发系统优化、自动推断分布式系统层次结构任务模型的方
-  法等方面进行了研究，取得了有价值的研究成果。
+  分布式系统已成为支撑Internet服务的关键组成部分，随着系统规模越来越大，
+  系统处理逻辑日趋复杂，在系统设计实现后，需要经过运营准备阶段对系统进
+  行测试、分析与调试。在运营准备阶段有效的管理与调试分布式系统成为了挑
+  战。目前相关研究取得了一些进展，但很多关键问题尚待解决。本文针对分布
+  式系统运营准备中的若干关键问题进行了研究，取得了有价值的研究成果。
 
-  本文主要贡献包括：
+  本文要工作包括：
 
   \begin{enumerate}
 
-    \item 提出了使管理系统具备自管理机制的方法，此方法基于epidemic算
-    法和认证代理技术。设计并实现了一个自管理的分布式应用管理系统SMON。
-    SMON能够自动将自己安全部署到一组指定的机器上去，将自己从运行错误中
-    恢复，并在线升级自己至新版本。SMON支持长期运行的Internet服务管理语
-    意，用户可以通过在SMON上部署新的管理系统扩展管理语意。
+    \item 提出了使管理系统具备自管理机制的方法，此方法基于epidemic算法
+    和认证代理技术。设计并实现了一个自管理的分布式应用管理系统
+    SMON。SMON能够安全的自我部署、自我维护与自我升级。SMON支持长期运行
+    的Internet服务管理语意，用户可以通过在SMON上部署新的管理系统扩展管
+    理语意。
 
     \item 研究了分布式分发系统的优化问题。通过在真实Internet测量数据上
     的广泛细致评测，研究了邻近邻居优化和动态上传带宽分配两种优化方法的
@@ -83,14 +84,16 @@
 \ckeywords{分布式系统; 自管理; 数据分发; 层次结构任务模型; 日志分析}
 
 \begin{eabstract}
+
   Distributed systems are the key components in today's Internet
-  services. While the system scale goes larger and the design
-  logic becomes more complex, it is a challenge to managing and
-  debugging large scale distributed systems. While current research
-  work makes great progresses, some key problems are still not fully
-  addressed yet. In this thesis, we conducted research on
-  self-management of distributed systems and automatica inference
-  of hierarchical task models of distributed systems.
+  services. While the system scale goes larger and the design logic
+  becomes more complex, it is a challenge to managing and debugging
+  large scale distributed systems at operational readiness stage.
+  While current research work makes great progresses, some key
+  problems are still not fully addressed yet. In this thesis, we
+  conducted research on self-management of distributed systems and
+  automatica inference of hierarchical task models of distributed
+  systems.
 
   The contributions of this thesis are:
 

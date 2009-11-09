@@ -2,9 +2,9 @@
 \chapter{相关工作}
 \label{chap:related}
 
-本章介绍与本文研究内容相关的分布式系统管理与调试方面的工作。其目的是进
-一步明确本文工作的研究动机，归纳出相关研究中的重要问题和方法，以深入理
-解本文的研究工作。
+分布式系统运营准备涉及了管理与调试两方面内容，本章介绍与相关的分布式系
+统管理与调试方面的工作。其目的是进一步明确本文工作的研究动机，归纳出相
+关研究中的重要问题和方法，以深入理解本文的研究工作。
 %随着分布式系统规模越来越大，设计越来越复杂，对分布式系统的管理与调试
 %也带来了巨大的挑战。为了深入理解本文的工作动机，下面介绍
 
@@ -45,7 +45,7 @@
 （\ref{sec:related:mgmtsys}节）。人们一直致力于让分布式系统具备一些
 self-*性质，包括自我管理、自我恢复、自我组织、自我优化等等，自我管理属
 性是其中一种，在~\ref{sec:related:selfstart}节我们介绍相关内容。数据分
-发技术是分布式应用部署的关键，我们在~ \ref{sec:related:datadistro}节介
+发技术是分布式应用部署的关键，我们在~\ref{sec:related:datadistro}节介
 绍一些重要的数据分发系统。
 
 \subsection{分布式应用管理系统}
@@ -83,47 +83,40 @@ Plush~\cite{plush}致力于提供一个全面的管理框架。它首先将管�
 Internet服务，Plush增加了同步操作语意，可以支持节点间任务的同步操作，
 因而Plush也可以用来管理Grid类型的并行程序。
 
-\begin{figure}
+\begin{figure}[htb]
 \centering
-\begin{lstlisting}[language=XML,numbers=left]
+\begin{lstlisting}[language=XML,basicstyle=\small]
 <?xml_version="1.0" encoding="utf-8"?>
 <plush>
-    <project_name="sword">
-        <software name="sword_software" type="tar">
-            <package name="sword.tar" type="web">
-                <path>http://plush.ucsd.edu/sword.tar</path>
-                <dest>sword.tar</dest>
-            </package>
-        </software>
-        <component name="sword_participants">
-            <rspec>
-                <num_hosts_min="10" max="800"/>
-            </rspec>
-            <resources>
-                <resource_type="planetlab" group="ucsd_sword"/>
-            </resources>
-            <software_name="sword_software"/>
-        </component>
-        <application_block name="sword_app_block" service="1"
-            reconnect_interval="300">
-            <execution>
-                <component_block_name="participants">
-                    <component_name="sword_participants"/>
-                    <process_block name="sword">
-                        <process name="sword_run">
-                            <path>dd/planetlab/run sword</path>
-                        </process>
-                    </process_block>
-                </component_block>
-            </execution>
-        </application_block>
-    </project>
+  <project_name="sword">
+    <software name="sword_software" type="tar">
+      <package name="sword.tar" type="web">
+        <path>http://plush.ucsd.edu/sword.tar</path>
+      </package>
+    </software>
+    <component name="sword_participants">
+      <rspec> <num_hosts_min="10" max="800"/> </rspec>
+      <resources>
+        <resource_type="planetlab" group="ucsd_sword"/>
+      </resources>
+      <software_name="sword_software"/>
+    </component>
+    <application_block name="sword_app_block" service="1"
+      reconnect_interval="300">
+      <execution>
+        <component_block_name="participants">
+          <process name="sword_run">
+            <path>dd/planetlab/run sword</path>
+          </process>
+        </component_block>
+      </execution>
+    </application_block>
+  </project>
 <plush>
 \end{lstlisting}
 \caption{Plush应用管理规范，引自~\cite{plush}}
 \label{fig:plush_spec}
 \end{figure}
-
 
 图~\ref{fig:plush_spec}是用Plush管理SWORD~\cite{sword_worlds,
 sword_toit}的XML说明。在\texttt{software}标签里，指明了SWORD的安装程序
