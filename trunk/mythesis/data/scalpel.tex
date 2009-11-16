@@ -369,7 +369,7 @@ Scalpel使用若干启发区分这两种不同的关系。如果系统使用操�
 程序运行记录与回放工具。通过插装操作系统调用与应用函数，R2记录了系统的
 运行过程，这也包括对同步对象（互斥锁和信号等）的同步操作，和socket操作。
 
-\begin{figure}[htbp]
+\begin{figure}[htb]
 \centering
 \begin{lstlisting}[language=C++]
 
@@ -419,7 +419,7 @@ WaitForSingleObject操作替换为SignalObjectAndWait，保证了同步操作与
 trace是一个原子操作。如图
 ~\ref{fig:trace_shadowlock1}和图~\ref{fig:trace_shadowlock2}所示。
 
-\begin{figure}[htbp]
+\begin{figure}[htb]
 \centering
 \begin{lstlisting}[language=C++, basicstyle=\small]
 
@@ -441,7 +441,7 @@ DWORD WaitForSingleObject_hooker(HANDLE hHandle,
 \label{fig:trace_shadowlock1}
 \end{figure}
 
-\begin{figure}[htbp]
+\begin{figure}[htb]
 \centering
 \begin{lstlisting}[language=C++, basicstyle=\small]
 

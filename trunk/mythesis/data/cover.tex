@@ -103,34 +103,52 @@ Readiness}
     \item A mechanism to support self-management of distributed
     application management system is proposed and a self-managed
     distributed application management system (SMON) is designed. SMON
-    can automatically and securely deploy itself to a set of machines,
-    recover itself from failures and upgrade itself to newer versions
-    online. SMON supports management semantic for long running
-    internet servies and can be extended easily.
+    design is based on epidemic algorithm and authentication agent.
+    SMON can automatically and securely deploy itself to a set of
+    machines, recover itself from failures and upgrade itself to newer
+    versions online. Theoretical analysis shows that the
+    self-management time grows $O(\log N)$ with system scale. The
+    overhead number in self-deployment and the frequency of received
+    maintenance messages are both constant ($O(1)$).  SMON supports
+    management semantic for long running internet servies and can be
+    extended easily.
 
     \item Emperical study on performance optimization of distributed
     data distribution is presented. Based on real Internet
-    measurements, the effect of two optimization method---biased
+    measurements, the effect of two optimization methods---biased
     neighbour selection and dynamic upload bandwidth allocation---is
-    studies extensively. The interaction between the optimization
-    methods and the piece selection method, and the effect of
-    combining two optimization methods is studied.
+    studies extensively. Several important conclusions are made: the
+    optimization effect of biased neighbour selection grows
+    monotonously with ratio of biased neighbours, and relies on LRF data
+    block selection strategy; the upload nodes set determined by
+    greedy strategy in dynamic upload bandwidth allocation achieves
+    local optimum, and the optimization doesn't rely on LRF data
+    block selection strategy; combining the two optimization
+    strategies achieve marginal effect.
 
     \item An automatic inference methodology of hierarchical task
     models for distributed systems is developed. The inference method
-    can automatically infer task boundaries, correctly associate task
-    dependencies and infer task hierarchies.  The hierarchical task
-    models help on understanding of system design and implementation,
-    and help on finding root causes of system correctness and
-    performance bugs.
+    can automatically infer task boundaries using synchronization
+    point as heuristic, correctly associate task dependencies using
+    happened-before relation as heuristic and infer task hierarchies
+    using graph mining algorithm.  The hierarchical task models help
+    on understanding of system design and implementation, and help on
+    finding root causes of system correctness and performance bugs.
+    A performance bug in Pacifica distributed storage system (similar
+    with BitTable) is resolved using the inferred task model. The
+    bug causes that the bandwidth cannot be saturated in stress test.
 
     \item Methodology of inference of hierarchical task models based
-    on system log is proposed. The inference methodology can extract
-    task information from unstructured system logs automatically and
-    infer hierarchical relations among the tasks. The hierarchical
-    task models help on understanding of system design and
-    implementation, and help on finding root cause of system
-    correctness and performance bugs.
+    on system log is proposed. The log presents system runtime
+    activities and behaviours. The inference methodology can extract
+    task information from unstructured system logs and infer
+    hierarchical relations among the tasks automatically. The
+    hierarchical task models help on understanding of system design
+    and implementation, and help on finding root cause of system
+    correctness and performance bugs. A performance bug in ChunkFS
+    distributed storage system (similar with GFS) is resolved using
+    the inferred task model. The bug causes that the bandwidth cannot
+    be saturated in stress test.
 
   \end{enumerate}
 
