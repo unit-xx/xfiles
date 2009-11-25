@@ -7,12 +7,12 @@
 \begin{figure}
 \centering
 \includegraphics[width=3.0in]{smon_arch}
-\caption{SMON system design.
-%SMON peers monitor each other by sending ping messages.
-%User can send query or control messages using client
-%utility. Authentication agent resolves authentication
-%challenge from peers to help them log into other machines
-%automatically.
+\caption{SMON system design.  SMON peers monitor each other
+by sending ping messages (arrow 1).  User can send query or
+control messages using client utility (arrow 2).
+Authentication agent resolves authentication challenge from
+peers to help them log into other machines automatically
+(arrow 3 and 4).
 }
 \label{fig:smon_arch}
 \end{figure}
@@ -24,7 +24,8 @@ peers, authentication agent and client utility.
 The SMON peers run on a set of target machines where
 distributed applications will be deployed. The peers
 periodically monitor and maintain each other in their
-membership list. 
+membership list. The membership list contains machine hosts
+names where SMON peers should be deployed and running.
 %They will deploy new peers on fresh machines, recover
 %failed peers and upgrade themselves to new version. In this
 %way, a SMON system can manage itself And automatically. 
@@ -281,7 +282,10 @@ When a machine fails, the SMON peer running on it is stopped
 also. Other peers know this event through periodic pings and
 they will try to recover the failed peer by restarting it
 remotely. It is safe to start multiple instances of SMON
-peer, but it is idempotent to start only one instance.
+peer, but it is idempotent to start only one instance.  In
+this way, although false positives are possible in fault
+detection, no system churn will be introduced by spurious
+recovery.
 
 Network partitions can also be handled by SMON easily. When
 network partition occurs, SMON peers are splitted into
@@ -699,21 +703,21 @@ sharing~\cite{bittorrent}, streaming~\cite{Kostic2003a},
 Content Distribution Network~\cite{coral}, etc. These
 services may run for months or years and must robust to a
 variety of failures. After the services are deployed, the
-application peers can be started independently without
-particular sequences. The peers organize themselves into
-structured or random overlays and handles network churns and
-failures. When a peer fails, the overlay can re-organize
-itself. The failed peer should be restored as quickly as
-possible to maintain service availability and performance.
+application peers (shortened as ``app-peer'') can be started
+independently without particular sequences. The app-peers
+organize themselves into structured or random overlays and
+handles network churns and failures. When an app-peer fails,
+the overlay can re-organize itself. The failed app-peer
+should be restored as quickly as possible to maintain
+service availability and performance.
 
 To manage a long running service, SMON will deploy the
 application to a set of machines. It is up to the user to
 decide the machines list using resource discovery services.
 The application peers are started by SMON once they are
 deployed without synchronization. A SMON peer will monitor
-and maintain application peer in the same machine. When an
-application peer is failed, it will be restarted for
-recovery.
+and maintain app-peer in the same machine. When an app-peer
+is failed, it will be restarted for recovery.
 
 \begin{figure}
 \centering
@@ -730,9 +734,10 @@ system upon SMON. In this way, the management functionality
 can be ``extended'' greatly, while the combined management
 system keeps self-management capability. For example, we can
 layer Plush~\cite{Albrecht2007} upon SMON to manage grid
-style computing programs with barrier support for dividing
-computations in phases, as shown in
-figure~\ref{fig:extend_smon}. Or we can layer
+style computing programs as shown in
+figure~\ref{fig:extend_smon}. Plush provides barrier support
+for dividing computations in phases, manage application in
+coordinated approach or on a sebset of nodes. Or we can layer
 D3S~\cite{Liu2008} on SMON to monitor and debug correctness
 of distributed applications as a set of predicates, which
 are defined on runtime states of application processes on
@@ -754,10 +759,13 @@ many machines.
 SMON deploys applications using epidemic algorithm.  An
 application is uniquely identified by its name.
 Periodically, a SMON peer $A$ will choose one locally
-deployed application and exchange the application name with
-a random peer $B$. If $B$ knows an un-deployed application,
+deployed application and notify a random peer $B$ with the
+application name. If $B$ knows an un-deployed application,
 it will try to retrieve the installation package from $A$
-and install the application.
+and install the application. If the retrieve fails, $B$ will
+just wait for the next notification. The epidemic approach
+ensures that an application can be pushed out to all SMON
+peers eventually.
 
 %There is a set of implemented RPC calls for control and
 %monitoring of managed applications.
