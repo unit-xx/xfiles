@@ -255,8 +255,10 @@ SMON's design addresses the challenges as follows. For the
 first challenge, SMON peers use epidemic algorithm to
 monitor and maintain each other. Periodically, a peer will
 choose a random one from its membership list and monitor its
-running status. It will deploy new SMON peer on a fresh
-machine or recover failed peer. 
+running status. The membership list contains machine hosts
+names where SMON peers should be deployed and running. It
+will deploy new SMON peer on a fresh machine or recover
+failed peer. 
 %The simultaneous deployment or recovery for the same peer
 %from multiple peers is idempotent, which means only one
 %deployment or recovery is actually performed. 
@@ -278,17 +280,17 @@ epidemic approach is robust and resilient to failure.
 
 For the second challenge, we employ a separate
 authentication agent to assist peers to log into remote
-machines automatically. To log into a machine, a peer will
-redirect the authentication challenge from remote machine to
-the agent. The agent stores the credential used to
-authenticate with the remote machine. It will resolve the
-challenge on behalf of the peer. The peer replies the
-response from the agent back to the machine and login
-successfully. The credential will be never leaked out of the
-agent. The authentication load on the agent is light and a
-single agent can support a number of peers.  We use a
-symmetric key to authenticate and protect access to SMON
-peers and the authentication agent.
+machines automatically to deploy new peers or recover failed
+peers. To log into a machine, a peer will redirect the
+authentication challenge from remote machine to the agent.
+The agent stores the credential used to authenticate with
+the remote machine. It will resolve the challenge on behalf
+of the peer. The peer replies the response from the agent
+back to the machine and login successfully. The credential
+will be never leaked out of the agent. The authentication
+load on the agent is light and a single agent can support a
+number of peers.  We use a symmetric key to authenticate and
+protect access to SMON peers and the authentication agent.
 
 For the third challenge, SMON defines its management
 semantic for long running internet services. The ``long

@@ -62,12 +62,10 @@ single SMON peer, all the target machines will be deployed
 with a SMON peer.  According to existing
 studies~\cite{Eugster2004}, the self-deployment process can
 be modeled as a branching process with population $n$. After
-$r$ rounds, the expected fraction of deployed machines is:
-
+$r$ rounds, the expected fraction of deployed machines is
 \begin{equation*}
 Y_r \approx \frac{1}{1+ne^{-r}}
 \end{equation*}
-
 The relation of $Y_r$ and $r$ is demonstrated in
 figure~\ref{fig:yr}.
 
@@ -108,16 +106,13 @@ and $m$ machines have been deployed already. For any one of
 $n-m$ un-deployed machines, it may be selected by $k, (k <=
 m)$ peers as the deployment target in the next round.  The
 distribution of $k$ is can be expressed as binomial
-distribition with parameter $(m, \frac{1}{n})$.
-
+distribition with parameter $(m, \frac{1}{n})$
 \begin{equation*}
 P(X=k) = C_m^k (\frac{1}{n})^k (1 - \frac{1}{n})^{m - k}
 \end{equation*}
-
 We define the simultaneous deployment number $k, (k > 0)$ as
 the deployment overhead. It is the conditional probability
-when $k > 0$.
-
+when $k > 0$
 \begin{equation*}
 \begin{aligned}
 P(X' = k) &= P(X=k | X > 0) \\
@@ -125,38 +120,29 @@ P(X' = k) &= P(X=k | X > 0) \\
 &= P(X = k) / (1 - (1 - \frac{1}{n})^{m}) \qquad (k > 0)
 \end{aligned}
 \end{equation*}
-
-The expectation of $k$, the overhead number, is:
-
+The expectation of $k$, the overhead number, is
 \begin{equation*}
 \begin{aligned}
 E(X') &= \sum_{k=1}^m k \cdot P(X=k|X>0)  \\
       &= \frac{1}{(1 - (1 - \frac{1}{n})^{m})} E(X)
 \end{aligned}
 \end{equation*}
-
 Further, note that when $n$ is large, and $m$ is approaching
 $n$, we have
-
 \begin{equation*}
 \lim_{n \to \infty, m \to n} (1 - \frac{1}{n})^{m} = 1 / e
 \end{equation*}
-
 Thus,
-
 \begin{equation*}
 \begin{aligned}
 E(X') &\approx 1.582 \cdot E(X) \\
       &= 1.582 \times \frac{m}{n}
 \end{aligned}
 \end{equation*}
-
-And finally, we have:
-
+And finally, we have
 \begin{equation*}
 \lim_{n \to \infty, m \to n} E(X') = 1.582
 \end{equation*}
-
 This shows that the average overhead number will approach a
 constant value when SMON is deployed at large scale.
 
@@ -165,7 +151,6 @@ received by any peer is also constant.  When SMON is running
 on $n$ peers, the number of ping messages $p$ received by a
 SMON peer is in the binomial distribution of parameter $(n,
 1/n)$. Thus we have
-
 \begin{equation*}
 E(p) = n \cdot 1/n = 1
 \end{equation*}
