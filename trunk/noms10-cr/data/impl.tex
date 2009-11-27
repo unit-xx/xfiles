@@ -68,17 +68,14 @@ maintaining other peers, one for updating membership list,
 one for update \texttt{livetag}. For each application, a
 separate thread will be started for maintaining the
 application.
-
 The communication interface of SMON peers and agents are
 implemented as XML-RPCs, which are not listed for space
 limitation.
-
 SMON peer uses paramiko\footnote{a ssh library implemented
 in Python} to copy files or send commands to remote machines
 using ssh protocol. It will redirect the authentication
 challenge to the authentication agent using
 \texttt{resolve\_challenge} XML-RPC interface.
-
 The configuration parameters used at SMON runtime is stored
 in a configuration file. It stores the time intervals among
 consecutive maintenance tasks, the version numbers for SMON

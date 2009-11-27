@@ -42,10 +42,9 @@ deployment is accomplished, we just disable it by issuing a
 RPC call to \texttt{ucsd2} to set the \texttt{livetag} to
 false.  The ping interval of the SMON peer is configured as
 5 seconds.
-
-\begin{figure}%[t]
+\begin{figure}[hbt]
 \centering
-\includegraphics[width=\linewidth]{deploy_disable}
+\includegraphics[width=0.8\linewidth]{deploy_disable}
 \caption{Deploy SMON on 117 nodes and then disable it.}
 \label{fig:smonperf}
 \end{figure}
@@ -85,8 +84,7 @@ Things get worse when network connection to the machine is
 slow or the machine is overloaded, which make the deployment
 slower than normal. In this way, a large overhead number may
 be produced.
-
-\begin{table}[hb]
+\begin{table}[hbt]
 \centering
 \begin{tabular}{|l|c|c|}
 \hline
@@ -119,8 +117,7 @@ only 1.57 (91/58) times of difference, while the median
 value is 1.31 (63/48) times of difference.  The above two
 ratios is close to the ratio of logarithm of system scales
 ($\log 117 / \log 24 = 1.49$).
-
-\begin{table}[h]
+\begin{table}[hbt]
 \centering
 \begin{tabular}{|l|c|c|}
 \hline
@@ -147,10 +144,9 @@ challenge on behalf of the requested peer. Solving the
 authentication challenge involves expensive computations and
 it is a reasonable to ask whether the agent a possible
 performance bottleneck.
-
-\begin{figure}[h]
+\begin{figure}[hbt]
 \centering
-\includegraphics[width=\linewidth]{cpuload}
+\includegraphics[width=0.8\linewidth]{cpuload}
 \caption{CPU load on authentication agent.}
 \label{fig:agentload}
 \end{figure}

@@ -10,10 +10,10 @@
 NotebookFileLineBreakTest
 NotebookFileLineBreakTest
 NotebookDataPosition[       145,          7]
-NotebookDataLength[      7859,        184]
-NotebookOptionsPosition[      7175,        159]
-NotebookOutlinePosition[      7836,        182]
-CellTagsIndexPosition[      7793,        179]
+NotebookDataLength[      7963,        186]
+NotebookOptionsPosition[      7279,        161]
+NotebookOutlinePosition[      7940,        184]
+CellTagsIndexPosition[      7897,        181]
 WindowFrame->Normal*)
 
 (* Beginning of Notebook Content *)
@@ -40,9 +40,8 @@ Cell[BoxData[
        RowBox[{"Black", ",", " ", "White"}], "}"}]}], "}"}]}], ",", 
    RowBox[{"FrameLabel", "\[Rule]", 
     RowBox[{"{", 
-     RowBox[{
-     "\"\<round (r)\>\"", ",", "\"\<Expected infected population (Y_r)\>\""}],
-      "}"}]}], ",", 
+     RowBox[{"\"\<round (r)\>\"", ",", "\"\<Expected infected (Y_r)\>\""}], 
+     "}"}]}], ",", 
    RowBox[{"LabelStyle", "\[Rule]", 
     RowBox[{"Directive", "[", 
      RowBox[{
@@ -55,7 +54,8 @@ Cell[BoxData[
   3.44851616171875*^9}, {3.4485162195625*^9, 3.44851625371875*^9}, {
   3.44851629265625*^9, 3.44851633615625*^9}, {3.448585726421875*^9, 
   3.448585788078125*^9}, {3.44859016078125*^9, 3.4485901610625*^9}, {
-  3.45585306584375*^9, 3.455853084296875*^9}}],
+  3.45585306584375*^9, 3.455853084296875*^9}, {3.4682984715625*^9, 
+  3.46829847209375*^9}}],
 
 Cell[BoxData[
  GraphicsBox[{{}, {}, 
@@ -137,12 +137,14 @@ pTbBdBXl7b5T2xi6O2n6TKwZh7oFqbXfvzHEGVLArsv0/wD2Ggek
   Frame->True,
   FrameLabel->{
     FormBox["\"round (r)\"", TraditionalForm], 
-    FormBox["\"Expected infected population (Y_r)\"", TraditionalForm]},
+    FormBox["\"Expected infected (Y_r)\"", TraditionalForm]},
   FrameStyle->{{
      GrayLevel[0], 
      GrayLevel[1]}, {
      GrayLevel[0], 
      GrayLevel[1]}},
+  ImageMargins->0.,
+  ImageSize->{321.4332200927344, Automatic},
   LabelStyle->Directive[FontFamily -> "\:5b8b\:4f53", Larger],
   PlotRange->{{0, 10}, {0., 0.9928331442897337}},
   PlotRangeClipping->True,
@@ -150,7 +152,7 @@ pTbBdBXl7b5T2xi6O2n6TKwZh7oFqbXfvzHEGVLArsv0/wD2Ggek
     Scaled[0.02], 
     Scaled[0.02]}]], "Output",
  CellChangeTimes->{{3.448585734515625*^9, 3.44858578834375*^9}, 
-   3.44859016171875*^9, 3.455853126609375*^9}]
+   3.44859016171875*^9, 3.455853126609375*^9, 3.46829849053125*^9}]
 }, Open  ]],
 
 Cell[BoxData[""], "Input",
@@ -182,10 +184,10 @@ CellTagsIndex->{}
 (*NotebookFileOutline
 Notebook[{
 Cell[CellGroupData[{
-Cell[567, 22, 1435, 35, 115, "Input"],
-Cell[2005, 59, 5035, 93, 271, "Output"]
+Cell[567, 22, 1464, 35, 115, "Input"],
+Cell[2034, 59, 5110, 95, 228, "Output"]
 }, Open  ]],
-Cell[7055, 155, 116, 2, 31, "Input"]
+Cell[7159, 157, 116, 2, 31, "Input"]
 }
 ]
 *)
