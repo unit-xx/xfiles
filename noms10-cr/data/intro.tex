@@ -2,20 +2,35 @@
 
 % flow没太大问题。
 
-Distributed systems~\cite{Ghemawat2003, DeCandia2007} are at
-the heart of today's Internet services. While the cost of
-commodity computers continues to drop, it is common for
-distributed computing platforms to contain hundreds or
-thousands of computers in wide-area network, such as
+Distributed applications~\cite{Ghemawat2003, DeCandia2007}
+are at the heart of today's Internet services. These
+applications run on computing platforms with hundreds or
+thousands of machines in wide-area network, such as
 Planet-Lab~\cite{Bavier2004} and Amazon
-EC2~\cite{Garfinkel2007}.  These platforms provide huge
-amount of storage and computing capabilities that can boost
-performance of users' applications significantly. However,
-it is still difficult to design, deploy and manage
-distributed applications at large scale and fully utilize
-the resources.
-%handle frequent and inevitable failures at host,
-%application and network levels.
+EC2~\cite{Garfinkel2007}. The applications can utilize huge
+amount of resources provided by the platforms and boost
+their performance significantly.
+
+%Running on these platforms are mainly long running internet
+%services which serve user requests or provide back-end
+%infrastructure services. The applications consist of peers
+%working cooperately on hundreds or even thousands of
+%machines. The applications peers organize themselves into
+%predefined overlay structures and handling failures from
+%various sources such as network, machines or applications.
+
+
+%While the cost of commodity computers continues to drop, it
+%is common for distributed computing platforms to contain
+%hundreds or thousands of computers in wide-area network,
+%such as Planet-Lab~\cite{Bavier2004} and Amazon
+%EC2~\cite{Garfinkel2007}.  These platforms provide huge
+%amount of storage and computing capabilities that can boost
+%performance of users' applications significantly. However,
+%it is still difficult to design, deploy and manage
+%distributed applications at large scale and fully utilize
+%the resources.  handle frequent and inevitable failures at
+%host, application and network levels.
 
 %As the scale of distributed applications become larger than
 %ever, it is hard to manage them efficiently on distributed
@@ -57,39 +72,45 @@ the resources.
 % applications on a set of distributed machines.
 
 % automation: the importance of management system
-Running on these platforms are mainly long running internet
-services which serve user requests or provide back-end
-infrastructure services. The applications consist of peers
-working cooperately on hundreds or even thousands of
-machines. The applications peers organize themselves into
-predefined overlay structures and handling failures from
-various sources such as network, machines or applications.
 
-Managing these distributed applications faces several
+Managing these distributed applications faces many
 challenges. Distributed application management system is
 designed to ease the burdens of management on many machines
 by automates many aspects in application deployment and
-maintenance.  By hiding the underlying details and providing
-a user-friendly interface, distributed applications can be
-deployed, monitored, recovered and upgraded automatically
-given instructions from developers.  The developers can then
-focus on bug-fixing or performance tuning, rather than
-management details at low level.
+maintenance.  To manage distributed applications efficiently
+at large scale, the management systems have to take
+distributed designs, or to say, they are also distributed
+applications.  A managent system consists of many management
+peers on each machine where applications will be deployed.
+It adopts different schemes to organize management peers,
+such as centralized, hierarchical or peer-to-peer schemes.
+The management peers work corporately to deploy applications
+to a set of machines. After applications are configured and
+started, each peer monitors and maintains applications'
+processes within the same machine box.
+
+
+%By hiding the underlying details and providing
+%a user-friendly interface, distributed applications can be
+%deployed, monitored, recovered and upgraded automatically
+%given instructions from developers.  The developers can then
+%focus on bug-fixing or performance tuning, rather than
+%management details at low level.
 
 % ok here, just ignore the simple tools like vxargs. Don't
 % regard them as `system' the root cause: they are
 % distributed applications in fact.
-To manage distributed applications efficiently at large
-scale, the management systems have to take distributed
-designs, or to say, they are also distributed applications.
-A managent system consists of many management peers on each
-machine where applications will be deployed.  It may adopts
-different schemes to organize management peers, such as
-centralized, hierarchical or peer-to-peer schemes.  The
-management peers work corporately to deploy applications to
-a set of machines. After applications are configured and
-started, each peer monitors and maintains applications'
-processes within the same machine box.
+%To manage distributed applications efficiently at large
+%scale, the management systems have to take distributed
+%designs, or to say, they are also distributed applications.
+%A managent system consists of many management peers on each
+%machine where applications will be deployed.  It may adopts
+%different schemes to organize management peers, such as
+%centralized, hierarchical or peer-to-peer schemes.  The
+%management peers work corporately to deploy applications to
+%a set of machines. After applications are configured and
+%started, each peer monitors and maintains applications'
+%processes within the same machine box.
 %User can query the applications status and control them on
 %demand with the help of management system. XXX: need to say
 %this?  User can send messages into the overlay to query

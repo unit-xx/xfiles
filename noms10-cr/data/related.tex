@@ -3,25 +3,25 @@
 
 % vxargs, appmanager, opt: smartfrog, cfengine
 Many systems have been proposed to help managing distributed
-applications. vxargs~\cite{vxargs} is a Python script which
-can run any command in parallel, including ssh, scp, etc. An
-important reason to use it is to control a large set of
-machines in the wide-area network. It consists of only a
-single script and easy to use, but has limited management
-support. PlanetLab Application Manager
-(appmanager~\cite{appmanager}) is designed mainly for
-managing long running services and utilizes a simple
-client-server model. The clients actively report recent
-status to and receive new instructions from server.
-Plush~\cite{Albrecht2007} is an extensible management system
-in client-server model for large-scale distributed systems,
-including Planet-Lab and Grid. With user provided management
-specification, it handles resource discovery (using SWORD),
-deployment, maintenance and execution flow automatically. It
-has built-in barrier support and can manage grid-style
-applications which run in sychronized phases.
-Plush-M~\cite{Topilski2008} further improves Plush's
-scalability by replacing star topology with
+applications.
+%vxargs~\cite{vxargs} is a Python script which can run any
+%command in parallel, including ssh, scp, etc. An important
+%reason to use it is to control a large set of machines in
+%the wide-area network. It consists of only a single script
+%and easy to use, but has limited management support. 
+PlanetLab Application Manager (appmanager~\cite{appmanager})
+is designed mainly for managing long running services and
+utilizes a simple client-server model. The clients actively
+report recent status to and receive new instructions from
+server.  Plush~\cite{Albrecht2007} is an extensible
+management system in client-server model for large-scale
+distributed systems, including Planet-Lab and Grid. With
+user provided management specification, it handles resource
+discovery (using SWORD), deployment, maintenance and
+execution flow automatically. It has built-in barrier
+support and can manage grid-style applications which run in
+sychronized phases.  Plush-M~\cite{Topilski2008} further
+improves Plush's scalability by replacing star topology with
 RanSub~\cite{Kostic2003}.  SmartFrog~\cite{smartfrog} is a
 framework for building and deploying distributed
 applications. SmartFrog daemons running on each

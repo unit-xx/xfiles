@@ -173,7 +173,7 @@ automatically as follow.
 
 \begin{figure}
 \centering
-\begin{lstlisting}[language=Python,morekeywords={True,False},frame=tb,basicstyle=\small,numbers=right,numbersep=-5pt,numberstyle=\tiny]
+\begin{lstlisting}[language=Python,morekeywords={True,False},frame=tb,basicstyle=\footnotesize,numbers=right,numbersep=-5pt,numberstyle=\tiny]
 while(1):
     if(livetag==False):
         continue
@@ -334,10 +334,10 @@ installation package from the remote peer and upgrade itself
 automatically.
 
 % XXX limit the number of ...?
-It is possible that a peer of new version is known by many
-peers of old version quickly. To avoid flash crowd, a peer
-will limit the number of simultaneous request for retrieving
-installation package.
+%It is possible that a peer of new version is known by many
+%peers of old version quickly. To avoid flash crowd, a peer
+%will limit the number of simultaneous request for retrieving
+%installation package.
 
 To upgrade the whole SMON system to a new version, user only
 has to upgrade one peer to the new version and all the other
@@ -566,19 +566,16 @@ local file systems.
 \subsection{Membership}
 
 Each SMON peer maintains a list of machines as its
-membership list.  The membership maintenance of SMON system
-is different from other distributed systems such as file
-sharing, streaming, Content Distribution Network. While
-others maintains a list of peers that are currently online,
-SMON maintains a list of machines on which there should be
-peers running. The failure of SMON peers will not affect the
-membership list at all.  The list is specified by user and
-should not changes very often. And an important requirement
-of SMON is, even when there is only one SMON peer running,
-it should be able to know all the target machines where SMON
-should be deployed.  The implication is that every running
-SMON peer should be able to know the full list of target
-machines.
+membership list.  While other distributed system maintains a
+list of peers that are currently online, SMON maintains a
+list of machines on which there should be peers running. The
+failure of SMON peers will not affect the membership list at
+all.  The list is specified by user and should not changes
+very often. And an important requirement of SMON is, even
+when there is only one SMON peer running, it should be able
+to know all the target machines where SMON should be
+deployed.  The implication is that every running SMON peer
+should be able to know the full list of target machines.
 
 In current design, a simple scheme is used: each SMON peer
 will store a replica of the full list of target machines
@@ -710,17 +707,17 @@ the overlay can re-organize itself. The failed app-peer
 should be restored as quickly as possible to maintain
 service availability and performance.
 
-To manage a long running service, SMON will deploy the
-application to a set of machines. It is up to the user to
-decide the machines list using resource discovery services.
-The application peers are started by SMON once they are
-deployed without synchronization. A SMON peer will monitor
-and maintain app-peer in the same machine. When an app-peer
-is failed, it will be restarted for recovery.
+%To manage a long running service, SMON will deploy the
+%application to a set of machines. It is up to the user to
+%decide the machines list using resource discovery services.
+%The application peers are started by SMON once they are
+%deployed without synchronization. A SMON peer will monitor
+%and maintain app-peer in the same machine. When an app-peer
+%is failed, it will be restarted for recovery.
 
 \begin{figure}
 \centering
-\includegraphics[width=3in]{extend_smon}
+\includegraphics[width=0.8\linewidth]{extend_smon}
 \caption{Enrich management semantic by deploying other
 management systems upon SMON.}
 \label{fig:extend_smon}
@@ -784,7 +781,11 @@ After application is deployed and started, it is monitored
 and maintained by SMON peer in the same machine. SMON reads
 application specification for management options. User can
 specify application's default running state and change the
-setting using client utility provided by SMON.
+setting using client utility provided by SMON.  In the
+specification, user should specify three scripts to start,
+stop and restart the application. The restart script is
+called to recover the failed processes, and may include
+clean up steps before application is restarted.
 
 The application's running states can be:
 
@@ -797,10 +798,6 @@ The application's running states can be:
   that.
 \end{itemize}
 
-In the specification, user should specify three scripts to
-start, stop and restart the application. The restart script
-is called to recover the failed processes, and may include
-clean up steps before application is restarted.
 
 A SMON peer may report the application states to a central
 server timely if specified. And whenever the application
