@@ -1,22 +1,45 @@
 \section{Related Work}
 \label{sec:related}
 
+% vxargs, appmanager, opt: smartfrog, cfengine
 Many systems have been proposed to help managing distributed
-applications. Plush~\cite{Albrecht2007} and Application
-Manager~\cite{appmanager} are management systems which
-support deploying, monitoring and controlling applications
-centrally. Plush can bootstrap (self-deployment) its clients
-automatically, but the centralized approach limits its
-scalability.  Plush-M~\cite{Topilski2008} further improved
-Plush's scalability on managing applications by replacing
-star topology in Plush with RanSub~\cite{Kostic2003}, but
-the management of Plush clients is still in centralized
-approach. Condor-G~\cite{condorg} is a workload management
-system for compute-intensive jobs on grid infrastructure.
-None of the above management systems fully address
-self-management issue, while SMON addresses the problem
-using epidemic algorithm.
+applications. vxargs~\cite{vxargs} is a Python script which
+can run any command in parallel, including ssh, scp, etc. An
+important reason to use it is to control a large set of
+machines in the wide-area network. It consists of only a
+single script and easy to use, but has limited management
+support. PlanetLab Application Manager
+(appmanager~\cite{appmanager}) is designed mainly for
+managing long running services and utilizes a simple
+client-server model. The clients actively report recent
+status to and receive new instructions from server.
+Plush~\cite{Albrecht2007} is an extensible management system
+in client-server model for large-scale distributed systems,
+including Planet-Lab and Grid. With user provided management
+specification, it handles resource discovery (using SWORD),
+deployment, maintenance and execution flow automatically. It
+has built-in barrier support and can manage grid-style
+applications which run in sychronized phases.
+Plush-M~\cite{Topilski2008} further improves Plush's
+scalability by replacing star topology with
+RanSub~\cite{Kostic2003}.  SmartFrog~\cite{smartfrog} is a
+framework for building and deploying distributed
+applications. SmartFrog daemons running on each
+participating node work together to manage distributed
+applications. Unlike Plush, there is no central point of
+control in SmartFrog: work-flows are fully distributed and
+decentralized.  Although many management systems have been
+proposed, their self-management problem is not fully
+addressed.  User has to set up and maintain a management on
+their own, usually using centralized approach. Plush can
+bootstrap (self-deploy) its clients automatically, but the
+centralized approach limits its scalability and makes no
+difference.  SMON provides a scalable and secure
+self-managment mechanism using epidemic algorithm. It turns
+any managment system ``self-managable'' by deploying it upon
+SMON.
 
+% + Automatic computing
 Researchers have been studying self-* properties of
 distributed systems for long time.
 Self-stabilization~\cite{Dijkstra1974} is a concept of
@@ -24,17 +47,17 @@ fault-tolerance in distributed computing. A
 self-stabilization system will converge to a legitimate
 state from any state. DHTs~\cite{Stoica2001, Ratnasamy2001,
 Rowstron2001} are distributed systems that have
-self-organizing properties. They will automatically organize
-their overlay topologies conforming to predefined
-constraints under changing network conditions.
-\cite{Yin2008} proposed self-hosting system that acquires or
-releases resources dynamically and automatically deploys the
-system to acquired resources (as real or virtual machines)
-using underling system management tools. SMON is
-complementary to these systems and these techniques can be
-combined together to build distributed systems which are
-more stable and efficient with little human management
-efforts.
+self-organizing, self-healing and self-tuning properties.
+They will automatically organize their overlay topologies
+conforming to predefined constraints, and handle network
+churns automatically. \cite{Yin2008} proposes a self-hosting
+system that acquires or releases resources dynamically and
+automatically deploys the system to acquired resources (as
+real or virtual machines) using underling system management
+tools. SMON is complementary to these systems and these
+techniques can be combined together to build distributed
+systems which are more stable and efficient with little
+human management efforts.
 
 \comment{
 DHT (self-organization),

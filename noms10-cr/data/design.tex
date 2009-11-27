@@ -568,11 +568,10 @@ local file systems.
 Each SMON peer maintains a list of machines as its
 membership list.  The membership maintenance of SMON system
 is different from other distributed systems such as file
-sharing~\cite{bittorrent}, streaming~\cite{Kostic2003a},
-Content Distribution Network~\cite{coral}. While others
-maintains a list of peers that are currently online, SMON
-maintains a list of machines on which there should be peers
-running. The failure of SMON peers will not affect the
+sharing, streaming, Content Distribution Network. While
+others maintains a list of peers that are currently online,
+SMON maintains a list of machines on which there should be
+peers running. The failure of SMON peers will not affect the
 membership list at all.  The list is specified by user and
 should not changes very often. And an important requirement
 of SMON is, even when there is only one SMON peer running,
@@ -699,8 +698,8 @@ programs.}
 
 SMON support management semantic for long running internet
 services. Such services include file
-sharing~\cite{bittorrent}, streaming~\cite{Kostic2003a},
-Content Distribution Network~\cite{coral}, etc. These
+sharing, streaming,
+Content Distribution Network, etc. These
 services may run for months or years and must robust to a
 variety of failures. After the services are deployed, the
 application peers (shortened as ``app-peer'') can be started
