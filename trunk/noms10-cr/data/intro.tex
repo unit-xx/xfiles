@@ -6,14 +6,14 @@ Distributed systems~\cite{Ghemawat2003, DeCandia2007} are at
 the heart of today's Internet services. While the cost of
 commodity computers continues to drop, it is common for
 distributed computing platforms to contain hundreds or
-thousands of computers, such as
-Planet-Lab~\cite{Bavier2004}, Amazon
-EC2~\cite{Garfinkel2007} and Teragrid~\cite{Catlett2002}.
-These platforms provide huge amount of storage and computing
-capabilities that can boost performance of users'
-applications significantly. However, it is still difficult
-to design, deploy and manage distributed applications at
-large scale and fully utilize the resources.
+thousands of computers in wide-area network, such as
+Planet-Lab~\cite{Bavier2004} and Amazon
+EC2~\cite{Garfinkel2007}.  These platforms provide huge
+amount of storage and computing capabilities that can boost
+performance of users' applications significantly. However,
+it is still difficult to design, deploy and manage
+distributed applications at large scale and fully utilize
+the resources.
 %handle frequent and inevitable failures at host,
 %application and network levels.
 
@@ -57,34 +57,39 @@ large scale and fully utilize the resources.
 % applications on a set of distributed machines.
 
 % automation: the importance of management system
-Managing a distributed application faces several challenges
-and distributed application management system is designed to
-ease the burdens of managing applications on many machines.
-It automates many aspects in deploying and maintaining
-applications. By hiding the underlying details and providing
+Running on these platforms are mainly long running internet
+services which serve user requests or provide back-end
+infrastructure services. The applications consist of peers
+working cooperately on hundreds or even thousands of
+machines. The applications peers organize themselves into
+predefined overlay structures and handling failures from
+various sources such as network, machines or applications.
+
+Managing these distributed applications faces several
+challenges. Distributed application management system is
+designed to ease the burdens of management on many machines
+by automates many aspects in application deployment and
+maintenance.  By hiding the underlying details and providing
 a user-friendly interface, distributed applications can be
 deployed, monitored, recovered and upgraded automatically
-given instructions from developers. The developers can focus
-on bug-fixing and performance tuning of their applications,
-rather than managing the applications on a set of
-distributed resources.
+given instructions from developers.  The developers can then
+focus on bug-fixing or performance tuning, rather than
+management details at low level.
 
 % ok here, just ignore the simple tools like vxargs. Don't
 % regard them as `system' the root cause: they are
 % distributed applications in fact.
-To manage distributed applications at large scale, the
-management systems have to take distributed designs, or to
-say, they are also distributed applications. A management
-system either adopts centralized (i.e. client/server-like)
-or peer-to-peer (P2P) approach.  Generally, a distributed
-management system consists of many ``peers''\footnote{The
-word peer here will refer to client if the management system
-is in client/sever architecture.} on each machine where
-applications will be deployed. The peers form an overlay
-network, and they work corporately to deploy applications to
-a set of machines. After applications are started, each peer
-monitors and maintains applications' processes within the
-same machine box.
+To manage distributed applications efficiently at large
+scale, the management systems have to take distributed
+designs, or to say, they are also distributed applications.
+A managent system consists of many management peers on each
+machine where applications will be deployed.  It may adopts
+different schemes to organize management peers, such as
+centralized, hierarchical or peer-to-peer schemes.  The
+management peers work corporately to deploy applications to
+a set of machines. After applications are configured and
+started, each peer monitors and maintains applications'
+processes within the same machine box.
 %User can query the applications status and control them on
 %demand with the help of management system. XXX: need to say
 %this?  User can send messages into the overlay to query
@@ -106,13 +111,13 @@ management system $M$. But this approach doesn't
 faces the same problem recursively.  Currently, developers
 usually resort to writing scripts---which leverage OS
 services such as sshd on Unix/Linux---to maintain management
-systems centrally. This approach is very preliminary and has
-several disadvantages.  First, it is not scalable,
-especially at transferring large amount of data or managing
-distribute systems on many machines. Second, it cannot
-handle failures well. When network partition happens, it
-loses control of machines in different partitions. Third, the
-management functionality is limited by underlying OS
+systems they use centrally. This approach is very
+preliminary and has several disadvantages.  First, it is not
+scalable, especially at transferring large amount of data or
+managing distribute systems on many machines. Second, it
+cannot handle failures well. When network partition happens,
+it loses control of machines in different partitions. Third,
+the management functionality is limited by underlying OS
 services (e.g. sshd) at some extent.
 
 % Developers resort to
@@ -255,10 +260,9 @@ SMON's design addresses the challenges as follows. For the
 first challenge, SMON peers use epidemic algorithm to
 monitor and maintain each other. Periodically, a peer will
 choose a random one from its membership list and monitor its
-running status. The membership list contains machine hosts
-names where SMON peers should be deployed and running. It
-will deploy new SMON peer on a fresh machine or recover
-failed peer. 
+running status. The membership list contains machines where
+SMON peers should be deployed and running. It will deploy
+new SMON peer on a fresh machine or recover failed peer. 
 %The simultaneous deployment or recovery for the same peer
 %from multiple peers is idempotent, which means only one
 %deployment or recovery is actually performed. 
