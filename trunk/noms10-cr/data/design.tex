@@ -24,21 +24,16 @@ peers, authentication agent and client utility.
 The SMON peers run on a set of target machines where
 distributed applications will be deployed. The peers
 periodically monitor and maintain each other in their
-membership list. The membership list contains machine hosts
+membership list. The membership list contains machines
 names where SMON peers should be deployed and running.
 %They will deploy new peers on fresh machines, recover
 %failed peers and upgrade themselves to new version. In this
 %way, a SMON system can manage itself And automatically. 
 With the help of authentication agent, a SMON peer can log
 into remote machines automatically to recover failed peers
-or deploy new peers. A SMON system can manage a set of
-distributed applications. It defines the management semantic
+or deploy new peers. SMON defines the management semantic
 for long running internet services.  User can use the client
-utility to instruct SMON on application management. The
-utility can also be used to control a SMON system, such as
-upgrading it to new version, or query running states of SMON
-peers.
-
+utility to instruct SMON on application management. 
 % The epidemic algorithm is used extensively in designing
 % SMON. A SMON system must hold several distributed invariants
 % to run successfully. For example, there should be a SMON
@@ -242,19 +237,18 @@ procedure. $M$ will be chosen by another SMON peer at later
 time. It is expected that a new SMON peer will be deployed
 on $M$ eventually.
 
-Since peers communicate with each other epidemically, it is
-possible that two or more peers try to deploy a SMON peer on
-the same machine $M$ simultaneously. This race-condition is
-solved without direct coordination among peers. The
-installation packages from different peers will be copied to
-different directories of $M$ and they will not overwrite
-each other. The execution of simultaneously started
-installation packages are synchronized using OS provided
-synchronization facilities (e.g. lock file). So only one of
-the installation will finish and others will abort.  In
-solving the problem, some overhead is introduced because
-multiple installation packages may be copied, which wastes
-network bandwidth and storage resources. Through
+It is possible that two or more peers try to deploy a SMON
+peer on the same machine $M$ simultaneously. This
+race-condition is solved without direct coordination among
+peers. The installation packages from different peers will
+be copied to different directories of $M$ and they will not
+overwrite each other. The execution of simultaneously
+started installation packages are synchronized using OS
+provided synchronization facilities (e.g. lock file). So
+only one of the installation will finish and others will
+abort.  In solving the problem, some overhead is introduced
+because multiple installation packages may be copied, which
+wastes network bandwidth and storage resources. Through
 mathematical analysis and evaluation on Planet-Lab platform,
 it is shown that the overhead is low (a constant value) on
 average. Since the size of the installation package is small
@@ -332,13 +326,11 @@ compare its version with others epidemically. If there is a
 difference, the peer with lower version will retrieve the
 installation package from the remote peer and upgrade itself
 automatically.
-
 % XXX limit the number of ...?
 %It is possible that a peer of new version is known by many
 %peers of old version quickly. To avoid flash crowd, a peer
 %will limit the number of simultaneous request for retrieving
 %installation package.
-
 To upgrade the whole SMON system to a new version, user only
 has to upgrade one peer to the new version and all the other
 SMON peers will converge to the latest version eventually.
@@ -403,16 +395,15 @@ will stop sending periodic ping message to others and the
 whole SMON system stops maintaining itself (line 2-3 in
 figure~\ref{fig:peerflow}).
 %We can now stop SMON peers one by one.
-
 The \texttt{livetag} variable has an associated version
 number and is maintained on each peer distributedly. The
 peers exchange \texttt{$<$livetag, version$>$} tuples
 epidemically and update the tuple to the latest version.
-Note that even the epidemic update of \texttt{livetag} is
-controlled by the value of \texttt{livetag}.  When
-\texttt{livetag} is false, peers still respond
-to incoming messages, so as to
-help disseminating the update to \texttt{livetag}.
+%Note that even the epidemic update of \texttt{livetag} is
+%controlled by the value of \texttt{livetag}.  When
+%\texttt{livetag} is false, peers still respond
+%to incoming messages, so as to
+%help disseminating the update to \texttt{livetag}.
 
 Suggested by epidemic algorithm, the whole SMON system will
 be finally disabled when the \texttt{livetag} value of any
