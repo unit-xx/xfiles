@@ -5,11 +5,13 @@
 Distributed applications~\cite{Ghemawat2003, DeCandia2007}
 are at the heart of today's Internet services. These
 applications run on computing platforms with hundreds or
-thousands of machines in wide-area network, such as
-Planet-Lab~\cite{Bavier2004} and Amazon
-EC2~\cite{Garfinkel2007}. The applications can utilize huge
-amount of resources provided by the platforms and boost
-their performance significantly.
+thousands of machines, such as Planet-Lab~\cite{Bavier2004},
+Amazon EC2~\cite{Garfinkel2007} or private clusters. The
+applications utilize huge amount of resources provided by
+the platforms and boost their performance significantly.
+They handle faiures gracefully and the failure of a single
+element in application or computing platform has little
+influence on application functionality and performance.
 
 %Running on these platforms are mainly long running internet
 %services which serve user requests or provide back-end
@@ -75,10 +77,10 @@ their performance significantly.
 
 Managing these distributed applications faces many
 challenges. Distributed application management system is
-designed to ease the burdens of management on many machines
-by automates many aspects in application deployment and
+designed to ease the burdens of management at large scale by
+automates many aspects in application deployment and
 maintenance.  To manage distributed applications efficiently
-at large scale, the management systems have to take
+on many machines, the management systems have to take
 distributed designs, or to say, they are also distributed
 applications.  A managent system consists of many management
 peers on each machine where applications will be deployed.
