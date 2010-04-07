@@ -127,9 +127,16 @@ def main(args):
     ui = Ui_MainWindow()
     ui.setupUi(window)
 
-    # read/set config
+    # read config
     dbfn = "z:\show2003.dbf"
     portfoliofn = "hs300.txt"
+
+    # setup session and login jinzheng
+    jzserver = "172.18.20.52"
+    jzport = 9100
+    jzaccount = "85804530"
+    jzaccounttype = "Z"
+    jzpasswd = "123444"
 
     # setup portfolio
     list, count = Portfolio.readportfolio(portfoliofn)
