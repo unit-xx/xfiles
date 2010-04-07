@@ -13,17 +13,11 @@ class session:
     def __init__(self, conn, dbfn):
         # header fields
         self.data = {}
-        self.data["version"] = "KDGATEWAY1.0"
-        self.data["user_code"] = ""
-        self.data["site"] = ""
-        self.data["branch"] = ""
-        self.data["channel"] = ""
-        self.data["session"] = ""
-        self.data["reserve1"] = ""
-        self.data["reserve2"] = ""
-        self.data["reserve3"] = ""
-        self.data["workkey"] = ""
-        self.data["secu_acc"] = {"sh":"", "sz":""}
+        self.data["flag"] = "R"
+        self.data["addr"] = ""
+        self.data["serial"] = ""
+        self.data["user"] = "9201"
+        self.data["passwd"] = "123"
 
         # network connection
         self.conn = conn
@@ -38,22 +32,10 @@ class session:
     def __setitem__(self, key, value):
         self.data[key] = value
 
-    def encrypt(self, s):
-        assert(len(s) % 8 == 0)
-        cipher = Blowfish(self["workkey"])
-        tmp = []
-        for i in range(0, len(s), 8):
-            tmp.append(cipher.encrypt(s[i:i+8]))
-            # it is IMPORTANT to convert the encrypted code into UPPER case.
-        return hexlify("".join(tmp)).upper()
-
-    def decrypt(self, s):
-        pass
-
     def storetrade(self, reqpayload, resppayload):
         # TODO: not only raw
         t = datetime.now()
-        self.dbconn.execute('insert into rawtradeinfo values (?, ?, ?)',
+        self.dbconn.execute('insert into rawoptiontradeinfo values (?, ?, ?)',
                 (str(t),
                     reqpayload.decode("GBK"),
                     resppayload.decode("GBK")))
@@ -90,45 +72,17 @@ class request:
         raise NotImplementedError()
 
     def serialize(self):
-        # a request is splitted into:
-        # (header)(payload)
-        # (header) = (header_len, payload_len, crc, headerP)
-        # headerP for header prime, contains version, user code, etc.
-
-        # gen payload, each sub-request implement it separately
+        header = self.genheader()
         payload = self.genpayload()
-        self.payload = payload
-
-        # gen header without headerP
-        headerP = self.genheaderP()
-        header_len = "%04d|" % (19 + len(headerP))
-        payload_len = "%04d|" % len(payload)
-        crc = "%s|" % self.session["workkey"]
-
-        # calc crc
-        c = 0
-        c = crc32(header_len, c)
-        c = crc32(payload_len, c)
-        c = crc32(crc, c)
-        c = crc32(headerP, c)
-        c = crc32(payload, c)
-        crc = "%08x|" % (c & 0xffffffff)
-
         # return full data package
-        return "".join( (header_len, payload_len, crc, headerP, payload) )
+        return "".join( (header, payload) )
 
-    def genheaderP(self):
+    def genheader(self):
         return "|".join(
                 (
-                    self.session["version"],
-                    self.session["user_code"],
-                    self.session["site"],
-                    self.session["branch"],
-                    self.session["channel"],
-                    self.session["session"],
-                    self.session["reserve1"],
-                    self.session["reserve2"],
-                    self.session["reserve3"],
+                    self.session["flag"],
+                    self.session["addr"],
+                    self.session["serial"],
                     ""
                     )
                 )
@@ -143,12 +97,14 @@ class request:
         self.session.conn.sendall(data)
 
 class response:
+    success_fieldcnt = 0
+    failed_fieldcnt = 0
+
     def __init__(self, session):
         self.session = session
 
-    def checkcrc(self):
-        # TODO: implement it
-        return True
+    def check(self):
+        raise NotImplementedError()
 
     def recv_n(self, n):
         left = n
@@ -163,6 +119,8 @@ class response:
         return "".join(content)
 
     def recv_single(self):
+        #A|||N|40106|席位未处于开盘状态--9201,IF1006,买,开,保,1,3678.0000,00028184,cffex,cjis|40106|
+        # first receiv 4 fields (by counting "|"), we know it is ok or not, then receive all left fields.
         header_len = int(self.recv_n(5)[0:4])
         header_left = self.recv_n(header_len - 5)
         i = header_left.find("|")
@@ -179,54 +137,29 @@ class response:
         # recv full header
         # recv payload, may involve multple receives
 
-        # recv until no more responses
-        # any one retcode is not 0, all failed
-        # any one crc failed, all failed
-
-        header_len, self.header_left, payload = self.recv_single()
-        self.deserialize_headerleft()
-        if self.hasnext:
-            payload_list = [payload]
-            noerr = True
-            while 1:
-                # do it
-                req = GetNextReq(s)
-                req.send()
-                resp = GetNextResp(s)
-                x, y, z = resp.recv_single()
-                resp.deserialize_headerleft()
-                # TODO: error case
-                if(resp.retcode == 0 and resp.checkcrc() == True):
-                    payload_list.append(resp.payload)
-                else:
-                    noerr = False
-                    break
-                if(resp.hasnext):
-                    break
-            if noerr:
-                payload = "".join(payload_list)
-            else:
-                payload = ""
-                self.retcode = -1
-
-        self.payload = payload
-
-    def deserialize_headerleft(self):
-        tmp = self.header_left[0:-1].split("|")
-        self.crc = tmp[1]
-        self.version = tmp[2]
-        self.retcode = tmp[3]
-        self.retinfo = tmp[4].decode("GBK")
-        self.hasnext = tmp[5]
-        self.sectionnumber = int(tmp[6])
-        self.recordnumber = int(tmp[7])
+        while 1: # recv until no more responses
+            header_len = int(self.recv_n(5)[0:4])
+            self.header_left = self.recv_n(header_len - 5)
+            i = self.header_left.find("|")
+            # TODO: implement more packges receiving now,
+            # self.payload should be the concatenated results
+            # of multiple responses
+            self.payload = self.recv_n(int(self.header_left[0:i]))
+            break
 
     def deserialize(self):
         # parse payload as an array of array, first line is section names.
         # implemented by sub-responses
         # TODO: check crc
         # TODO: check return code is success or not
-        self.deserialize_headerleft()
+        tmp = self.header_left[0:-1].split("|")
+        self.crc = tmp[1]
+        self.version = tmp[2]
+        self.retcode = tmp[3]
+        self.retinfo = tmp[4].decode("GBK")
+        self.hasnext = int(tmp[5])
+        self.sectionnumber = int(tmp[6])
+        self.recordnumber = int(tmp[7])
 
         tmp = self.payload[0:-1].split("|")
         self.sections = tmp[0:self.sectionnumber]
