@@ -10,7 +10,7 @@ def pad(s, length, padder=" "):
 Maintains common fields in header, such as version, key, etc.
 """
 class session:
-    def __init__(self, conn, dbfn):
+    def __init__(self, conn, tradedbfn):
         # header fields
         self.data = {}
         self.data["version"] = "KDGATEWAY1.0"
@@ -29,8 +29,8 @@ class session:
         self.conn = conn
 
         # db connections
-        self.dbfn = dbfn
-        self.dbconn = db.connect(dbfn)
+        self.tradedbfn = tradedbfn
+        self.tradedbconn = db.connect(tradedbfn)
 
     def __getitem__(self, key):
         return self.data[key]
@@ -53,15 +53,15 @@ class session:
     def storetrade(self, reqpayload, resppayload):
         # TODO: not only raw
         t = datetime.now()
-        self.dbconn.execute('insert into rawtradeinfo values (?, ?, ?)',
+        self.tradedbconn.execute('insert into rawtradeinfo values (?, ?, ?)',
                 (str(t),
                     reqpayload.decode("GBK"),
                     resppayload.decode("GBK")))
-        self.dbconn.commit()
+        self.tradedbconn.commit()
 
     def close(self):
-        self.dbconn.commit()
-        self.dbconn.close()
+        self.tradedbconn.commit()
+        self.tradedbconn.close()
         self.conn.close()
 
 class request:
@@ -172,6 +172,8 @@ class response:
     def recv(self):
         header_len, self.header_left, self.payload = self.recv_single()
         self.deserialize()
+        if self.hasnext == "1":
+            print "Has more results: %s" % type(self)
 
     def recv_all(self):
         # TODO: finish implementation

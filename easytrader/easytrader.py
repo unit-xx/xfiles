@@ -63,7 +63,7 @@ class Portfolio:
         self.stocklist = []
         self.stockset = set()
         self.stockattr = ["count", "market", "code", "name", "latestprice", "buyprice", "sellprice", "order_id", "orderedcount", "orderprice", "dealcount", "dealprice"]
-        self.stockmodelattr = ["count", "market", "code", "name", "orderedcount", "dealcount", "orderprice", "dealprice", "latestprice"]
+        self.stockmodelattr = ["count", "market", "code", "name", "orderedcount", "dealcount", "orderprice", "dealprice", "latestprice", "buyprice", "sellprice"]
         # use market+stock number as key
         self.dealrecord = {}
         self.stockinfo = {}
@@ -76,6 +76,7 @@ class Portfolio:
             self.stockinfo[scode]["count"] = i[2]
             self.stockinfo[scode]["market"] = i[0].upper()
             self.stockinfo[scode]["code"] = i[1]
+            self.stockinfo[scode]["order_id"] = ""
 
             self.stockset = set(self.stocklist)
 
@@ -170,41 +171,71 @@ class Portfolio:
                 self.stockinfo[scode]["order_id"] = resp.records[0][1]
 
 class PortfolioUpdater(Thread):
-    def __init__(self, dbfn, portfolio, portmodel):
+    def __init__(self, shdbfn, szdbfn, portfolio, portmodel):
         Thread.__init__(self)
-        self.dbfn = dbfn
+        self.shdbfn = shdbfn
+        self.szdbfn = szdbfn
         self.portfolio = portfolio
         self.portmodel = portmodel
         self.runflag = True
-        self.localdbfn = "show2003.local.et"
+        self.localshdbfn = "show2003.local.et"
+        self.localszdbfn = "sjshq.local.et"
 
-        # one-to-one mapping of dbfield to stockattr
-        self.dbfield = ["S1", "S2", "S8", "S9", "S10"]
-        self.dbmapping = {
+        # one-to-one mapping of dbfield to stockattr, for SH
+        self.shdbfield = ["S1", "S2", "S8", "S9", "S10"]
+        self.shdbmapping = {
                 "S1":"code",
                 "S2":"name",
                 "S8":"latestprice",
                 "S9":"buyprice",
                 "S10":"sellprice"
                 }
-        assert(len(self.dbfield) == len(self.dbmapping))
+        assert(len(self.shdbfield) == len(self.shdbmapping))
 
-    def update(self):#dbfn, stockdata, stocklist, model):
+        # for SZ
+        self.szdbfield = ["HQZQDM", "HQZQJC", "HQZJCJ", "HQBJW1", "HQSJW1"]
+        self.szdbmapping = {
+                "HQZQDM":"code",
+                "HQZQJC":"name",
+                "HQZJCJ":"latestprice",
+                "HQBJW1":"buyprice",
+                "HQSJW1":"sellprice"
+                }
+        assert(len(self.szdbfield) == len(self.szdbmapping))
+
+    def update(self):
         # show2003 only considers SH market
-        shutil.copy(self.dbfn, self.localdbfn)
-        db = dbf.Dbf(self.localdbfn, ignoreErrors=True, readOnly=True)
-        for s in db:
+        shutil.copy(self.shdbfn, self.localshdbfn)
+        shutil.copy(self.szdbfn, self.localszdbfn)
+        dbsh = dbf.Dbf(self.localshdbfn, ignoreErrors=True, readOnly=True)
+        dbsz = dbf.Dbf(self.localszdbfn, ignoreErrors=True, readOnly=True)
+
+        # update SH stock
+        for s in dbsh:
             # a dirty patch
             scode = "SH" + s[0]
             if scode in self.portfolio.stockset:
-                stockinfo = self.portfolio.data[scode]
-                for f in self.dbfield:
+                stockinfo = self.portfolio.stockinfo[scode]
+                for f in self.shdbfield:
                     if type(s[f]) is types.StringType:
-                        stockinfo[self.dbmapping[f]] = s[f].decode("GBK")
+                        stockinfo[self.shdbmapping[f]] = s[f].decode("GBK")
                     else:
-                        stockinfo[self.dbmapping[f]] = s[f]
-        db.close()
-        # TODO: update model
+                        stockinfo[self.shdbmapping[f]] = s[f]
+        dbsh.close()
+
+        # update SZ stock
+        for s in dbsz:
+            # a dirty patch
+            scode = "SZ" + s[0]
+            if scode in self.portfolio.stockset:
+                stockinfo = self.portfolio.stockinfo[scode]
+                for f in self.szdbfield:
+                    if type(s[f]) is types.StringType:
+                        stockinfo[self.szdbmapping[f]] = s[f].decode("GBK")
+                    else:
+                        stockinfo[self.szdbmapping[f]] = s[f]
+        dbsz.close()
+
         self.portmodel.emit(SIGNAL("dataChanged(QModelIndex,QModelIndex)"),
                 self.portmodel.index(0,0), self.portmodel.index(
                     len(self.portfolio.stockinfo)-1,
@@ -232,14 +263,14 @@ class OrderUpdater(Thread):
 
     def update(self):
         for scode in self.portfolio.stocklist:
-            if self.portfolio.stockinfo["order_id"] != "":
+            if self.portfolio.stockinfo[scode]["order_id"] != "":
                 qoreq = jz.QueryOrderReq(self.session)
                 qoreq["user_code"] = self.session["user_code"]
                 if self.portfolio.stockinfo[scode]["market"] == "SH":
                     qoreq["market"] = "10"
                 elif self.portfolio.stockinfo[scode]["market"] == "SZ":
                     qoreq["market"] = "00"
-                qoreq["order_id"] = self.portfolio.stockinfo["order_id"]
+                qoreq["order_id"] = self.portfolio.stockinfo[scode]["order_id"]
                 qoreq.send()
                 qoresp = jz.QueryOrderResp(self.session)
                 qoresp.recv()
@@ -270,7 +301,9 @@ def main(args):
     ui.setupUi(window)
 
     # read config
-    dbfn = "z:\\show2003.dbf"
+    shdbfn = "z:\\show2003.dbf"
+    szdbfn = "z:\\sjshq.dbf"
+    tradedbfn = "tradeinfo.db"
     portfoliofn = "hs300.txt"
 
     jzserver = "172.18.20.52"
@@ -284,20 +317,20 @@ def main(args):
     conn = socket.socket()
     conn.connect((jzserver, jzport))
 
-    s = jz.session(conn, dbfn)
-    cireq = jz.CheckinReq(s)
+    mysession = jz.session(conn, tradedbfn)
+    cireq = jz.CheckinReq(mysession)
     cireq.send()
-    ciresp = jz.CheckinResp(s)
+    ciresp = jz.CheckinResp(mysession)
     ciresp.recv()
     # update workkey
-    s["workkey"] = ciresp.getworkkey()
+    mysession["workkey"] = ciresp.getworkkey()
 
-    loginreq = jz.LoginReq(s)
+    loginreq = jz.LoginReq(mysession)
     loginreq["idtype"] = jzaccounttype
     loginreq["id"] = jzaccount
-    loginreq["passwd"] = s.encrypt(jz.pad(jzpasswd, (len(jzpasswd)/8+1)*8))
+    loginreq["passwd"] = mysession.encrypt(jz.pad(jzpasswd, (len(jzpasswd)/8+1)*8))
     loginreq.send()
-    loginresp = jz.LoginResp(s)
+    loginresp = jz.LoginResp(mysession)
     loginresp.recv()
     # update session fields from login response
     if loginresp.retcode == "0":
@@ -306,15 +339,17 @@ def main(args):
 
     # setup portfolio
     bo, badlines = Portfolio.readBatchOrder(portfoliofn)
-    print "There're bad lines."
-    p = Portfolio(bo, s)
+    if len(badlines) > 0:
+        print "There're bad lines."
+        print badlines
+    p = Portfolio(bo, mysession)
 
     # setup portfolio model for showing in table
     pmodel = PortfolioModel(p)
     ui.stock.setModel(pmodel)
 
     # run the portfolio updater
-    pupdater = PortfolioUpdater(dbfn, p, pmodel)
+    pupdater = PortfolioUpdater(shdbfn, szdbfn, p, pmodel)
     pupdater.start()
 
     # run the order info updater
@@ -327,6 +362,8 @@ def main(args):
     window.show()
     app.exec_()
     pupdater.stop()
+    orderupdater.stop()
+    mysession.close()
 
 if __name__=="__main__":
     main(sys.argv)
