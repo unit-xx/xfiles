@@ -23,7 +23,7 @@ class session:
         self.data["reserve2"] = ""
         self.data["reserve3"] = ""
         self.data["workkey"] = ""
-        self.data["secu_acc"] = {"sh":"", "sz":""}
+        self.data["secu_acc"] = {"SH":"", "SZ":""}
 
         # network connection
         self.conn = conn
@@ -174,6 +174,7 @@ class response:
         self.deserialize()
 
     def recv_all(self):
+        # TODO: finish implementation
         # consider data in more than one responses
         # recv header len
         # recv full header
@@ -273,14 +274,13 @@ class LoginResp(response):
         self.session["branch"] = self.records[0][6]
         self.session["channel"] = "4"
         self.session["session"] = self.records[0][7]
-        # TODO: update secu_code
         for r in self.records:
             if r[0] == "00":
-                self.session["secu_acc"]["sz"] = r[1]
+                self.session["secu_acc"]["SZ"] = r[1]
             if r[0] == "10":
-                self.session["secu_acc"]["sh"] = r[1]
-        assert(self.session["secu_acc"]["sz"] != "")
-        assert(self.session["secu_acc"]["sh"] != "")
+                self.session["secu_acc"]["SH"] = r[1]
+        assert(self.session["secu_acc"]["SZ"] != "")
+        assert(self.session["secu_acc"]["SH"] != "")
 
 class CapitalQueryReq(request):
     code = "502"
@@ -302,4 +302,12 @@ class SubmitOrderReq(request):
     pass
 
 class SubmitOrderResp(response):
+    pass
+
+class QueryOrderReq(request):
+    # TODO: return multiple line?
+    code = "510"
+    paramlist = ["user_code", "market", "order_id"]
+
+class QueryOrderResp(response):
     pass
