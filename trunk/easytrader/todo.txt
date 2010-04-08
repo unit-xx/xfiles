@@ -1,0 +1,16 @@
+choose price and buy method
+
+check submit is ok and can track order
+
+re-submit order
+
+TOCHECK: add order_id field in portofolio file.
+
+TOCHECK: load and save portofolio
+
+handle error and exceptions
+
+multiple responses
+
+NONEED?: load portofolio from menu
+

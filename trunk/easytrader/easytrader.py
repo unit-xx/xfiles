@@ -73,17 +73,20 @@ class Portfolio:
             self.stockinfo.setdefault(scode, {})
             self.dealrecord.setdefault(scode, {})
 
-            self.stockinfo[scode]["count"] = i[2]
             self.stockinfo[scode]["market"] = i[0].upper()
             self.stockinfo[scode]["code"] = i[1]
-            self.stockinfo[scode]["order_id"] = ""
+            self.stockinfo[scode]["count"] = i[2]
+            try:
+                self.stockinfo[scode]["order_id"] = i[3]
+            except IndexError: # no order_id yet
+                self.stockinfo[scode]["order_id"] = ""
 
             self.stockset = set(self.stocklist)
 
     @staticmethod
     def readBatchOrder(bofn):
         # bofn specifies batch order in lines, each lines contains
-        # market code (SH, SZ), stock number, count
+        # market code (SH, SZ), stock number, count and order_id
         # separated by spaces
         # return: batch orders in a list, and bad lines
         bo = []
@@ -94,7 +97,7 @@ class Portfolio:
                 break
 
             boitem = line.split()
-            if len(boitem) != 3: # empty line or others
+            if len(boitem) < 3: # empty line or others
                 if line != "\n":
                     badlines.append(line.strip())
                 continue
@@ -106,6 +109,16 @@ class Portfolio:
             bo.append(boitem)
         f.close()
         return (bo, badlines)
+
+    def saveBatchOrder(bofn):
+        f = open(bofn, "w")
+        for scode in self.stocklist:
+            si = self.stockinfo[scode]
+            f.write(" ".join(si["market"], si["code"],
+                si["count"], si["order_id"]))
+            f.write("\n")
+        f.flush()
+        f.close()
 
     @staticmethod
     def readportfolio(fn):
@@ -288,7 +301,7 @@ class OrderUpdater(Thread):
             #    for field in self.dbfield:
             #        print self.portfolio.data[d][self.dbmapping[field]],
             #    print
-            time.sleep(1)
+            time.sleep(2)
 
 def openfile():
     fn = QFileDialog.getOpenFileName()
@@ -304,7 +317,8 @@ def main(args):
     shdbfn = "z:\\show2003.dbf"
     szdbfn = "z:\\sjshq.dbf"
     tradedbfn = "tradeinfo.db"
-    portfoliofn = "hs300.txt"
+    #portfoliofn = "hs300.txt"
+    portfoliofn = openfile()
 
     jzserver = "172.18.20.52"
     jzport = 9100
@@ -357,13 +371,14 @@ def main(args):
     orderupdater.start()
 
     # setup menu
-    window.connect(ui.import_portfolio, SIGNAL("activated()"), openfile)
+    # window.connect(ui.import_portfolio, SIGNAL("activated()"), openfile)
 
     window.show()
     app.exec_()
     pupdater.stop()
     orderupdater.stop()
     mysession.close()
+    p.saveBatchOrder(portfoliofn)
 
 if __name__=="__main__":
     main(sys.argv)
