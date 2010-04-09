@@ -40,33 +40,32 @@ else:
     print "Cannot login"
     sys.exit(1)
 
-qoreq = jz.QueryOrderReq(s)
+dealreq = jz.DealReq(s)
 today = str(datetime.today().date())
-qoreq["begin_date"] = today
-qoreq["end_date"] = today
-qoreq["get_orders_mode"] = "0" # all submissions
-qoreq["user_code"] = s["user_code"]
+dealreq["begin_date"] = today
+dealreq["end_date"] = today
+dealreq["user_code"] = s["user_code"]
 
-#qoreq["order_id"] = "17063324"
+#dealreq["order_id"] = "17063324"
 # NOTE: use order_id in QueryOrderReq as biz_no in QueryOrder
-qoreq["biz_no"] = "17063331"
-#qoreq["account"] = s["account"]
+#dealreq["order_id"] = "17063327"
+#dealreq["account"] = s["account"]
 
-#qoreq["market"] = "00"
-#qoreq["secu_acc"] = s["secu_acc"]["SH"]
-#qoreq["secu_code"] = "601398"
+#dealreq["market"] = "00"
+#dealreq["secu_acc"] = s["secu_acc"]["SH"]
+#dealreq["secu_code"] = "601398"
 #orderreq["trd_id"] = "0B"
 
-#qoreq["market"] = "10"
-#qoreq["order_id"] = "17063323"
-qoreq.send()
-print qoreq.payload
+#dealreq["market"] = "10"
+#dealreq["order_id"] = "17063323"
+dealreq.send()
+print dealreq.payload
 
-qoresp = jz.QueryOrderResp(s)
-qoresp.recv()
-print qoresp.hasnext
-print qoresp.sections
-print qoresp.records
-print qoresp.retcode
-print qoresp.retinfo
+dealresp = jz.DealResp(s)
+dealresp.recv()
+print dealresp.hasnext
+print dealresp.sections
+print dealresp.records
+print dealresp.retcode
+print dealresp.retinfo
 

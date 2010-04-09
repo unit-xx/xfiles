@@ -1,4 +1,6 @@
-choose price and buy method
+choose buy method
+
+choose price
 
 check submit is ok and can track order
 
