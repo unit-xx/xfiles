@@ -11,6 +11,7 @@ import time
 import shutil
 import types
 import jz
+from datetime import datetime
 
 class PortfolioModel(QAbstractTableModel):
     def __init__(self, portfolio, parent=None):
@@ -62,8 +63,10 @@ class Portfolio:
         self.session = s
         self.stocklist = []
         self.stockset = set()
-        self.stockattr = ["count", "market", "code", "name", "latestprice", "buyprice", "sellprice", "order_id", "orderedcount", "orderprice", "dealcount", "dealprice"]
+        self.stockattr = ["count", "market", "code", "name", "latestprice", "buyprice", "sellprice", "order_id", "order_date", "orderedcount", "orderprice", "dealcount", "dealprice"]
         self.stockmodelattr = ["count", "market", "code", "name", "orderedcount", "dealcount", "orderprice", "dealprice", "latestprice", "buyprice", "sellprice"]
+        self.pricepolicylist = ["latest", "b1", "b2", "b3", "b4", "b5", "s1", "s2", "s3", "s4", "s5"]
+        self.pricepolicy = "s5"
         # use market+stock number as key
         self.dealrecord = {}
         self.stockinfo = {}
@@ -78,7 +81,9 @@ class Portfolio:
             self.stockinfo[scode]["count"] = i[2]
             try:
                 self.stockinfo[scode]["order_id"] = i[3]
+                self.stockinfo[scode]["order_date"] = i[4]
             except IndexError: # no order_id yet
+                self.stockinfo[scode]["order_id"] = ""
                 self.stockinfo[scode]["order_id"] = ""
 
             self.stockset = set(self.stocklist)
@@ -86,7 +91,7 @@ class Portfolio:
     @staticmethod
     def readBatchOrder(bofn):
         # bofn specifies batch order in lines, each lines contains
-        # market code (SH, SZ), stock number, count and order_id
+        # market code (SH, SZ), stock number, count and order_id, order_date
         # separated by spaces
         # return: batch orders in a list, and bad lines
         bo = []
@@ -110,12 +115,12 @@ class Portfolio:
         f.close()
         return (bo, badlines)
 
-    def saveBatchOrder(bofn):
+    def saveBatchOrder(self, bofn):
         f = open(bofn, "w")
         for scode in self.stocklist:
             si = self.stockinfo[scode]
-            f.write(" ".join(si["market"], si["code"],
-                si["count"], si["order_id"]))
+            f.write(" ".join( (si["market"], si["code"],
+                si["count"], si["order_id"], si["order_date"]) ))
             f.write("\n")
         f.flush()
         f.close()
@@ -133,55 +138,74 @@ class Portfolio:
         assert(len(stocklist) == len(stockcount))
         return stocklist, stockcount
 
-    def batchOrderSubmit(self):
+    def batchOrderSubmitBuy(self):
+        self.batchOrderSubmit("buy")
+
+    def test(self):
+        print "here"
+
+    def batchOrderSubmit(self, trdid):
         # return:
 
         # submit first order item, use its order_id as following orders' biz_no
+        if len(self.stocklist) == 0:
+            return
+
+        trdid == ""
+        if trdid == "buy":
+            trdcode = "0B"
+        elif trdid == "sell":
+            trdcode = "0S"
+        assert(trdcode != "")
+
+        today = str(datetime.today().date())
         scode = self.stocklist[0]
-        req = SubmitOrderReq(s)
-        req["user_code"] = s["user_code"]
+        req = jz.SubmitOrderReq(self.session)
+        req["user_code"] = self.session["user_code"]
         if self.stockinfo[scode]["market"] == "SH":
             req["market"] = "10"
-            req["secu_acc"] = s["secu_acc"]["SH"]
+            req["secu_acc"] = self.session["secu_acc"]["SH"]
         elif self.stockinfo[scode]["market"] == "SZ":
             req["market"] = "00"
-            req["secu_acc"] = s["secu_acc"]["SZ"]
-        req["account"] = s["account"] # capital account
+            req["secu_acc"] = self.session["secu_acc"]["SZ"]
+        req["account"] = self.session["account"] # capital account
         req["secu_code"] = self.stockinfo[scode]["code"]
-        req["trd_id"] = "0B" # TODO: buy method
-        req["price"] = "?" # TODO: buy price
+        req["trd_id"] = trdcode
+        req["price"] = self.stockinfo[scode]["orderprice"]
         req["qty"] = self.stockinfo[scode]["count"]
         req.send()
-        resp = SubmitOrderResp(s)
+        resp = jz.SubmitOrderResp(self.session)
         resp.recv()
-        s.storetrade(req.payload, resp.payload)
+        self.session.storetrade(req.payload, resp.payload)
         if resp.retcode == "0":
             # TODO: handle error message
             self.stockinfo[scode]["order_id"] = resp.records[0][1]
+            self.stockinfo[scode]["order_date"] = today
 
         first_order_id = resp.records[0][1]
         # submit following itmes.
         for scode in self.stocklist[1:]:
-            req = SubmitOrderReq(s)
-            req["user_code"] = s["user_code"]
+            req = jz.SubmitOrderReq(self.session)
+            req["user_code"] = self.session["user_code"]
             if self.stockinfo[scode]["market"] == "SH":
                 req["market"] = "10"
-                req["secu_acc"] = s["secu_acc"]["SH"]
+                req["secu_acc"] = self.session["secu_acc"]["SH"]
             elif self.stockinfo[scode]["market"] == "SZ":
                 req["market"] = "00"
-                req["secu_acc"] = s["secu_acc"]["SZ"]
-            req["account"] = s["account"]
+                req["secu_acc"] = self.session["secu_acc"]["SZ"]
+            req["account"] = self.session["account"]
             req["secu_code"] = self.stockinfo[scode]["code"]
-            req["trd_id"] = "0B"
-            req["price"] = "?"
+            req["trd_id"] = trdcode
+            req["price"] = self.stockinfo[scode]["orderprice"]
             req["qty"] = self.stockinfo[scode]["count"]
             req["biz_no"] = first_order_id
             req.send()
-            resp = SubmitOrderResp(s)
+            resp = jz.SubmitOrderResp(self.session)
             resp.recv()
-            s.storetrade(req.payload, resp.payload)
+            self.session.storetrade(req.payload, resp.payload)
             if resp.retcode == "0":
                 self.stockinfo[scode]["order_id"] = resp.records[0][1]
+                self.stockinfo[scode]["order_date"] = today
 
 class PortfolioUpdater(Thread):
     def __init__(self, shdbfn, szdbfn, portfolio, portmodel):
@@ -216,6 +240,44 @@ class PortfolioUpdater(Thread):
                 }
         assert(len(self.szdbfield) == len(self.szdbmapping))
 
+    def getpricesh(self, shrec, pricepolicy):
+        price = ""
+        policymapping = {
+                "latest":"S8",
+                "b1":"S9",
+                "b2":"S16",
+                "b3":"S18",
+                "b4":"S26",
+                "b5":"S28",
+                "s1":"S10",
+                "s2":"S22",
+                "s3":"S24",
+                "s4":"S30",
+                "s5":"S32"
+                }
+        price = str(shrec[policymapping[pricepolicy]])
+        assert(price != "")
+        return price
+
+    def getpricesz(self, szrec, pricepolicy):
+        price = ""
+        policymapping = {
+                "latest":"HQZJCJ",
+                "b1":"HQBJW1",
+                "b2":"HQBJW2",
+                "b3":"HQBJW3",
+                "b4":"HQBJW4",
+                "b5":"HQBJW5",
+                "s1":"HQSJW1",
+                "s2":"HQSJW2",
+                "s3":"HQSJW3",
+                "s4":"HQSJW4",
+                "s5":"HQSJW5"
+                }
+        price = str(szrec[policymapping[pricepolicy]])
+        assert(price != "")
+        return price
+
     def update(self):
         # show2003 only considers SH market
         shutil.copy(self.shdbfn, self.localshdbfn)
@@ -234,6 +296,8 @@ class PortfolioUpdater(Thread):
                         stockinfo[self.shdbmapping[f]] = s[f].decode("GBK")
                     else:
                         stockinfo[self.shdbmapping[f]] = s[f]
+                # update order price for SH
+                stockinfo["orderprice"] = self.getpricesh(s, self.portfolio.pricepolicy)
         dbsh.close()
 
         # update SZ stock
@@ -247,6 +311,8 @@ class PortfolioUpdater(Thread):
                         stockinfo[self.szdbmapping[f]] = s[f].decode("GBK")
                     else:
                         stockinfo[self.szdbmapping[f]] = s[f]
+                # update order price for SZ
+                stockinfo["orderprice"] = self.getpricesz(s, self.portfolio.pricepolicy)
         dbsz.close()
 
         self.portmodel.emit(SIGNAL("dataChanged(QModelIndex,QModelIndex)"),
@@ -276,20 +342,25 @@ class OrderUpdater(Thread):
 
     def update(self):
         for scode in self.portfolio.stocklist:
-            if self.portfolio.stockinfo[scode]["order_id"] != "":
+            si = self.portfolio.stockinfo[scode]
+            if si["order_id"] != "":
                 qoreq = jz.QueryOrderReq(self.session)
+                qoreq["begin_date"] = si["order_date"]
+                qoreq["end_date"] = si["order_date"]
+                qoreq["get_orders_mode"] = "0" # all submissions
                 qoreq["user_code"] = self.session["user_code"]
-                if self.portfolio.stockinfo[scode]["market"] == "SH":
-                    qoreq["market"] = "10"
-                elif self.portfolio.stockinfo[scode]["market"] == "SZ":
-                    qoreq["market"] = "00"
-                qoreq["order_id"] = self.portfolio.stockinfo[scode]["order_id"]
+                # a bug in protocol/document results in next odd line
+                qoreq["biz_no"] = si["order_id"]
                 qoreq.send()
                 qoresp = jz.QueryOrderResp(self.session)
                 qoresp.recv()
                 if qoresp.retcode == "0":
-                    pass
-                # TODO: update deal info
+                    si["dealcount"] = qoresp.records[0][-11]
+                    try:
+                        si["dealprice"] = str( float(qoresp.records[0][-9]) / float(qoresp.records[0][-11]) )
+                    except ZeroDivisionError:
+                        si["dealprice"] = "0.00"
+                    si["orderedcount"] = qoresp.records[0][15]
 
     def stop(self):
         self.runflag = False
@@ -306,6 +377,9 @@ class OrderUpdater(Thread):
 def openfile():
     fn = QFileDialog.getOpenFileName()
     return fn
+
+def testslot(t):
+    print t
 
 def main(args):
     app = QApplication(args)
@@ -372,6 +446,8 @@ def main(args):
 
     # setup menu
     # window.connect(ui.import_portfolio, SIGNAL("activated()"), openfile)
+    window.connect(ui.buybatch, SIGNAL("activated()"), p.batchOrderSubmitBuy)
+    #window.connect(ui.buybatch, SIGNAL("activated()"), p.test)
 
     window.show()
     app.exec_()

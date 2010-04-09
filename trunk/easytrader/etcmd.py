@@ -20,12 +20,10 @@ ciresp.recv()
 # update workkey
 s["workkey"] = ciresp.getworkkey()
 
-print "begin mktinfo"
 mktinforeq = jz.MarketinfoReq(s)
 mktinforeq.send()
 mktinforesp = jz.MarketinfoResp(s)
 mktinforesp.recv()
-print "end mktinfo"
 s.storetrade(mktinforeq.payload, mktinforesp.payload)
 
 # login as user
@@ -43,6 +41,7 @@ loginresp.recv()
 
 # update session fields from login response
 if loginresp.retcode == "0":
+    print "login ok"
     loginresp.updatesession()
 
 # query capital info
@@ -57,7 +56,7 @@ cqresp.recv()
 orderreq = jz.SubmitOrderReq(s)
 orderreq["user_code"] = s["user_code"]
 orderreq["market"] = "10"
-orderreq["secu_acc"] = s["secu_acc"]["sh"]
+orderreq["secu_acc"] = s["secu_acc"]["SH"]
 orderreq["account"] = s["account"]
 orderreq["secu_code"] = "601398"
 orderreq["trd_id"] = "0B"
@@ -67,11 +66,12 @@ orderreq.send()
 orderresp = jz.SubmitOrderResp(s)
 orderresp.recv()
 s.storetrade(orderreq.payload, orderresp.payload)
+print orderresp.retcode
 
 orderreqjsyh = jz.SubmitOrderReq(s)
 orderreqjsyh["user_code"] = s["user_code"]
 orderreqjsyh["market"] = "10"
-orderreqjsyh["secu_acc"] = s["secu_acc"]["sh"]
+orderreqjsyh["secu_acc"] = s["secu_acc"]["SH"]
 orderreqjsyh["account"] = s["account"]
 orderreqjsyh["secu_code"] = "601939"
 orderreqjsyh["trd_id"] = "0B"
@@ -86,9 +86,9 @@ s.storetrade(orderreqjsyh.payload, orderrespjsyh.payload)
 orderreqzgyh = jz.SubmitOrderReq(s)
 orderreqzgyh["user_code"] = s["user_code"]
 orderreqzgyh["market"] = "10"
-orderreqzgyh["secu_acc"] = s["secu_acc"]["sh"]
+orderreqzgyh["secu_acc"] = s["secu_acc"]["SH"]
 orderreqzgyh["account"] = s["account"]
-orderreqzgyh["secu_code"] = "601939"
+orderreqzgyh["secu_code"] = "601988"
 orderreqzgyh["trd_id"] = "0B"
 orderreqzgyh["price"] = "5.70"
 orderreqzgyh["qty"] = "100"
@@ -98,4 +98,4 @@ orderrespzgyh = jz.SubmitOrderResp(s)
 orderrespzgyh.recv()
 s.storetrade(orderreqzgyh.payload, orderrespzgyh.payload)
 
-# conn.close()
+conn.close()

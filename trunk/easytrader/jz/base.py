@@ -308,8 +308,16 @@ class SubmitOrderResp(response):
 
 class QueryOrderReq(request):
     # TODO: return multiple line?
-    code = "510"
-    paramlist = ["user_code", "market", "order_id"]
+    code = "505"
+    paramlist = ["begin_date", "end_date", "get_orders_mode", "user_code", "market", "secu_acc", "secu_code", "trd_id", "biz_no", "order_id", "branch", "account", "ext_inst"]
 
 class QueryOrderResp(response):
+    pass
+
+class DealReq(request):
+    # TODO: return multiple line?
+    code = "506"
+    paramlist = ["begin_date", "end_date", "user_code", "market", "secu_acc", "secu_code", "trd_id", "order_id", "branch", "account", "ext_inst"]
+
+class DealResp(response):
     pass
