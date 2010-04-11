@@ -164,9 +164,11 @@ class response:
 
     def recv_single(self):
         header_len = int(self.recv_n(5)[0:4])
+        self.header_len = header_len
         header_left = self.recv_n(header_len - 5)
         i = header_left.find("|")
-        payload = self.recv_n(int(header_left[0:i]))
+        self.payload_len = int(header_left[0:i])
+        payload = self.recv_n(self.payload_len)
         return header_len, header_left, payload
 
     def recv(self):

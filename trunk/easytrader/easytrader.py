@@ -63,9 +63,14 @@ class Portfolio:
         self.session = s
         self.stocklist = []
         self.stockset = set()
-        self.stockattr = ["count", "market", "code", "name", "latestprice", "buyprice", "sellprice", "order_id", "order_date", "orderedcount", "orderprice", "dealcount", "dealprice"]
-        self.stockmodelattr = ["count", "market", "code", "name", "orderedcount", "dealcount", "orderprice", "dealprice", "latestprice", "buyprice", "sellprice"]
-        self.pricepolicylist = ["latest", "b1", "b2", "b3", "b4", "b5", "s1", "s2", "s3", "s4", "s5"]
+        self.stockattr = ["count", "market", "code", "name", "latestprice",
+                "buyprice", "sellprice", "order_id", "order_date", "order_time",
+                "orderedcount", "orderprice", "dealcount", "dealprice"]
+        self.stockmodelattr = ["count", "market", "code", "name", "order_date",
+                "order_time", "orderedcount", "dealcount", "orderprice",
+                "dealprice", "latestprice", "buyprice", "sellprice"]
+        self.pricepolicylist = ["latest", "b1", "b2", "b3", "b4", "b5",
+                "s1", "s2", "s3", "s4", "s5"]
         self.pricepolicy = "s5"
         # use market+stock number as key
         self.dealrecord = {}
@@ -120,7 +125,8 @@ class Portfolio:
         for scode in self.stocklist:
             si = self.stockinfo[scode]
             f.write(" ".join( (si["market"], si["code"],
-                si["count"], si["order_id"], si["order_date"]) ))
+                si["count"], si["order_id"], si["order_date"],
+                si["order_time"]) ))
             f.write("\n")
         f.flush()
         f.close()
@@ -158,33 +164,33 @@ class Portfolio:
             trdcode = "0S"
         assert(trdcode != "")
 
-        today = str(datetime.today().date())
-        scode = self.stocklist[0]
-        req = jz.SubmitOrderReq(self.session)
-        req["user_code"] = self.session["user_code"]
-        if self.stockinfo[scode]["market"] == "SH":
-            req["market"] = "10"
-            req["secu_acc"] = self.session["secu_acc"]["SH"]
-        elif self.stockinfo[scode]["market"] == "SZ":
-            req["market"] = "00"
-            req["secu_acc"] = self.session["secu_acc"]["SZ"]
-        req["account"] = self.session["account"] # capital account
-        req["secu_code"] = self.stockinfo[scode]["code"]
-        req["trd_id"] = trdcode
-        req["price"] = self.stockinfo[scode]["orderprice"]
-        req["qty"] = self.stockinfo[scode]["count"]
-        req.send()
-        resp = jz.SubmitOrderResp(self.session)
-        resp.recv()
-        self.session.storetrade(req.payload, resp.payload)
-        if resp.retcode == "0":
-            # TODO: handle error message
-            self.stockinfo[scode]["order_id"] = resp.records[0][1]
-            self.stockinfo[scode]["order_date"] = today
+        #today = str(datetime.today().date())
+        #scode = self.stocklist[0]
+        #req = jz.SubmitOrderReq(self.session)
+        #req["user_code"] = self.session["user_code"]
+        #if self.stockinfo[scode]["market"] == "SH":
+        #    req["market"] = "10"
+        #    req["secu_acc"] = self.session["secu_acc"]["SH"]
+        #elif self.stockinfo[scode]["market"] == "SZ":
+        #    req["market"] = "00"
+        #    req["secu_acc"] = self.session["secu_acc"]["SZ"]
+        #req["account"] = self.session["account"] # capital account
+        #req["secu_code"] = self.stockinfo[scode]["code"]
+        #req["trd_id"] = trdcode
+        #req["price"] = self.stockinfo[scode]["orderprice"]
+        #req["qty"] = self.stockinfo[scode]["count"]
+        #req.send()
+        #resp = jz.SubmitOrderResp(self.session)
+        #resp.recv()
+        #self.session.storetrade(req.payload, resp.payload)
+        #if resp.retcode == "0":
+        #    # TODO: handle error message
+        #    self.stockinfo[scode]["order_id"] = resp.records[0][1]
+        #    self.stockinfo[scode]["order_date"] = today
+        #    self.stockinfo[scode]["order_time"] = str(datetime.now().time())
 
-        first_order_id = resp.records[0][1]
-        # submit following itmes.
-        for scode in self.stocklist[1:]:
+        first_order_id = ""
+        for scode in self.stocklist:
             req = jz.SubmitOrderReq(self.session)
             req["user_code"] = self.session["user_code"]
             if self.stockinfo[scode]["market"] == "SH":
@@ -198,7 +204,8 @@ class Portfolio:
             req["trd_id"] = trdcode
             req["price"] = self.stockinfo[scode]["orderprice"]
             req["qty"] = self.stockinfo[scode]["count"]
-            req["biz_no"] = first_order_id
+            if first_order_id != "":
+                req["biz_no"] = first_order_id
             req.send()
             resp = jz.SubmitOrderResp(self.session)
             resp.recv()
@@ -206,6 +213,9 @@ class Portfolio:
             if resp.retcode == "0":
                 self.stockinfo[scode]["order_id"] = resp.records[0][1]
                 self.stockinfo[scode]["order_date"] = today
+                self.stockinfo[scode]["order_time"] = str(datetime.now().time())
+                if first_order_id == "":
+                    first_order_id = resp.records[0][1]
 
 class PortfolioUpdater(Thread):
     def __init__(self, shdbfn, szdbfn, portfolio, portmodel):
@@ -372,7 +382,7 @@ class OrderUpdater(Thread):
             #    for field in self.dbfield:
             #        print self.portfolio.data[d][self.dbmapping[field]],
             #    print
-            time.sleep(2)
+            time.sleep(5)
 
 def openfile():
     fn = QFileDialog.getOpenFileName()
