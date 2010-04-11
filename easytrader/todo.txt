@@ -1,8 +1,12 @@
-choose buy method
+handle error and exceptions
 
-choose price
+multiple responses
 
 check submit is ok and can track order
+
+DONE: choose buy method
+
+HALF: choose price
 
 re-submit order
 
@@ -10,9 +14,6 @@ TOCHECK: add order_id field in portofolio file.
 
 TOCHECK: load and save portofolio
 
-handle error and exceptions
-
-multiple responses
-
 NONEED?: load portofolio from menu
 
+create table xxx as select * from portfolio_template
