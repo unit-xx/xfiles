@@ -40,35 +40,22 @@ else:
     print "Cannot login"
     sys.exit(1)
 
-qoreq = jz.QueryOrderReq(s)
-today = str(datetime.today().date())
-qoreq["begin_date"] = today
-qoreq["end_date"] = today
-qoreq["get_orders_mode"] = "0" # all submissions
-qoreq["user_code"] = s["user_code"]
+f = open(sys.argv[1])
+for line in f:
+    mkt, order_id = line.split()
+    cancelorderreq = jz.CancelOrderReq(s)
+    cancelorderreq["market"] = mkt
+    cancelorderreq["order_id"] = order_id
 
-qoreq["biz_no"] = sys.argv[1]
-# NOTE: use order_id in QueryOrderReq as biz_no in QueryOrder
-#qoreq["biz_no"] = "17063331"
-#qoreq["account"] = s["account"]
+    cancelorderreq.send()
+    print cancelorderreq.payload
 
-#qoreq["market"] = "00"
-#qoreq["secu_acc"] = s["secu_acc"]["SH"]
-#qoreq["secu_code"] = "601398"
-#orderreq["trd_id"] = "0B"
+    cancelorderresp = jz.CancelOrderResp(s)
+    cancelorderresp.recv()
+    print cancelorderresp.hasnext
+    print cancelorderresp.sections
+    print cancelorderresp.records
+    print cancelorderresp.retcode
+    print cancelorderresp.retinfo
 
-#qoreq["market"] = "10"
-#qoreq["order_id"] = "17063323"
-qoreq.send()
-print qoreq.payload
-
-qoresp = jz.QueryOrderResp(s)
-qoresp.recv()
-print qoresp.hasnext
-print qoresp.sections
-for r in qoresp.records:
-    print r
-    print
-print qoresp.retcode
-print qoresp.retinfo
 

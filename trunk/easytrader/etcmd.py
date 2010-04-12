@@ -67,6 +67,7 @@ orderresp = jz.SubmitOrderResp(s)
 orderresp.recv()
 s.storetrade(orderreq.payload, orderresp.payload)
 print orderresp.retcode
+print orderresp.retinfo
 
 orderreqjsyh = jz.SubmitOrderReq(s)
 orderreqjsyh["user_code"] = s["user_code"]

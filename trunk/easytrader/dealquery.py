@@ -45,6 +45,7 @@ today = str(datetime.today().date())
 dealreq["begin_date"] = today
 dealreq["end_date"] = today
 dealreq["user_code"] = s["user_code"]
+#dealreq["biz_id"] = sys.argv[1]
 
 #dealreq["order_id"] = "17063324"
 # NOTE: use order_id in QueryOrderReq as biz_no in QueryOrder

@@ -40,14 +40,10 @@ else:
     print "Cannot login"
     sys.exit(1)
 
-qoreq = jz.QueryOrderReq(s)
-today = str(datetime.today().date())
-qoreq["begin_date"] = today
-qoreq["end_date"] = today
-qoreq["get_orders_mode"] = "0" # all submissions
-qoreq["user_code"] = s["user_code"]
+cqreq = jz.CapitalQueryReq(s)
+cqreq["user_code"] = s["user_code"]
 
-qoreq["biz_no"] = sys.argv[1]
+#qoreq["order_id"] = "17063324"
 # NOTE: use order_id in QueryOrderReq as biz_no in QueryOrder
 #qoreq["biz_no"] = "17063331"
 #qoreq["account"] = s["account"]
@@ -59,16 +55,17 @@ qoreq["biz_no"] = sys.argv[1]
 
 #qoreq["market"] = "10"
 #qoreq["order_id"] = "17063323"
-qoreq.send()
-print qoreq.payload
+cqreq.send()
+print "request payload:", cqreq.payload
 
-qoresp = jz.QueryOrderResp(s)
-qoresp.recv()
-print qoresp.hasnext
-print qoresp.sections
-for r in qoresp.records:
+cqresp = jz.CapitalQueryResp(s)
+cqresp.recv()
+print "hasnext:", cqresp.hasnext
+print cqresp.sections
+for r in cqresp.records:
     print r
     print
-print qoresp.retcode
-print qoresp.retinfo
+print "retcode:", cqresp.retcode
+print "retinfo:", cqresp.retinfo
+
 
