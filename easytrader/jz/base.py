@@ -59,6 +59,9 @@ class session:
         cireq.send()
         ciresp = CheckinResp(self)
         ciresp.recv()
+        if ciresp.retcode != "0":
+            print "Checkin failed"
+            return False
         # update workkey
         self["workkey"] = ciresp.getworkkey()
 
@@ -71,10 +74,12 @@ class session:
         loginresp = LoginResp(self)
         loginresp.recv()
         # update session fields from login response
-        if loginresp.retcode == "0":
-            loginresp.updatesession()
-            print "Login ok"
-        
+        if loginresp.retcode != "0":
+            print "Login failed"
+            return False
+
+        loginresp.updatesession()
+        print "Login ok"
         return True
 
     def encrypt(self, s):
@@ -140,9 +145,9 @@ class request:
 
         # gen header without headerP
         headerP = self.genheaderP()
-        header_len = "%04d|" % (19 + len(headerP))
-        payload_len = "%04d|" % len(payload)
         crc = "%s|" % self.session["workkey"]
+        payload_len = "%04d|" % len(payload)
+        header_len = "%04d|" % (4 + 4 + len(crc) + 3 + len(headerP))
 
         # calc crc
         c = 0
@@ -151,8 +156,18 @@ class request:
         c = crc32(crc, c)
         c = crc32(headerP, c)
         c = crc32(payload, c)
-        crc = "%08x|" % (c & 0xffffffff)
+        #crc = "%08x|" % (c & 0xffffffff)
+        crc = "%x|" % (c & 0xffffffff)
 
+        #crc = "%x" % (c & 0xffffffff)
+        #if len(crc) != 8:
+        #    crc = pad(crc, 8)
+        #    print "padded crc"
+        #crc = crc + "|"
+
+        # re-gen header_len for the case if len(crc) is not 8
+        # TODO: seems not right
+        header_len = "%04d|" % (4 + 4 + len(crc) + 3 + len(headerP))
         # return full data package
         return "".join( (header_len, payload_len, crc, headerP, payload) )
 

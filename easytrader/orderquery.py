@@ -23,8 +23,12 @@ qoreq["begin_date"] = today
 qoreq["end_date"] = today
 qoreq["get_orders_mode"] = "0" # all submissions
 qoreq["user_code"] = s["user_code"]
+print s["user_code"]
 
-qoreq["biz_no"] = sys.argv[1]
+try:
+    qoreq["biz_no"] = sys.argv[1]
+except IndexError:
+    pass
 # NOTE: use order_id in QueryOrderReq as biz_no in QueryOrder
 #qoreq["biz_no"] = "17063331"
 #qoreq["account"] = s["account"]
