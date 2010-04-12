@@ -21,13 +21,6 @@ class session:
     #    # db connections
     #    self.tradedbfn = tradedbfn
 
-    #def __init__(self, jzserver, jzport, tradedbfn):
-    #    self.initheader()
-
-    #    self.jzserver = jzserver
-    #    self.jzport = jzport
-    #    self.tradedbfn = tradedbfn
-
     def __init__(self, sessioncfg):
         self.initheader()
         self.sessioncfg = sessioncfg
@@ -53,7 +46,6 @@ class session:
         self.data["secu_acc"] = {"SH":"", "SZ":""}
 
     def setup(self):
-        # TODO: finish it
         try:
             c = socket.socket()
             c.connect((self.sessioncfg["jzserver"], self.sessioncfg["jzport"]))

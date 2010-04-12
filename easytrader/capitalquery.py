@@ -8,35 +8,16 @@ jzserver = "172.18.20.52"
 jzport = 9100
 dbfn = "tradeinfo.db"
 
-# sign in system
-conn = socket.socket()
-conn.connect((jzserver, jzport))
+session_config = {}
+session_config["tradedbfn"] = "tradeinfo.db"
+session_config["jzserver"] = "172.18.20.52"
+session_config["jzport"] = 9100
+session_config["jzaccount"] = "85804530"
+session_config["jzaccounttype"] = "Z"
+session_config["jzpasswd"] = "123444"
 
-s = jz.session(conn, dbfn)
-cireq = jz.CheckinReq(s)
-cireq.send()
-ciresp = jz.CheckinResp(s)
-ciresp.recv()
-# update workkey
-s["workkey"] = ciresp.getworkkey()
-
-# login as user
-jzaccount = "85804530"
-jzaccounttype = "Z"
-jzpasswd = "123444"
-
-loginreq = jz.LoginReq(s)
-loginreq["idtype"] = jzaccounttype
-loginreq["id"] = jzaccount
-loginreq["passwd"] = s.encrypt(jz.pad(jzpasswd, (len(jzpasswd)/8+1)*8))
-loginreq.send()
-loginresp = jz.LoginResp(s)
-loginresp.recv()
-
-# update session fields from login response
-if loginresp.retcode == "0":
-    loginresp.updatesession()
-else:
+s = jz.session(session_config)
+if not s.setup():
     print "Cannot login"
     sys.exit(1)
 
