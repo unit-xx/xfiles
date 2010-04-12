@@ -84,12 +84,15 @@ class Portfolio:
             self.stockinfo[scode]["market"] = i[0].upper()
             self.stockinfo[scode]["code"] = i[1]
             self.stockinfo[scode]["count"] = i[2]
+            self.stockinfo[scode]["order_id"] = ""
+            self.stockinfo[scode]["order_date"] = ""
+            self.stockinfo[scode]["order_time"] = ""
             try:
                 self.stockinfo[scode]["order_id"] = i[3]
                 self.stockinfo[scode]["order_date"] = i[4]
-            except IndexError: # no order_id yet
-                self.stockinfo[scode]["order_id"] = ""
-                self.stockinfo[scode]["order_id"] = ""
+                self.stockinfo[scode]["order_time"] = i[5]
+            except IndexError:
+                pass
 
             self.stockset = set(self.stocklist)
 
@@ -124,9 +127,7 @@ class Portfolio:
         f = open(bofn, "w")
         for scode in self.stocklist:
             si = self.stockinfo[scode]
-            f.write(" ".join( (si["market"], si["code"],
-                si["count"], si["order_id"], si["order_date"],
-                si["order_time"]) ))
+            f.write(" ".join( (si["market"], si["code"], si["count"], si["order_id"], si["order_date"], si["order_time"]) ))
             f.write("\n")
         f.flush()
         f.close()
@@ -143,9 +144,6 @@ class Portfolio:
         f.close()
         assert(len(stocklist) == len(stockcount))
         return stocklist, stockcount
-
-    def batchOrderSubmitBuy(self):
-        self.batchOrderSubmit("buy")
 
     def test(self):
         print "here"
@@ -189,7 +187,8 @@ class Portfolio:
         #    self.stockinfo[scode]["order_date"] = today
         #    self.stockinfo[scode]["order_time"] = str(datetime.now().time())
 
-        first_order_id = ""
+        #first_order_id = ""
+        today = str(datetime.today().date())
         for scode in self.stocklist:
             req = jz.SubmitOrderReq(self.session)
             req["user_code"] = self.session["user_code"]
@@ -204,8 +203,8 @@ class Portfolio:
             req["trd_id"] = trdcode
             req["price"] = self.stockinfo[scode]["orderprice"]
             req["qty"] = self.stockinfo[scode]["count"]
-            if first_order_id != "":
-                req["biz_no"] = first_order_id
+            #if first_order_id != "":
+            #    req["biz_no"] = first_order_id
             req.send()
             resp = jz.SubmitOrderResp(self.session)
             resp.recv()
@@ -214,8 +213,44 @@ class Portfolio:
                 self.stockinfo[scode]["order_id"] = resp.records[0][1]
                 self.stockinfo[scode]["order_date"] = today
                 self.stockinfo[scode]["order_time"] = str(datetime.now().time())
-                if first_order_id == "":
-                    first_order_id = resp.records[0][1]
+            #    if first_order_id == "":
+            #        first_order_id = resp.records[0][1]
+
+    def buybatch(self):
+        self.batchOrderSubmit("buy")
+
+    def pricelatest(self):
+        self.pricepolicy = "latest"
+
+    def priceb1(self):
+        self.pricepolicy = "b1"
+
+    def priceb2(self):
+        self.pricepolicy = "b2"
+
+    def priceb3(self):
+        self.pricepolicy = "b3"
+
+    def priceb4(self):
+        self.pricepolicy = "b4"
+
+    def priceb5(self):
+        self.pricepolicy = "b5"
+
+    def prices1(self):
+        self.pricepolicy = "s1"
+
+    def prices2(self):
+        self.pricepolicy = "s2"
+
+    def prices3(self):
+        self.pricepolicy = "s3"
+
+    def prices4(self):
+        self.pricepolicy = "s4"
+
+    def prices5(self):
+        self.pricepolicy = "s5"
 
 class PortfolioUpdater(Thread):
     def __init__(self, shdbfn, szdbfn, portfolio, portmodel):
@@ -456,8 +491,19 @@ def main(args):
 
     # setup menu
     # window.connect(ui.import_portfolio, SIGNAL("activated()"), openfile)
-    window.connect(ui.buybatch, SIGNAL("activated()"), p.batchOrderSubmitBuy)
-    #window.connect(ui.buybatch, SIGNAL("activated()"), p.test)
+    # window.connect(ui.buybatch, SIGNAL("activated()"), p.batchOrderSubmitBuy)
+    window.connect(ui.buybatch, SIGNAL("activated()"), p.buybatch)
+    window.connect(ui.pricelatest, SIGNAL("activated()"), p.pricelatest)
+    window.connect(ui.prices1, SIGNAL("activated()"), p.prices1)
+    window.connect(ui.prices2, SIGNAL("activated()"), p.prices2)
+    window.connect(ui.prices3, SIGNAL("activated()"), p.prices3)
+    window.connect(ui.prices4, SIGNAL("activated()"), p.prices4)
+    window.connect(ui.prices5, SIGNAL("activated()"), p.prices5)
+    window.connect(ui.priceb1, SIGNAL("activated()"), p.priceb1)
+    window.connect(ui.priceb2, SIGNAL("activated()"), p.priceb2)
+    window.connect(ui.priceb3, SIGNAL("activated()"), p.priceb3)
+    window.connect(ui.priceb4, SIGNAL("activated()"), p.priceb4)
+    window.connect(ui.priceb5, SIGNAL("activated()"), p.priceb5)
 
     window.show()
     app.exec_()

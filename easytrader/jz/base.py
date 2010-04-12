@@ -323,3 +323,10 @@ class DealReq(request):
 
 class DealResp(response):
     pass
+
+class CancelOrderReq(request):
+    code = "404"
+    paramlist = ["market", "order_id", "account"]
+
+class CancelOrderResp(response):
+    pass

@@ -70,13 +70,13 @@
     <addaction name="prices1"/>
     <addaction name="prices2"/>
     <addaction name="prices3"/>
-    <addaction name="action_6"/>
-    <addaction name="action_7"/>
-    <addaction name="action_8"/>
-    <addaction name="action_9"/>
-    <addaction name="action_10"/>
-    <addaction name="action_11"/>
-    <addaction name="action_12"/>
+    <addaction name="prices4"/>
+    <addaction name="prices5"/>
+    <addaction name="priceb1"/>
+    <addaction name="priceb2"/>
+    <addaction name="priceb3"/>
+    <addaction name="priceb4"/>
+    <addaction name="priceb5"/>
     <addaction name="action_13"/>
    </widget>
    <addaction name="menuImport"/>
@@ -119,37 +119,37 @@
     <string>卖三</string>
    </property>
   </action>
-  <action name="action_6">
+  <action name="prices4">
    <property name="text">
     <string>卖四</string>
    </property>
   </action>
-  <action name="action_7">
+  <action name="prices5">
    <property name="text">
     <string>卖五</string>
    </property>
   </action>
-  <action name="action_8">
+  <action name="priceb1">
    <property name="text">
     <string>买一</string>
    </property>
   </action>
-  <action name="action_9">
+  <action name="priceb2">
    <property name="text">
     <string>买二</string>
    </property>
   </action>
-  <action name="action_10">
+  <action name="priceb3">
    <property name="text">
     <string>买三</string>
    </property>
   </action>
-  <action name="action_11">
+  <action name="priceb4">
    <property name="text">
     <string>买四</string>
    </property>
   </action>
-  <action name="action_12">
+  <action name="priceb5">
    <property name="text">
     <string>买五</string>
    </property>
