@@ -1,6 +1,7 @@
 from binascii import crc32, unhexlify, hexlify
 from blowfish import Blowfish
 from datetime import datetime
+import socket
 import sqlite3 as db
 
 def pad(s, length, padder=" "):
@@ -10,8 +11,34 @@ def pad(s, length, padder=" "):
 Maintains common fields in header, such as version, key, etc.
 """
 class session:
-    def __init__(self, conn, tradedbfn):
-        # header fields
+    #def __init__(self, conn, tradedbfn):
+    #    # header fields
+    #    self.initheader()
+
+    #    # network connection
+    #    self.conn = conn
+
+    #    # db connections
+    #    self.tradedbfn = tradedbfn
+
+    #def __init__(self, jzserver, jzport, tradedbfn):
+    #    self.initheader()
+
+    #    self.jzserver = jzserver
+    #    self.jzport = jzport
+    #    self.tradedbfn = tradedbfn
+
+    def __init__(self, sessioncfg):
+        self.initheader()
+        self.sessioncfg = sessioncfg
+
+    def __getitem__(self, key):
+        return self.data[key]
+
+    def __setitem__(self, key, value):
+        self.data[key] = value
+
+    def initheader(self):
         self.data = {}
         self.data["version"] = "KDGATEWAY1.0"
         self.data["user_code"] = ""
@@ -25,18 +52,38 @@ class session:
         self.data["workkey"] = ""
         self.data["secu_acc"] = {"SH":"", "SZ":""}
 
-        # network connection
-        self.conn = conn
+    def setup(self):
+        # TODO: finish it
+        try:
+            c = socket.socket()
+            c.connect((self.sessioncfg["jzserver"], self.sessioncfg["jzport"]))
+            self.conn = c
 
-        # db connections
-        self.tradedbfn = tradedbfn
-        self.tradedbconn = db.connect(tradedbfn)
+            self.tradedbconn = db.connect(self.sessioncfg["tradedbfn"])
+        except socket.error:
+            return False
 
-    def __getitem__(self, key):
-        return self.data[key]
+        cireq = CheckinReq(self)
+        cireq.send()
+        ciresp = CheckinResp(self)
+        ciresp.recv()
+        # update workkey
+        self["workkey"] = ciresp.getworkkey()
 
-    def __setitem__(self, key, value):
-        self.data[key] = value
+        loginreq = LoginReq(self)
+        loginreq["idtype"] = self.sessioncfg["jzaccounttype"]
+        loginreq["id"] = self.sessioncfg["jzaccount"]
+        loginreq["passwd"] = self.encrypt(pad(self.sessioncfg["jzpasswd"],
+            (len(self.sessioncfg["jzpasswd"])/8+1)*8))
+        loginreq.send()
+        loginresp = LoginResp(self)
+        loginresp.recv()
+        # update session fields from login response
+        if loginresp.retcode == "0":
+            loginresp.updatesession()
+            print "Login ok"
+        
+        return True
 
     def encrypt(self, s):
         assert(len(s) % 8 == 0)
