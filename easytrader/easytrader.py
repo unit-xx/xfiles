@@ -58,9 +58,12 @@ class Portfolio:
 #            self.data[s]["code"] = s
 #            self.data[s]["count"] = self.stockcount[i]
 
-    def __init__(self, stockbatch, s):
+    def __init__(self, stockbatch, sessioncfg):
         # market code (SH, SZ), stock number, count
-        self.session = s
+        self.session = jz.session(sessioncfg)
+        if not self.session.setup():
+            print "session setup failed."
+            sys.exit(1)
         self.stocklist = []
         self.stockset = set()
         self.stockattr = ["count", "market", "code", "name", "latestprice",
@@ -95,6 +98,9 @@ class Portfolio:
                 pass
 
             self.stockset = set(self.stocklist)
+
+    def __del__(self):
+        self.session.close()
 
     @staticmethod
     def readBatchOrder(bofn):
@@ -378,12 +384,18 @@ class PortfolioUpdater(Thread):
             time.sleep(1)
 
 class OrderUpdater(Thread):
-    def __init__(self, portfolio, portmodel):
+    def __init__(self, portfolio, portmodel, sessioncfg):
         Thread.__init__(self)
         self.portfolio = portfolio
         self.portmodel = portmodel
         self.runflag = True
-        self.session = portfolio.session
+        self.session = jz.session(sessioncfg)
+        if not self.session.setup():
+            print "Session setup failed."
+            sys.exit(1)
+
+    def __del__(self):
+        self.session.close()
 
     def update(self):
         for scode in self.portfolio.stocklist:
@@ -406,6 +418,9 @@ class OrderUpdater(Thread):
                     except ZeroDivisionError:
                         si["dealprice"] = "0.00"
                     si["orderedcount"] = qoresp.records[0][15]
+                else:
+                    print "error when query order for %s" % si["order_id"]
+                    print qoresp.retcode, qoresp.retinfo
 
     def stop(self):
         self.runflag = False
@@ -417,7 +432,7 @@ class OrderUpdater(Thread):
             #    for field in self.dbfield:
             #        print self.portfolio.data[d][self.dbmapping[field]],
             #    print
-            time.sleep(5)
+            time.sleep(2)
 
 def openfile():
     fn = QFileDialog.getOpenFileName()
@@ -435,47 +450,48 @@ def main(args):
     # read config
     shdbfn = "z:\\show2003.dbf"
     szdbfn = "z:\\sjshq.dbf"
-    tradedbfn = "tradeinfo.db"
     #portfoliofn = "hs300.txt"
     portfoliofn = openfile()
 
-    jzserver = "172.18.20.52"
-    jzport = 9100
-    jzaccount = "85804530"
-    jzaccounttype = "Z"
-    jzpasswd = "123444"
+    session_config = {}
+    session_config["tradedbfn"] = "tradeinfo.db"
+    session_config["jzserver"] = "172.18.20.52"
+    session_config["jzport"] = 9100
+    session_config["jzaccount"] = "85804530"
+    session_config["jzaccounttype"] = "Z"
+    session_config["jzpasswd"] = "123444"
 
     # setup session and login jinzheng
     # TODO: handle login error
-    conn = socket.socket()
-    conn.connect((jzserver, jzport))
+    #conn = socket.socket()
+    #conn.connect((jzserver, jzport))
 
-    mysession = jz.session(conn, tradedbfn)
-    cireq = jz.CheckinReq(mysession)
-    cireq.send()
-    ciresp = jz.CheckinResp(mysession)
-    ciresp.recv()
-    # update workkey
-    mysession["workkey"] = ciresp.getworkkey()
+    #mysession = jz.session(session_config)
+    #cireq = jz.CheckinReq(mysession)
+    #cireq.send()
+    #ciresp = jz.CheckinResp(mysession)
+    #ciresp.recv()
+    ## update workkey
+    #mysession["workkey"] = ciresp.getworkkey()
 
-    loginreq = jz.LoginReq(mysession)
-    loginreq["idtype"] = jzaccounttype
-    loginreq["id"] = jzaccount
-    loginreq["passwd"] = mysession.encrypt(jz.pad(jzpasswd, (len(jzpasswd)/8+1)*8))
-    loginreq.send()
-    loginresp = jz.LoginResp(mysession)
-    loginresp.recv()
-    # update session fields from login response
-    if loginresp.retcode == "0":
-        loginresp.updatesession()
-        print "Login ok"
+    #loginreq = jz.LoginReq(mysession)
+    #loginreq["idtype"] = jzaccounttype
+    #loginreq["id"] = jzaccount
+    #loginreq["passwd"] = mysession.encrypt(jz.pad(jzpasswd, (len(jzpasswd)/8+1)*8))
+    #loginreq.send()
+    #loginresp = jz.LoginResp(mysession)
+    #loginresp.recv()
+    ## update session fields from login response
+    #if loginresp.retcode == "0":
+    #    loginresp.updatesession()
+    #    print "Login ok"
 
     # setup portfolio
     bo, badlines = Portfolio.readBatchOrder(portfoliofn)
     if len(badlines) > 0:
         print "There're bad lines."
         print badlines
-    p = Portfolio(bo, mysession)
+    p = Portfolio(bo, session_config)
 
     # setup portfolio model for showing in table
     pmodel = PortfolioModel(p)
@@ -486,7 +502,7 @@ def main(args):
     pupdater.start()
 
     # run the order info updater
-    orderupdater = OrderUpdater(p, pmodel)
+    orderupdater = OrderUpdater(p, pmodel, session_config)
     orderupdater.start()
 
     # setup menu
@@ -509,8 +525,12 @@ def main(args):
     app.exec_()
     pupdater.stop()
     orderupdater.stop()
-    mysession.close()
+    pupdater.join()
+    orderupdater.join()
     p.saveBatchOrder(portfoliofn)
+    del p
+    del pupdater
+    del orderupdater
 
 if __name__=="__main__":
     main(sys.argv)
