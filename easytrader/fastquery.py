@@ -13,12 +13,13 @@ session_config["jzaccount"] = "85804530"
 session_config["jzaccounttype"] = "Z"
 session_config["jzpasswd"] = "123444"
 
-s = jz.session(session_config)
-if not s.setup():
-    print "Cannot login"
-    sys.exit(1)
 
 while 1:
+    s = jz.session(session_config)
+    if not s.setup():
+        print "Cannot login"
+        sys.exit(1)
+
     qoreq = jz.QueryOrderReq(s)
     today = str(datetime.today().date())
     qoreq["begin_date"] = today
@@ -35,7 +36,9 @@ while 1:
     qoresp.recv()
     if qoresp.retcode != "0":
         print "failed", qoresp.retcode, qoresp.retinfo
-        time.sleep(1)
     else:
         print "success", qoresp.retcode, qoresp.retinfo
-    break
+    print
+
+    time.sleep(1)
+    s.close()
