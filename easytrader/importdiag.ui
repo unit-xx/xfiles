@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>960</width>
+    <width>817</width>
     <height>530</height>
    </rect>
   </property>
@@ -14,14 +14,7 @@
    <string>导入组合</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
-   <item row="0" column="0">
-    <widget class="QPushButton" name="pushButton">
-     <property name="text">
-      <string>选择文本文件</string>
-     </property>
-    </widget>
-   </item>
-   <item row="0" column="1" rowspan="5">
+   <item row="0" column="1" rowspan="9">
     <widget class="QSplitter" name="splitter">
      <property name="orientation">
       <enum>Qt::Horizontal</enum>
@@ -29,7 +22,7 @@
      <property name="childrenCollapsible">
       <bool>false</bool>
      </property>
-     <widget class="QTableView" name="tableView">
+     <widget class="QTableView" name="portfolio_list">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Maximum" vsizetype="Expanding">
         <horstretch>2</horstretch>
@@ -37,7 +30,7 @@
        </sizepolicy>
       </property>
      </widget>
-     <widget class="QTableView" name="tableView">
+     <widget class="QTableView" name="portfolio_preview">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
         <horstretch>5</horstretch>
@@ -48,13 +41,13 @@
     </widget>
    </item>
    <item row="1" column="0">
-    <widget class="QPushButton" name="pushButton_2">
+    <widget class="QPushButton" name="selectfile">
      <property name="text">
       <string>选择Excel文件</string>
      </property>
     </widget>
    </item>
-   <item row="2" column="0">
+   <item row="4" column="0">
     <spacer name="verticalSpacer">
      <property name="orientation">
       <enum>Qt::Vertical</enum>
@@ -68,16 +61,39 @@
     </spacer>
    </item>
    <item row="3" column="0">
-    <widget class="QPushButton" name="pushButton_3">
+    <widget class="QComboBox" name="sheetlist"/>
+   </item>
+   <item row="2" column="0">
+    <widget class="QLabel" name="label">
+     <property name="text">
+      <string>选择工作表</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
+    </widget>
+   </item>
+   <item row="9" column="0">
+    <widget class="QPushButton" name="cancelimport">
+     <property name="text">
+      <string>取消</string>
+     </property>
+    </widget>
+   </item>
+   <item row="8" column="0">
+    <widget class="QPushButton" name="doimport">
      <property name="text">
       <string>导入</string>
      </property>
     </widget>
    </item>
-   <item row="4" column="0">
-    <widget class="QPushButton" name="pushButton_4">
-     <property name="text">
-      <string>取消</string>
+   <item row="9" column="1">
+    <widget class="QLineEdit" name="infoline">
+     <property name="frame">
+      <bool>true</bool>
+     </property>
+     <property name="readOnly">
+      <bool>true</bool>
      </property>
     </widget>
    </item>
