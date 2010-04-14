@@ -91,7 +91,10 @@ class importer:
         self.plistmodel = PortfolioListModel(self.plistattr, self.plistdata)
         self.ui.portfolio_list.setModel(self.plistmodel)
 
-        self.ppreviewdata = list([['00','01','02', '03']])
+        self.ppreviewdata = list([[u'\u5e02\u573a',
+            u'\u4ee3\u7801', u'\u540d\u79f0', u'\u6570\u91cf'],
+            [u'SH', ' 600000.0', u'\u6d66\u53d1\u94f6\u884c',
+                '100.0']])
         self.ppreviewattr = [u"市场代码", u"股票代码", u"股票名称", u"股票数量"]
         self.ppreviewmodel = PortfolioPreviewModel(self.ppreviewattr, self.ppreviewdata)
         #self.ppreviewmodel = PortfolioPreviewModel(self.ppreviewattr, self.my_array)
