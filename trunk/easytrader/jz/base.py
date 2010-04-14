@@ -42,7 +42,7 @@ class session:
         self.data["reserve1"] = ""
         self.data["reserve2"] = ""
         self.data["reserve3"] = ""
-        self.data["workkey"] = ""
+        self.data["workkey"] = "88888888"
         self.data["secu_acc"] = {"SH":"", "SZ":""}
 
     def setup(self):
@@ -145,9 +145,9 @@ class request:
 
         # gen header without headerP
         headerP = self.genheaderP()
-        crc = "%s|" % self.session["workkey"]
+        header_len = "%04d|" % (19 + len(headerP))
         payload_len = "%04d|" % len(payload)
-        header_len = "%04d|" % (4 + 4 + len(crc) + 3 + len(headerP))
+        crc = "%s|" % self.session["workkey"]
 
         # calc crc
         c = 0
@@ -156,18 +156,11 @@ class request:
         c = crc32(crc, c)
         c = crc32(headerP, c)
         c = crc32(payload, c)
-        #crc = "%08x|" % (c & 0xffffffff)
-        crc = "%x|" % (c & 0xffffffff)
+        crc = "%x" % (c & 0xffffffff)
+        if len(crc) < 8:
+            print "!!"
+        crc = "%s%s|" % (crc, "0" * (8 - len(crc)))
 
-        #crc = "%x" % (c & 0xffffffff)
-        #if len(crc) != 8:
-        #    crc = pad(crc, 8)
-        #    print "padded crc"
-        #crc = crc + "|"
-
-        # re-gen header_len for the case if len(crc) is not 8
-        # TODO: seems not right
-        header_len = "%04d|" % (4 + 4 + len(crc) + 3 + len(headerP))
         # return full data package
         return "".join( (header_len, payload_len, crc, headerP, payload) )
 
