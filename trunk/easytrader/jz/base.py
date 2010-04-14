@@ -60,6 +60,7 @@ class session:
         ciresp = CheckinResp(self)
         ciresp.recv()
         if ciresp.retcode != "0":
+            # TODO: change this and two following print to return code or myexception
             print "Checkin failed"
             return False
         # update workkey
@@ -94,13 +95,14 @@ class session:
     def decrypt(self, s):
         pass
 
-    def storetrade(self, reqpayload, resppayload):
-        # TODO: not only raw
+    def storetrade(self, req, resp):
         t = datetime.now()
-        self.tradedbconn.execute('insert into rawtradeinfo values (?, ?, ?)',
+        self.tradedbconn.execute('insert into rawtradeinfo values (?, ?, ?, ?)',
                 (str(t),
-                    reqpayload.decode("GBK"),
-                    resppayload.decode("GBK")))
+                    req.payload.decode("GBK"),
+                    resp.payload.decode("GBK"),
+                    "%s:%s" % (resp.retcode, resp.retinfo)
+                    ))
         self.tradedbconn.commit()
 
     def close(self):
@@ -157,8 +159,8 @@ class request:
         c = crc32(headerP, c)
         c = crc32(payload, c)
         crc = "%x" % (c & 0xffffffff)
-        if len(crc) < 8:
-            print "!!"
+        #if len(crc) < 8:
+        #    print "!!"
         crc = "%s%s|" % (crc, "0" * (8 - len(crc)))
 
         # return full data package
@@ -222,6 +224,7 @@ class response:
         header_len, self.header_left, self.payload = self.recv_single()
         self.deserialize()
         if self.hasnext == "1":
+            # TODO: for debug only, comment this line after finish recv_all
             print "Has more results: %s" % type(self)
 
     def recv_all(self):

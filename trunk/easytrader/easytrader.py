@@ -214,7 +214,7 @@ class Portfolio:
             req.send()
             resp = jz.SubmitOrderResp(self.session)
             resp.recv()
-            self.session.storetrade(req.payload, resp.payload)
+            self.session.storetrade(req, resp)
             if resp.retcode == "0":
                 self.stockinfo[scode]["order_id"] = resp.records[0][1]
                 self.stockinfo[scode]["order_date"] = today
@@ -523,14 +523,19 @@ def main(args):
 
     window.show()
     app.exec_()
+    print "notify threads to stop."
     pupdater.stop()
     orderupdater.stop()
+    print "waiting threads to stop."
     pupdater.join()
     orderupdater.join()
+    print "threas stopped."
+    print "saving order info."
     p.saveBatchOrder(portfoliofn)
     del p
     del pupdater
     del orderupdater
+    print "I will exit."
 
 if __name__=="__main__":
     main(sys.argv)

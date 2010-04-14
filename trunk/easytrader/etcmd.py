@@ -3,28 +3,24 @@
 import jz
 import socket
 
-# config
-jzserver = "172.18.20.52"
-jzport = 9100
-dbfn = "tradeinfo.db"
+session_config = {}
+session_config["tradedbfn"] = "tradeinfo.db"
+session_config["jzserver"] = "172.18.20.52"
+session_config["jzport"] = 9100
+session_config["jzaccount"] = "85804530"
+session_config["jzaccounttype"] = "Z"
+session_config["jzpasswd"] = "123444"
 
-# sign in system
-conn = socket.socket()
-conn.connect((jzserver, jzport))
-
-s = jz.session(conn, dbfn)
-cireq = jz.CheckinReq(s)
-cireq.send()
-ciresp = jz.CheckinResp(s)
-ciresp.recv()
-# update workkey
-s["workkey"] = ciresp.getworkkey()
+s = jz.session(session_config)
+if not s.setup():
+    print "Cannot login"
+    sys.exit(1)
 
 mktinforeq = jz.MarketinfoReq(s)
 mktinforeq.send()
 mktinforesp = jz.MarketinfoResp(s)
 mktinforesp.recv()
-s.storetrade(mktinforeq.payload, mktinforesp.payload)
+s.storetrade(mktinforeq, mktinforesp)
 
 # login as user
 jzaccount = "85804530"
@@ -65,7 +61,7 @@ orderreq["qty"] = "100"
 orderreq.send()
 orderresp = jz.SubmitOrderResp(s)
 orderresp.recv()
-s.storetrade(orderreq.payload, orderresp.payload)
+s.storetrade(orderreq, orderresp)
 print orderresp.retcode
 print orderresp.retinfo
 
@@ -82,7 +78,7 @@ orderreqjsyh["biz_no"] = orderresp.records[0][1]
 orderreqjsyh.send()
 orderrespjsyh = jz.SubmitOrderResp(s)
 orderrespjsyh.recv()
-s.storetrade(orderreqjsyh.payload, orderrespjsyh.payload)
+s.storetrade(orderreqjsyh, orderrespjsyh)
 
 orderreqzgyh = jz.SubmitOrderReq(s)
 orderreqzgyh["user_code"] = s["user_code"]
@@ -97,6 +93,4 @@ orderreqzgyh["biz_no"] = orderresp.records[0][1]
 orderreqzgyh.send()
 orderrespzgyh = jz.SubmitOrderResp(s)
 orderrespzgyh.recv()
-s.storetrade(orderreqzgyh.payload, orderrespzgyh.payload)
-
-conn.close()
+s.storetrade(orderreqzgyh, orderrespzgyh)
