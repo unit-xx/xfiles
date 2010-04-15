@@ -199,35 +199,36 @@ class Portfolio:
         #first_order_id = ""
         today = str(datetime.today().date())
         for scode in self.stocklist:
-            req = jz.SubmitOrderReq(self.session)
-            req["user_code"] = self.session["user_code"]
-            if self.stockinfo[scode]["market"] == "SH":
-                req["market"] = "10"
-                req["secu_acc"] = self.session["secu_acc"]["SH"]
-            elif self.stockinfo[scode]["market"] == "SZ":
-                req["market"] = "00"
-                req["secu_acc"] = self.session["secu_acc"]["SZ"]
-            req["account"] = self.session["account"]
-            req["secu_code"] = self.stockinfo[scode]["code"]
-            req["trd_id"] = trdcode
-            req["price"] = self.stockinfo[scode]["orderprice"]
-            req["qty"] = self.stockinfo[scode]["count"]
-            #if first_order_id != "":
-            #    req["biz_no"] = first_order_id
-            req.send()
-            resp = jz.SubmitOrderResp(self.session)
-            resp.recv()
-            self.session.storetrade(req, resp)
-            if resp.retcode == "0":
-                self.stockinfo[scode]["order_id"] = resp.records[0][1]
-                self.stockinfo[scode]["order_date"] = today
-                self.stockinfo[scode]["order_time"] = str(datetime.now().time())
-                self.stockinfo[scode]["state"] = Portfolio.ORDERSUCCESS
-            else:
-                self.stockinfo[scode]["state"] = Portfolio.ORDERFAILED
+            if self.stockinfo[scode]["order_id"] == "":
+                req = jz.SubmitOrderReq(self.session)
+                req["user_code"] = self.session["user_code"]
+                if self.stockinfo[scode]["market"] == "SH":
+                    req["market"] = "10"
+                    req["secu_acc"] = self.session["secu_acc"]["SH"]
+                elif self.stockinfo[scode]["market"] == "SZ":
+                    req["market"] = "00"
+                    req["secu_acc"] = self.session["secu_acc"]["SZ"]
+                req["account"] = self.session["account"]
+                req["secu_code"] = self.stockinfo[scode]["code"]
+                req["trd_id"] = trdcode
+                req["price"] = self.stockinfo[scode]["orderprice"]
+                req["qty"] = self.stockinfo[scode]["count"]
+                #if first_order_id != "":
+                #    req["biz_no"] = first_order_id
+                req.send()
+                resp = jz.SubmitOrderResp(self.session)
+                resp.recv()
+                self.session.storetrade(req, resp)
+                if resp.retcode == "0":
+                    self.stockinfo[scode]["order_id"] = resp.records[0][1]
+                    self.stockinfo[scode]["order_date"] = today
+                    self.stockinfo[scode]["order_time"] = str(datetime.now().time())
+                    self.stockinfo[scode]["state"] = Portfolio.ORDERSUCCESS
+                else:
+                    self.stockinfo[scode]["state"] = Portfolio.ORDERFAILED
 
-            #    if first_order_id == "":
-            #        first_order_id = resp.records[0][1]
+                #    if first_order_id == "":
+                #        first_order_id = resp.records[0][1]
 
     def cancelBatchOrder(self):
         # only success orders can be canceled
