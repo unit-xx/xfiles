@@ -51,16 +51,18 @@
    </property>
    <widget class="QMenu" name="menuImport">
     <property name="title">
-     <string>导入</string>
+     <string>文件</string>
     </property>
     <addaction name="import_portfolio"/>
+    <addaction name="save_order"/>
    </widget>
    <widget class="QMenu" name="menu">
     <property name="title">
-     <string>组合下单</string>
+     <string>组合操作</string>
     </property>
     <addaction name="buybatch"/>
-    <addaction name="action_4"/>
+    <addaction name="cancel_order"/>
+    <addaction name="gen_backuporder"/>
    </widget>
    <widget class="QMenu" name="menu_2">
     <property name="title">
@@ -86,12 +88,12 @@
   <widget class="QStatusBar" name="statusbar"/>
   <action name="import_portfolio">
    <property name="text">
-    <string>投资组合</string>
+    <string>导入组合</string>
    </property>
   </action>
   <action name="buybatch">
    <property name="text">
-    <string>建仓</string>
+    <string>委托买入</string>
    </property>
   </action>
   <action name="prices1">
@@ -102,11 +104,6 @@
   <action name="prices2">
    <property name="text">
     <string>卖二</string>
-   </property>
-  </action>
-  <action name="action_4">
-   <property name="text">
-    <string>平仓</string>
    </property>
   </action>
   <action name="pricelatest">
@@ -157,6 +154,21 @@
   <action name="action_13">
    <property name="text">
     <string>自定义</string>
+   </property>
+  </action>
+  <action name="save_order">
+   <property name="text">
+    <string>保存委托</string>
+   </property>
+  </action>
+  <action name="cancel_order">
+   <property name="text">
+    <string>撤销未成交委托</string>
+   </property>
+  </action>
+  <action name="gen_backuporder">
+   <property name="text">
+    <string>生成补单</string>
    </property>
   </action>
  </widget>

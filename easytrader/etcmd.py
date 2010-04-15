@@ -20,25 +20,7 @@ mktinforeq = jz.MarketinfoReq(s)
 mktinforeq.send()
 mktinforesp = jz.MarketinfoResp(s)
 mktinforesp.recv()
-s.storetrade(mktinforeq, mktinforesp)
-
-# login as user
-jzaccount = "85804530"
-jzaccounttype = "Z"
-jzpasswd = "123444"
-
-loginreq = jz.LoginReq(s)
-loginreq["idtype"] = jzaccounttype
-loginreq["id"] = jzaccount
-loginreq["passwd"] = s.encrypt(jz.pad(jzpasswd, (len(jzpasswd)/8+1)*8))
-loginreq.send()
-loginresp = jz.LoginResp(s)
-loginresp.recv()
-
-# update session fields from login response
-if loginresp.retcode == "0":
-    print "login ok"
-    loginresp.updatesession()
+#s.storetrade(mktinforeq, mktinforesp)
 
 # query capital info
 cqreq = jz.CapitalQueryReq(s)
