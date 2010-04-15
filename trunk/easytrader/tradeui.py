@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'tradeui.ui'
 #
-# Created: Mon Apr 12 09:30:09 2010
+# Created: Thu Apr 15 15:06:15 2010
 #      by: PyQt4 UI code generator 4.7.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -55,8 +55,6 @@ class Ui_MainWindow(object):
         self.prices1.setObjectName("prices1")
         self.prices2 = QtGui.QAction(MainWindow)
         self.prices2.setObjectName("prices2")
-        self.action_4 = QtGui.QAction(MainWindow)
-        self.action_4.setObjectName("action_4")
         self.pricelatest = QtGui.QAction(MainWindow)
         self.pricelatest.setObjectName("pricelatest")
         self.prices3 = QtGui.QAction(MainWindow)
@@ -77,9 +75,17 @@ class Ui_MainWindow(object):
         self.priceb5.setObjectName("priceb5")
         self.action_13 = QtGui.QAction(MainWindow)
         self.action_13.setObjectName("action_13")
+        self.save_order = QtGui.QAction(MainWindow)
+        self.save_order.setObjectName("save_order")
+        self.cancel_order = QtGui.QAction(MainWindow)
+        self.cancel_order.setObjectName("cancel_order")
+        self.gen_backuporder = QtGui.QAction(MainWindow)
+        self.gen_backuporder.setObjectName("gen_backuporder")
         self.menuImport.addAction(self.import_portfolio)
+        self.menuImport.addAction(self.save_order)
         self.menu.addAction(self.buybatch)
-        self.menu.addAction(self.action_4)
+        self.menu.addAction(self.cancel_order)
+        self.menu.addAction(self.gen_backuporder)
         self.menu_2.addAction(self.pricelatest)
         self.menu_2.addAction(self.prices1)
         self.menu_2.addAction(self.prices2)
@@ -103,14 +109,13 @@ class Ui_MainWindow(object):
     def retranslateUi(self, MainWindow):
         MainWindow.setWindowTitle(QtGui.QApplication.translate("MainWindow", "EasyTrader", None, QtGui.QApplication.UnicodeUTF8))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab), QtGui.QApplication.translate("MainWindow", "投资组合", None, QtGui.QApplication.UnicodeUTF8))
-        self.menuImport.setTitle(QtGui.QApplication.translate("MainWindow", "导入", None, QtGui.QApplication.UnicodeUTF8))
-        self.menu.setTitle(QtGui.QApplication.translate("MainWindow", "组合下单", None, QtGui.QApplication.UnicodeUTF8))
+        self.menuImport.setTitle(QtGui.QApplication.translate("MainWindow", "文件", None, QtGui.QApplication.UnicodeUTF8))
+        self.menu.setTitle(QtGui.QApplication.translate("MainWindow", "组合操作", None, QtGui.QApplication.UnicodeUTF8))
         self.menu_2.setTitle(QtGui.QApplication.translate("MainWindow", "报价策略", None, QtGui.QApplication.UnicodeUTF8))
-        self.import_portfolio.setText(QtGui.QApplication.translate("MainWindow", "投资组合", None, QtGui.QApplication.UnicodeUTF8))
-        self.buybatch.setText(QtGui.QApplication.translate("MainWindow", "建仓", None, QtGui.QApplication.UnicodeUTF8))
+        self.import_portfolio.setText(QtGui.QApplication.translate("MainWindow", "导入组合", None, QtGui.QApplication.UnicodeUTF8))
+        self.buybatch.setText(QtGui.QApplication.translate("MainWindow", "委托买入", None, QtGui.QApplication.UnicodeUTF8))
         self.prices1.setText(QtGui.QApplication.translate("MainWindow", "卖一", None, QtGui.QApplication.UnicodeUTF8))
         self.prices2.setText(QtGui.QApplication.translate("MainWindow", "卖二", None, QtGui.QApplication.UnicodeUTF8))
-        self.action_4.setText(QtGui.QApplication.translate("MainWindow", "平仓", None, QtGui.QApplication.UnicodeUTF8))
         self.pricelatest.setText(QtGui.QApplication.translate("MainWindow", "最新价", None, QtGui.QApplication.UnicodeUTF8))
         self.prices3.setText(QtGui.QApplication.translate("MainWindow", "卖三", None, QtGui.QApplication.UnicodeUTF8))
         self.prices4.setText(QtGui.QApplication.translate("MainWindow", "卖四", None, QtGui.QApplication.UnicodeUTF8))
@@ -121,4 +126,7 @@ class Ui_MainWindow(object):
         self.priceb4.setText(QtGui.QApplication.translate("MainWindow", "买四", None, QtGui.QApplication.UnicodeUTF8))
         self.priceb5.setText(QtGui.QApplication.translate("MainWindow", "买五", None, QtGui.QApplication.UnicodeUTF8))
         self.action_13.setText(QtGui.QApplication.translate("MainWindow", "自定义", None, QtGui.QApplication.UnicodeUTF8))
+        self.save_order.setText(QtGui.QApplication.translate("MainWindow", "保存委托", None, QtGui.QApplication.UnicodeUTF8))
+        self.cancel_order.setText(QtGui.QApplication.translate("MainWindow", "撤销未成交委托", None, QtGui.QApplication.UnicodeUTF8))
+        self.gen_backuporder.setText(QtGui.QApplication.translate("MainWindow", "生成补单", None, QtGui.QApplication.UnicodeUTF8))
 

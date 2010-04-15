@@ -58,20 +58,34 @@ class Portfolio:
 #            self.data[s]["code"] = s
 #            self.data[s]["count"] = self.stockcount[i]
 
+    # stock states can be:
+    UNORDERED = 0
+    ORDERED   = 2
+    ORDERFAILED = 3
+    ORDERSUCCESS = 4
+    # assumption: only success order can be canceled
+    CANCELSUCCESS = 5
+    CANCELFAILED = 6
+
+
     def __init__(self, stockbatch, sessioncfg):
         # market code (SH, SZ), stock number, count
         self.session = jz.session(sessioncfg)
         if not self.session.setup():
             print "session setup failed."
             sys.exit(1)
+
         self.stocklist = []
         self.stockset = set()
         self.stockattr = ["count", "market", "code", "name", "latestprice",
                 "buyprice", "sellprice", "order_id", "order_date", "order_time",
-                "orderedcount", "orderprice", "dealcount", "dealprice"]
+                "orderedcount", "orderprice", "dealcount", "dealprice", "state",
+                "cancel_date", "cancel_time"]
         self.stockmodelattr = ["count", "market", "code", "name", "order_date",
                 "order_time", "orderedcount", "dealcount", "orderprice",
-                "dealprice", "latestprice", "buyprice", "sellprice"]
+                "dealprice", "latestprice", "cancel_date", "cancel_time"]
+        # TODO: really need this assertion? how about derived attr
+        assert(set(self.stockmodelattr) <= set(self.stockattr))
         self.pricepolicylist = ["latest", "b1", "b2", "b3", "b4", "b5",
                 "s1", "s2", "s3", "s4", "s5"]
         self.pricepolicy = "s5"
@@ -96,8 +110,12 @@ class Portfolio:
                 self.stockinfo[scode]["order_time"] = i[5]
             except IndexError:
                 pass
+        self.stockset = set(self.stocklist)
 
-            self.stockset = set(self.stocklist)
+        # can be derived from stock state?
+        self.batchstate = Portfolio.UNORDERED
+        for s in self.stocklist:
+            self.stockinfo[s]["state"] = Portfolio.UNORDERED
 
     def __del__(self):
         self.session.close()
@@ -105,7 +123,7 @@ class Portfolio:
     @staticmethod
     def readBatchOrder(bofn):
         # bofn specifies batch order in lines, each lines contains
-        # market code (SH, SZ), stock number, count and order_id, order_date
+        # market code (SH, SZ), stock number, count and order_id, order_date, order_time
         # separated by spaces
         # return: batch orders in a list, and bad lines
         bo = []
@@ -130,6 +148,7 @@ class Portfolio:
         return (bo, badlines)
 
     def saveBatchOrder(self, bofn):
+        # TODO: save ordered? canceled? failed?
         f = open(bofn, "w")
         for scode in self.stocklist:
             si = self.stockinfo[scode]
@@ -138,23 +157,7 @@ class Portfolio:
         f.flush()
         f.close()
 
-    @staticmethod
-    def readportfolio(fn):
-        stocklist = []
-        stockcount = []
-        f=open(fn)
-        for line in f:
-            s, c = line.split()
-            stocklist.append(s)
-            stockcount.append(int(c))
-        f.close()
-        assert(len(stocklist) == len(stockcount))
-        return stocklist, stockcount
-
-    def test(self):
-        print "here"
-
-    def batchOrderSubmit(self, trdid):
+    def submitBatchOrder(self, trdid):
         # return:
 
         # submit first order item, use its order_id as following orders' biz_no
@@ -219,11 +222,38 @@ class Portfolio:
                 self.stockinfo[scode]["order_id"] = resp.records[0][1]
                 self.stockinfo[scode]["order_date"] = today
                 self.stockinfo[scode]["order_time"] = str(datetime.now().time())
+                self.stockinfo[scode]["state"] = Portfolio.ORDERSUCCESS
+            else:
+                self.stockinfo[scode]["state"] = Portfolio.ORDERFAILED
+
             #    if first_order_id == "":
             #        first_order_id = resp.records[0][1]
 
+    def cancelBatchOrder(self):
+        # only success orders can be canceled
+        today = str(datetime.today().date())
+        for scode in self.stocklist:
+            if self.stockinfo[scode]["state"] == Portfolio.ORDERSUCCESS:
+                req = jz.CancelOrderReq(self.session)
+                req["user_code"] = self.session["user_code"]
+                if self.stockinfo[scode]["market"] == "SH":
+                    req["market"] = "10"
+                elif self.stockinfo[scode]["market"] == "SZ":
+                    req["market"] = "00"
+                req["order_id"] = self.stockinfo[scode]["order_id"]
+                req.send()
+                resp = jz.CancelOrderResp(self.session)
+                resp.recv()
+                self.session.storetrade(req, resp)
+                if resp.retcode == "0":
+                    self.stockinfo[scode]["state"] = Portfolio.CANCELSUCCESS
+                    self.stockinfo[scode]["cancel_date"] = today
+                    self.stockinfo[scode]["cancel_time"] = str(datetime.now().time())
+                else:
+                    self.stockinfo[scode]["state"] = Portfolio.CANCELFAILED
+
     def buybatch(self):
-        self.batchOrderSubmit("buy")
+        self.submitBatchOrder("buy")
 
     def pricelatest(self):
         self.pricepolicy = "latest"
@@ -520,6 +550,7 @@ def main(args):
     window.connect(ui.priceb3, SIGNAL("activated()"), p.priceb3)
     window.connect(ui.priceb4, SIGNAL("activated()"), p.priceb4)
     window.connect(ui.priceb5, SIGNAL("activated()"), p.priceb5)
+    window.connect(ui.cancel_order, SIGNAL("activated()"), p.cancelBatchOrder)
 
     window.show()
     app.exec_()

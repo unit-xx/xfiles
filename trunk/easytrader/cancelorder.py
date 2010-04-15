@@ -3,59 +3,35 @@ import socket
 import sys
 from datetime import datetime
 
-# config
-jzserver = "172.18.20.52"
-jzport = 9100
-dbfn = "tradeinfo.db"
+session_config = {}
+session_config["tradedbfn"] = "tradeinfo.db"
+session_config["jzserver"] = "172.18.20.52"
+session_config["jzport"] = 9100
+session_config["jzaccount"] = "85804530"
+session_config["jzaccounttype"] = "Z"
+session_config["jzpasswd"] = "123444"
 
-# sign in system
-conn = socket.socket()
-conn.connect((jzserver, jzport))
-
-s = jz.session(conn, dbfn)
-cireq = jz.CheckinReq(s)
-cireq.send()
-ciresp = jz.CheckinResp(s)
-ciresp.recv()
-# update workkey
-s["workkey"] = ciresp.getworkkey()
-
-# login as user
-jzaccount = "85804530"
-jzaccounttype = "Z"
-jzpasswd = "123444"
-
-loginreq = jz.LoginReq(s)
-loginreq["idtype"] = jzaccounttype
-loginreq["id"] = jzaccount
-loginreq["passwd"] = s.encrypt(jz.pad(jzpasswd, (len(jzpasswd)/8+1)*8))
-loginreq.send()
-loginresp = jz.LoginResp(s)
-loginresp.recv()
-
-# update session fields from login response
-if loginresp.retcode == "0":
-    loginresp.updatesession()
-else:
+s = jz.session(session_config)
+if not s.setup():
     print "Cannot login"
     sys.exit(1)
 
-f = open(sys.argv[1])
-for line in f:
-    mkt, order_id = line.split()
-    cancelorderreq = jz.CancelOrderReq(s)
-    cancelorderreq["market"] = mkt
-    cancelorderreq["order_id"] = order_id
+mkt, order_id = sys.argv[1], sys.argv[2]
+if mkt == "SH":
+    mkt = "10"
+elif mkt == "SZ":
+    mkt = "00"
+cancelorderreq = jz.CancelOrderReq(s)
+cancelorderreq["market"] = mkt
+cancelorderreq["order_id"] = order_id
 
-    cancelorderreq.send()
-    print cancelorderreq.payload
+cancelorderreq.send()
+print cancelorderreq.payload
 
-    cancelorderresp = jz.CancelOrderResp(s)
-    cancelorderresp.recv()
-    print cancelorderresp.hasnext
-    print cancelorderresp.sections
-    print cancelorderresp.records
-    print cancelorderresp.retcode
-    print cancelorderresp.retinfo
-
-
+cancelorderresp = jz.CancelOrderResp(s)
+cancelorderresp.recv()
+print cancelorderresp.retcode
+print cancelorderresp.retinfo
+print cancelorderresp.hasnext
+print cancelorderresp.sections
+print cancelorderresp.records
