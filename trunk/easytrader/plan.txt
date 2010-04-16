@@ -1,3 +1,5 @@
 change easy trader into MVC structure
 use db and in memory db
 use worker threads improve performance of batch order/cancel
+
+create index for locating stock in dbf file quickly

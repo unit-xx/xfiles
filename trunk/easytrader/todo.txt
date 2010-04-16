@@ -1,8 +1,6 @@
-handle error and exceptions
-
 multiple responses
 
-check submit is ok and can track order
+DONE: check submit is ok and can track order
 
 DONE: choose buy method
 
@@ -10,9 +8,9 @@ HALF: choose price
 
 re-submit order
 
-TOCHECK: add order_id field in portofolio file.
+DONE: add order_id field in portofolio file.
 
-TOCHECK: load and save portofolio
+DONE: load and save portofolio
 
 NONEED?: load portofolio from menu
 
