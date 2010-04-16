@@ -229,6 +229,8 @@ class Portfolio:
         backuporderlist = self.backuporderlist
         for scode in self.stocklist:
             if self.stockinfo[scode]["order_state"] == Portfolio.CANCELSUCCESS:
+            # TODO: round to 100
+            # TODO: track non-dealed stock numbers, not only round and ignore
                 backupcount = int(self.stockinfo[scode]["count"]) - int(self.stockinfo[scode]["dealcount"])
                 if backupcount > 0:
                     backuporderlist.append(scode)
