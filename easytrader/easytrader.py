@@ -591,6 +591,19 @@ def openfile():
 def testslot(t):
     print t
 
+def verifymap(dbfn, mapfn, codekey):
+    db = dbf.Dbf(dbfn, ignoreErrors=True, readOnly=True)
+    f = open(mapfn)
+    map = pickle.load(f)
+    ret = True
+    for k in map:
+        if k != db[map[k]][codekey]:
+            ret = False
+            break
+    f.close()
+    db.close()
+    return ret
+
 def main(args):
     app = QApplication(args)
     window = QMainWindow()
@@ -602,6 +615,10 @@ def main(args):
     szdbfn = "z:\\sjshq.dbf"
     shmapfn = "shmap.pkl"
     szmapfn = "szmap.pkl"
+    if not verifymap(shdbfn, shmapfn, "S1"):
+        print "Stock map file error."
+    if not verifymap(szdbfn, szmapfn, "HQZQDM")
+        print "Stock map file error."
     #portfoliofn = "hs300.txt"
     portfoliofn = openfile()
 
