@@ -3,7 +3,7 @@
 import sys
 import socket
 import pickle
-from queue import Queue
+import Queue
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 from tradeui import Ui_MainWindow
@@ -559,9 +559,12 @@ class jzWorker(Thread):
     def run(self):
         # TODO: what if et is closed while tqueue is not empty
         while self.runflag:
-            t = tqueue.get()
-            self.dotask(t)
-            tqueue.task_done()
+            try:
+                t = tqueue.get(True, 2)
+                self.dotask(t)
+                tqueue.task_done()
+            except Queue.Empty:
+                pass
 
     def dotask(self, t):
         """
@@ -635,7 +638,7 @@ def main(args):
     if len(badlines) > 0:
         print "There're bad lines."
         print badlines
-    tqueue = Queue()
+    tqueue = Queue.Queue()
     p = Portfolio(bo, session_config, tqueue)
 
     # setup portfolio model for showing in table
@@ -644,17 +647,19 @@ def main(args):
 
     # setup and run jzWorker threads
     jzWorkerNum = 10
-    worker = []
+    workers = []
+    workersessions = []
     for i in range(jzWorkerNum):
         s = jz.session(session_config)
         if not s.setup():
             print "Session setup failed."
             sys.exit(1)
-        w = jzWorker(s, tqueue)
-        worker.append(w)
+        w = jzWorkers(s, tqueue)
+        workers.append(w)
+        workersessions.append(s)
 
     for i in range(jzWorkerNum):
-        worker[i].start()
+        workers[i].start()
 
     # run the portfolio updater
     pupdater = PortfolioUpdater(shdbfn, shmapfn, szdbfn, szmapfn, p, pmodel)
@@ -684,13 +689,18 @@ def main(args):
 
     window.show()
     app.exec_()
-    print "notify threads to stop."
+    print "notify updater threads to stop."
     pupdater.stop()
     orderupdater.stop()
-    print "waiting threads to stop."
+    print "waiting updater threads to stop."
     pupdater.join()
     orderupdater.join()
-    print "threas stopped."
+    print "updater threads stopped."
+    print "waiting jzWorkers to finalize jobs"
+    tqueue.join()
+    for i in range(jzWorkerNum):
+        workers[i].stop()
+        workersessions[i].close()
     print "saving order info."
     p.saveBatchOrder(portfoliofn)
     del p
