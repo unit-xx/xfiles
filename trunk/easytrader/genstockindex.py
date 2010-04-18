@@ -14,7 +14,6 @@ stockfn = "hs300.txt"
 try:
     stockfn = sys.argv[1]
 except IndexError:
-    print "Use"
     print "No input stock list file."
     sys.exit(1)
 
