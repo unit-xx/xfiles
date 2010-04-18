@@ -2,6 +2,8 @@
 
 import sys
 import socket
+import pickle
+from queue import Queue
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 from tradeui import Ui_MainWindow
@@ -67,12 +69,13 @@ class Portfolio:
     CANCELFAILED = "CANCELFAILED"
 
 
-    def __init__(self, stockbatch, sessioncfg):
+    def __init__(self, stockbatch, sessioncfg, tqueue):
         # market code (SH, SZ), stock number, count
         self.session = jz.session(sessioncfg)
         if not self.session.setup():
             print "session setup failed."
             sys.exit(1)
+        self.tqueue = tqueue
 
         self.stocklist = []
         self.stockset = set()
@@ -154,7 +157,7 @@ class Portfolio:
         f.flush()
         f.close()
 
-    def submitBatchOrder(self, trdid):
+    def submitBatchOrderSync(self, trdid):
         # return:
 
         # submit first order item, use its order_id as following orders' biz_no
@@ -197,6 +200,57 @@ class Portfolio:
                     self.stockinfo[scode]["order_state"] = Portfolio.ORDERSUCCESS
                 else:
                     self.stockinfo[scode]["order_state"] = Portfolio.ORDERFAILED
+
+
+    submitBatchOrder = submitBatchOrderSync
+
+    def submitBatchOrderTop(self, trdid):
+        if len(self.stocklist) == 0:
+            return
+
+        trdid == ""
+        if trdid == "buy":
+            trdcode = "0B"
+        elif trdid == "sell":
+            trdcode = "0S"
+        assert(trdcode != "")
+
+        reqclass = jz.SubmitOrderReq
+        respclass = jz.SubmitOrderResp
+        for scode in self.stocklist:
+            if self.stockinfo[scode]["order_state"] == Portfolio.UNORDERED:
+                param = {}
+                param["user_code"] = self.session["user_code"]
+                if self.stockinfo[scode]["market"] == "SH":
+                    param["market"] = "10"
+                    param["secu_acc"] = self.session["secu_acc"]["SH"]
+                elif self.stockinfo[scode]["market"] == "SZ":
+                    param["market"] = "00"
+                    param["secu_acc"] = self.session["secu_acc"]["SZ"]
+                param["account"] = self.session["account"]
+                param["secu_code"] = self.stockinfo[scode]["code"]
+                param["trd_id"] = trdcode
+                param["price"] = self.stockinfo[scode]["orderprice"]
+                param["qty"] = self.stockinfo[scode]["count"]
+                self.tqueue.put( (reqclass, respclass, param, self.submitBatchOrderBottom) )
+
+    def submitBatchOrderBottom(self, req, resp, param):
+        today = str(datetime.today().date())
+        self.session.storetrade(req, resp)
+        mkt = ""
+        if param["market"] == "10":
+            mkt = "SH"
+        elif param["market"] == "00":
+            mkt = "SZ"
+        assert mkt != ""
+        scode = mkt + param["secu_code"]
+        if resp.retcode == "0":
+            self.stockinfo[scode]["order_id"] = resp.records[0][1]
+            self.stockinfo[scode]["order_date"] = today
+            self.stockinfo[scode]["order_time"] = str(datetime.now().time())
+            self.stockinfo[scode]["order_state"] = Portfolio.ORDERSUCCESS
+        else:
+            self.stockinfo[scode]["order_state"] = Portfolio.ORDERFAILED
 
     def cancelBatchOrder(self):
         # only success orders can be canceled
@@ -290,12 +344,20 @@ class Portfolio:
         self.pricepolicy = "s5"
 
 class PortfolioUpdater(Thread):
-    def __init__(self, shdbfn, szdbfn, portfolio, portmodel):
+    def __init__(self, shdbfn, shmapfn, szdbfn, szmapfn, portfolio, portmodel):
         Thread.__init__(self)
         self.shdbfn = shdbfn
+        self.shmapfn = shmapfn
         self.szdbfn = szdbfn
+        self.szmapfn = szmapfn
         self.dbsh = dbf.Dbf(self.shdbfn, ignoreErrors=True, readOnly=True)
         self.dbsz = dbf.Dbf(self.szdbfn, ignoreErrors=True, readOnly=True)
+        f = open(self.shmapfn)
+        self.shmap = pickle.load(f)
+        f.close()
+        f = open(self.szmapfn)
+        self.szmap = pickle.load(f)
+        f.close()
         self.portfolio = portfolio
         self.portmodel = portmodel
         self.runflag = True
@@ -368,34 +430,55 @@ class PortfolioUpdater(Thread):
         # show2003 only considers SH market
         dbsh = self.dbsh
         dbsz = self.dbsz
+        shmap = self.shmap
+        szmap = self.szmap
+
+        for scode = self.portfolio.stocklist:
+            stockinfo = self.portfolio.stockinfo[scode]
+            if stockinfo["market"] == "SH":
+                rec = dbsh[shmap[scode]]
+                for f in self.shdbfield:
+                    if type(rec[f]) is types.StringType:
+                        stockinfo[self.shdbmapping[f]] = rec[f].decode("GBK")
+                    else:
+                        stockinfo[self.shdbmapping[f]] = rec[f]
+                stockinfo["orderprice"] = self.getpricesh(rec, self.portfolio.pricepolicy)
+            elif stockinfo["market"] == "SZ":
+                rec = dbsz[szmap[scode]]
+                for f in self.szdbfield:
+                    if type(rec[f]) is types.StringType:
+                        stockinfo[self.szdbmapping[f]] = rec[f].decode("GBK")
+                    else:
+                        stockinfo[self.szdbmapping[f]] = rec[f]
+                stockinfo["orderprice"] = self.getpricesz(rec, self.portfolio.pricepolicy)
 
         # update SH stock
-        for s in dbsh:
-            # a dirty patch
-            scode = "SH" + s[0]
-            if scode in self.portfolio.stockset:
-                stockinfo = self.portfolio.stockinfo[scode]
-                for f in self.shdbfield:
-                    if type(s[f]) is types.StringType:
-                        stockinfo[self.shdbmapping[f]] = s[f].decode("GBK")
-                    else:
-                        stockinfo[self.shdbmapping[f]] = s[f]
-                # update order price for SH
-                stockinfo["orderprice"] = self.getpricesh(s, self.portfolio.pricepolicy)
+        #for s in dbsh:
+        #    # a dirty patch
+        #    scode = "SH" + s[0]
+        #    if scode in self.portfolio.stockset:
+        #        stockinfo = self.portfolio.stockinfo[scode]
+        #        for f in self.shdbfield:
+        #            if type(s[f]) is types.StringType:
+        #                stockinfo[self.shdbmapping[f]] = s[f].decode("GBK")
+        #            else:
+        #                stockinfo[self.shdbmapping[f]] = s[f]
+        #        # update order price for SH
+        #        stockinfo["orderprice"] = self.getpricesh(s, self.portfolio.pricepolicy)
 
         # update SZ stock
-        for s in dbsz:
-            # a dirty patch
-            scode = "SZ" + s[0]
-            if scode in self.portfolio.stockset:
-                stockinfo = self.portfolio.stockinfo[scode]
-                for f in self.szdbfield:
-                    if type(s[f]) is types.StringType:
-                        stockinfo[self.szdbmapping[f]] = s[f].decode("GBK")
-                    else:
-                        stockinfo[self.szdbmapping[f]] = s[f]
-                # update order price for SZ
-                stockinfo["orderprice"] = self.getpricesz(s, self.portfolio.pricepolicy)
+        #for s in dbsz:
+        #    # a dirty patch
+        #    scode = "SZ" + s[0]
+        #    if scode in self.portfolio.stockset:
+        #        stockinfo = self.portfolio.stockinfo[scode]
+        #        for f in self.szdbfield:
+        #            if type(s[f]) is types.StringType:
+        #                stockinfo[self.szdbmapping[f]] = s[f].decode("GBK")
+        #            else:
+        #                stockinfo[self.szdbmapping[f]] = s[f]
+        #        # update order price for SZ
+        #        stockinfo["orderprice"] = self.getpricesz(s, self.portfolio.pricepolicy)
 
         self.portmodel.emit(SIGNAL("dataChanged(QModelIndex,QModelIndex)"),
                 self.portmodel.index(0,0), self.portmodel.index(
@@ -466,6 +549,41 @@ class OrderUpdater(Thread):
             #    print
             time.sleep(2)
 
+class jzWorker(Thread):
+    def __init__(self, session, tqueue):
+        Thread.__init__(self)
+        self.session = session
+        self.tqueue = tqueue
+        self.runflag = True
+
+    def run(self):
+        # TODO: what if et is closed while tqueue is not empty
+        while self.runflag:
+            t = tqueue.get()
+            self.dotask(t)
+            tqueue.task_done()
+
+    def dotask(self, t):
+        """
+        t is a task as a tuple:
+        (request class, response class, param, callback)
+
+        callback will receive (req instance, resp instance, param)
+        as its input parameters
+        """
+        req = t[0](self.session)
+        param = t[2]
+        callback = t[3]
+        for k in param:
+            req[k] = param[k]
+        req.send()
+        resp = t[1](self.session)
+        resp.recv()
+        callback(req, resp, param)
+
+    def stop(self):
+        self.runflag = False
+
 def openfile():
     fn = QFileDialog.getOpenFileName()
     return fn
@@ -482,6 +600,8 @@ def main(args):
     # read config
     shdbfn = "z:\\show2003.dbf"
     szdbfn = "z:\\sjshq.dbf"
+    shmapfn = "shmap.pkl"
+    szmapfn = "szmap.pkl"
     #portfoliofn = "hs300.txt"
     portfoliofn = openfile()
 
@@ -493,44 +613,34 @@ def main(args):
     session_config["jzaccounttype"] = "Z"
     session_config["jzpasswd"] = "123444"
 
-    # setup session and login jinzheng
-    # TODO: handle login error
-    #conn = socket.socket()
-    #conn.connect((jzserver, jzport))
-
-    #mysession = jz.session(session_config)
-    #cireq = jz.CheckinReq(mysession)
-    #cireq.send()
-    #ciresp = jz.CheckinResp(mysession)
-    #ciresp.recv()
-    ## update workkey
-    #mysession["workkey"] = ciresp.getworkkey()
-
-    #loginreq = jz.LoginReq(mysession)
-    #loginreq["idtype"] = jzaccounttype
-    #loginreq["id"] = jzaccount
-    #loginreq["passwd"] = mysession.encrypt(jz.pad(jzpasswd, (len(jzpasswd)/8+1)*8))
-    #loginreq.send()
-    #loginresp = jz.LoginResp(mysession)
-    #loginresp.recv()
-    ## update session fields from login response
-    #if loginresp.retcode == "0":
-    #    loginresp.updatesession()
-    #    print "Login ok"
-
     # setup portfolio
     bo, badlines = Portfolio.readBatchOrder(portfoliofn)
     if len(badlines) > 0:
         print "There're bad lines."
         print badlines
-    p = Portfolio(bo, session_config)
+    tqueue = Queue()
+    p = Portfolio(bo, session_config, tqueue)
 
     # setup portfolio model for showing in table
     pmodel = PortfolioModel(p)
     ui.stock.setModel(pmodel)
 
+    # setup and run jzWorker threads
+    jzWorkerNum = 10
+    worker = []
+    for i in range(jzWorkerNum):
+        s = jz.session(session_config)
+        if not s.setup():
+            print "Session setup failed."
+            sys.exit(1)
+        w = jzWorker(s, tqueue)
+        worker.append(w)
+
+    for i in range(jzWorkerNum):
+        worker[i].start()
+
     # run the portfolio updater
-    pupdater = PortfolioUpdater(shdbfn, szdbfn, p, pmodel)
+    pupdater = PortfolioUpdater(shdbfn, shmapfn, szdbfn, szmapfn, p, pmodel)
     pupdater.start()
 
     # run the order info updater
