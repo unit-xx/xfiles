@@ -229,14 +229,12 @@ class Portfolio:
                 param["trd_id"] = trdcode
                 param["price"] = self.stockinfo[scode]["orderprice"]
                 param["qty"] = self.stockinfo[scode]["count"]
-                self.tqueue.put( (reqclass, respclass, param, self.submitBatchOrderBottom) )
+                self.tqueue.put( (reqclass, respclass, param, self.submitBatchOrderBottom, True) )
 
     submitBatchOrder = submitBatchOrderTop
 
     def submitBatchOrderBottom(self, req, resp, param):
         today = str(datetime.today().date())
-        # TODO: SQlite error in next statement, disable temporarily
-        self.session.storetrade(req, resp)
         mkt = ""
         if param["market"] == "10":
             mkt = "SH"
@@ -567,9 +565,8 @@ class jzWorker(Thread):
 
     def run(self):
         # TODO: what if et is closed while tqueue is not empty
-        print "I'm a jzWorker", self.ident
         if not self.setupsession():
-            print "I, a jzWorker, cannot setup session, and will exit."
+            print "jzWorker", currentThread().ident, "cannot setup session, and will exit."
             return
 
         while self.runflag:
@@ -580,10 +577,12 @@ class jzWorker(Thread):
             except Queue.Empty:
                 pass
 
+        self.session.close()
+
     def dotask(self, t):
         """
         t is a task as a tuple:
-        (request class, response class, param, callback)
+        (request class, response class, param, callback, ifstoretrade)
 
         callback will receive (req instance, resp instance, param)
         as its input parameters
@@ -596,6 +595,9 @@ class jzWorker(Thread):
         req.send()
         resp = t[1](self.session)
         resp.recv()
+        ifstoretrade = t[4]
+        if ifstoretrade:
+            self.session.storetrade(req, resp)
         callback(req, resp, param)
 
     def stop(self):
@@ -664,8 +666,7 @@ def main(args):
     ui.stock.setModel(pmodel)
 
     # setup and run jzWorker threads
-    print "Main thread is", currentThread().ident
-    jzWorkerNum = 1
+    jzWorkerNum = 10
     workers = []
     for i in range(jzWorkerNum):
         w = jzWorker(session_config, tqueue)
@@ -710,11 +711,10 @@ def main(args):
     orderupdater.join()
     print "updater threads stopped."
     print "waiting jzWorkers to finalize jobs"
+    # next line ensures all async request will be executed before exit.
     tqueue.join()
     for i in range(jzWorkerNum):
         workers[i].stop()
-        # TODO: next statement will cause SQLite error, disable temporarily
-        workers[i].closesession()
     print "jzWorkers stopped"
     print "saving order info."
     p.saveBatchOrder(portfoliofn)
