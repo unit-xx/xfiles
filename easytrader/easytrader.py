@@ -8,7 +8,7 @@ from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 from tradeui import Ui_MainWindow
 from dbfpy import dbf
-from threading import Thread
+from threading import Thread, currentThread
 import time
 import shutil
 import types
@@ -201,9 +201,6 @@ class Portfolio:
                 else:
                     self.stockinfo[scode]["order_state"] = Portfolio.ORDERFAILED
 
-
-    submitBatchOrder = submitBatchOrderSync
-
     def submitBatchOrderTop(self, trdid):
         if len(self.stocklist) == 0:
             return
@@ -234,8 +231,11 @@ class Portfolio:
                 param["qty"] = self.stockinfo[scode]["count"]
                 self.tqueue.put( (reqclass, respclass, param, self.submitBatchOrderBottom) )
 
+    submitBatchOrder = submitBatchOrderTop
+
     def submitBatchOrderBottom(self, req, resp, param):
         today = str(datetime.today().date())
+        # TODO: SQlite error in next statement, disable temporarily
         self.session.storetrade(req, resp)
         mkt = ""
         if param["market"] == "10":
@@ -433,7 +433,7 @@ class PortfolioUpdater(Thread):
         shmap = self.shmap
         szmap = self.szmap
 
-        for scode = self.portfolio.stocklist:
+        for scode in self.portfolio.stocklist:
             stockinfo = self.portfolio.stockinfo[scode]
             if stockinfo["market"] == "SH":
                 rec = dbsh[shmap[scode]]
@@ -495,7 +495,7 @@ class PortfolioUpdater(Thread):
             #    for field in self.dbfield:
             #        print self.portfolio.data[d][self.dbmapping[field]],
             #    print
-            time.sleep(1)
+            time.sleep(2)
 
 class OrderUpdater(Thread):
     def __init__(self, portfolio, portmodel, sessioncfg):
@@ -550,19 +550,33 @@ class OrderUpdater(Thread):
             time.sleep(2)
 
 class jzWorker(Thread):
-    def __init__(self, session, tqueue):
+    def __init__(self, session_cfg, tqueue):
         Thread.__init__(self)
-        self.session = session
+        self.session_cfg = session_cfg
         self.tqueue = tqueue
         self.runflag = True
 
+    def setupsession(self):
+        self.session = jz.session(self.session_cfg)
+        if not self.session.setup():
+            return False
+        return True
+
+    def closesession(self):
+        self.session.close()
+
     def run(self):
         # TODO: what if et is closed while tqueue is not empty
+        print "I'm a jzWorker", self.ident
+        if not self.setupsession():
+            print "I, a jzWorker, cannot setup session, and will exit."
+            return
+
         while self.runflag:
             try:
-                t = tqueue.get(True, 2)
+                t = self.tqueue.get(True, 2)
                 self.dotask(t)
-                tqueue.task_done()
+                self.tqueue.task_done()
             except Queue.Empty:
                 pass
 
@@ -600,7 +614,9 @@ def verifymap(dbfn, mapfn, codekey):
     map = pickle.load(f)
     ret = True
     for k in map:
-        if k != db[map[k]][codekey]:
+        # k is sth like SH600000, SZ000338
+        if k[2:] != db[map[k]][codekey]:
+            print k, map[k], db[map[k]]
             ret = False
             break
     f.close()
@@ -620,8 +636,10 @@ def main(args):
     szmapfn = "szmap.pkl"
     if not verifymap(shdbfn, shmapfn, "S1"):
         print "Stock map file error."
-    if not verifymap(szdbfn, szmapfn, "HQZQDM")
+        sys.exit(1)
+    if not verifymap(szdbfn, szmapfn, "HQZQDM"):
         print "Stock map file error."
+        sys.exit(1)
     #portfoliofn = "hs300.txt"
     portfoliofn = openfile()
 
@@ -646,17 +664,12 @@ def main(args):
     ui.stock.setModel(pmodel)
 
     # setup and run jzWorker threads
-    jzWorkerNum = 10
+    print "Main thread is", currentThread().ident
+    jzWorkerNum = 1
     workers = []
-    workersessions = []
     for i in range(jzWorkerNum):
-        s = jz.session(session_config)
-        if not s.setup():
-            print "Session setup failed."
-            sys.exit(1)
-        w = jzWorkers(s, tqueue)
+        w = jzWorker(session_config, tqueue)
         workers.append(w)
-        workersessions.append(s)
 
     for i in range(jzWorkerNum):
         workers[i].start()
@@ -700,7 +713,9 @@ def main(args):
     tqueue.join()
     for i in range(jzWorkerNum):
         workers[i].stop()
-        workersessions[i].close()
+        # TODO: next statement will cause SQLite error, disable temporarily
+        workers[i].closesession()
+    print "jzWorkers stopped"
     print "saving order info."
     p.saveBatchOrder(portfoliofn)
     del p

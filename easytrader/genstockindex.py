@@ -7,18 +7,17 @@ from dbfpy import dbf
 
 szmapfn = "szmap.pkl"
 shmapfn = "shmap.pkl"
-szdbfn = "sjshq.dbf"
-shdbfn = "show2003.dbf"
+szdbfn = "z:\\sjshq.dbf"
+shdbfn = "z:\\show2003.dbf"
 stockfn = "hs300.txt"
 
 try:
     stockfn = sys.argv[1]
 except IndexError:
-    print "No input stock list file."
-    sys.exit(1)
+    print "No input stock list file, use %s" % stockfn
 
 try:
-    f = open(fn, "r")
+    f = open(stockfn, "r")
 except IOError:
     print "Cannot open %s" % fn
     sys.exit(1)
@@ -53,8 +52,7 @@ i = 0
 dbsz = dbf.Dbf(szdbfn, ignoreErrors=True, readOnly=True)
 for rec in dbsz:
     if rec["HQZQDM"] in szlist:
-        print rec["HQZQDM"], i
-        szmap["SH"+rec["HQZQDM"]] = i
+        szmap["SZ"+rec["HQZQDM"]] = i
     i = i + 1
 dbsz.close()
 
