@@ -8,7 +8,7 @@ from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 from tradeui import Ui_MainWindow
 from dbfpy import dbf
-from threading import Thread, currentThread
+from threading import Thread, currentThread, Lock
 import time
 import shutil
 import types
@@ -68,6 +68,10 @@ class Portfolio:
     CANCELSUCCESS = "CANCELSUCCESS"
     CANCELFAILED = "CANCELFAILED"
 
+    # batch operation status
+    BOUNDERED = "BOUNDERED"
+    BOORDERING = "BOORDERING"
+    BOORDERED = "BOORDERED"
 
     def __init__(self, stockbatch, sessioncfg, tqueue):
         # market code (SH, SZ), stock number, count
@@ -115,6 +119,9 @@ class Portfolio:
             except IndexError:
                 pass
         self.stockset = set(self.stocklist)
+
+        self.bostate = Portfolio.BONONE
+        self.bolock = Lock()
 
     def __del__(self):
         self.session.close()
@@ -212,6 +219,13 @@ class Portfolio:
             trdcode = "0S"
         assert(trdcode != "")
 
+        self.bolock.acquire()
+        # TODO: who and how init bostate? should be stored persistently in file
+        if self.bostate == Portfolio.BOUNDERED:
+            self.bostate = Portfolio.BOORDERING
+            self.bocount = 0
+        self.bolock.release()
+
         reqclass = jz.SubmitOrderReq
         respclass = jz.SubmitOrderResp
         for scode in self.stocklist:
@@ -250,6 +264,12 @@ class Portfolio:
         else:
             self.stockinfo[scode]["order_state"] = Portfolio.ORDERFAILED
 
+        self.bolock.acquire()
+        self.bocount = self.bocount + 1
+        if self.bocount == len(self.stocklist):
+            self.bostate = Portfolio.BOORDERED
+        self.bolock.release()
+
     def cancelBatchOrder(self):
         # only success orders can be canceled
         today = str(datetime.today().date())
@@ -267,9 +287,9 @@ class Portfolio:
                 resp.recv()
                 self.session.storetrade(req, resp)
                 if resp.retcode == "0":
-                    self.stockinfo[scode]["order_state"] = Portfolio.CANCELSUCCESS
                     self.stockinfo[scode]["cancel_date"] = today
                     self.stockinfo[scode]["cancel_time"] = str(datetime.now().time())
+                    self.stockinfo[scode]["order_state"] = Portfolio.CANCELSUCCESS
                 else:
                     self.stockinfo[scode]["order_state"] = Portfolio.CANCELFAILED
 
@@ -715,6 +735,8 @@ def main(args):
     tqueue.join()
     for i in range(jzWorkerNum):
         workers[i].stop()
+    for i in range(jzWorkerNum):
+        workers[i].join()
     print "jzWorkers stopped"
     print "saving order info."
     p.saveBatchOrder(portfoliofn)
