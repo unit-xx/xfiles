@@ -73,9 +73,10 @@ class Portfolio:
     BOORDERING = "BOORDERING"
     BOORDERED = "BOORDERED"
 
-    def __init__(self, stockbatch, sessioncfg, tqueue):
+    def __init__(self, bofn, stockbatch, sessioncfg, tqueue):
         # market code (SH, SZ), stock number, count
         self.session = jz.session(sessioncfg)
+        self.portfoliofn = bofn
         if not self.session.setup():
             print "session setup failed."
             sys.exit(1)
@@ -92,36 +93,51 @@ class Portfolio:
                 "dealprice", "latestprice"]
         # TODO: really need this assertion? how about derived attr
         assert(set(self.stockmodelattr) <= set(self.stockattr))
-        self.pricepolicylist = ["latest", "b1", "b2", "b3", "b4", "b5",
-                "s1", "s2", "s3", "s4", "s5"]
-        self.pricepolicy = "s5"
         # use market+stock number as key
         self.dealrecord = {}
         self.stockinfo = {}
+        self.bostate = Portfolio.BOUNDERED
         for i in stockbatch:
-            scode = i[0].upper() + i[1]
-            self.stocklist.append(scode)
-            self.stockinfo.setdefault(scode, {})
-            self.dealrecord.setdefault(scode, {})
+            if i[0] == "BO":
+                self.bostate = i[3]
+            else:
+                scode = i[0].upper() + i[1]
+                self.stocklist.append(scode)
+                self.stockinfo.setdefault(scode, {})
+                self.dealrecord.setdefault(scode, {})
 
-            self.stockinfo[scode]["market"] = i[0].upper()
-            self.stockinfo[scode]["code"] = i[1]
-            self.stockinfo[scode]["count"] = i[2]
-            self.stockinfo[scode]["order_state"] = Portfolio.UNORDERED
-            self.stockinfo[scode]["order_id"] = ""
-            self.stockinfo[scode]["order_date"] = ""
-            self.stockinfo[scode]["order_time"] = ""
-            try:
-                self.stockinfo[scode]["order_state"] = i[3]
-                self.stockinfo[scode]["order_id"] = i[4]
-                self.stockinfo[scode]["order_date"] = i[5]
-                self.stockinfo[scode]["order_time"] = i[6]
-            except IndexError:
-                pass
+                self.stockinfo[scode]["market"] = i[0].upper()
+                self.stockinfo[scode]["code"] = i[1]
+                self.stockinfo[scode]["count"] = i[2]
+                self.stockinfo[scode]["order_state"] = Portfolio.UNORDERED
+                self.stockinfo[scode]["order_id"] = ""
+                self.stockinfo[scode]["order_date"] = ""
+                self.stockinfo[scode]["order_time"] = ""
+                try:
+                    self.stockinfo[scode]["order_state"] = i[3]
+                    self.stockinfo[scode]["order_id"] = i[4]
+                    self.stockinfo[scode]["order_date"] = i[5]
+                    self.stockinfo[scode]["order_time"] = i[6]
+                except IndexError:
+                    pass
+
         self.stockset = set(self.stocklist)
-
-        self.bostate = Portfolio.BONONE
         self.bolock = Lock()
+
+        self.pricepolicylist = ["latest", "s5", "s4", "s3", "s2", "s1", "b1", "b2", "b3", "b4", "b5"]
+        self.pricepolicy = "s5"
+        self.pricepolicynamemap = {"latest":u"最新价", 
+                "s5":u"卖五",
+                "s4":u"卖四",
+                "s3":u"卖三",
+                "s2":u"卖二",
+                "s1":u"卖一",
+                "b1":u"买一",
+                "b2":u"买二",
+                "b3":u"买三",
+                "b4":u"买四",
+                "b5":u"买五"
+                }
 
     def __del__(self):
         self.session.close()
@@ -145,7 +161,7 @@ class Portfolio:
                     badlines.append(line.strip())
                 continue
 
-            if( (boitem[0].upper()!="SH" and boitem[0].upper()!="SZ") or (int(boitem[2])%100 != 0) ):
+            if( (boitem[0].upper() not in ["SH", "SZ", "BO"]) or (int(boitem[2])%100 != 0) ):
                 badlines.append(line.strip())
                 continue
 
@@ -153,14 +169,21 @@ class Portfolio:
         f.close()
         return (bo, badlines)
 
-    def saveBatchOrder(self, bofn):
+    def saveBatchOrder(self, bofn=None):
         # TODO: save ordered? canceled? failed?
-        f = open(bofn, "w")
+        fn = bofn
+        if bofn is None:
+            fn = self.portfoliofn
+        f = open(fn, "w")
+        # stock info
         for scode in self.stocklist:
             si = self.stockinfo[scode]
             f.write(" ".join( (si["market"], si["code"], si["count"], si["order_state"],
                 si["order_id"], si["order_date"], si["order_time"]) ))
             f.write("\n")
+        # portfolio state as a batch
+        f.write(" ".join( ("BO", "NA", "100", self.bostate) ))
+        f.write("\n")
         f.flush()
         f.close()
 
@@ -327,6 +350,9 @@ class Portfolio:
 
     def buybatch(self):
         self.submitBatchOrder("buy")
+
+    def selpricepolicy(self, pindex):
+        self.pricepolicy = self.pricepolicylist[pindex]
 
     def pricelatest(self):
         self.pricepolicy = "latest"
@@ -663,7 +689,7 @@ def main(args):
         print "Stock map file error."
         sys.exit(1)
     #portfoliofn = "hs300.txt"
-    portfoliofn = openfile()
+    portfoliofn = unicode(openfile())
 
     session_config = {}
     session_config["tradedbfn"] = "tradeinfo.db"
@@ -679,7 +705,7 @@ def main(args):
         print "There're bad lines."
         print badlines
     tqueue = Queue.Queue()
-    p = Portfolio(bo, session_config, tqueue)
+    p = Portfolio(portfoliofn, bo, session_config, tqueue)
 
     # setup portfolio model for showing in table
     pmodel = PortfolioModel(p)
@@ -718,8 +744,18 @@ def main(args):
     window.connect(ui.priceb3, SIGNAL("activated()"), p.priceb3)
     window.connect(ui.priceb4, SIGNAL("activated()"), p.priceb4)
     window.connect(ui.priceb5, SIGNAL("activated()"), p.priceb5)
-    window.connect(ui.cancel_order, SIGNAL("activated()"), p.cancelBatchOrder)
-    window.connect(ui.gen_backuporder, SIGNAL("activated()"), p.genandsaveBackupOrder)
+
+    # setup price combobox
+    for price in p.pricepolicylist:
+        ui.pricepolicylist.addItem(p.pricepolicynamemap[price])
+    ui.pricepolicylist.setCurrentIndex(p.pricepolicylist.index(p.pricepolicy))
+    window.connect(ui.pricepolicylist, SIGNAL("currentIndexChanged(int)"), p.selpricepolicy)
+
+    # setup batch order push button
+    window.connect(ui.submitorder, SIGNAL("clicked()"), p.buybatch)
+    window.connect(ui.cancelorder, SIGNAL("clicked()"), p.cancelBatchOrder)
+    window.connect(ui.genbackuporder, SIGNAL("clicked()"), p.genandsaveBackupOrder)
+    window.connect(ui.saveorder, SIGNAL("clicked()"), p.saveBatchOrder)
 
     window.show()
     app.exec_()
@@ -739,7 +775,7 @@ def main(args):
         workers[i].join()
     print "jzWorkers stopped"
     print "saving order info."
-    p.saveBatchOrder(portfoliofn)
+    p.saveBatchOrder()
     del p
     del pupdater
     del orderupdater
