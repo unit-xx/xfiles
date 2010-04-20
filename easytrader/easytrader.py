@@ -297,7 +297,7 @@ class Portfolio:
         # only success orders can be canceled
         today = str(datetime.today().date())
         for scode in self.stocklist:
-            if self.stockinfo[scode]["order_state"] == Portfolio.ORDERSUCCESS:
+            if self.stockinfo[scode]["order_state"] == Portfolio.ORDERSUCCESS and int(self.stockinfo[scode]["dealcount"]) < int(self.stockinfo[scode]["count"]):
                 req = jz.CancelOrderReq(self.session)
                 req["user_code"] = self.session["user_code"]
                 if self.stockinfo[scode]["market"] == "SH":
@@ -571,10 +571,11 @@ class OrderUpdater(Thread):
                 qoresp.recv()
                 if qoresp.retcode == "0":
                     si["dealcount"] = qoresp.records[0][-11]
-                    try:
-                        si["dealprice"] = str( float(qoresp.records[0][-9]) / float(qoresp.records[0][-11]) )
-                    except ZeroDivisionError:
-                        si["dealprice"] = "0.00"
+                    #try:
+                    #    si["dealprice"] = str( float(qoresp.records[0][-9]) / float(qoresp.records[0][-11]) )
+                    #except ZeroDivisionError:
+                    #    si["dealprice"] = "0.00"
+                    si["dealprice"] = qoresp.records[0][-1]
                     # TODO: ordercount may diff with count?
                     si["orderedcount"] = qoresp.records[0][15]
                 else:
