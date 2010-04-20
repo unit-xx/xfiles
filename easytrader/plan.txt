@@ -1,3 +1,5 @@
+atomic batch operation (submit, cancel)
+
 change easy trader into MVC structure
 use db and in memory db
 

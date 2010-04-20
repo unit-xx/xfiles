@@ -74,10 +74,24 @@
          </property>
         </widget>
        </item>
-       <item row="0" column="6">
+       <item row="0" column="7">
         <widget class="QPushButton" name="autosubmit">
          <property name="text">
           <string>自动下单</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="6">
+        <widget class="QPushButton" name="genbackuporder">
+         <property name="text">
+          <string>生成补单</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="8">
+        <widget class="QPushButton" name="saveorder">
+         <property name="text">
+          <string>保存组合</string>
          </property>
         </widget>
        </item>
@@ -104,6 +118,9 @@
    </layout>
   </widget>
   <widget class="QMenuBar" name="menubar">
+   <property name="enabled">
+    <bool>true</bool>
+   </property>
    <property name="geometry">
     <rect>
      <x>0</x>
@@ -112,41 +129,9 @@
      <height>19</height>
     </rect>
    </property>
-   <widget class="QMenu" name="menuImport">
-    <property name="title">
-     <string>文件</string>
-    </property>
-    <addaction name="import_portfolio"/>
-    <addaction name="save_order"/>
-   </widget>
-   <widget class="QMenu" name="menu">
-    <property name="title">
-     <string>组合操作</string>
-    </property>
-    <addaction name="buybatch"/>
-    <addaction name="cancel_order"/>
-    <addaction name="gen_backuporder"/>
-   </widget>
-   <widget class="QMenu" name="menu_2">
-    <property name="title">
-     <string>报价策略</string>
-    </property>
-    <addaction name="pricelatest"/>
-    <addaction name="prices1"/>
-    <addaction name="prices2"/>
-    <addaction name="prices3"/>
-    <addaction name="prices4"/>
-    <addaction name="prices5"/>
-    <addaction name="priceb1"/>
-    <addaction name="priceb2"/>
-    <addaction name="priceb3"/>
-    <addaction name="priceb4"/>
-    <addaction name="priceb5"/>
-    <addaction name="action_13"/>
-   </widget>
-   <addaction name="menuImport"/>
-   <addaction name="menu"/>
-   <addaction name="menu_2"/>
+   <property name="nativeMenuBar">
+    <bool>true</bool>
+   </property>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <action name="import_portfolio">
@@ -217,21 +202,6 @@
   <action name="action_13">
    <property name="text">
     <string>自定义</string>
-   </property>
-  </action>
-  <action name="save_order">
-   <property name="text">
-    <string>保存委托</string>
-   </property>
-  </action>
-  <action name="cancel_order">
-   <property name="text">
-    <string>撤销未成交委托</string>
-   </property>
-  </action>
-  <action name="gen_backuporder">
-   <property name="text">
-    <string>生成补单</string>
    </property>
   </action>
  </widget>
