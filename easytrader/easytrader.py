@@ -324,33 +324,50 @@ class Portfolio:
         # TODO: copy code from submitBatchOrderTop, continue implementation
         self.bolock.acquire()
 
-        if self.bostate == Portfolio.BOUNORDERED:
+        if self.bostate == Portfolio.BOORDERED:
             # set Portfolio batch state
-            self.bostate = Portfolio.BOORDERING
+            self.bostate = Portfolio.BOORDERCANCELING
             self.bocount = 0
 
             # submit each stock order
-            reqclass = jz.SubmitOrderReq
-            respclass = jz.SubmitOrderResp
+            reqclass = jz.CancelOrderReq
+            respclass = jz.CancelOrderResp
             for scode in self.stocklist:
-                if self.stockinfo[scode]["order_state"] == Portfolio.UNORDERED:
+                if self.stockinfo[scode]["order_state"] == Portfolio.ORDERSUCCESS:
                     param = {}
                     param["user_code"] = self.session["user_code"]
                     if self.stockinfo[scode]["market"] == "SH":
                         param["market"] = "10"
-                        param["secu_acc"] = self.session["secu_acc"]["SH"]
                     elif self.stockinfo[scode]["market"] == "SZ":
                         param["market"] = "00"
-                        param["secu_acc"] = self.session["secu_acc"]["SZ"]
-                    param["account"] = self.session["account"]
-                    param["secu_code"] = self.stockinfo[scode]["code"]
-                    param["trd_id"] = trdcode
-                    param["price"] = self.stockinfo[scode]["orderprice"]
-                    param["qty"] = self.stockinfo[scode]["count"]
-                    self.tqueue.put( (reqclass, respclass, param, self.submitBatchOrderBottom, True) )
+                    param["order_id"] = self.stockinfo[scode]["order_id"]
+                    self.tqueue.put( (reqclass, respclass, param, self.cancelBatchOrderBottom, True) )
 
         self.bolock.release()
 
+    def cancelBatchOrderBottom(self, req, resp, param):
+        today = str(datetime.today().date())
+        mkt = ""
+        if param["market"] == "10":
+            mkt = "SH"
+        elif param["market"] == "00":
+            mkt = "SZ"
+        assert mkt != ""
+        scode = mkt + param["secu_code"]
+
+        if resp.retcode == "0":
+            self.stockinfo[scode]["cancel_date"] = today
+            self.stockinfo[scode]["cancel_time"] = str(datetime.now().time())
+            self.stockinfo[scode]["order_state"] = Portfolio.CANCELSUCCESS
+        else:
+            self.stockinfo[scode]["order_state"] = Portfolio.CANCELFAILED
+        # TODO: update stock info immediately
+
+        self.bolock.acquire()
+        self.bocount = self.bocount + 1
+        if self.bocount == len(self.stocklist):
+            self.bostate = Portfolio.BOORDERCANCELED
+        self.bolock.release()
 
     def genBackupOrder(self):
         # now only consider CANCELSUCCESS orders
@@ -617,6 +634,11 @@ class OrderUpdater(Thread):
                 else:
                     print "error when query order for %s" % si["order_id"]
                     print qoresp.retcode, qoresp.retinfo
+
+        self.portmodel.emit(SIGNAL("dataChanged(QModelIndex,QModelIndex)"),
+                self.portmodel.index(0,0), self.portmodel.index(
+                    len(self.portfolio.stockinfo)-1,
+                    len(self.portfolio.stockmodelattr)-1))
 
     def stop(self):
         self.runflag = False
