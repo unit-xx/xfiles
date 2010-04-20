@@ -69,9 +69,11 @@ class Portfolio:
     CANCELFAILED = "CANCELFAILED"
 
     # batch operation status
-    BOUNDERED = "BOUNDERED"
+    BOUNORDERED = "BOUNORDERED"
     BOORDERING = "BOORDERING"
     BOORDERED = "BOORDERED"
+    BOORDERCANCELING = "BOORDERCANCELING"
+    BOORDERCANCELED = "BOORDERCANCELED"
 
     def __init__(self, bofn, stockbatch, sessioncfg, tqueue):
         # market code (SH, SZ), stock number, count
@@ -88,15 +90,15 @@ class Portfolio:
                 "buyprice", "sellprice", "order_id", "order_date", "order_time",
                 "orderedcount", "orderprice", "dealcount", "dealprice", "order_state",
                 "cancel_date", "cancel_time"]
-        self.stockmodelattr = ["count", "market", "code", "name", "order_state",
-                "order_date", "order_time", "orderedcount", "dealcount", "orderprice",
-                "dealprice", "latestprice"]
+        self.stockmodelattr = ["count", "market", "code", "name",
+                "order_state", "orderedcount", "dealcount", "orderprice",
+                "dealprice", "latestprice", "order_date", "order_time"]
         # TODO: really need this assertion? how about derived attr
         assert(set(self.stockmodelattr) <= set(self.stockattr))
         # use market+stock number as key
         self.dealrecord = {}
         self.stockinfo = {}
-        self.bostate = Portfolio.BOUNDERED
+        self.bostate = Portfolio.BOUNORDERED
         for i in stockbatch:
             if i[0] == "BO":
                 self.bostate = i[3]
@@ -232,9 +234,6 @@ class Portfolio:
                     self.stockinfo[scode]["order_state"] = Portfolio.ORDERFAILED
 
     def submitBatchOrderTop(self, trdid):
-        if len(self.stocklist) == 0:
-            return
-
         trdid == ""
         if trdid == "buy":
             trdcode = "0B"
@@ -243,30 +242,33 @@ class Portfolio:
         assert(trdcode != "")
 
         self.bolock.acquire()
-        # TODO: who and how init bostate? should be stored persistently in file
-        if self.bostate == Portfolio.BOUNDERED:
+
+        if self.bostate == Portfolio.BOUNORDERED:
+            # set Portfolio batch state
             self.bostate = Portfolio.BOORDERING
             self.bocount = 0
-        self.bolock.release()
 
-        reqclass = jz.SubmitOrderReq
-        respclass = jz.SubmitOrderResp
-        for scode in self.stocklist:
-            if self.stockinfo[scode]["order_state"] == Portfolio.UNORDERED:
-                param = {}
-                param["user_code"] = self.session["user_code"]
-                if self.stockinfo[scode]["market"] == "SH":
-                    param["market"] = "10"
-                    param["secu_acc"] = self.session["secu_acc"]["SH"]
-                elif self.stockinfo[scode]["market"] == "SZ":
-                    param["market"] = "00"
-                    param["secu_acc"] = self.session["secu_acc"]["SZ"]
-                param["account"] = self.session["account"]
-                param["secu_code"] = self.stockinfo[scode]["code"]
-                param["trd_id"] = trdcode
-                param["price"] = self.stockinfo[scode]["orderprice"]
-                param["qty"] = self.stockinfo[scode]["count"]
-                self.tqueue.put( (reqclass, respclass, param, self.submitBatchOrderBottom, True) )
+            # submit each stock order
+            reqclass = jz.SubmitOrderReq
+            respclass = jz.SubmitOrderResp
+            for scode in self.stocklist:
+                if self.stockinfo[scode]["order_state"] == Portfolio.UNORDERED:
+                    param = {}
+                    param["user_code"] = self.session["user_code"]
+                    if self.stockinfo[scode]["market"] == "SH":
+                        param["market"] = "10"
+                        param["secu_acc"] = self.session["secu_acc"]["SH"]
+                    elif self.stockinfo[scode]["market"] == "SZ":
+                        param["market"] = "00"
+                        param["secu_acc"] = self.session["secu_acc"]["SZ"]
+                    param["account"] = self.session["account"]
+                    param["secu_code"] = self.stockinfo[scode]["code"]
+                    param["trd_id"] = trdcode
+                    param["price"] = self.stockinfo[scode]["orderprice"]
+                    param["qty"] = self.stockinfo[scode]["count"]
+                    self.tqueue.put( (reqclass, respclass, param, self.submitBatchOrderBottom, True) )
+
+        self.bolock.release()
 
     submitBatchOrder = submitBatchOrderTop
 
@@ -293,7 +295,7 @@ class Portfolio:
             self.bostate = Portfolio.BOORDERED
         self.bolock.release()
 
-    def cancelBatchOrder(self):
+    def cancelBatchOrderSync(self):
         # only success orders can be canceled
         today = str(datetime.today().date())
         for scode in self.stocklist:
@@ -315,6 +317,40 @@ class Portfolio:
                     self.stockinfo[scode]["order_state"] = Portfolio.CANCELSUCCESS
                 else:
                     self.stockinfo[scode]["order_state"] = Portfolio.CANCELFAILED
+
+    cancelBatchOrder = cancelBatchOrderSync
+
+    def cancelBatchOrderTop(self):
+        # TODO: copy code from submitBatchOrderTop, continue implementation
+        self.bolock.acquire()
+
+        if self.bostate == Portfolio.BOUNORDERED:
+            # set Portfolio batch state
+            self.bostate = Portfolio.BOORDERING
+            self.bocount = 0
+
+            # submit each stock order
+            reqclass = jz.SubmitOrderReq
+            respclass = jz.SubmitOrderResp
+            for scode in self.stocklist:
+                if self.stockinfo[scode]["order_state"] == Portfolio.UNORDERED:
+                    param = {}
+                    param["user_code"] = self.session["user_code"]
+                    if self.stockinfo[scode]["market"] == "SH":
+                        param["market"] = "10"
+                        param["secu_acc"] = self.session["secu_acc"]["SH"]
+                    elif self.stockinfo[scode]["market"] == "SZ":
+                        param["market"] = "00"
+                        param["secu_acc"] = self.session["secu_acc"]["SZ"]
+                    param["account"] = self.session["account"]
+                    param["secu_code"] = self.stockinfo[scode]["code"]
+                    param["trd_id"] = trdcode
+                    param["price"] = self.stockinfo[scode]["orderprice"]
+                    param["qty"] = self.stockinfo[scode]["count"]
+                    self.tqueue.put( (reqclass, respclass, param, self.submitBatchOrderBottom, True) )
+
+        self.bolock.release()
+
 
     def genBackupOrder(self):
         # now only consider CANCELSUCCESS orders
