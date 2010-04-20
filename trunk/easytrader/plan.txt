@@ -1,4 +1,6 @@
 atomic batch operation (submit, cancel)
+stock/batch workflow
+the bug: cancel will failed before dealcount is updated
 
 change easy trader into MVC structure
 use db and in memory db
