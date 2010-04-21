@@ -3,6 +3,7 @@ stock/batch workflow
 the bug: cancel will failed before dealcount is updated
 
 update view at places
+check session instance, because multi-threads may miss use session
 
 change easy trader into MVC structure
 use db and in memory db

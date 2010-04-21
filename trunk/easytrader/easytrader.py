@@ -112,6 +112,7 @@ class Portfolio:
                 self.stockinfo[scode]["code"] = i[1]
                 self.stockinfo[scode]["count"] = i[2]
                 self.stockinfo[scode]["order_state"] = Portfolio.UNORDERED
+                self.stockinfo[scode]["dealcount"] = "0"
                 self.stockinfo[scode]["order_id"] = ""
                 self.stockinfo[scode]["order_date"] = ""
                 self.stockinfo[scode]["order_time"] = ""
@@ -242,6 +243,7 @@ class Portfolio:
         assert(trdcode != "")
 
         self.bolock.acquire()
+        print "batch ordering"
 
         if self.bostate == Portfolio.BOUNORDERED:
             # set Portfolio batch state
@@ -267,6 +269,8 @@ class Portfolio:
                     param["price"] = self.stockinfo[scode]["orderprice"]
                     param["qty"] = self.stockinfo[scode]["count"]
                     self.tqueue.put( (reqclass, respclass, param, self.submitBatchOrderBottom, True) )
+        else:
+            print "not in order-able state"
 
         self.bolock.release()
 
@@ -293,6 +297,7 @@ class Portfolio:
         self.bocount = self.bocount + 1
         if self.bocount == len(self.stocklist):
             self.bostate = Portfolio.BOORDERED
+            print "batch ordered"
         self.bolock.release()
 
     def cancelBatchOrderSync(self):
@@ -317,12 +322,12 @@ class Portfolio:
                     self.stockinfo[scode]["order_state"] = Portfolio.CANCELSUCCESS
                 else:
                     self.stockinfo[scode]["order_state"] = Portfolio.CANCELFAILED
-
-    cancelBatchOrder = cancelBatchOrderSync
+        # need update order state immediately. see cancelBatchOrderTop.
+        self.bostate = Portfolio.BOORDERCANCELED
 
     def cancelBatchOrderTop(self):
-        # TODO: copy code from submitBatchOrderTop, continue implementation
         self.bolock.acquire()
+        print "batch canceling"
 
         if self.bostate == Portfolio.BOORDERED:
             # set Portfolio batch state
@@ -333,7 +338,8 @@ class Portfolio:
             reqclass = jz.CancelOrderReq
             respclass = jz.CancelOrderResp
             for scode in self.stocklist:
-                if self.stockinfo[scode]["order_state"] == Portfolio.ORDERSUCCESS:
+                if self.stockinfo[scode]["order_state"] == Portfolio.ORDERSUCCESS and int(self.stockinfo[scode]["dealcount"]) < int(self.stockinfo[scode]["count"]):
+                    self.bocount = self.bocount + 1
                     param = {}
                     param["user_code"] = self.session["user_code"]
                     if self.stockinfo[scode]["market"] == "SH":
@@ -341,9 +347,15 @@ class Portfolio:
                     elif self.stockinfo[scode]["market"] == "SZ":
                         param["market"] = "00"
                     param["order_id"] = self.stockinfo[scode]["order_id"]
+                    # secu_code is needed at cancelBatchOrderBottom, not for CancelOrderReq
+                    param["secu_code"] = self.stockinfo[scode]["code"]
                     self.tqueue.put( (reqclass, respclass, param, self.cancelBatchOrderBottom, True) )
+        else:
+            print "not in cancel-able state"
 
         self.bolock.release()
+
+    cancelBatchOrder = cancelBatchOrderTop
 
     def cancelBatchOrderBottom(self, req, resp, param):
         today = str(datetime.today().date())
@@ -355,18 +367,48 @@ class Portfolio:
         assert mkt != ""
         scode = mkt + param["secu_code"]
 
+        si = self.stockinfo[scode]
         if resp.retcode == "0":
-            self.stockinfo[scode]["cancel_date"] = today
-            self.stockinfo[scode]["cancel_time"] = str(datetime.now().time())
-            self.stockinfo[scode]["order_state"] = Portfolio.CANCELSUCCESS
+            si["cancel_date"] = today
+            si["cancel_time"] = str(datetime.now().time())
+            si["order_state"] = Portfolio.CANCELSUCCESS
         else:
-            self.stockinfo[scode]["order_state"] = Portfolio.CANCELFAILED
-        # TODO: update stock info immediately
+            si["order_state"] = Portfolio.CANCELFAILED
+
+        # TODO: cancel may need time at exchange server
+        # time.sleep(5)
+        # update stock info immediately, it's important to use req.session, not self.session
+        qoreq = jz.QueryOrderReq(req.session)
+        qoreq["begin_date"] = si["order_date"]
+        qoreq["end_date"] = si["order_date"]
+        qoreq["get_orders_mode"] = "0" # all submissions
+        qoreq["user_code"] = req.session["user_code"]
+        # a bug in protocol/document results in next odd line
+        qoreq["biz_no"] = si["order_id"]
+        qoreq.send()
+        qoresp = jz.QueryOrderResp(req.session)
+        qoresp.recv()
+        if qoresp.retcode == "0":
+            si["dealcount"] = qoresp.records[0][-11]
+            si["dealprice"] = qoresp.records[0][-1]
+            si["orderedcount"] = qoresp.records[0][15]
+
+            if si["order_state"] == Portfolio.CANCELFAILED:
+                if si["dealcount"] == si["count"]:
+                    si["order_state"] = Portfolio.ORDERSUCCESS
+                else:
+                    # TODO: change state to ORDERSUCCESS in this case too? to enable next cancel?
+                    print "Error: cancel failed while dealcount is smaller than count."
+        else:
+            print "error when query order for %s" % si["order_id"]
+            print qoresp.retcode, qoresp.retinfo
 
         self.bolock.acquire()
-        self.bocount = self.bocount + 1
-        if self.bocount == len(self.stocklist):
+        self.bocount = self.bocount - 1
+        if self.bocount == 0:
+            # TODO: cancel-able stock is not equal to total stock number
             self.bostate = Portfolio.BOORDERCANCELED
+            print "batch canceled"
         self.bolock.release()
 
     def genBackupOrder(self):
@@ -628,6 +670,7 @@ class OrderUpdater(Thread):
                     #    si["dealprice"] = str( float(qoresp.records[0][-9]) / float(qoresp.records[0][-11]) )
                     #except ZeroDivisionError:
                     #    si["dealprice"] = "0.00"
+                    # TODO: dealprice is the average price? or last dealed price?
                     si["dealprice"] = qoresp.records[0][-1]
                     # TODO: ordercount may diff with count?
                     si["orderedcount"] = qoresp.records[0][15]
