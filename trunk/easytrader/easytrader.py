@@ -4,16 +4,16 @@ import sys
 import socket
 import pickle
 import Queue
+from threading import Thread, currentThread, Lock
+import time
+import types
+from datetime import datetime
+
+import jz
+from dbfpy import dbf
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 from tradeui import Ui_MainWindow
-from dbfpy import dbf
-from threading import Thread, currentThread, Lock
-import time
-import shutil
-import types
-import jz
-from datetime import datetime
 
 class PortfolioModel(QAbstractTableModel):
     def __init__(self, portfolio, parent=None):
@@ -62,18 +62,18 @@ class Portfolio:
 
     # stock states can be:
     UNORDERED = "UNORDERED"
-    ORDERFAILED = "ORDERFAILED"
-    ORDERSUCCESS = "ORDERSUCCESS"
+    BUYFAILED = "BUYFAILED"
+    BUYSUCCESS = "BUYSUCCESS"
     # assumption: only success order can be canceled
-    CANCELSUCCESS = "CANCELSUCCESS"
-    CANCELFAILED = "CANCELFAILED"
+    CANCELBUYSUCCESS = "CANCELBUYSUCCESS"
+    CANCELBUYFAILED = "CANCELBUYFAILED"
 
     # batch operation status
     BOUNORDERED = "BOUNORDERED"
-    BOORDERING = "BOORDERING"
-    BOORDERED = "BOORDERED"
-    BOORDERCANCELING = "BOORDERCANCELING"
-    BOORDERCANCELED = "BOORDERCANCELED"
+    BOBUYING = "BOBUYING"
+    BOBUYOK = "BOBUYOK"
+    BOBUYCANCELING = "BOBUYCANCELING"
+    BOBUYCANCELED = "BOBUYCANCELED"
 
     def __init__(self, bofn, stockbatch, sessioncfg, tqueue):
         # market code (SH, SZ), stock number, count
@@ -86,17 +86,22 @@ class Portfolio:
 
         self.stocklist = []
         self.stockset = set()
-        self.stockattr = ["count", "market", "code", "name", "latestprice",
-                "buyprice", "sellprice", "order_id", "order_date", "order_time",
-                "orderedcount", "orderprice", "dealcount", "dealprice", "order_state",
-                "cancel_date", "cancel_time"]
+        self.stockattr = [
+                # common fields
+                "count", "market", "code", "name",
+                # order specific fields
+                "order_id", "order_state", "order_date", "order_time", "orderedcount", "orderprice", "dealcount", "dealprice", "cancel_date", "cancel_time",
+                # history stats
+                "totaldealcount", "avgdealprice", 
+                # prices
+                "latestprice", "buyprice", "sellprice"]
         self.stockmodelattr = ["count", "market", "code", "name",
                 "order_state", "orderedcount", "dealcount", "orderprice",
                 "dealprice", "latestprice", "order_date", "order_time"]
         # TODO: really need this assertion? how about derived attr
         assert(set(self.stockmodelattr) <= set(self.stockattr))
         # use market+stock number as key
-        self.dealrecord = {}
+        self.pastorder = []
         self.stockinfo = {}
         self.bostate = Portfolio.BOUNORDERED
         for i in stockbatch:
@@ -106,7 +111,6 @@ class Portfolio:
                 scode = i[0].upper() + i[1]
                 self.stocklist.append(scode)
                 self.stockinfo.setdefault(scode, {})
-                self.dealrecord.setdefault(scode, {})
 
                 self.stockinfo[scode]["market"] = i[0].upper()
                 self.stockinfo[scode]["code"] = i[1]
@@ -230,9 +234,9 @@ class Portfolio:
                     self.stockinfo[scode]["order_id"] = resp.records[0][1]
                     self.stockinfo[scode]["order_date"] = today
                     self.stockinfo[scode]["order_time"] = str(datetime.now().time())
-                    self.stockinfo[scode]["order_state"] = Portfolio.ORDERSUCCESS
+                    self.stockinfo[scode]["order_state"] = Portfolio.BUYSUCCESS
                 else:
-                    self.stockinfo[scode]["order_state"] = Portfolio.ORDERFAILED
+                    self.stockinfo[scode]["order_state"] = Portfolio.BUYFAILED
 
     def submitBatchOrderTop(self, trdid):
         trdid == ""
@@ -247,7 +251,7 @@ class Portfolio:
 
         if self.bostate == Portfolio.BOUNORDERED:
             # set Portfolio batch state
-            self.bostate = Portfolio.BOORDERING
+            self.bostate = Portfolio.BOBUYING
             self.bocount = 0
 
             # submit each stock order
@@ -289,14 +293,14 @@ class Portfolio:
             self.stockinfo[scode]["order_id"] = resp.records[0][1]
             self.stockinfo[scode]["order_date"] = today
             self.stockinfo[scode]["order_time"] = str(datetime.now().time())
-            self.stockinfo[scode]["order_state"] = Portfolio.ORDERSUCCESS
+            self.stockinfo[scode]["order_state"] = Portfolio.BUYSUCCESS
         else:
-            self.stockinfo[scode]["order_state"] = Portfolio.ORDERFAILED
+            self.stockinfo[scode]["order_state"] = Portfolio.BUYFAILED
 
         self.bolock.acquire()
         self.bocount = self.bocount + 1
         if self.bocount == len(self.stocklist):
-            self.bostate = Portfolio.BOORDERED
+            self.bostate = Portfolio.BOBUYOK
             print "batch ordered"
         self.bolock.release()
 
@@ -304,7 +308,7 @@ class Portfolio:
         # only success orders can be canceled
         today = str(datetime.today().date())
         for scode in self.stocklist:
-            if self.stockinfo[scode]["order_state"] == Portfolio.ORDERSUCCESS and int(self.stockinfo[scode]["dealcount"]) < int(self.stockinfo[scode]["count"]):
+            if self.stockinfo[scode]["order_state"] == Portfolio.BUYSUCCESS and int(self.stockinfo[scode]["dealcount"]) < int(self.stockinfo[scode]["count"]):
                 req = jz.CancelOrderReq(self.session)
                 req["user_code"] = self.session["user_code"]
                 if self.stockinfo[scode]["market"] == "SH":
@@ -319,26 +323,26 @@ class Portfolio:
                 if resp.retcode == "0":
                     self.stockinfo[scode]["cancel_date"] = today
                     self.stockinfo[scode]["cancel_time"] = str(datetime.now().time())
-                    self.stockinfo[scode]["order_state"] = Portfolio.CANCELSUCCESS
+                    self.stockinfo[scode]["order_state"] = Portfolio.CANCELBUYSUCCESS
                 else:
-                    self.stockinfo[scode]["order_state"] = Portfolio.CANCELFAILED
+                    self.stockinfo[scode]["order_state"] = Portfolio.CANCELBUYFAILED
         # need update order state immediately. see cancelBatchOrderTop.
-        self.bostate = Portfolio.BOORDERCANCELED
+        self.bostate = Portfolio.BOBUYCANCELED
 
     def cancelBatchOrderTop(self):
         self.bolock.acquire()
         print "batch canceling"
 
-        if self.bostate == Portfolio.BOORDERED:
+        if self.bostate == Portfolio.BOBUYOK:
             # set Portfolio batch state
-            self.bostate = Portfolio.BOORDERCANCELING
+            self.bostate = Portfolio.BOBUYCANCELING
             self.bocount = 0
 
             # submit each stock order
             reqclass = jz.CancelOrderReq
             respclass = jz.CancelOrderResp
             for scode in self.stocklist:
-                if self.stockinfo[scode]["order_state"] == Portfolio.ORDERSUCCESS and int(self.stockinfo[scode]["dealcount"]) < int(self.stockinfo[scode]["count"]):
+                if self.stockinfo[scode]["order_state"] == Portfolio.BUYSUCCESS and int(self.stockinfo[scode]["dealcount"]) < int(self.stockinfo[scode]["count"]):
                     self.bocount = self.bocount + 1
                     param = {}
                     param["user_code"] = self.session["user_code"]
@@ -371,9 +375,9 @@ class Portfolio:
         if resp.retcode == "0":
             si["cancel_date"] = today
             si["cancel_time"] = str(datetime.now().time())
-            si["order_state"] = Portfolio.CANCELSUCCESS
+            si["order_state"] = Portfolio.CANCELBUYSUCCESS
         else:
-            si["order_state"] = Portfolio.CANCELFAILED
+            si["order_state"] = Portfolio.CANCELBUYFAILED
 
         # TODO: cancel may need time at exchange server
         # time.sleep(5)
@@ -393,9 +397,9 @@ class Portfolio:
             si["dealprice"] = qoresp.records[0][-1]
             si["orderedcount"] = qoresp.records[0][15]
 
-            if si["order_state"] == Portfolio.CANCELFAILED:
+            if si["order_state"] == Portfolio.CANCELBUYFAILED:
                 if si["dealcount"] == si["count"]:
-                    si["order_state"] = Portfolio.ORDERSUCCESS
+                    si["order_state"] = Portfolio.BUYSUCCESS
                 else:
                     # TODO: change state to ORDERSUCCESS in this case too? to enable next cancel?
                     print "Error: cancel failed while dealcount is smaller than count."
@@ -407,18 +411,18 @@ class Portfolio:
         self.bocount = self.bocount - 1
         if self.bocount == 0:
             # TODO: cancel-able stock is not equal to total stock number
-            self.bostate = Portfolio.BOORDERCANCELED
+            self.bostate = Portfolio.BOBUYCANCELED
             print "batch canceled"
         self.bolock.release()
 
     def genBackupOrder(self):
-        # now only consider CANCELSUCCESS orders
+        # now only consider CANCELBUYSUCCESS orders
         self.backuporder = {}
         self.backuporderlist = []
         backuporder = self.backuporder
         backuporderlist = self.backuporderlist
         for scode in self.stocklist:
-            if self.stockinfo[scode]["order_state"] == Portfolio.CANCELSUCCESS:
+            if self.stockinfo[scode]["order_state"] == Portfolio.CANCELBUYSUCCESS:
             # TODO: round to 100
             # TODO: track non-dealed stock numbers, not only round and ignore
                 backupcount = int(self.stockinfo[scode]["count"]) - int(self.stockinfo[scode]["dealcount"])
@@ -774,6 +778,9 @@ def verifymap(dbfn, mapfn, codekey):
     return ret
 
 def main(args):
+    #import psyco
+    #psyco.full()
+
     app = QApplication(args)
     window = QMainWindow()
     ui = Ui_MainWindow()

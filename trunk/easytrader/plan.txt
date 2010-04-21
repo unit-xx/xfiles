@@ -1,6 +1,8 @@
-atomic batch operation (submit, cancel)
-stock/batch workflow
-the bug: cancel will failed before dealcount is updated
+DONE: atomic batch operation (submit, cancel)
+DONE: the bug: cancel will failed before dealcount is updated
+
+HALF: stock/batch workflow (need re-submit process)
+use CSV format? pickle?
 
 update view at places
 check session instance, because multi-threads may miss use session
