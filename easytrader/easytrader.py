@@ -680,6 +680,7 @@ class OrderUpdater(Thread):
             else:
                 continue
 
+            # TODO: only update buying/selling orders.
             if order["order_id"] != "":
                 qoreq = jz.QueryOrderReq(self.session)
                 qoreq["begin_date"] = order["order_date"]
