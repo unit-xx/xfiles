@@ -19,6 +19,10 @@
   <property name="windowTitle">
    <string>EasyTrader</string>
   </property>
+  <property name="windowIcon">
+   <iconset>
+    <normaloff>zjzq.ico</normaloff>zjzq.ico</iconset>
+  </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout_2">
     <item row="0" column="0">
@@ -134,76 +138,6 @@
    </property>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
-  <action name="import_portfolio">
-   <property name="text">
-    <string>导入组合</string>
-   </property>
-  </action>
-  <action name="buybatch">
-   <property name="text">
-    <string>委托买入</string>
-   </property>
-  </action>
-  <action name="prices1">
-   <property name="text">
-    <string>卖一</string>
-   </property>
-  </action>
-  <action name="prices2">
-   <property name="text">
-    <string>卖二</string>
-   </property>
-  </action>
-  <action name="pricelatest">
-   <property name="text">
-    <string>最新价</string>
-   </property>
-  </action>
-  <action name="prices3">
-   <property name="text">
-    <string>卖三</string>
-   </property>
-  </action>
-  <action name="prices4">
-   <property name="text">
-    <string>卖四</string>
-   </property>
-  </action>
-  <action name="prices5">
-   <property name="text">
-    <string>卖五</string>
-   </property>
-  </action>
-  <action name="priceb1">
-   <property name="text">
-    <string>买一</string>
-   </property>
-  </action>
-  <action name="priceb2">
-   <property name="text">
-    <string>买二</string>
-   </property>
-  </action>
-  <action name="priceb3">
-   <property name="text">
-    <string>买三</string>
-   </property>
-  </action>
-  <action name="priceb4">
-   <property name="text">
-    <string>买四</string>
-   </property>
-  </action>
-  <action name="priceb5">
-   <property name="text">
-    <string>买五</string>
-   </property>
-  </action>
-  <action name="action_13">
-   <property name="text">
-    <string>自定义</string>
-   </property>
-  </action>
  </widget>
  <resources/>
  <connections/>
