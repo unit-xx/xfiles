@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'tradeui.ui'
 #
-# Created: Tue Apr 20 10:36:06 2010
+# Created: Thu Apr 22 16:24:26 2010
 #      by: PyQt4 UI code generator 4.7.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -18,6 +18,9 @@ class Ui_MainWindow(object):
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(MainWindow.sizePolicy().hasHeightForWidth())
         MainWindow.setSizePolicy(sizePolicy)
+        icon = QtGui.QIcon()
+        icon.addPixmap(QtGui.QPixmap("zjzq.ico"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        MainWindow.setWindowIcon(icon)
         self.centralwidget = QtGui.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.gridLayout_2 = QtGui.QGridLayout(self.centralwidget)
@@ -86,34 +89,6 @@ class Ui_MainWindow(object):
         self.statusbar = QtGui.QStatusBar(MainWindow)
         self.statusbar.setObjectName("statusbar")
         MainWindow.setStatusBar(self.statusbar)
-        self.import_portfolio = QtGui.QAction(MainWindow)
-        self.import_portfolio.setObjectName("import_portfolio")
-        self.buybatch = QtGui.QAction(MainWindow)
-        self.buybatch.setObjectName("buybatch")
-        self.prices1 = QtGui.QAction(MainWindow)
-        self.prices1.setObjectName("prices1")
-        self.prices2 = QtGui.QAction(MainWindow)
-        self.prices2.setObjectName("prices2")
-        self.pricelatest = QtGui.QAction(MainWindow)
-        self.pricelatest.setObjectName("pricelatest")
-        self.prices3 = QtGui.QAction(MainWindow)
-        self.prices3.setObjectName("prices3")
-        self.prices4 = QtGui.QAction(MainWindow)
-        self.prices4.setObjectName("prices4")
-        self.prices5 = QtGui.QAction(MainWindow)
-        self.prices5.setObjectName("prices5")
-        self.priceb1 = QtGui.QAction(MainWindow)
-        self.priceb1.setObjectName("priceb1")
-        self.priceb2 = QtGui.QAction(MainWindow)
-        self.priceb2.setObjectName("priceb2")
-        self.priceb3 = QtGui.QAction(MainWindow)
-        self.priceb3.setObjectName("priceb3")
-        self.priceb4 = QtGui.QAction(MainWindow)
-        self.priceb4.setObjectName("priceb4")
-        self.priceb5 = QtGui.QAction(MainWindow)
-        self.priceb5.setObjectName("priceb5")
-        self.action_13 = QtGui.QAction(MainWindow)
-        self.action_13.setObjectName("action_13")
 
         self.retranslateUi(MainWindow)
         self.tabWidget.setCurrentIndex(0)
@@ -129,18 +104,4 @@ class Ui_MainWindow(object):
         self.genbackuporder.setText(QtGui.QApplication.translate("MainWindow", "生成补单", None, QtGui.QApplication.UnicodeUTF8))
         self.saveorder.setText(QtGui.QApplication.translate("MainWindow", "保存组合", None, QtGui.QApplication.UnicodeUTF8))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab), QtGui.QApplication.translate("MainWindow", "投资组合", None, QtGui.QApplication.UnicodeUTF8))
-        self.import_portfolio.setText(QtGui.QApplication.translate("MainWindow", "导入组合", None, QtGui.QApplication.UnicodeUTF8))
-        self.buybatch.setText(QtGui.QApplication.translate("MainWindow", "委托买入", None, QtGui.QApplication.UnicodeUTF8))
-        self.prices1.setText(QtGui.QApplication.translate("MainWindow", "卖一", None, QtGui.QApplication.UnicodeUTF8))
-        self.prices2.setText(QtGui.QApplication.translate("MainWindow", "卖二", None, QtGui.QApplication.UnicodeUTF8))
-        self.pricelatest.setText(QtGui.QApplication.translate("MainWindow", "最新价", None, QtGui.QApplication.UnicodeUTF8))
-        self.prices3.setText(QtGui.QApplication.translate("MainWindow", "卖三", None, QtGui.QApplication.UnicodeUTF8))
-        self.prices4.setText(QtGui.QApplication.translate("MainWindow", "卖四", None, QtGui.QApplication.UnicodeUTF8))
-        self.prices5.setText(QtGui.QApplication.translate("MainWindow", "卖五", None, QtGui.QApplication.UnicodeUTF8))
-        self.priceb1.setText(QtGui.QApplication.translate("MainWindow", "买一", None, QtGui.QApplication.UnicodeUTF8))
-        self.priceb2.setText(QtGui.QApplication.translate("MainWindow", "买二", None, QtGui.QApplication.UnicodeUTF8))
-        self.priceb3.setText(QtGui.QApplication.translate("MainWindow", "买三", None, QtGui.QApplication.UnicodeUTF8))
-        self.priceb4.setText(QtGui.QApplication.translate("MainWindow", "买四", None, QtGui.QApplication.UnicodeUTF8))
-        self.priceb5.setText(QtGui.QApplication.translate("MainWindow", "买五", None, QtGui.QApplication.UnicodeUTF8))
-        self.action_13.setText(QtGui.QApplication.translate("MainWindow", "自定义", None, QtGui.QApplication.UnicodeUTF8))
 
