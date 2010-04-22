@@ -1,0 +1,17 @@
+multiple responses
+
+DONE: check submit is ok and can track order
+
+DONE: choose buy method
+
+HALF: choose price
+
+re-submit order
+
+DONE: add order_id field in portofolio file.
+
+DONE: load and save portofolio
+
+NONEED?: load portofolio from menu
+
+create table xxx as select * from portfolio_template

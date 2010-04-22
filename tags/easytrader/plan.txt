@@ -1,0 +1,14 @@
+DONE: atomic batch operation (submit, cancel)
+DONE: the bug: cancel will failed before dealcount is updated
+
+HALF: stock/batch workflow (need re-submit process)
+use CSV format? pickle?
+
+update view at places
+check session instance, because multi-threads may miss use session
+
+change easy trader into MVC structure
+use db and in memory db
+
+DONE: create index for locating stock in dbf file quickly
+DONE: use worker threads improve performance of batch order/cancel
