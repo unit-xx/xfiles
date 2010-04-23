@@ -264,7 +264,7 @@ class Portfolio:
 
                 orec = OrderRecord()
                 orec["order_state"] = Portfolio.UNORDERED
-                orec["ordercount"] = str( (int(si["count"]) - si["pastbuycount"])/100*100 )
+                orec["ordercount"] = str( round100(int(si["count"]) - si["pastbuycount"]) )
                 orec["orderprice"] = si["tobuyprice"]
                 si["pastbuy"].append(orec)
 
@@ -300,7 +300,7 @@ class Portfolio:
 
                     orec = OrderRecord()
                     orec["order_state"] = Portfolio.UNORDERED
-                    orec["ordercount"] = str( (int(si["count"]) - si["pastbuycount"])/100*100 )
+                    orec["ordercount"] = str( round100(int(si["count"]) - si["pastbuycount"]) )
                     orec["orderprice"] = si["tobuyprice"]
                     si["pastbuy"].append(orec)
 
@@ -746,6 +746,9 @@ def verifymap(dbfn, mapfn, codekey):
     f.close()
     db.close()
     return ret
+
+def round100(n):
+    int(round(n/100.0)*100)
 
 def main(args):
     #import psyco
