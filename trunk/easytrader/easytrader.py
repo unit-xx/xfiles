@@ -35,6 +35,7 @@ class PortfolioModel(QAbstractTableModel):
         return QVariant()
 
     def data(self, index, role):
+        # TODO: add order specific info
         if not index.isValid():
             return QVariant()
         elif role != Qt.DisplayRole:
@@ -48,18 +49,6 @@ class PortfolioModel(QAbstractTableModel):
             return QVariant()
 
 class Portfolio:
-#    def __init__(self, stocklist, stockcount):
-#        # list is stock id
-#        self.stocklist = stocklist
-#        self.stockattr = ["count", "code", "name", "latest", "buy", "sell"]
-#        self.stockset = set(stocklist)
-#        self.stockcount = stockcount
-#        self.data = {}
-#        for i in range(len(self.stocklist)):
-#            s = self.stocklist[i]
-#            self.data.setdefault(s, {})
-#            self.data[s]["code"] = s
-#            self.data[s]["count"] = self.stockcount[i]
 
     # stock states can be:
     UNORDERED = "UNORDERED"
@@ -88,7 +77,6 @@ class Portfolio:
     BOSELLCANCELED = "BOSELLCANCELED"
 
     def __init__(self, ptfn, sessioncfg, tqueue):
-        # market code (SH, SZ), stock number, count
         self.session = jz.session(sessioncfg)
         self.ptfn = ptfn
         if not self.session.setup():
@@ -106,6 +94,7 @@ class Portfolio:
                 # buy and sell records, list of dicts, with attributes defined next
                 "pastbuy", "pastsell",
                 # history stats for buy, not including current buying order, deduce from buy records
+                # pastxxxyyy are int/float types, others are string type, which is updated from messages
                 "pastbuycount", "pastbuycost",
                 # history stats for sell, not including current selling order, deduce from sell records
                 "pastsellcount", "pastsellgain",
@@ -128,32 +117,6 @@ class Portfolio:
                 "latestprice", "tobuyprice", "tosellprice"]
         # TODO: really need this assertion? how about derived attr
         # assert(set(self.stockmodelattr) <= set(self.stockattr+self.orderattr))
-
-        # setup stock data and buy/sell records
-        #self.bostate = Portfolio.BOUNORDERED
-        #for i in stockbatch:
-        #    if i[0] == "BO":
-        #        self.bostate = i[3]
-        #    else:
-        #        scode = i[0].upper() + i[1]
-        #        self.stocklist.append(scode)
-        #        self.stockinfo.setdefault(scode, {})
-
-        #        self.stockinfo[scode]["market"] = i[0].upper()
-        #        self.stockinfo[scode]["code"] = i[1]
-        #        self.stockinfo[scode]["count"] = i[2]
-        #        self.stockinfo[scode]["order_state"] = Portfolio.UNORDERED
-        #        self.stockinfo[scode]["order_id"] = ""
-        #        self.stockinfo[scode]["order_date"] = ""
-        #        self.stockinfo[scode]["order_time"] = ""
-        #        try:
-        #            self.stockinfo[scode]["order_state"] = i[3]
-        #            self.stockinfo[scode]["order_id"] = i[4]
-        #            self.stockinfo[scode]["order_date"] = i[5]
-        #            self.stockinfo[scode]["order_time"] = i[6]
-        #        except IndexError:
-        #            pass
-        #self.stockset = set(self.stocklist)
 
         # price policies
         self.pricepolicylist = ["latest", "s5", "s4", "s3", "s2", "s1", "b1", "b2", "b3", "b4", "b5"]
@@ -212,9 +175,9 @@ class Portfolio:
         self.stockset = set(self.stocklist)
         # TODO: also update pastbuycount/cost, pastsellcount/gain, etc.
         self.pastbuycount = 0
-        self.pastbuycost = 0
+        self.pastbuycost = 0.0
         self.pastsellcount = 0
-        self.pastsellgain = 0
+        self.pastsellgain = 0.0
 
     def savePortfolio(self, ptfn=None):
         if ptfn == None:
@@ -230,96 +193,6 @@ class Portfolio:
         writer.writerow(["BO", self.bostate])
         f.flush()
         f.close()
-
-    @staticmethod
-    def readBatchOrder(bofn):
-        # bofn specifies batch order in lines, each lines contains
-        # market code (SH, SZ), stock code, count and order_id, order_state, order_date, order_time
-        # separated by spaces
-        # return: batch orders in a list, and bad lines
-        bo = []
-        badlines = []
-        f = open(bofn)
-        for line in f:
-            if line == "": # EOF
-                break
-
-            boitem = line.split()
-            if len(boitem) < 3: # empty line or others
-                if line != "\n":
-                    badlines.append(line.strip())
-                continue
-
-            if( (boitem[0].upper() not in ["SH", "SZ", "BO"]) or (int(boitem[2])%100 != 0) ):
-                badlines.append(line.strip())
-                continue
-
-            bo.append(boitem)
-        f.close()
-        return (bo, badlines)
-
-    def saveBatchOrder(self, bofn=None):
-        # TODO: alert if in buying or selling
-        fn = bofn
-        if bofn is None:
-            fn = self.portfoliofn
-        f = open(fn, "w")
-        # stock info
-        for scode in self.stocklist:
-            si = self.stockinfo[scode]
-            f.write(" ".join( (si["market"], si["code"], si["count"], si["order_state"],
-                si["order_id"], si["order_date"], si["order_time"]) ))
-            f.write("\n")
-        # portfolio state as a batch
-        f.write(" ".join( ("BO", "NA", "100", self.bostate) ))
-        f.write("\n")
-        f.flush()
-        f.close()
-
-    def buyBatchOrderSync(self, trdid):
-        # NOTE: not maintained.
-        # return:
-
-        # submit first order item, use its order_id as following orders' biz_no
-        if len(self.stocklist) == 0:
-            return
-
-        trdid == ""
-        if trdid == "buy":
-            trdcode = "0B"
-        elif trdid == "sell":
-            trdcode = "0S"
-        assert(trdcode != "")
-
-        today = str(datetime.today().date())
-        for scode in self.stocklist:
-            if self.stockinfo[scode]["order_state"] == Portfolio.UNORDERED:
-                req = jz.SubmitOrderReq(self.session)
-                req["user_code"] = self.session["user_code"]
-                if self.stockinfo[scode]["market"] == "SH":
-                    req["market"] = "10"
-                    req["secu_acc"] = self.session["secu_acc"]["SH"]
-                elif self.stockinfo[scode]["market"] == "SZ":
-                    req["market"] = "00"
-                    req["secu_acc"] = self.session["secu_acc"]["SZ"]
-                req["account"] = self.session["account"]
-                req["secu_code"] = self.stockinfo[scode]["code"]
-                req["trd_id"] = trdcode
-                req["price"] = self.stockinfo[scode]["orderprice"]
-                req["qty"] = self.stockinfo[scode]["count"]
-                #if first_order_id != "":
-                #    req["biz_no"] = first_order_id
-                req.send()
-                resp = jz.SubmitOrderResp(self.session)
-                resp.recv()
-                self.session.storetrade(req, resp)
-                if resp.retcode == "0":
-                    self.stockinfo[scode]["order_id"] = resp.records[0][1]
-                    self.stockinfo[scode]["order_date"] = today
-                    self.stockinfo[scode]["order_time"] = str(datetime.now().time())
-                    self.stockinfo[scode]["order_state"] = Portfolio.BUYSUCCESS
-                else:
-                    self.stockinfo[scode]["order_state"] = Portfolio.BUYFAILED
 
     def buyBatchOrderTop(self):
         trdcode = "0B"
@@ -381,32 +254,6 @@ class Portfolio:
             self.bostate = Portfolio.BOBUYSUCCESS
             print "batch ordered"
         self.bolock.release()
-
-    def cancelBuyBatchOrderSync(self):
-        # NOTE: not maintained
-        # only success orders can be canceled
-        today = str(datetime.today().date())
-        for scode in self.stocklist:
-            if self.stockinfo[scode]["order_state"] == Portfolio.BUYSUCCESS and int(self.stockinfo[scode]["dealcount"]) < int(self.stockinfo[scode]["count"]):
-                req = jz.CancelOrderReq(self.session)
-                req["user_code"] = self.session["user_code"]
-                if self.stockinfo[scode]["market"] == "SH":
-                    req["market"] = "10"
-                elif self.stockinfo[scode]["market"] == "SZ":
-                    req["market"] = "00"
-                req["order_id"] = self.stockinfo[scode]["order_id"]
-                req.send()
-                resp = jz.CancelOrderResp(self.session)
-                resp.recv()
-                self.session.storetrade(req, resp)
-                if resp.retcode == "0":
-                    self.stockinfo[scode]["cancel_date"] = today
-                    self.stockinfo[scode]["cancel_time"] = str(datetime.now().time())
-                    self.stockinfo[scode]["order_state"] = Portfolio.CANCELBUYSUCCESS
-                else:
-                    self.stockinfo[scode]["order_state"] = Portfolio.CANCELBUYFAILED
-        # need update order state immediately. see cancelBatchOrderTop.
-        self.bostate = Portfolio.BOBUYCANCELED
 
     def cancelBuyBatchOrderTop(self):
         self.bolock.acquire()
@@ -527,7 +374,7 @@ class Portfolio:
         self.saveBackupOrder(fn)
 
     def buybatch(self):
-        self.buyBatchOrder("buy")
+        self.buyBatchOrder()
 
     def selpricepolicy(self, pindex):
         self.buypolicy = self.pricepolicylist[pindex]
@@ -631,7 +478,7 @@ class PortfolioUpdater(Thread):
                     else:
                         stockinfo[self.shdbmapping[f]] = rec[f]
                 stockinfo["tobuyprice"] = self.getpricesh(rec, self.portfolio.buypolicy)
-                stockinfo["tosellprice"] = self.getpricesh(rec, self.portfolio.buypolicy)
+                stockinfo["tosellprice"] = self.getpricesh(rec, self.portfolio.sellpolicy)
             elif stockinfo["market"] == "SZ":
                 rec = dbsz[szmap[scode]]
                 for f in self.szdbfield:
@@ -640,7 +487,7 @@ class PortfolioUpdater(Thread):
                     else:
                         stockinfo[self.szdbmapping[f]] = rec[f]
                 stockinfo["tobuyprice"] = self.getpricesz(rec, self.portfolio.buypolicy)
-                stockinfo["tosellprice"] = self.getpricesz(rec, self.portfolio.buypolicy)
+                stockinfo["tosellprice"] = self.getpricesz(rec, self.portfolio.sellpolicy)
 
         self.portmodel.emit(SIGNAL("dataChanged(QModelIndex,QModelIndex)"),
                 self.portmodel.index(0,0), self.portmodel.index(
@@ -738,7 +585,7 @@ class jzWorker(Thread):
         self.session.close()
 
     def run(self):
-        # TODO: what if et is closed while tqueue is not empty
+        # TODO: what if easytrader is closed while tqueue is not empty
         if not self.setupsession():
             print "jzWorker", currentThread().ident, "cannot setup session, and will exit."
             return
@@ -864,7 +711,7 @@ def main(args):
     window.connect(ui.submitorder, SIGNAL("clicked()"), p.buybatch)
     window.connect(ui.cancelorder, SIGNAL("clicked()"), p.cancelBuyBatchOrder)
     window.connect(ui.genbackuporder, SIGNAL("clicked()"), p.genandsaveBackupOrder)
-    window.connect(ui.saveorder, SIGNAL("clicked()"), p.saveBatchOrder)
+    window.connect(ui.saveorder, SIGNAL("clicked()"), p.savePortfolio)
 
     window.show()
     app.exec_()
