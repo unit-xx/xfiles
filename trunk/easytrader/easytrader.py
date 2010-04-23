@@ -748,7 +748,7 @@ def verifymap(dbfn, mapfn, codekey):
     return ret
 
 def round100(n):
-    int(round(n/100.0)*100)
+    return int(round(n/100.0)*100)
 
 def main(args):
     #import psyco
