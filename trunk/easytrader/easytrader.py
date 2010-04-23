@@ -48,9 +48,43 @@ class PortfolioModel(QAbstractTableModel):
         except KeyError:
             return QVariant()
 
+class OrderRecord:
+    orattr = [
+            # current (last) buy specific fields
+            "order_id", "order_state", "order_date", "order_time",
+            "ordercount", "orderprice", "dealcount", "dealamount", # use amount as the money paid/gained
+            "dealprice", "cancel_date", "cancel_time"]
+
+    def __init__(self):
+        self.data = {}
+        self.data["order_id"] = ""
+        self.data["order_state"] = Portfolio.INVALID
+        self.data["order_date"] = ""
+        self.data["order_time"] = ""
+        self.data["ordercount"] = "0"
+        self.data["orderprice"] = "0.0"
+        self.data["dealcount"] = "0"
+        self.data["dealamount"] = "0.0"
+        self.data["dealprice"] = "0.0"
+        self.data["cancel_date"] = ""
+        self.data["cancel_time"] = ""
+
+    def __init__(self, dictdata):
+        self.data = dictdata
+
+    def __getitem__(self, key):
+        return self.data[key]
+
+    def __setitem(self, key, value):
+        self.data[key] = value
+
+    def __repr__(self):
+        return repr(self.data)
+
 class Portfolio:
 
     # stock states can be:
+    INVALID = "INVALID"
     UNORDERED = "UNORDERED"
     # first is buy states
     BUYSUCCESS = "BUYSUCCESS"
@@ -91,7 +125,7 @@ class Portfolio:
         self.stockattr = [
                 # common fields, read from storage, except name
                 "count", "market", "code", "name",
-                # buy and sell records, list of dicts, with attributes defined next
+                # buy and sell records, list of OrderRecord
                 "pastbuy", "pastsell",
                 # history stats for buy, not including current buying order, deduce from buy records
                 # pastxxxyyy are int/float types, others are string type, which is updated from messages
@@ -100,6 +134,8 @@ class Portfolio:
                 "pastsellcount", "pastsellgain",
                 # prices, update timely from dbf
                 "latestprice", "tobuyprice", "tosellprice"]
+
+        # TODO: can be removed in face of OrderRecord class
         self.buyattr = [
                 # current (last) buy specific fields
                 "order_id", "order_state", "order_date", "order_time",
@@ -107,7 +143,8 @@ class Portfolio:
                 "dealprice", "cancel_date", "cancel_time"]
         # assume buyattr is general enough 
         self.sellattr = self.buyattr
-        # use market+stock number as key
+
+        # use market+stock number as key, dict of dict
         self.stockinfo = {}
 
         # TODO: model attributes
@@ -161,25 +198,32 @@ class Portfolio:
                 self.stocklist.append(scode)
                 self.stockinfo.setdefault(scode, {})
 
-                self.stockinfo[scode]["market"] = i[0].upper()
-                self.stockinfo[scode]["code"] = i[1]
-                self.stockinfo[scode]["count"] = i[2]
-                self.stockinfo[scode]["pastbuy"] = []
-                self.stockinfo[scode]["pastsell"] = []
-                try:
-                    self.stockinfo[scode]["pastbuy"] = eval(i[3])
-                    self.stockinfo[scode]["pastsell"] = eval(i[4])
-                except IndexError:
+                si = self.stockinfo[scode]
+                si["market"] = i[0].upper()
+                si["code"] = i[1]
+                si["count"] = i[2]
+                si["pastbuy"] = []
+                buys = eval(i[3]) # including list of dict
+                for r in buys:
+                    si["pastbuy"].append(OrderRecord(r))
+                si["pastsell"] = []
+                sells = eval(i[4]) # including list of dict
+                for r in sells:
+                    si["pastsell"].append(OrderRecord(r))
+                si["pastbuycount"] = 0
+                si["pastbuycost"] = 0.0
+                si["pastsellcount"] = 0
+                si["pastsellgain"] = 0.0
+                # TODO: iterate pastbuy/sell and update pastxxxyyy
+                for r in si["pastbuy"]:
+                    pass
+                for r in si["pastbuy"]:
                     pass
         f.close()
         self.stockset = set(self.stocklist)
-        # TODO: also update pastbuycount/cost, pastsellcount/gain, etc.
-        self.pastbuycount = 0
-        self.pastbuycost = 0.0
-        self.pastsellcount = 0
-        self.pastsellgain = 0.0
 
     def savePortfolio(self, ptfn=None):
+        # TODO: alert user if portfolio is in buying/selling state
         if ptfn == None:
             f = open(self.ptfn, "wb")
         else:
@@ -188,41 +232,94 @@ class Portfolio:
 
         for scode in self.stocklist:
             si = self.stockinfo[scode]
-            writer.writerow([si["market"], si["code"], si["count"], si["pastbuy"], si["pastsell"]])
+            writer.writerow([si["market"], si["code"], si["count"], repr(si["pastbuy"]), repr(si["pastsell"])])
         # portfolio state as a batch
         writer.writerow(["BO", self.bostate])
         f.flush()
         f.close()
 
     def buyBatchOrderTop(self):
-        trdcode = "0B"
         self.bolock.acquire()
         print "batch buying"
 
         if self.bostate == Portfolio.BOUNORDERED:
-            # set Portfolio batch state
+            # new and first batch buy order
             self.bostate = Portfolio.BOBUYING
             self.bocount = 0
 
             # submit each stock order
             reqclass = jz.SubmitOrderReq
             respclass = jz.SubmitOrderResp
+            trdcode = "0B"
             for scode in self.stocklist:
-                if self.stockinfo[scode]["order_state"] == Portfolio.UNORDERED:
+                si = self.stockinfo[scode]
+                assert si["pastbuy"] == []
+                assert si["pastsell"] == []
+                assert si["pastbuycount"] == 0
+                assert si["pastbuycost"] == 0.0
+                assert si["pastsellcount"] == 0
+                assert si["pastsellgain"] == 0.0
+
+                self.bocount = self.bocount + 1
+                # TODO: is it possible that a req is queued but cannot be send?
+
+                orec = OrderRecord()
+                orc["order_state"] = Portfolio.UNORDERED
+                orc["ordercount"] = str(int(si["count"]) - si["pastbuycount"])
+                orc["orderprice"] = si["tobuyprice"]
+                si["pastbuy"].append(orec)
+
+                param = {}
+                param["user_code"] = self.session["user_code"]
+                if si["market"] == "SH":
+                    param["market"] = "10"
+                    param["secu_acc"] = self.session["secu_acc"]["SH"]
+                elif si["market"] == "SZ":
+                    param["market"] = "00"
+                    param["secu_acc"] = self.session["secu_acc"]["SZ"]
+                param["account"] = self.session["account"]
+                param["secu_code"] = si["code"]
+                param["trd_id"] = trdcode
+                param["price"] = orc["orderprice"]
+                param["qty"] = orc["ordercount"]
+                self.tqueue.put( (reqclass, respclass, param, self.buyBatchOrderBottom, True) )
+
+            assert len(self.stockinfo) == self.bocount
+
+        elif self.bostate == Portfolio.BOBUYCANCELED:
+            # re-buy: only buy stock in CANCELBUYSUCCESS state
+            self.bostate = Portfolio.BOBUYING
+            self.bocount = 0
+
+            reqclass = jz.SubmitOrderReq
+            respclass = jz.SubmitOrderResp
+            trdcode = "0B"
+            for scode in self.stocklist:
+                si = self.stockinfo[scode]
+                if si["pastbuy"][-1]["order_state"] == Portfolio.CANCELBUYSUCCESS:
+                    self.bocount = self.bocount + 1
+
+                    orec = OrderRecord()
+                    orc["order_state"] = Portfolio.UNORDERED
+                    orc["ordercount"] = str(int(si["count"]) - si["pastbuycount"])
+                    orc["orderprice"] = si["tobuyprice"]
+                    si["pastbuy"].append(orec)
+
                     param = {}
                     param["user_code"] = self.session["user_code"]
-                    if self.stockinfo[scode]["market"] == "SH":
+                    if si["market"] == "SH":
                         param["market"] = "10"
                         param["secu_acc"] = self.session["secu_acc"]["SH"]
-                    elif self.stockinfo[scode]["market"] == "SZ":
+                    elif si["market"] == "SZ":
                         param["market"] = "00"
                         param["secu_acc"] = self.session["secu_acc"]["SZ"]
                     param["account"] = self.session["account"]
-                    param["secu_code"] = self.stockinfo[scode]["code"]
+                    param["secu_code"] = si["code"]
                     param["trd_id"] = trdcode
-                    param["price"] = self.stockinfo[scode]["orderprice"]
-                    param["qty"] = self.stockinfo[scode]["count"]
+                    param["price"] = orc["orderprice"]
+                    param["qty"] = orc["ordercount"]
                     self.tqueue.put( (reqclass, respclass, param, self.buyBatchOrderBottom, True) )
+
         else:
             print "not in buy-able state"
 
@@ -239,18 +336,18 @@ class Portfolio:
             mkt = "SZ"
         assert mkt != ""
         scode = mkt + param["secu_code"]
+        orec = self.stockinfo[scode]["pastbuy"][-1]
         if resp.retcode == "0":
-            self.stockinfo[scode]["order_id"] = resp.records[0][1]
-            self.stockinfo[scode]["order_date"] = today
-            self.stockinfo[scode]["order_time"] = str(datetime.now().time())
-            self.stockinfo[scode]["order_state"] = Portfolio.BUYSUCCESS
-            self.stockinfo[scode]["dealcount"] = "0"
+            orec["order_id"] = resp.records[0][1]
+            orec["order_state"] = Portfolio.BUYSUCCESS
+            orec["order_date"] = today
+            orec["order_time"] = str(datetime.now().time())
         else:
-            self.stockinfo[scode]["order_state"] = Portfolio.BUYFAILED
+            orec["order_state"] = Portfolio.BUYFAILED
 
         self.bolock.acquire()
-        self.bocount = self.bocount + 1
-        if self.bocount == len(self.stocklist):
+        self.bocount = self.bocount - 1
+        if self.bocount == 0:
             self.bostate = Portfolio.BOBUYSUCCESS
             print "batch ordered"
         self.bolock.release()
@@ -268,7 +365,10 @@ class Portfolio:
             reqclass = jz.CancelOrderReq
             respclass = jz.CancelOrderResp
             for scode in self.stocklist:
-                if self.stockinfo[scode]["order_state"] == Portfolio.BUYSUCCESS and int(self.stockinfo[scode]["dealcount"]) < int(self.stockinfo[scode]["ordercount"]):
+                # only cancel BUYSUCCESS and dealcount < ordercount orders
+                si = self.stockinfo[scode]
+                orec = si["pastbuy"][-1]
+                if orec["order_state"] == Portfolio.BUYSUCCESS and int(orec["dealcount"]) < int(orec["ordercount"]):
                     self.bocount = self.bocount + 1
                     param = {}
                     param["user_code"] = self.session["user_code"]
@@ -276,7 +376,7 @@ class Portfolio:
                         param["market"] = "10"
                     elif self.stockinfo[scode]["market"] == "SZ":
                         param["market"] = "00"
-                    param["order_id"] = self.stockinfo[scode]["order_id"]
+                    param["order_id"] = orec["order_id"]
                     # secu_code is needed at cancelBuyBatchOrderBottom, not for CancelOrderReq
                     param["secu_code"] = self.stockinfo[scode]["code"]
                     self.tqueue.put( (reqclass, respclass, param, self.cancelBuyBatchOrderBottom, True) )
@@ -298,40 +398,46 @@ class Portfolio:
         scode = mkt + param["secu_code"]
 
         si = self.stockinfo[scode]
+        orec = si["pastbuy"][-1]
         if resp.retcode == "0":
-            si["cancel_date"] = today
-            si["cancel_time"] = str(datetime.now().time())
-            si["order_state"] = Portfolio.CANCELBUYSUCCESS
+            orec["cancel_date"] = today
+            orec["cancel_time"] = str(datetime.now().time())
+            orec["order_state"] = Portfolio.CANCELBUYSUCCESS
         else:
-            si["order_state"] = Portfolio.CANCELBUYFAILED
+            orec["order_state"] = Portfolio.CANCELBUYFAILED
 
         # TODO: cancel may need time at exchange server
         # time.sleep(5)
         # update stock info immediately, it's important to use req.session, not self.session
         qoreq = jz.QueryOrderReq(req.session)
-        qoreq["begin_date"] = si["order_date"]
-        qoreq["end_date"] = si["order_date"]
+        qoreq["begin_date"] = orec["order_date"]
+        qoreq["end_date"] = orec["order_date"]
         qoreq["get_orders_mode"] = "0" # all submissions
         qoreq["user_code"] = req.session["user_code"]
         # a bug in protocol/document results in next odd line
-        qoreq["biz_no"] = si["order_id"]
+        qoreq["biz_no"] = orec["order_id"]
         qoreq.send()
         qoresp = jz.QueryOrderResp(req.session)
         qoresp.recv()
         if qoresp.retcode == "0":
-            si["dealcount"] = qoresp.records[0][-11]
-            si["dealprice"] = qoresp.records[0][-1]
-            si["ordercount"] = qoresp.records[0][15]
+            orec["dealcount"] = qoresp.records[0][-11]
+            orec["dealamount"] = qoresp.records[0][-9]
+            # dealprice may not right
+            orec["dealprice"] = qoresp.records[0][-1]
 
-            if si["order_state"] == Portfolio.CANCELBUYFAILED:
-                if si["dealcount"] == si["ordercount"]:
-                    si["order_state"] = Portfolio.BUYSUCCESS
+            if orec["order_state"] == Portfolio.CANCELBUYFAILED:
+                if orec["dealcount"] == orec["ordercount"]:
+                    orec["order_state"] = Portfolio.BUYSUCCESS
                 else:
                     # TODO: change state to ORDERSUCCESS in this case too? to enable next cancel?
-                    print "Error: cancel failed while dealcount is smaller than count."
+                    assert False, "Error: cancel failed while dealcount is smaller than count."
         else:
-            print "error when query order for %s" % si["order_id"]
-            print qoresp.retcode, qoresp.retinfo
+            assert False, "error when query order for %s (%s:%s)" % (si["order_id"], qoresp.retcode, qoresp.retinfo)
+
+        # update pastbuyxxx
+        if orec["order_state"] in (Portfolio.BUYSUCCESS, Portfolio.CANCELBUYSUCCESS):
+            si["pastbuycount"] = si["pastbuycount"] + orec["dealcount"]
+            si["pastbuycost"] = si["pastbuycost"] + orec["dealamount"]
 
         self.bolock.acquire()
         self.bocount = self.bocount - 1
