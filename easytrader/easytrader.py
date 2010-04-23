@@ -809,14 +809,15 @@ def main(args):
     # setup price combobox
     # TODO: add sell case
     for price in p.pricepolicylist:
-        ui.pricepolicylist.addItem(p.pricepolicynamemap[price])
-    ui.pricepolicylist.setCurrentIndex(p.pricepolicylist.index(p.buypolicy))
-    window.connect(ui.pricepolicylist, SIGNAL("currentIndexChanged(int)"), p.selpricepolicy)
+        ui.pricepolicybuy.addItem(p.pricepolicynamemap[price])
+    ui.pricepolicybuy.setCurrentIndex(p.pricepolicylist.index(p.buypolicy))
+    window.connect(ui.pricepolicybuy, SIGNAL("currentIndexChanged(int)"), p.selpricepolicy)
 
     # setup batch order push button
-    window.connect(ui.submitorder, SIGNAL("clicked()"), p.buybatch)
-    window.connect(ui.cancelorder, SIGNAL("clicked()"), p.cancelBuyBatchOrder)
+    window.connect(ui.buyorder, SIGNAL("clicked()"), p.buybatch)
+    window.connect(ui.cancelbuyorder, SIGNAL("clicked()"), p.cancelBuyBatchOrder)
     window.connect(ui.genbackuporder, SIGNAL("clicked()"), p.genandsaveBackupOrder)
+    window.connect(ui.saveorder_2, SIGNAL("clicked()"), p.savePortfolio)
     window.connect(ui.saveorder, SIGNAL("clicked()"), p.savePortfolio)
 
     window.show()
