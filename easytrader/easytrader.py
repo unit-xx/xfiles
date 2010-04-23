@@ -55,7 +55,7 @@ class OrderRecord:
             "ordercount", "orderprice", "dealcount", "dealamount", # use amount as the money paid/gained
             "dealprice", "cancel_date", "cancel_time"]
 
-    def __init__(self):
+    def __init__(self, dictdata=None):
         self.data = {}
         self.data["order_id"] = ""
         self.data["order_state"] = Portfolio.INVALID
@@ -68,14 +68,13 @@ class OrderRecord:
         self.data["dealprice"] = "0.0"
         self.data["cancel_date"] = ""
         self.data["cancel_time"] = ""
-
-    def __init__(self, dictdata):
-        self.data = dictdata
+        if dictdata:
+            self.data.update(dictdata)
 
     def __getitem__(self, key):
         return self.data[key]
 
-    def __setitem(self, key, value):
+    def __setitem__(self, key, value):
         self.data[key] = value
 
     def __repr__(self):
@@ -264,9 +263,9 @@ class Portfolio:
                 # TODO: is it possible that a req is queued but cannot be send?
 
                 orec = OrderRecord()
-                orc["order_state"] = Portfolio.UNORDERED
-                orc["ordercount"] = str(int(si["count"]) - si["pastbuycount"])
-                orc["orderprice"] = si["tobuyprice"]
+                orec["order_state"] = Portfolio.UNORDERED
+                orec["ordercount"] = str( (int(si["count"]) - si["pastbuycount"])/100*100 )
+                orec["orderprice"] = si["tobuyprice"]
                 si["pastbuy"].append(orec)
 
                 param = {}
@@ -280,8 +279,8 @@ class Portfolio:
                 param["account"] = self.session["account"]
                 param["secu_code"] = si["code"]
                 param["trd_id"] = trdcode
-                param["price"] = orc["orderprice"]
-                param["qty"] = orc["ordercount"]
+                param["price"] = orec["orderprice"]
+                param["qty"] = orec["ordercount"]
                 self.tqueue.put( (reqclass, respclass, param, self.buyBatchOrderBottom, True) )
 
             assert len(self.stockinfo) == self.bocount
@@ -300,9 +299,9 @@ class Portfolio:
                     self.bocount = self.bocount + 1
 
                     orec = OrderRecord()
-                    orc["order_state"] = Portfolio.UNORDERED
-                    orc["ordercount"] = str(int(si["count"]) - si["pastbuycount"])
-                    orc["orderprice"] = si["tobuyprice"]
+                    orec["order_state"] = Portfolio.UNORDERED
+                    orec["ordercount"] = str( (int(si["count"]) - si["pastbuycount"])/100*100 )
+                    orec["orderprice"] = si["tobuyprice"]
                     si["pastbuy"].append(orec)
 
                     param = {}
@@ -316,8 +315,8 @@ class Portfolio:
                     param["account"] = self.session["account"]
                     param["secu_code"] = si["code"]
                     param["trd_id"] = trdcode
-                    param["price"] = orc["orderprice"]
-                    param["qty"] = orc["ordercount"]
+                    param["price"] = orec["orderprice"]
+                    param["qty"] = orec["ordercount"]
                     self.tqueue.put( (reqclass, respclass, param, self.buyBatchOrderBottom, True) )
 
         else:
@@ -436,8 +435,8 @@ class Portfolio:
 
         # update pastbuyxxx
         if orec["order_state"] in (Portfolio.BUYSUCCESS, Portfolio.CANCELBUYSUCCESS):
-            si["pastbuycount"] = si["pastbuycount"] + orec["dealcount"]
-            si["pastbuycost"] = si["pastbuycost"] + orec["dealamount"]
+            si["pastbuycount"] = si["pastbuycount"] + int(orec["dealcount"])
+            si["pastbuycost"] = si["pastbuycost"] + float(orec["dealamount"])
 
         self.bolock.acquire()
         self.bocount = self.bocount - 1
