@@ -1,4 +1,4 @@
-# -*- coding: GBK -*-
+# -*- coding: utf-8 -*-
 
 import jz
 import socket
@@ -30,7 +30,7 @@ cqreq.send()
 cqresp = jz.CapitalQueryResp(s)
 cqresp.recv()
 
-# 买一手（？）工商银行
+# 涔颁竴鎵嬶紙锛燂級宸ュ晢閾惰
 orderreq = jz.SubmitOrderReq(s)
 orderreq["user_code"] = s["user_code"]
 orderreq["market"] = "10"
