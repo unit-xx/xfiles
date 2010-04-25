@@ -4,7 +4,7 @@ DONE: the bug: cancel will failed before dealcount is updated
 TOCHECK: stock/batch workflow (need re-submit process)
 buy/cancel/rebuy seems ok, need sell part
 change update part accordingly
-model and view
+model and view: divide stock info into hard state and soft state
 
 update view at places where data is changed
 check session instance, because multi-threads may miss use session
