@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'tradeui.ui'
 #
-# Created: Fri Apr 23 16:40:20 2010
+# Created: Mon Apr 26 15:12:59 2010
 #      by: PyQt4 UI code generator 4.7.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -50,6 +50,11 @@ class Ui_MainWindow(object):
         self.label_3.setObjectName("label_3")
         self.gridLayout_2.addWidget(self.label_3, 0, 0, 1, 1)
         self.pricepolicybuy = QtGui.QComboBox(self.groupBox_2)
+        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.pricepolicybuy.sizePolicy().hasHeightForWidth())
+        self.pricepolicybuy.setSizePolicy(sizePolicy)
         self.pricepolicybuy.setObjectName("pricepolicybuy")
         self.gridLayout_2.addWidget(self.pricepolicybuy, 0, 1, 1, 1)
         self.label_4 = QtGui.QLabel(self.groupBox_2)
@@ -71,13 +76,10 @@ class Ui_MainWindow(object):
         self.gridLayout_2.addWidget(self.cancelbuyorder, 0, 5, 1, 1)
         self.autosubmit_2 = QtGui.QPushButton(self.groupBox_2)
         self.autosubmit_2.setObjectName("autosubmit_2")
-        self.gridLayout_2.addWidget(self.autosubmit_2, 0, 7, 1, 1)
-        self.genbackuporder_2 = QtGui.QPushButton(self.groupBox_2)
-        self.genbackuporder_2.setObjectName("genbackuporder_2")
-        self.gridLayout_2.addWidget(self.genbackuporder_2, 0, 6, 1, 1)
+        self.gridLayout_2.addWidget(self.autosubmit_2, 0, 6, 1, 1)
         self.saveorder_2 = QtGui.QPushButton(self.groupBox_2)
         self.saveorder_2.setObjectName("saveorder_2")
-        self.gridLayout_2.addWidget(self.saveorder_2, 0, 8, 1, 1)
+        self.gridLayout_2.addWidget(self.saveorder_2, 0, 7, 1, 1)
         self.gridLayout_3.addWidget(self.groupBox_2, 0, 0, 1, 1)
         spacerItem = QtGui.QSpacerItem(40, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
         self.gridLayout_3.addItem(spacerItem, 0, 1, 1, 1)
@@ -100,6 +102,11 @@ class Ui_MainWindow(object):
         self.label.setObjectName("label")
         self.gridLayout.addWidget(self.label, 0, 0, 1, 1)
         self.pricepolicysell = QtGui.QComboBox(self.groupBox)
+        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.pricepolicysell.sizePolicy().hasHeightForWidth())
+        self.pricepolicysell.setSizePolicy(sizePolicy)
         self.pricepolicysell.setObjectName("pricepolicysell")
         self.gridLayout.addWidget(self.pricepolicysell, 0, 1, 1, 1)
         self.label_2 = QtGui.QLabel(self.groupBox)
@@ -121,13 +128,10 @@ class Ui_MainWindow(object):
         self.gridLayout.addWidget(self.cancelsellorder, 0, 5, 1, 1)
         self.autosubmit = QtGui.QPushButton(self.groupBox)
         self.autosubmit.setObjectName("autosubmit")
-        self.gridLayout.addWidget(self.autosubmit, 0, 7, 1, 1)
-        self.genbackuporder = QtGui.QPushButton(self.groupBox)
-        self.genbackuporder.setObjectName("genbackuporder")
-        self.gridLayout.addWidget(self.genbackuporder, 0, 6, 1, 1)
+        self.gridLayout.addWidget(self.autosubmit, 0, 6, 1, 1)
         self.saveorder = QtGui.QPushButton(self.groupBox)
         self.saveorder.setObjectName("saveorder")
-        self.gridLayout.addWidget(self.saveorder, 0, 8, 1, 1)
+        self.gridLayout.addWidget(self.saveorder, 0, 7, 1, 1)
         self.gridLayout_4.addWidget(self.groupBox, 0, 0, 1, 1)
         spacerItem1 = QtGui.QSpacerItem(40, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
         self.gridLayout_4.addItem(spacerItem1, 0, 1, 1, 1)
@@ -158,7 +162,6 @@ class Ui_MainWindow(object):
         self.buyorder.setText(QtGui.QApplication.translate("MainWindow", "买入/补买", None, QtGui.QApplication.UnicodeUTF8))
         self.cancelbuyorder.setText(QtGui.QApplication.translate("MainWindow", "撤买", None, QtGui.QApplication.UnicodeUTF8))
         self.autosubmit_2.setText(QtGui.QApplication.translate("MainWindow", "自动下单", None, QtGui.QApplication.UnicodeUTF8))
-        self.genbackuporder_2.setText(QtGui.QApplication.translate("MainWindow", "生成补单", None, QtGui.QApplication.UnicodeUTF8))
         self.saveorder_2.setText(QtGui.QApplication.translate("MainWindow", "保存组合", None, QtGui.QApplication.UnicodeUTF8))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab), QtGui.QApplication.translate("MainWindow", "建仓", None, QtGui.QApplication.UnicodeUTF8))
         self.label.setText(QtGui.QApplication.translate("MainWindow", "卖出价格", None, QtGui.QApplication.UnicodeUTF8))
@@ -166,7 +169,6 @@ class Ui_MainWindow(object):
         self.sellorder.setText(QtGui.QApplication.translate("MainWindow", "卖出/补卖", None, QtGui.QApplication.UnicodeUTF8))
         self.cancelsellorder.setText(QtGui.QApplication.translate("MainWindow", "撤卖", None, QtGui.QApplication.UnicodeUTF8))
         self.autosubmit.setText(QtGui.QApplication.translate("MainWindow", "自动下单", None, QtGui.QApplication.UnicodeUTF8))
-        self.genbackuporder.setText(QtGui.QApplication.translate("MainWindow", "生成补单", None, QtGui.QApplication.UnicodeUTF8))
         self.saveorder.setText(QtGui.QApplication.translate("MainWindow", "保存组合", None, QtGui.QApplication.UnicodeUTF8))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_2), QtGui.QApplication.translate("MainWindow", "平仓", None, QtGui.QApplication.UnicodeUTF8))
 

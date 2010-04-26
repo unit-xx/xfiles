@@ -150,7 +150,8 @@ class Portfolio:
         self.stockmodelattr = ["count", "market", "code", "name",
                 #"order_state", "ordercount", "dealcount", "orderprice",
                 #"dealprice", "latestprice", "order_date", "order_time",
-                "latestprice", "tobuyprice", "tosellprice"]
+                "latestprice", "tobuyprice", "tosellprice",
+                "pastbuycount", "pastbuycost", "pastsellcount", "pastsellgain"]
         # TODO: really need this assertion? how about derived attr
         # assert(set(self.stockmodelattr) <= set(self.stockattr+self.orderattr))
 
@@ -237,7 +238,7 @@ class Portfolio:
         f.flush()
         f.close()
 
-    def buyBatchOrderTop(self):
+    def buyBatchTop(self):
         self.bolock.acquire()
         print "batch buying"
 
@@ -281,7 +282,7 @@ class Portfolio:
                 param["trd_id"] = trdcode
                 param["price"] = orec["orderprice"]
                 param["qty"] = orec["ordercount"]
-                self.tqueue.put( (reqclass, respclass, param, self.buyBatchOrderBottom, True) )
+                self.tqueue.put( (reqclass, respclass, param, self.buyBatchBottom, True) )
 
             assert len(self.stockinfo) == self.bocount
 
@@ -317,16 +318,16 @@ class Portfolio:
                     param["trd_id"] = trdcode
                     param["price"] = orec["orderprice"]
                     param["qty"] = orec["ordercount"]
-                    self.tqueue.put( (reqclass, respclass, param, self.buyBatchOrderBottom, True) )
+                    self.tqueue.put( (reqclass, respclass, param, self.buyBatchBottom, True) )
 
         else:
             print "not in buy-able state"
 
         self.bolock.release()
 
-    buyBatchOrder = buyBatchOrderTop
+    buyBatch = buyBatchTop
 
-    def buyBatchOrderBottom(self, req, resp, param):
+    def buyBatchBottom(self, req, resp, param):
         today = str(datetime.today().date())
         mkt = ""
         if param["market"] == "10":
@@ -348,12 +349,12 @@ class Portfolio:
         self.bocount = self.bocount - 1
         if self.bocount == 0:
             self.bostate = Portfolio.BOBUYSUCCESS
-            print "batch ordered"
+            print "batch buy-ed"
         self.bolock.release()
 
-    def cancelBuyBatchOrderTop(self):
+    def cancelBuyBatchTop(self):
         self.bolock.acquire()
-        print "batch canceling"
+        print "batch buy canceling"
 
         if self.bostate == Portfolio.BOBUYSUCCESS:
             # set Portfolio batch state
@@ -364,7 +365,7 @@ class Portfolio:
             reqclass = jz.CancelOrderReq
             respclass = jz.CancelOrderResp
             for scode in self.stocklist:
-                # only cancel BUYSUCCESS and dealcount < ordercount orders
+                # only cancel (BUYSUCCESS and dealcount < ordercount) orders
                 si = self.stockinfo[scode]
                 orec = si["pastbuy"][-1]
                 if orec["order_state"] == Portfolio.BUYSUCCESS and int(orec["dealcount"]) < int(orec["ordercount"]):
@@ -376,17 +377,17 @@ class Portfolio:
                     elif self.stockinfo[scode]["market"] == "SZ":
                         param["market"] = "00"
                     param["order_id"] = orec["order_id"]
-                    # secu_code is needed at cancelBuyBatchOrderBottom, not for CancelOrderReq
+                    # secu_code is needed at cancelBuyBatchBottom, not for CancelOrderReq
                     param["secu_code"] = self.stockinfo[scode]["code"]
-                    self.tqueue.put( (reqclass, respclass, param, self.cancelBuyBatchOrderBottom, True) )
+                    self.tqueue.put( (reqclass, respclass, param, self.cancelBuyBatchBottom, True) )
         else:
-            print "not in cancel-able state"
+            print "not in buy cancel-able state"
 
         self.bolock.release()
 
-    cancelBuyBatchOrder = cancelBuyBatchOrderTop
+    cancelBuyBatch = cancelBuyBatchTop
 
-    def cancelBuyBatchOrderBottom(self, req, resp, param):
+    def cancelBuyBatchBottom(self, req, resp, param):
         today = str(datetime.today().date())
         mkt = ""
         if param["market"] == "10":
@@ -407,7 +408,8 @@ class Portfolio:
 
         # TODO: cancel may need time at exchange server
         # time.sleep(5)
-        # update stock info immediately, it's important to use req.session, not self.session
+        # update stock info immediately, it's important to use req.session,
+        # not self.session, to make sure sqlite db object is used by only one thread
         qoreq = jz.QueryOrderReq(req.session)
         qoreq["begin_date"] = orec["order_date"]
         qoreq["end_date"] = orec["order_date"]
@@ -426,12 +428,13 @@ class Portfolio:
 
             if orec["order_state"] == Portfolio.CANCELBUYFAILED:
                 if orec["dealcount"] == orec["ordercount"]:
+                    assert si["count"] == si["pastbuycount"] + int(orec["dealcount"])
                     orec["order_state"] = Portfolio.BUYSUCCESS
                 else:
                     # TODO: change state to ORDERSUCCESS in this case too? to enable next cancel?
                     assert False, "Error: cancel failed while dealcount is smaller than count."
         else:
-            assert False, "error when query order for %s (%s:%s)" % (si["order_id"], qoresp.retcode, qoresp.retinfo)
+            assert False, "error when update order for %s (%s:%s)" % (si["order_id"], qoresp.retcode, qoresp.retinfo)
 
         # update pastbuyxxx
         if orec["order_state"] in (Portfolio.BUYSUCCESS, Portfolio.CANCELBUYSUCCESS):
@@ -441,48 +444,286 @@ class Portfolio:
         self.bolock.acquire()
         self.bocount = self.bocount - 1
         if self.bocount == 0:
-            # TODO: cancel-able stock is not equal to total stock number
             self.bostate = Portfolio.BOBUYCANCELED
-            print "batch canceled"
+            print "batch buy canceled"
         self.bolock.release()
 
-    def genBackupOrder(self):
-        # now only consider CANCELBUYSUCCESS orders
-        self.backuporder = {}
-        self.backuporderlist = []
-        backuporder = self.backuporder
-        backuporderlist = self.backuporderlist
-        for scode in self.stocklist:
-            if self.stockinfo[scode]["order_state"] == Portfolio.CANCELBUYSUCCESS:
-            # TODO: round to 100
-            # TODO: track non-dealed stock numbers, not only round and ignore
-                backupcount = int(self.stockinfo[scode]["count"]) - int(self.stockinfo[scode]["dealcount"])
-                if backupcount > 0:
-                    backuporderlist.append(scode)
-                    backuporder.setdefault(scode, {})
-                    backuporder[scode]["market"] = self.stockinfo[scode]["market"]
-                    backuporder[scode]["code"] = self.stockinfo[scode]["code"]
-                    backuporder[scode]["count"] = str(backupcount)
+    def sellBatchTop(self):
+        self.bolock.acquire()
+        print "batch selling"
 
-    def saveBackupOrder(self, backupfn):
-        f = open(backupfn, "w")
-        for scode in self.backuporderlist:
-            si = self.backuporder[scode]
-            f.write(" ".join( (si["market"], si["code"], si["count"]) ))
-            f.write("\n")
-        f.flush()
-        f.close()
+        if self.bostate == Portfolio.BOBUYSUCCESS:
+            # only succeed when all buysuccess stocks are 100% buyed
+            allbought = True
+            for scode in self.stocklist:
+                si = self.stockinfo[scode]
+                orec = si["pastbuy"][-1]
+                assert si["pastsell"] == []
+                assert si["pastsellcount"] == 0
+                if orec["order_state"] == Portfolio.BUYSUCCESS:
+                    if orec["ordercount"] != orec["dealcount"]:
+                        print "stock %s is in buying, cancel order fist and then sell." % scode
+                        allbought = False
+                        break
+                    else:
+                        assert int(si["count"]) == si["pastbuycount"] + int(orec["dealcount"])
+            if allbought == False:
+                self.bolock.release()
+                return
 
-    def genandsaveBackupOrder(self):
-        fn = unicode(QFileDialog.getSaveFileName())
-        self.genBackupOrder()
-        self.saveBackupOrder(fn)
+            # At this point, all stock in BUYSUCCESS is bought completely, and we update "pastbuyxxx" now
+            for scode in self.stocklist:
+                si = self.stockinfo[scode]
+                orec = si["pastbuy"][-1]
+                if orec["order_state"] == Portfolio.BUYSUCCESS:
+                    si["pastbuycount"] = si["pastbuycount"] + int(orec["dealcount"])
+                    si["pastbuycost"] = si["pastbuycost"] + float(orec["dealamount"])
+
+            # Now we sell BUYSUCCESS stocks
+            reqclass = jz.SubmitOrderReq
+            respclass = jz.SubmitOrderResp
+            trdcode = "0S"
+            self.bocount = 0
+            self.bostate = Portfolio.BOSELLING
+            for scode in self.stocklist:
+                si = self.stockinfo[scode]
+                if orec["order_state"] == Portfolio.BUYSUCCESS:
+                    # DO sell
+                    self.bocount = self.bocount + 1
+                    orec = OrderRecord()
+                    orec["order_state"] = Portfolio.UNORDERED
+                    orec["ordercount"] = str( si["pastbuycount"] - si["pastsellcount"] )
+                    orec["orderprice"] = si["tosellprice"]
+                    si["pastsell"].append(orec)
+
+                    param = {}
+                    param["user_code"] = self.session["user_code"]
+                    if si["market"] == "SH":
+                        param["market"] = "10"
+                        param["secu_acc"] = self.session["secu_acc"]["SH"]
+                    elif si["market"] == "SZ":
+                        param["market"] = "00"
+                        param["secu_acc"] = self.session["secu_acc"]["SZ"]
+                    param["account"] = self.session["account"]
+                    param["secu_code"] = si["code"]
+                    param["trd_id"] = trdcode
+                    param["price"] = orec["orderprice"]
+                    param["qty"] = orec["ordercount"]
+                    self.tqueue.put( (reqclass, respclass, param, self.buyBatchBottom, True) )
+
+        elif self.bostate == Portfolio.BOBUYCANCELED:
+            # sell stocks in CANCELBUYSUCCESS state and (BUYSUCCESS and 100% buy) state.
+            # At this point, stock in BUYSUCCESS state should be bought completely.
+            # first is some sanity check, and updating pastbuyxxx for BUYSUCCESS stocks
+            for scode in self.stocklist:
+                si = self.stockinfo[scode]
+                assert si["pastsell"] == []
+                assert si["pastsellcount"] == 0
+                orec = si["pastbuy"][-1]
+                if orec["order_state"] == Portfolio.BUYSUCCESS:
+                    assert orec["ordercount"] == orec["dealcount"]
+                    assert int(si["count"]) == si["pastbuycount"] + int(orec["dealcount"])
+                    # only update pastbuyxxx for BUYSECCESS stocks
+                    si["pastbuycount"] = si["pastbuycount"] + int(orec["dealcount"])
+                    si["pastbuycost"] = si["pastbuycost"] + float(orec["dealamount"])
+                elif orec["order_state"] == Portfolio.CANCELBUYSUCCESS:
+                    assert int(orec["ordercount"]) > int(orec["dealcount"])
+                    # pastbuycount is updated in cancelBuyBatchBottom for this case
+
+            # Now we sell stocks
+            reqclass = jz.SubmitOrderReq
+            respclass = jz.SubmitOrderResp
+            trdcode = "0S"
+            self.bocount = 0
+            self.bostate = Portfolio.BOSELLING
+            for scode in self.stocklist:
+                si = self.stockinfo[scode]
+                if orec["order_state"] in (Portfolio.BUYSUCCESS, Portfolio.CANCELBUYSUCCESS):
+                    # DO sell
+                    self.bocount = self.bocount + 1
+                    orec = OrderRecord()
+                    orec["order_state"] = Portfolio.UNORDERED
+                    orec["ordercount"] = str( si["pastbuycount"] - si["pastsellcount"] )
+                    orec["orderprice"] = si["tosellprice"]
+                    si["pastsell"].append(orec)
+
+                    param = {}
+                    param["user_code"] = self.session["user_code"]
+                    if si["market"] == "SH":
+                        param["market"] = "10"
+                        param["secu_acc"] = self.session["secu_acc"]["SH"]
+                    elif si["market"] == "SZ":
+                        param["market"] = "00"
+                        param["secu_acc"] = self.session["secu_acc"]["SZ"]
+                    param["account"] = self.session["account"]
+                    param["secu_code"] = si["code"]
+                    param["trd_id"] = trdcode
+                    param["price"] = orec["orderprice"]
+                    param["qty"] = orec["ordercount"]
+                    self.tqueue.put( (reqclass, respclass, param, self.buyBatchBottom, True) )
+
+        elif self.bostate == Portfolio.BOSELLCANCELED:
+            # At this point, pastsellxxx should be updated correctly.
+            reqclass = jz.SubmitOrderReq
+            respclass = jz.SubmitOrderResp
+            trdcode = "0S"
+            self.bocount = 0
+            self.bostate = Portfolio.BOSELLING
+            for scode in self.stocklist:
+                si = self.stockinfo[scode]
+                if orec["order_state"] == Portfolio.CANCELSELLSUCCESS:
+                    # DO sell
+                    self.bocount = self.bocount + 1
+                    orec = OrderRecord()
+                    orec["order_state"] = Portfolio.UNORDERED
+                    orec["ordercount"] = str( si["pastbuycount"] - si["pastsellcount"] )
+                    orec["orderprice"] = si["tosellprice"]
+                    si["pastsell"].append(orec)
+
+                    param = {}
+                    param["user_code"] = self.session["user_code"]
+                    if si["market"] == "SH":
+                        param["market"] = "10"
+                        param["secu_acc"] = self.session["secu_acc"]["SH"]
+                    elif si["market"] == "SZ":
+                        param["market"] = "00"
+                        param["secu_acc"] = self.session["secu_acc"]["SZ"]
+                    param["account"] = self.session["account"]
+                    param["secu_code"] = si["code"]
+                    param["trd_id"] = trdcode
+                    param["price"] = orec["orderprice"]
+                    param["qty"] = orec["ordercount"]
+                    self.tqueue.put( (reqclass, respclass, param, self.buyBatchBottom, True) )
+        else:
+            print "not in sell-able state"
+
+        self.bolock.release()
+
+    sellBatch = sellBatchTop
+
+    def sellBatchBottom(self, req, resp, param):
+        today = str(datetime.today().date())
+        mkt = ""
+        if param["market"] == "10":
+            mkt = "SH"
+        elif param["market"] == "00":
+            mkt = "SZ"
+        assert mkt != ""
+        scode = mkt + param["secu_code"]
+        orec = self.stockinfo[scode]["pastsell"][-1]
+        if resp.retcode == "0":
+            orec["order_id"] = resp.records[0][1]
+            orec["order_state"] = Portfolio.SELLSUCCESS
+            orec["order_date"] = today
+            orec["order_time"] = str(datetime.now().time())
+        else:
+            orec["order_state"] = Portfolio.SELLFAILED
+
+        self.bolock.acquire()
+        self.bocount = self.bocount - 1
+        if self.bocount == 0:
+            self.bostate = Portfolio.BOSELLSUCCESS
+            print "batch selled"
+        self.bolock.release()
+
+    def cancelSellBatchTop(self):
+        self.bolock.acquire()
+        print "batch sell canceling"
+
+        if self.bostate == Portfolio.BOSELLSUCCESS:
+            self.bostate = Portfolio.BOSELLCANCELING
+            self.bocount = 0
+
+            reqclass = jz.CancelOrderReq
+            respclass = jz.CancelOrderResp
+            for scode in self.stocklist:
+                # only cancel (SELLSUCCESS and dealcount < ordercount) orders
+                si = self.stockinfo[scode]
+                orec = si["pastsell"][-1]
+                if orec["order_state"] == Portfolio.SELLSUCCESS and int(orec["dealcount"]) < int(orec["ordercount"]):
+                    self.bocount = self.bocount + 1
+                    param = {}
+                    param["user_code"] = self.session["user_code"]
+                    if self.stockinfo[scode]["market"] == "SH":
+                        param["market"] = "10"
+                    elif self.stockinfo[scode]["market"] == "SZ":
+                        param["market"] = "00"
+                    param["order_id"] = orec["order_id"]
+                    # secu_code is needed at cancelSellBatchBottom, not for CancelOrderReq
+                    param["secu_code"] = self.stockinfo[scode]["code"]
+                    self.tqueue.put( (reqclass, respclass, param, self.cancelBuyBatchBottom, True) )
+
+        else:
+            print "not in sell cancel-able state"
+        self.bolock.release()
+
+    cancelSellBatch = cancelSellBatchTop
+
+    def cancelSellBatchBottom(self, req, resp, param):
+        today = str(datetime.today().date())
+        mkt = ""
+        if param["market"] == "10":
+            mkt = "SH"
+        elif param["market"] == "00":
+            mkt = "SZ"
+        assert mkt != ""
+        scode = mkt + param["secu_code"]
+
+        si = self.stockinfo[scode]
+        orec = si["pastsell"][-1]
+        if resp.retcode == "0":
+            orec["cancel_date"] = today
+            orec["cancel_time"] = str(datetime.now().time())
+            orec["order_state"] = Portfolio.CANCELSELLSUCCESS
+        else:
+            orec["order_state"] = Portfolio.CANCELSELLFAILED
+
+        # update stock info immediately
+        qoreq = jz.QueryOrderReq(req.session)
+        qoreq["begin_date"] = orec["order_date"]
+        qoreq["end_date"] = orec["order_date"]
+        qoreq["get_orders_mode"] = "0" # all submissions
+        qoreq["user_code"] = req.session["user_code"]
+        # a bug in protocol/document results in next odd line
+        qoreq["biz_no"] = orec["order_id"]
+        qoreq.send()
+        qoresp = jz.QueryOrderResp(req.session)
+        qoresp.recv()
+        if qoresp.retcode == "0":
+            orec["dealcount"] = qoresp.records[0][-11]
+            orec["dealamount"] = qoresp.records[0][-9]
+            # dealprice may not right
+            orec["dealprice"] = qoresp.records[0][-1]
+
+            if orec["order_state"] == Portfolio.CANCELSELLFAILED:
+                if orec["dealcount"] == orec["ordercount"]:
+                    assert si["pastbuycount"] == si["pastsellcount"] + int(orec["dealcount"])
+                    orec["order_state"] = Portfolio.SELLSUCCESS
+                else:
+                    assert False, "Error: cancel failed while dealcount is smaller than count."
+        else:
+            assert False, "error when update order for %s (%s:%s)" % (si["order_id"], qoresp.retcode, qoresp.retinfo)
+
+        # update pastsellxxx
+        if orec["order_state"] in (Portfolio.SELLSUCCESS, Portfolio.CANCELSELLSUCCESS):
+            si["pastsellcount"] = si["pastsellcount"] + int(orec["dealcount"])
+            si["pastsellgain"] = si["pastsellgain"] + float(orec["dealamount"])
+
+        self.bolock.acquire()
+        self.bocount = self.bocount - 1
+        if self.bocount == 0:
+            self.bostate = Portfolio.BOSELLCANCELED
+            print "batch sell canceled"
+        self.bolock.release()
 
     def buybatch(self):
-        self.buyBatchOrder()
+        self.buyBatch()
 
-    def selpricepolicy(self, pindex):
+    def setbuypricepolicy(self, pindex):
         self.buypolicy = self.pricepolicylist[pindex]
+
+    def setsellpricepolicy(self, pindex):
+        self.sellpolicy = self.pricepolicylist[pindex]
 
 class PortfolioUpdater(Thread):
     def __init__(self, shdbfn, shmapfn, szdbfn, szmapfn, portfolio, portmodel):
@@ -809,16 +1050,19 @@ def main(args):
     orderupdater.start()
 
     # setup price combobox
-    # TODO: add sell case
     for price in p.pricepolicylist:
         ui.pricepolicybuy.addItem(p.pricepolicynamemap[price])
+        ui.pricepolicysell.addItem(p.pricepolicynamemap[price])
     ui.pricepolicybuy.setCurrentIndex(p.pricepolicylist.index(p.buypolicy))
-    window.connect(ui.pricepolicybuy, SIGNAL("currentIndexChanged(int)"), p.selpricepolicy)
+    ui.pricepolicysell.setCurrentIndex(p.pricepolicylist.index(p.sellpolicy))
+    window.connect(ui.pricepolicybuy, SIGNAL("currentIndexChanged(int)"), p.setbuypricepolicy)
+    window.connect(ui.pricepolicysell, SIGNAL("currentIndexChanged(int)"), p.setsellpricepolicy)
 
     # setup batch order push button
-    window.connect(ui.buyorder, SIGNAL("clicked()"), p.buybatch)
-    window.connect(ui.cancelbuyorder, SIGNAL("clicked()"), p.cancelBuyBatchOrder)
-    window.connect(ui.genbackuporder, SIGNAL("clicked()"), p.genandsaveBackupOrder)
+    window.connect(ui.buyorder, SIGNAL("clicked()"), p.buyBatch)
+    window.connect(ui.cancelbuyorder, SIGNAL("clicked()"), p.cancelBuyBatch)
+    window.connect(ui.sellorder, SIGNAL("clicked()"), p.sellBatch)
+    window.connect(ui.cancelsellorder, SIGNAL("clicked()"), p.cancelSellBatch)
     window.connect(ui.saveorder_2, SIGNAL("clicked()"), p.savePortfolio)
     window.connect(ui.saveorder, SIGNAL("clicked()"), p.savePortfolio)
 
