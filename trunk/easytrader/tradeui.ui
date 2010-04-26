@@ -61,7 +61,14 @@
             </widget>
            </item>
            <item row="0" column="1">
-            <widget class="QComboBox" name="pricepolicybuy"/>
+            <widget class="QComboBox" name="pricepolicybuy">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+            </widget>
            </item>
            <item row="0" column="2">
             <widget class="QLabel" name="label_4">
@@ -94,21 +101,14 @@
              </property>
             </widget>
            </item>
-           <item row="0" column="7">
+           <item row="0" column="6">
             <widget class="QPushButton" name="autosubmit_2">
              <property name="text">
               <string>自动下单</string>
              </property>
             </widget>
            </item>
-           <item row="0" column="6">
-            <widget class="QPushButton" name="genbackuporder_2">
-             <property name="text">
-              <string>生成补单</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="8">
+           <item row="0" column="7">
             <widget class="QPushButton" name="saveorder_2">
              <property name="text">
               <string>保存组合</string>
@@ -158,7 +158,14 @@
             </widget>
            </item>
            <item row="0" column="1">
-            <widget class="QComboBox" name="pricepolicysell"/>
+            <widget class="QComboBox" name="pricepolicysell">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+            </widget>
            </item>
            <item row="0" column="2">
             <widget class="QLabel" name="label_2">
@@ -191,21 +198,14 @@
              </property>
             </widget>
            </item>
-           <item row="0" column="7">
+           <item row="0" column="6">
             <widget class="QPushButton" name="autosubmit">
              <property name="text">
               <string>自动下单</string>
              </property>
             </widget>
            </item>
-           <item row="0" column="6">
-            <widget class="QPushButton" name="genbackuporder">
-             <property name="text">
-              <string>生成补单</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="8">
+           <item row="0" column="7">
             <widget class="QPushButton" name="saveorder">
              <property name="text">
               <string>保存组合</string>
