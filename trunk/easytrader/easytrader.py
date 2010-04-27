@@ -1045,7 +1045,9 @@ def main(args):
         sys.exit(1)
     #portfoliofn = "hs300.txt"
     portfoliofn = unicode(QFileDialog.getOpenFileName(None, u"选择投资组合", "./portfolio", "*.ptf"))
-
+    if portfoliofn == u"":
+        print "No portfolio seletec."
+        sys.exit(1)
 
     # setup portfolio
     tqueue = Queue.Queue()
