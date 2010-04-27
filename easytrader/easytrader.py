@@ -217,12 +217,12 @@ class Portfolio:
                 # iterate pastbuy/sell and update pastxxxyyy
                 for r in si["pastbuy"]:
                     if r["order_state"] == Portfolio.CANCELBUYSUCCESS:
-                        si["pastbuycount"] = si["pastbuycount"] + r["dealcount"]
-                        si["pastbuycost"] = si["pastbuycost"] + r["dealamount"]
+                        si["pastbuycount"] = si["pastbuycount"] + int(r["dealcount"])
+                        si["pastbuycost"] = si["pastbuycost"] + float(r["dealamount"])
                 for r in si["pastbuy"]:
                     if r["order_state"] == Portfolio.CANCELSELLSUCCESS:
-                        si["pastsellcount"] = si["pastsellcount"] + r["dealcount"]
-                        si["pastsellgain"] = si["pastsellgain"] + r["dealamount"]
+                        si["pastsellcount"] = si["pastsellcount"] + int(r["dealcount"])
+                        si["pastsellgain"] = si["pastsellgain"] + float(r["dealamount"])
         f.close()
         self.stockset = set(self.stocklist)
 

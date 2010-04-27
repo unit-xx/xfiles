@@ -7,6 +7,7 @@ CHECK: change update part accordingly
 model and view: divide stock info into hard state and soft state
 
 buyfailed stocks may be stopped or price error, treat them differently
+and consider bocount == 0 case
 
 store finished orders in local db
 
