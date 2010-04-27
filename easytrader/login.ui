@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>241</width>
-    <height>145</height>
+    <width>242</width>
+    <height>147</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -51,7 +51,7 @@
     </widget>
    </item>
    <item row="2" column="2" colspan="2">
-    <widget class="QLineEdit" name="accout"/>
+    <widget class="QLineEdit" name="account"/>
    </item>
    <item row="3" column="0" colspan="2">
     <widget class="QLabel" name="label_4">
