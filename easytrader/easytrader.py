@@ -214,11 +214,15 @@ class Portfolio:
                 si["pastbuycost"] = 0.0
                 si["pastsellcount"] = 0
                 si["pastsellgain"] = 0.0
-                # TODO: iterate pastbuy/sell and update pastxxxyyy
+                # iterate pastbuy/sell and update pastxxxyyy
                 for r in si["pastbuy"]:
-                    pass
+                    if r["order_state"] == Portfolio.CANCELBUYSUCCESS:
+                        si["pastbuycount"] = si["pastbuycount"] + r["dealcount"]
+                        si["pastbuycost"] = si["pastbuycost"] + r["dealamount"]
                 for r in si["pastbuy"]:
-                    pass
+                    if r["order_state"] == Portfolio.CANCELSELLSUCCESS:
+                        si["pastsellcount"] = si["pastsellcount"] + r["dealcount"]
+                        si["pastsellgain"] = si["pastsellgain"] + r["dealamount"]
         f.close()
         self.stockset = set(self.stocklist)
 
@@ -487,6 +491,7 @@ class Portfolio:
             self.bostate = Portfolio.BOSELLING
             for scode in self.stocklist:
                 si = self.stockinfo[scode]
+                orec = si["pastbuy"][-1]
                 if orec["order_state"] == Portfolio.BUYSUCCESS:
                     # DO sell
                     self.bocount = self.bocount + 1
@@ -509,7 +514,7 @@ class Portfolio:
                     param["trd_id"] = trdcode
                     param["price"] = orec["orderprice"]
                     param["qty"] = orec["ordercount"]
-                    self.tqueue.put( (reqclass, respclass, param, self.buyBatchBottom, True) )
+                    self.tqueue.put( (reqclass, respclass, param, self.sellBatchBottom, True) )
 
         elif self.bostate == Portfolio.BOBUYCANCELED:
             # sell stocks in CANCELBUYSUCCESS state and (BUYSUCCESS and 100% buy) state.
@@ -538,6 +543,7 @@ class Portfolio:
             self.bostate = Portfolio.BOSELLING
             for scode in self.stocklist:
                 si = self.stockinfo[scode]
+                orec = si["pastbuy"][-1]
                 if orec["order_state"] in (Portfolio.BUYSUCCESS, Portfolio.CANCELBUYSUCCESS):
                     # DO sell
                     self.bocount = self.bocount + 1
@@ -560,7 +566,7 @@ class Portfolio:
                     param["trd_id"] = trdcode
                     param["price"] = orec["orderprice"]
                     param["qty"] = orec["ordercount"]
-                    self.tqueue.put( (reqclass, respclass, param, self.buyBatchBottom, True) )
+                    self.tqueue.put( (reqclass, respclass, param, self.sellBatchBottom, True) )
 
         elif self.bostate == Portfolio.BOSELLCANCELED:
             # At this point, pastsellxxx should be updated correctly.
@@ -571,6 +577,7 @@ class Portfolio:
             self.bostate = Portfolio.BOSELLING
             for scode in self.stocklist:
                 si = self.stockinfo[scode]
+                orec = si["pastsell"][-1]
                 if orec["order_state"] == Portfolio.CANCELSELLSUCCESS:
                     # DO sell
                     self.bocount = self.bocount + 1
@@ -593,10 +600,13 @@ class Portfolio:
                     param["trd_id"] = trdcode
                     param["price"] = orec["orderprice"]
                     param["qty"] = orec["ordercount"]
-                    self.tqueue.put( (reqclass, respclass, param, self.buyBatchBottom, True) )
+                    self.tqueue.put( (reqclass, respclass, param, self.sellBatchBottom, True) )
         else:
             print "not in sell-able state"
 
+        if self.bocount == 0:
+            print "no stock to sell"
+            self.bostate = Portfolio.BOSELLSUCCESS
         self.bolock.release()
 
     sellBatch = sellBatchTop
@@ -651,10 +661,14 @@ class Portfolio:
                     param["order_id"] = orec["order_id"]
                     # secu_code is needed at cancelSellBatchBottom, not for CancelOrderReq
                     param["secu_code"] = self.stockinfo[scode]["code"]
-                    self.tqueue.put( (reqclass, respclass, param, self.cancelBuyBatchBottom, True) )
+                    self.tqueue.put( (reqclass, respclass, param, self.cancelSellBatchBottom, True) )
 
         else:
             print "not in sell cancel-able state"
+
+        if self.bocount == 0:
+            print "no stock to cancel selling"
+            self.bostate = Portfolio.BOSELLCANCELED
         self.bolock.release()
 
     cancelSellBatch = cancelSellBatchTop

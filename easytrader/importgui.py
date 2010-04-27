@@ -36,7 +36,6 @@ class PortfolioListModel(QAbstractTableModel):
             return QVariant()
         try:
             celldata = self.pdata[index.row()][index.column()]
-            print celldata
             return QVariant(celldata)
         except KeyError:
             return QVariant()
@@ -48,12 +47,9 @@ class PortfolioPreviewModel(QAbstractTableModel):
         self.pdata = pdata
 
     def rowCount(self, parent):
-        print "row", len(self.pdata.ppreviewdata)
-        print self.pdata.ppreviewdata
         return len(self.pdata.ppreviewdata)
 
     def columnCount(self, parent):
-        print "column", len(self.header)
         return len(self.header)
 
     def headerData(self, section, orientation, role):
@@ -70,9 +66,7 @@ class PortfolioPreviewModel(QAbstractTableModel):
         elif role != Qt.DisplayRole:
             return QVariant()
         try:
-            print index.row(), index.column(), 
             celldata = self.pdata.ppreviewdata[index.row()][index.column()]
-            print celldata
             return QVariant(celldata)
         except KeyError:
             return QVariant()
@@ -81,6 +75,7 @@ class importer:
     def __init__(self, ui, dialog):
         self.ui = ui
         self.dialog = dialog
+        self.book = None
 
         # 'p' for portfolio
         self.plistdata = list() # should be list of list
@@ -88,10 +83,7 @@ class importer:
         self.plistmodel = PortfolioListModel(self.plistattr, self.plistdata)
         self.ui.portfolio_list.setModel(self.plistmodel)
 
-        self.ppreviewdata = list([[u'\u5e02\u573a',
-            u'\u4ee3\u7801', u'\u540d\u79f0', u'\u6570\u91cf'],
-            [u'SH', ' 600000.0', u'\u6d66\u53d1\u94f6\u884c',
-                '100.0']])
+        self.ppreviewdata = list()
         self.ppreviewattr = [u"市场代码", u"股票代码", u"股票名称", u"股票数量"]
         self.ppreviewmodel = PortfolioPreviewModel(self.ppreviewattr, self)
         self.ui.portfolio_preview.setModel(self.ppreviewmodel)
@@ -100,21 +92,13 @@ class importer:
 
     def onSelectFile(self):
         fn = QFileDialog.getOpenFileName(self.dialog, u"选择Excel", "", "*.xls")
-        print "!!", self.ppreviewdata
         fn = unicode(fn)
         book = open_workbook(fn)
         self.book = book
 
-        self.ppreviewdata = [['a', 'b', 'c', 'd']]
-        QMessageBox.information(self.dialog, "Information",
-                str(self.ppreviewdata))
-        self.ppreviewmodel.emit(SIGNAL("dataChanged(QModelIndex,QModelIndex)"),
-                self.ppreviewmodel.index(0,0),
-                self.ppreviewmodel.index(len(self.ppreviewdata)-1,
-                    len(self.ppreviewattr)-1))
-
-        for n in [n.decode("GBK") for n in book.sheet_names()]:
-            # TODO: delete old list first
+        self.ui.sheetlist.clear()
+        #for n in [n.decode(book.encoding) for n in book.sheet_names()]:
+        for n in book.sheet_names():
             self.ui.sheetlist.addItem(n)
 
     def onSelectSheet(self, index):
@@ -139,7 +123,6 @@ class importer:
                 self.ppreviewmodel.index(0,0),
                 self.ppreviewmodel.index(len(self.ppreviewdata) - 1,
                     len(self.ppreviewattr) - 1))
-
 
     def onDoImport(self):
         pass
