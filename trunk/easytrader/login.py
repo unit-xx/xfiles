@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'login.ui'
 #
-# Created: Tue Apr 27 16:36:27 2010
+# Created: Tue Apr 27 20:05:25 2010
 #      by: PyQt4 UI code generator 4.7.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -12,7 +12,7 @@ from PyQt4 import QtCore, QtGui
 class Ui_logindlg(object):
     def setupUi(self, logindlg):
         logindlg.setObjectName("logindlg")
-        logindlg.resize(241, 145)
+        logindlg.resize(242, 147)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -36,9 +36,9 @@ class Ui_logindlg(object):
         self.label_3 = QtGui.QLabel(logindlg)
         self.label_3.setObjectName("label_3")
         self.gridLayout.addWidget(self.label_3, 2, 0, 1, 2)
-        self.accout = QtGui.QLineEdit(logindlg)
-        self.accout.setObjectName("accout")
-        self.gridLayout.addWidget(self.accout, 2, 2, 1, 2)
+        self.account = QtGui.QLineEdit(logindlg)
+        self.account.setObjectName("account")
+        self.gridLayout.addWidget(self.account, 2, 2, 1, 2)
         self.label_4 = QtGui.QLabel(logindlg)
         self.label_4.setObjectName("label_4")
         self.gridLayout.addWidget(self.label_4, 3, 0, 1, 2)

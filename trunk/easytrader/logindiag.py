@@ -13,16 +13,21 @@ class logindlg(QDialog):
 
         # set data for lineedit controls
         self.ui.servaddr.setText(config["jzserver"])
+        self.ui.servport.setText(str(config["jzport"]))
+        self.ui.account.setText(config["jzaccount"])
+        self.ui.passwd.setText(config["jzpasswd"])
+
         self.connect(self.ui.ok, SIGNAL("clicked()"), self.on_ok)
         self.connect(self.ui.cancel, SIGNAL("clicked()"), self.on_cancel)
 
     def on_ok(self):
-        self.status = True
         self.done(1)
+        self.status = True
+        self.config["jzserver"] = str(self.ui.servaddr.text())
+        self.config["jzport"] = int(self.ui.servport.text())
+        self.config["jzaccount"] = str(self.ui.account.text())
+        self.config["jzpasswd"] = str(self.ui.passwd.text())
 
     def on_cancel(self):
         self.status = False
-        self.done(1)
-
-    def update(self):
-        pass
+        self.done(0)
