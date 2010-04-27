@@ -104,11 +104,16 @@ class importer:
     def onSelectSheet(self, index):
         # update self.plistdata
         sheet = self.book.sheet_by_index(index)
-        if sheet.ncols != 4:
-            # TODO: show message
-            return
+        #if sheet.ncols != 4:
+        #    # TODO: show message
+        #    return
 
+        # delete old data
+        self.ppreviewmodel.beginRemoveRows(QModelIndex(), 0, len(self.ppreviewdata) - 1)
         del self.ppreviewdata[0:]
+        self.ppreviewmodel.endRemoveRows()
+
+        newdata = []
         for row in range(sheet.nrows):
             values = []
             for col in range(sheet.ncols):
@@ -117,7 +122,12 @@ class importer:
                     values.append(c.value)
                 else:
                     values.append(str(c.value))
-            self.ppreviewdata.append(values)
+            newdata.append(values)
+
+        if newdata != []:
+            self.ppreviewmodel.beginInsertRows(QModelIndex(), 0, len(newdata) - 1)
+            self.ppreviewdata.extend(newdata)
+            self.ppreviewmodel.endInsertRows()
 
         self.ppreviewmodel.emit(SIGNAL("dataChanged(QModelIndex,QModelIndex)"),
                 self.ppreviewmodel.index(0,0),
