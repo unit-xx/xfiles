@@ -1009,6 +1009,7 @@ def main(args):
 
     # chdir to app's directory
     os.chdir(os.path.dirname(sys.argv[0]))
+    app = QApplication(args)
 
     # read config
     session_config = {}
@@ -1021,14 +1022,21 @@ def main(args):
 
     # TODO: read last config from disk
 
-    #from login import Ui_logindlg
-    #loginwindow = QDialog()
-    #loginui = Ui_logindlg()
-    #loginui.setupUi(loginwindow)
-    #loginui.servaddr.setText(unicode(session_config["jzserver"]))
-    #loginui.serveport.setText(unicode(str(session_config["jzserver"])))
+    from logindiag import logindlg
+    d = logindlg(session_config)
+    d.show()
+    d.exec_()
+    if d.status == False:
+        print "User cancel login"
+        sys.exit(1)
 
-    app = QApplication(args)
+    session_config.update(d.config)
+    testsession = jz.session(session_config)
+    if not testsession.setup():
+        print "Cannot login."
+        sys.exit(1)
+    testsession.close()
+
     window = QMainWindow()
     ui = Ui_MainWindow()
     ui.setupUi(window)
