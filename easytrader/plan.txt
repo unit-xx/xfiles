@@ -1,10 +1,14 @@
 DONE: atomic batch operation (submit, cancel)
 DONE: the bug: cancel will failed before dealcount is updated
 
-TOCHECK: stock/batch workflow (need re-submit process)
-buy/cancel/rebuy seems ok, need sell part
-change update part accordingly
+CHECK: stock/batch workflow (need re-submit process)
+CHECK: buy/cancel/rebuy seems ok, need sell part
+CHECK: change update part accordingly
 model and view: divide stock info into hard state and soft state
+
+store finished orders in local db
+
+a login/config dialog
 
 update view at places where data is changed
 check session instance, because multi-threads may miss use session

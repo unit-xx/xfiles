@@ -873,8 +873,7 @@ class OrderUpdater(Thread):
             else:
                 continue
 
-            # TODO: only update buying/selling orders.
-            if order["order_id"] != "":
+            if order["order_id"] != "" and order["order_state"] in (Portfolio.BUYSUCCESS, Portfolio.SELLSUCCESS) and int(order["dealcount"]) < int(order["ordercount"]):
                 qoreq = jz.QueryOrderReq(self.session)
                 qoreq["begin_date"] = order["order_date"]
                 qoreq["end_date"] = order["order_date"]
@@ -895,8 +894,7 @@ class OrderUpdater(Thread):
                     #    order["dealprice"] = "0.00"
                     # TODO: dealprice is the average price? or last dealed price?
                     order["dealprice"] = qoresp.records[0][-1]
-                    # TODO: ordercount may diff with count?
-                    order["ordercount"] = qoresp.records[0][15]
+                    #order["ordercount"] = qoresp.records[0][15]
                 else:
                     print "error when query order for %s" % order["order_id"]
                     print qoresp.retcode, qoresp.retinfo
