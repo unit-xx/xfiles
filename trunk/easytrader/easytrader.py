@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import sys
+import os, sys
 import csv
 import socket
 import pickle
@@ -1007,12 +1007,32 @@ def main(args):
     #import psyco
     #psyco.full()
 
+    # chdir to app's directory
+    os.chdir(os.path.dirname(sys.argv[0]))
+
+    # read config
+    session_config = {}
+    session_config["tradedbfn"] = "tradeinfo.db"
+    session_config["jzserver"] = "172.18.20.52"
+    session_config["jzport"] = 9100
+    session_config["jzaccount"] = "85804530"
+    session_config["jzaccounttype"] = "Z"
+    session_config["jzpasswd"] = "123444"
+
+    # TODO: read last config from disk
+
+    #from login import Ui_logindlg
+    #loginwindow = QDialog()
+    #loginui = Ui_logindlg()
+    #loginui.setupUi(loginwindow)
+    #loginui.servaddr.setText(unicode(session_config["jzserver"]))
+    #loginui.serveport.setText(unicode(str(session_config["jzserver"])))
+
     app = QApplication(args)
     window = QMainWindow()
     ui = Ui_MainWindow()
     ui.setupUi(window)
 
-    # read config
     shdbfn = "z:\\show2003.dbf"
     szdbfn = "z:\\sjshq.dbf"
     shmapfn = "shmap.pkl"
@@ -1026,13 +1046,6 @@ def main(args):
     #portfoliofn = "hs300.txt"
     portfoliofn = unicode(QFileDialog.getOpenFileName(None, u"选择投资组合", "./portfolio", "*.ptf"))
 
-    session_config = {}
-    session_config["tradedbfn"] = "tradeinfo.db"
-    session_config["jzserver"] = "172.18.20.52"
-    session_config["jzport"] = 9100
-    session_config["jzaccount"] = "85804530"
-    session_config["jzaccounttype"] = "Z"
-    session_config["jzpasswd"] = "123444"
 
     # setup portfolio
     tqueue = Queue.Queue()
