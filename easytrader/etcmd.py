@@ -2,6 +2,7 @@
 
 import jz
 import socket
+import sys
 
 session_config = {}
 session_config["tradedbfn"] = "tradeinfo.db"
@@ -46,6 +47,8 @@ orderresp.recv()
 s.storetrade(orderreq, orderresp)
 print orderresp.retcode
 print orderresp.retinfo
+
+sys.exit(1)
 
 orderreqjsyh = jz.SubmitOrderReq(s)
 orderreqjsyh["user_code"] = s["user_code"]

@@ -203,13 +203,19 @@ class Portfolio:
                 si["code"] = i[1]
                 si["count"] = i[2]
                 si["pastbuy"] = []
-                buys = eval(i[3]) # including list of dict
-                for r in buys:
-                    si["pastbuy"].append(OrderRecord(r))
+                try:
+                    buys = eval(i[3]) # including list of dict
+                    for r in buys:
+                        si["pastbuy"].append(OrderRecord(r))
+                except IndexError:
+                    pass
                 si["pastsell"] = []
-                sells = eval(i[4]) # including list of dict
-                for r in sells:
-                    si["pastsell"].append(OrderRecord(r))
+                try:
+                    sells = eval(i[4]) # including list of dict
+                    for r in sells:
+                        si["pastsell"].append(OrderRecord(r))
+                except IndexError:
+                    pass
                 si["pastbuycount"] = 0
                 si["pastbuycost"] = 0.0
                 si["pastsellcount"] = 0
@@ -244,7 +250,7 @@ class Portfolio:
 
     def buyBatchTop(self):
         self.bolock.acquire()
-        print "batch buying"
+        print "batch buying", datetime.now().time()
 
         if self.bostate == Portfolio.BOUNORDERED:
             # new and first batch buy order
@@ -353,7 +359,7 @@ class Portfolio:
         self.bocount = self.bocount - 1
         if self.bocount == 0:
             self.bostate = Portfolio.BOBUYSUCCESS
-            print "batch buy-ed"
+            print "batch buy-ed", datetime.now().time()
         self.bolock.release()
 
     def cancelBuyBatchTop(self):
@@ -384,6 +390,9 @@ class Portfolio:
                     # secu_code is needed at cancelBuyBatchBottom, not for CancelOrderReq
                     param["secu_code"] = self.stockinfo[scode]["code"]
                     self.tqueue.put( (reqclass, respclass, param, self.cancelBuyBatchBottom, True) )
+            if self.bocount == 0:
+                print "no stock to cancel buy"
+                self.bostate = Portfolio.BOBUYSUCCESS
         else:
             print "not in buy cancel-able state"
 
@@ -432,7 +441,7 @@ class Portfolio:
 
             if orec["order_state"] == Portfolio.CANCELBUYFAILED:
                 if orec["dealcount"] == orec["ordercount"]:
-                    assert si["count"] == si["pastbuycount"] + int(orec["dealcount"])
+                    assert int(si["count"]) == si["pastbuycount"] + int(orec["dealcount"])
                     orec["order_state"] = Portfolio.BUYSUCCESS
                 else:
                     # TODO: change state to ORDERSUCCESS in this case too? to enable next cancel?
@@ -909,6 +918,14 @@ class OrderUpdater(Thread):
                     # TODO: dealprice is the average price? or last dealed price?
                     order["dealprice"] = qoresp.records[0][-1]
                     #order["ordercount"] = qoresp.records[0][15]
+                    # TODO: a quick patch, need refine update to pastxxx
+                    #if order["ordercount"] == order["dealcount"]:
+                    #    if len(si["pastsell"]) != 0:
+                    #        si["pastsellcount"] = si["pastsellcount"] + int(order["dealcount"])
+                    #        si["pastsellgain"] = si["pastsellgain"] + float(order["dealamount"])
+                    #    else:
+                    #        si["pastbuycount"] = si["pastbuycount"] + int(order["dealcount"])
+                    #        si["pastbuycost"] = si["pastbuycost"] + float(order["dealamount"])
                 else:
                     print "error when query order for %s" % order["order_id"]
                     print qoresp.retcode, qoresp.retinfo
@@ -1008,8 +1025,8 @@ def main(args):
     #psyco.full()
 
     # chdir to app's directory
-    os.chdir(os.path.dirname(sys.argv[0]))
     app = QApplication(args)
+    os.chdir(os.path.dirname(os.path.abspath(args[0])))
 
     # read config
     session_config = {}
@@ -1041,8 +1058,8 @@ def main(args):
     ui = Ui_MainWindow()
     ui.setupUi(window)
 
-    shdbfn = "z:\\show2003.dbf"
-    szdbfn = "z:\\sjshq.dbf"
+    shdbfn = "x:\\show2003.dbf"
+    szdbfn = "x:\\sjshq.dbf"
     shmapfn = "shmap.pkl"
     szmapfn = "szmap.pkl"
     if not verifymap(shdbfn, shmapfn, "S1"):
@@ -1054,7 +1071,7 @@ def main(args):
     #portfoliofn = "hs300.txt"
     portfoliofn = unicode(QFileDialog.getOpenFileName(None, u"选择投资组合", "./portfolio", "*.ptf"))
     if portfoliofn == u"":
-        print "No portfolio seletec."
+        print "No portfolio seleted."
         sys.exit(1)
 
     # setup portfolio
