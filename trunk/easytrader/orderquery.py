@@ -45,11 +45,14 @@ print qoreq.payload
 
 qoresp = jz.QueryOrderResp(s)
 qoresp.recv()
-print qoresp.hasnext
 print qoresp.sections
+orders = []
 for r in qoresp.records:
-    print r
-    print
+    if r[15] == r[-11]:
+        print r
+        orders.append(r[10])
+        print
+print qoresp.hasnext
 print qoresp.retcode
 print qoresp.retinfo
-
+print orders

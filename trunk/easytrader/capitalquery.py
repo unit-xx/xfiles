@@ -4,10 +4,6 @@ import sys
 from datetime import datetime
 
 # config
-jzserver = "172.18.20.52"
-jzport = 9100
-dbfn = "tradeinfo.db"
-
 session_config = {}
 session_config["tradedbfn"] = "tradeinfo.db"
 session_config["jzserver"] = "172.18.20.52"

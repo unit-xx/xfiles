@@ -9,6 +9,8 @@ model and view: divide stock info into hard state and soft state
 buyfailed stocks may be stopped or price error, treat them differently
 and consider bocount == 0 case
 
+SHOULD use dealquery, especially for partial dealed orders
+
 store finished orders in local db
 
 a login/config dialog
