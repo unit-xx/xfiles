@@ -13,7 +13,7 @@ SHOULD use dealquery, especially for partial dealed orders
 
 store finished orders in local db
 
-a login/config dialog
+DONE: a login/config dialog
 
 update view at places where data is changed
 check session instance, because multi-threads may miss use session
