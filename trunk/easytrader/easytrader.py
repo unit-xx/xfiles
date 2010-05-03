@@ -126,11 +126,14 @@ class Portfolio:
                 "count", "market", "code", "name",
                 # buy and sell records, list of OrderRecord
                 "pastbuy", "pastsell",
-                # history stats for buy, not including current buying order, deduce from buy records
                 # pastxxxyyy are int/float types, others are string type, which is updated from messages
+                # history stats for buy, not including current buying order, deduce from buy records
                 "pastbuycount", "pastbuycost",
                 # history stats for sell, not including current selling order, deduce from sell records
                 "pastsellcount", "pastsellgain",
+                # currentxxxyyy
+                "currentbuycount", "currentbuycost",
+                "currentsellcount", "currentsellgain",
                 # prices, update timely from dbf
                 "latestprice", "tobuyprice", "tosellprice"]
 
@@ -151,7 +154,7 @@ class Portfolio:
                 #"order_state", "ordercount", "dealcount", "orderprice",
                 #"dealprice", "latestprice", "order_date", "order_time",
                 "latestprice", "tobuyprice", "tosellprice",
-                "pastbuycount", "pastbuycost", "pastsellcount", "pastsellgain"]
+                "currentbuycount", "currentbuycost", "currentsellcount", "currentsellgain"]
         # TODO: really need this assertion? how about derived attr
         # assert(set(self.stockmodelattr) <= set(self.stockattr+self.orderattr))
 
@@ -229,6 +232,31 @@ class Portfolio:
                     if r["order_state"] == Portfolio.CANCELSELLSUCCESS:
                         si["pastsellcount"] = si["pastsellcount"] + int(r["dealcount"])
                         si["pastsellgain"] = si["pastsellgain"] + float(r["dealamount"])
+                # update currentxxxyyy
+                si["currentbuycount"] = si["pastbuycount"]
+                si["currentbuycost"] = si["pastbuycost"]
+                si["currentsellcount"] = si["pastsellcount"]
+                si["currentsellgain"] = si["pastsellgain"]
+                if len(si["pastsell"]) != 0:
+                    if si["pastsell"][-1]["order_state"] == Portfolio.SELLSUCCESS:
+                        if int(si["pastsell"][-1]["dealcount"]) < int(si["pastsell"][-1]["ordercount"]):
+                            si["currentsellcount"] = si["pastsellcount"] + int(si["pastsell"][-1]["dealcount"])
+                            si["currentsellgain"] = si["pastsellgain"] + float(si["pastsell"][-1]["dealcount"])
+                        else:
+                            si["pastsellcount"] = si["pastsellcount"] + int(si["pastsell"][-1]["dealcount"])
+                            si["pastsellgain"] = si["pastsellgain"] + float(si["pastsell"][-1]["dealamount"])
+                            si["currentsellcount"] = si["pastsellcount"]
+                            si["currentsellgain"] = si["pastsellgain"]
+                elif len(si["pastbuy"]) != 0:
+                    if si["pastbuy"][-1]["order_state"] == Portfolio.BUYSECCESS:
+                        if int(si["pastbuy"][-1]["dealcount"]) < int(si["pastbuy"][-1]["ordercount"]):
+                            si["currentbuycount"] = si["pastbuycount"] + int(si["pastbuy"][-1]["dealcount"])
+                            si["currentbuycost"] = si["pastbuycost"] + float(si["pastbuy"][-1]["dealcount"])
+                        else:
+                            si["pastbuycount"] = si["pastbuycount"] + int(si["pastbuy"][-1]["dealcount"])
+                            si["pastbuycost"] = si["pastbuycost"] + float(si["pastbuy"][-1]["dealamount"])
+                            si["currentbuycount"] = si["pastbuycount"]
+                            si["currentbuycost"] = si["pastbuycost"]
         f.close()
         self.stockset = set(self.stocklist)
 
@@ -441,7 +469,7 @@ class Portfolio:
 
             if orec["order_state"] == Portfolio.CANCELBUYFAILED:
                 if orec["dealcount"] == orec["ordercount"]:
-                    assert int(si["count"]) == si["pastbuycount"] + int(orec["dealcount"])
+                    #assert int(si["count"]) == si["pastbuycount"] + int(orec["dealcount"])
                     orec["order_state"] = Portfolio.BUYSUCCESS
                 else:
                     # TODO: change state to ORDERSUCCESS in this case too? to enable next cancel?
@@ -451,8 +479,11 @@ class Portfolio:
 
         # update pastbuyxxx
         if orec["order_state"] in (Portfolio.BUYSUCCESS, Portfolio.CANCELBUYSUCCESS):
+            # stock in Portfolio.BUYSUCCESS here is the one that's CANCELBUYFAILED
             si["pastbuycount"] = si["pastbuycount"] + int(orec["dealcount"])
             si["pastbuycost"] = si["pastbuycost"] + float(orec["dealamount"])
+            si["currentbuycount"] = si["pastbuycount"]
+            si["currentbuycost"] = si["pastbuycost"]
 
         self.bolock.acquire()
         self.bocount = self.bocount - 1
@@ -479,18 +510,19 @@ class Portfolio:
                         allbought = False
                         break
                     else:
-                        assert int(si["count"]) == si["pastbuycount"] + int(orec["dealcount"])
+                        assert int(si["count"]) == si["pastbuycount"]# + int(orec["dealcount"])
             if allbought == False:
                 self.bolock.release()
                 return
 
             # At this point, all stock in BUYSUCCESS is bought completely, and we update "pastbuyxxx" now
-            for scode in self.stocklist:
-                si = self.stockinfo[scode]
-                orec = si["pastbuy"][-1]
-                if orec["order_state"] == Portfolio.BUYSUCCESS:
-                    si["pastbuycount"] = si["pastbuycount"] + int(orec["dealcount"])
-                    si["pastbuycost"] = si["pastbuycost"] + float(orec["dealamount"])
+            # NOTE: the code is done at OrderUpdate
+            #for scode in self.stocklist:
+            #    si = self.stockinfo[scode]
+            #    orec = si["pastbuy"][-1]
+            #    if orec["order_state"] == Portfolio.BUYSUCCESS:
+            #        si["pastbuycount"] = si["pastbuycount"] + int(orec["dealcount"])
+            #        si["pastbuycost"] = si["pastbuycost"] + float(orec["dealamount"])
 
             # Now we sell BUYSUCCESS stocks
             reqclass = jz.SubmitOrderReq
@@ -536,10 +568,11 @@ class Portfolio:
                 orec = si["pastbuy"][-1]
                 if orec["order_state"] == Portfolio.BUYSUCCESS:
                     assert orec["ordercount"] == orec["dealcount"]
-                    assert int(si["count"]) == si["pastbuycount"] + int(orec["dealcount"])
                     # only update pastbuyxxx for BUYSECCESS stocks
-                    si["pastbuycount"] = si["pastbuycount"] + int(orec["dealcount"])
-                    si["pastbuycost"] = si["pastbuycost"] + float(orec["dealamount"])
+                    # NOTE: code is not necessary
+                    #assert int(si["count"]) == si["pastbuycount"] + int(orec["dealcount"])
+                    #si["pastbuycount"] = si["pastbuycount"] + int(orec["dealcount"])
+                    #si["pastbuycost"] = si["pastbuycost"] + float(orec["dealamount"])
                 elif orec["order_state"] == Portfolio.CANCELBUYSUCCESS:
                     assert int(orec["ordercount"]) > int(orec["dealcount"])
                     # pastbuycount is updated in cancelBuyBatchBottom for this case
@@ -720,7 +753,8 @@ class Portfolio:
 
             if orec["order_state"] == Portfolio.CANCELSELLFAILED:
                 if orec["dealcount"] == orec["ordercount"]:
-                    assert si["pastbuycount"] == si["pastsellcount"] + int(orec["dealcount"])
+                    # TODO: race condition here. also at cancel buy
+                    #assert si["pastbuycount"] == si["pastsellcount"] + int(orec["dealcount"])
                     orec["order_state"] = Portfolio.SELLSUCCESS
                 else:
                     assert False, "Error: cancel failed while dealcount is smaller than count."
@@ -731,6 +765,8 @@ class Portfolio:
         if orec["order_state"] in (Portfolio.SELLSUCCESS, Portfolio.CANCELSELLSUCCESS):
             si["pastsellcount"] = si["pastsellcount"] + int(orec["dealcount"])
             si["pastsellgain"] = si["pastsellgain"] + float(orec["dealamount"])
+            si["currentsellcount"] = si["pastsellcount"]
+            si["currentsellgain"] = si["pastsellgain"]
 
         self.bolock.acquire()
         self.bocount = self.bocount - 1
@@ -926,6 +962,25 @@ class OrderUpdater(Thread):
                     #    else:
                     #        si["pastbuycount"] = si["pastbuycount"] + int(order["dealcount"])
                     #        si["pastbuycost"] = si["pastbuycost"] + float(order["dealamount"])
+                    if int(order["dealcount"]) < int(order["ordercount"]):
+                        # update pastxxx and currentxxx
+                        if len(si["pastsell"]) != 0:
+                            si["currentsellcount"] = si["pastsellcount"] + int(order["dealcount"])
+                            si["currentsellgain"] = si["pastsellgain"] + float(order["dealamount"])
+                        elif len(si["pastbuy"]) != 0:
+                            si["currentbuycount"] = si["pastbuycount"] + int(order["dealcount"])
+                            si["currentbuycost"] = si["pastbuycost"] + float(order["dealamount"])
+                    else: # int(order["dealcount"]) == int(order["ordercount"])
+                        if len(si["pastsell"]) != 0:
+                            si["pastsellcount"] = si["pastsellcount"] + int(order["dealcount"])
+                            si["pastsellgain"] = si["pastsellgain"] + float(order["dealamount"])
+                            si["currentsellcount"] = si["pastsellcount"]
+                            si["currentsellgain"] = si["pastsellgain"]
+                        elif len(si["pastbuy"]) != 0:
+                            si["pastbuycount"] = si["pastbuycount"] + int(order["dealcount"])
+                            si["pastbuycost"] = si["pastbuycost"] + float(order["dealamount"])
+                            si["currentbuycount"] = si["pastbuycount"]
+                            si["currentbuycost"] = si["pastbuycost"]
                 else:
                     print "error when query order for %s" % order["order_id"]
                     print qoresp.retcode, qoresp.retinfo
