@@ -462,10 +462,10 @@ class Portfolio:
         qoresp = jz.QueryOrderResp(req.session)
         qoresp.recv()
         if qoresp.retcode == "0":
-            orec["dealcount"] = qoresp.records[0][-11]
-            orec["dealamount"] = qoresp.records[0][-9]
+            orec["dealcount"] = qoresp.records[-1][-11]
+            orec["dealamount"] = qoresp.records[-1][-9]
             # dealprice may not right
-            orec["dealprice"] = qoresp.records[0][-1]
+            orec["dealprice"] = qoresp.records[-1][-1]
 
             if orec["order_state"] == Portfolio.CANCELBUYFAILED:
                 if orec["dealcount"] == orec["ordercount"]:
@@ -746,10 +746,10 @@ class Portfolio:
         qoresp = jz.QueryOrderResp(req.session)
         qoresp.recv()
         if qoresp.retcode == "0":
-            orec["dealcount"] = qoresp.records[0][-11]
-            orec["dealamount"] = qoresp.records[0][-9]
+            orec["dealcount"] = qoresp.records[-1][-11]
+            orec["dealamount"] = qoresp.records[-1][-9]
             # dealprice may not right
-            orec["dealprice"] = qoresp.records[0][-1]
+            orec["dealprice"] = qoresp.records[-1][-1]
 
             if orec["order_state"] == Portfolio.CANCELSELLFAILED:
                 if orec["dealcount"] == orec["ordercount"]:
@@ -945,14 +945,14 @@ class OrderUpdater(Thread):
                 qoresp.recv()
                 if qoresp.retcode == "0":
                     # TODO: don't know whether multi-line records case exists.
-                    order["dealcount"] = qoresp.records[0][-11]
-                    order["dealamount"] = qoresp.records[0][-9]
+                    order["dealcount"] = qoresp.records[-1][-11]
+                    order["dealamount"] = qoresp.records[-1][-9]
                     #try:
                     #    order["dealprice"] = str( float(qoresp.records[0][-9]) / float(qoresp.records[0][-11]) )
                     #except ZeroDivisionError:
                     #    order["dealprice"] = "0.00"
                     # TODO: dealprice is the average price? or last dealed price?
-                    order["dealprice"] = qoresp.records[0][-1]
+                    order["dealprice"] = qoresp.records[-1][-1]
                     #order["ordercount"] = qoresp.records[0][15]
                     # TODO: a quick patch, need refine update to pastxxx
                     #if order["ordercount"] == order["dealcount"]:

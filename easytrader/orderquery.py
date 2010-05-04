@@ -46,6 +46,7 @@ print qoreq.payload
 qoresp = jz.QueryOrderResp(s)
 qoresp.recv()
 print qoresp.sections
+print qoresp.records
 orders = []
 for r in qoresp.records:
     if r[15] == r[-11]:
