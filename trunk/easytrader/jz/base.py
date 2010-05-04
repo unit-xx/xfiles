@@ -380,3 +380,10 @@ class CancelOrderReq(request):
 
 class CancelOrderResp(response):
     pass
+
+class StockQueryReq(request):
+    code = "504"
+    paramlist = ["user_code", "account", "market", "secu_acc", "secu_code", "ext_inst"]
+
+class StockQueryResp(response):
+    pass
