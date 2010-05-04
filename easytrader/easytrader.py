@@ -228,7 +228,7 @@ class Portfolio:
                     if r["order_state"] == Portfolio.CANCELBUYSUCCESS:
                         si["pastbuycount"] = si["pastbuycount"] + int(r["dealcount"])
                         si["pastbuycost"] = si["pastbuycost"] + float(r["dealamount"])
-                for r in si["pastbuy"]:
+                for r in si["pastsell"]:
                     if r["order_state"] == Portfolio.CANCELSELLSUCCESS:
                         si["pastsellcount"] = si["pastsellcount"] + int(r["dealcount"])
                         si["pastsellgain"] = si["pastsellgain"] + float(r["dealamount"])
@@ -247,8 +247,8 @@ class Portfolio:
                             si["pastsellgain"] = si["pastsellgain"] + float(si["pastsell"][-1]["dealamount"])
                             si["currentsellcount"] = si["pastsellcount"]
                             si["currentsellgain"] = si["pastsellgain"]
-                elif len(si["pastbuy"]) != 0:
-                    if si["pastbuy"][-1]["order_state"] == Portfolio.BUYSECCESS:
+                if len(si["pastbuy"]) != 0:
+                    if si["pastbuy"][-1]["order_state"] == Portfolio.BUYSUCCESS:
                         if int(si["pastbuy"][-1]["dealcount"]) < int(si["pastbuy"][-1]["ordercount"]):
                             si["currentbuycount"] = si["pastbuycount"] + int(si["pastbuy"][-1]["dealcount"])
                             si["currentbuycost"] = si["pastbuycost"] + float(si["pastbuy"][-1]["dealcount"])
@@ -528,8 +528,8 @@ class Portfolio:
             reqclass = jz.SubmitOrderReq
             respclass = jz.SubmitOrderResp
             trdcode = "0S"
-            self.bocount = 0
             self.bostate = Portfolio.BOSELLING
+            self.bocount = 0
             for scode in self.stocklist:
                 si = self.stockinfo[scode]
                 orec = si["pastbuy"][-1]
@@ -581,7 +581,6 @@ class Portfolio:
             reqclass = jz.SubmitOrderReq
             respclass = jz.SubmitOrderResp
             trdcode = "0S"
-            self.bocount = 0
             self.bostate = Portfolio.BOSELLING
             for scode in self.stocklist:
                 si = self.stockinfo[scode]
@@ -615,11 +614,13 @@ class Portfolio:
             reqclass = jz.SubmitOrderReq
             respclass = jz.SubmitOrderResp
             trdcode = "0S"
-            self.bocount = 0
             self.bostate = Portfolio.BOSELLING
             for scode in self.stocklist:
                 si = self.stockinfo[scode]
-                orec = si["pastsell"][-1]
+                try:
+                    orec = si["pastsell"][-1]
+                except IndexError:
+                    continue
                 if orec["order_state"] == Portfolio.CANCELSELLSUCCESS:
                     # DO sell
                     self.bocount = self.bocount + 1
@@ -691,7 +692,10 @@ class Portfolio:
             for scode in self.stocklist:
                 # only cancel (SELLSUCCESS and dealcount < ordercount) orders
                 si = self.stockinfo[scode]
-                orec = si["pastsell"][-1]
+                try:
+                    orec = si["pastsell"][-1]
+                except IndexError:
+                    continue
                 if orec["order_state"] == Portfolio.SELLSUCCESS and int(orec["dealcount"]) < int(orec["ordercount"]):
                     self.bocount = self.bocount + 1
                     param = {}
@@ -705,12 +709,13 @@ class Portfolio:
                     param["secu_code"] = self.stockinfo[scode]["code"]
                     self.tqueue.put( (reqclass, respclass, param, self.cancelSellBatchBottom, True) )
 
+            if self.bocount == 0:
+                print "no stock to cancel selling"
+                self.bostate = Portfolio.BOSELLCANCELED
+
         else:
             print "not in sell cancel-able state"
 
-        if self.bocount == 0:
-            print "no stock to cancel selling"
-            self.bostate = Portfolio.BOSELLCANCELED
         self.bolock.release()
 
     cancelSellBatch = cancelSellBatchTop
