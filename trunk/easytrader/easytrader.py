@@ -29,7 +29,12 @@ class PortfolioModel(QAbstractTableModel):
 
     def headerData(self, section, orientation, role):
         if orientation == Qt.Horizontal and role == Qt.DisplayRole:
-            return QVariant(self.portfolio.stockmodelattr[section])
+            hname = self.portfolio.stockmodelattr[section]
+            try:
+                hname = self.portfolio.stockattrnamemap[hname]
+            except KeyError:
+                pass
+            return QVariant(hname)
         if orientation == Qt.Vertical and role == Qt.DisplayRole:
             return QVariant(str(section + 1))
         return QVariant()
@@ -80,7 +85,7 @@ class OrderRecord:
     def __repr__(self):
         return repr(self.data)
 
-class Portfolio:
+class Portfolio(object):
 
     # stock states can be:
     INVALID = "INVALID"
@@ -99,15 +104,15 @@ class Portfolio:
 
 
     # batch operation status
-    BOUNORDERED = "BOUNORDERED"
-    BOBUYING = "BOBUYING"
-    BOBUYSUCCESS = "BOBUYSUCCESS"
-    BOBUYCANCELING = "BOBUYCANCELING"
-    BOBUYCANCELED = "BOBUYCANCELED"
-    BOSELLING = "BOSELLING"
-    BOSELLSUCCESS = "BOSELLSUCCESS"
-    BOSELLCANCELING = "BOSELLCANCELING"
-    BOSELLCANCELED = "BOSELLCANCELED"
+    BOUNORDERED = u"未委托"
+    BOBUYING = u"正在买入"
+    BOBUYSUCCESS = u"买入成功"
+    BOBUYCANCELING = u"正在撤销买入"
+    BOBUYCANCELED = u"买入已撤单"
+    BOSELLING = u"正在卖出"
+    BOSELLSUCCESS = u"卖出成功"
+    BOSELLCANCELING = u"正在撤销卖出"
+    BOSELLCANCELED = u"卖出已撤单"
 
     def __init__(self, ptfn, sessioncfg, tqueue):
         self.session = jz.session(sessioncfg)
@@ -137,15 +142,6 @@ class Portfolio:
                 # prices, update timely from dbf
                 "latestprice", "tobuyprice", "tosellprice"]
 
-        # TODO: can be removed in face of OrderRecord class
-        self.buyattr = [
-                # current (last) buy specific fields
-                "order_id", "order_state", "order_date", "order_time",
-                "ordercount", "orderprice", "dealcount", "dealamount", # use amount as the money paid/gained
-                "dealprice", "cancel_date", "cancel_time"]
-        # assume buyattr is general enough 
-        self.sellattr = self.buyattr
-
         # use market+stock number as key, dict of dict
         self.stockinfo = {}
 
@@ -155,9 +151,20 @@ class Portfolio:
                 #"dealprice", "latestprice", "order_date", "order_time",
                 "latestprice", "tobuyprice", "tosellprice",
                 "currentbuycount", "currentbuycost", "currentsellcount", "currentsellgain"]
-        # TODO: really need this assertion? how about derived attr
-        # assert(set(self.stockmodelattr) <= set(self.stockattr+self.orderattr))
 
+        self.stockattrnamemap = {
+                "count":u"数量",
+                "market":u"市场",
+                "code":u"代码",
+                "name":u"名称",
+                "latestprice":u"最新价",
+                "tobuyprice":u"建仓价",
+                "tosellprice":u"平仓价",
+                "currentbuycount":u"买入量",
+                "currentbuycost":u"买入成本",
+                "currentsellcount":u"卖出量",
+                "currentsellgain":u"卖出获利"
+                }
         # price policies
         self.pricepolicylist = ["latest", "s5", "s4", "s3", "s2", "s1", "b1", "b2", "b3", "b4", "b5"]
         self.buypolicy = "s5"
@@ -174,6 +181,22 @@ class Portfolio:
                 "b4":u"买四",
                 "b5":u"买五"
                 }
+
+        # make bostate as property
+        self._bostate = Portfolio.BOUNORDERED
+
+    def getbostate(self):
+        return self._bostate
+
+    def setbostate(self, value):
+        self._bostate = value
+        try:
+            # when Portfolio is being setup at initialization, it doesn't have uic attribute
+            self.uic.showbostate()
+        except AttributeError:
+            pass
+
+    bostate = property(getbostate, setbostate)
 
     def __del__(self):
         self.session.close()
@@ -195,7 +218,7 @@ class Portfolio:
         for i in reader:
             assert(i[0] in ("BO", "SH", "SZ"))
             if i[0] == "BO":
-                self.bostate = i[1]
+                self.bostate = i[1].decode("utf-8")
             else:
                 scode = i[0].upper() + i[1]
                 self.stocklist.append(scode)
@@ -272,7 +295,7 @@ class Portfolio:
             si = self.stockinfo[scode]
             writer.writerow([si["market"], si["code"], si["count"], repr(si["pastbuy"]), repr(si["pastsell"])])
         # portfolio state as a batch
-        writer.writerow(["BO", self.bostate])
+        writer.writerow(["BO", self.bostate.encode("utf-8")])
         f.flush()
         f.close()
 
@@ -357,6 +380,10 @@ class Portfolio:
                     param["price"] = orec["orderprice"]
                     param["qty"] = orec["ordercount"]
                     self.tqueue.put( (reqclass, respclass, param, self.buyBatchBottom, True) )
+
+            if self.bocount == 0:
+                print "not stock to buy."
+                self.bostate = Portfolio.BOBUYCANCELED
 
         else:
             print "not in buy-able state"
@@ -496,6 +523,7 @@ class Portfolio:
         self.bolock.acquire()
         print "batch selling"
 
+        self.bocount = 0
         if self.bostate == Portfolio.BOBUYSUCCESS:
             # only succeed when all buysuccess stocks are 100% buyed
             allbought = True
@@ -529,7 +557,6 @@ class Portfolio:
             respclass = jz.SubmitOrderResp
             trdcode = "0S"
             self.bostate = Portfolio.BOSELLING
-            self.bocount = 0
             for scode in self.stocklist:
                 si = self.stockinfo[scode]
                 orec = si["pastbuy"][-1]
@@ -556,6 +583,9 @@ class Portfolio:
                     param["price"] = orec["orderprice"]
                     param["qty"] = orec["ordercount"]
                     self.tqueue.put( (reqclass, respclass, param, self.sellBatchBottom, True) )
+            if self.bocount == 0:
+                print "no stock to sell"
+                self.bostate = Portfolio.BOBUYSUCCESS
 
         elif self.bostate == Portfolio.BOBUYCANCELED:
             # sell stocks in CANCELBUYSUCCESS state and (BUYSUCCESS and 100% buy) state.
@@ -608,6 +638,9 @@ class Portfolio:
                     param["price"] = orec["orderprice"]
                     param["qty"] = orec["ordercount"]
                     self.tqueue.put( (reqclass, respclass, param, self.sellBatchBottom, True) )
+            if self.bocount == 0:
+                print "no stock to sell"
+                self.bostate = Portfolio.BOBUYCANCELED
 
         elif self.bostate == Portfolio.BOSELLCANCELED:
             # At this point, pastsellxxx should be updated correctly.
@@ -644,12 +677,12 @@ class Portfolio:
                     param["price"] = orec["orderprice"]
                     param["qty"] = orec["ordercount"]
                     self.tqueue.put( (reqclass, respclass, param, self.sellBatchBottom, True) )
+            if self.bocount == 0:
+                print "no stock to sell"
+                self.bostate = Portfolio.BOSELLCANCELED
         else:
             print "not in sell-able state"
 
-        if self.bocount == 0:
-            print "no stock to sell"
-            self.bostate = Portfolio.BOSELLSUCCESS
         self.bolock.release()
 
     sellBatch = sellBatchTop
@@ -779,15 +812,6 @@ class Portfolio:
             self.bostate = Portfolio.BOSELLCANCELED
             print "batch sell canceled"
         self.bolock.release()
-
-    def buybatch(self):
-        self.buyBatch()
-
-    def setbuypricepolicy(self, pindex):
-        self.buypolicy = self.pricepolicylist[pindex]
-
-    def setsellpricepolicy(self, pindex):
-        self.sellpolicy = self.pricepolicylist[pindex]
 
 class PortfolioUpdater(Thread):
     def __init__(self, shdbfn, shmapfn, szdbfn, szmapfn, portfolio, portmodel):
@@ -1059,6 +1083,62 @@ class jzWorker(Thread):
     def stop(self):
         self.runflag = False
 
+class uicontrol(Ui_MainWindow):
+    def __init__(self, mainwindow, portfolio, pmodel):
+        self.mainwindow = mainwindow
+        self.portfolio = portfolio
+        self.pmodel = pmodel
+
+        self.portfolio.uic = self
+
+    def setup(self):
+        self.setupUi(self.mainwindow)
+
+        # setup stock info model
+        self.stock.setModel(self.pmodel)
+
+        # setup price combobox
+        for price in self.portfolio.pricepolicylist:
+            self.pricepolicybuy.addItem(self.portfolio.pricepolicynamemap[price])
+            self.pricepolicysell.addItem(self.portfolio.pricepolicynamemap[price])
+        self.pricepolicybuy.setCurrentIndex(self.portfolio.pricepolicylist.index(self.portfolio.buypolicy))
+        self.pricepolicysell.setCurrentIndex(self.portfolio.pricepolicylist.index(self.portfolio.sellpolicy))
+        self.mainwindow.connect(self.pricepolicybuy, SIGNAL("currentIndexChanged(int)"), self.setbuypricepolicy)
+        self.mainwindow.connect(self.pricepolicysell, SIGNAL("currentIndexChanged(int)"), self.setsellpricepolicy)
+
+        # setup batch order push button
+        self.mainwindow.connect(self.buyorder, SIGNAL("clicked()"), self.buyBatch)
+        self.mainwindow.connect(self.cancelbuyorder, SIGNAL("clicked()"), self.cancelBuyBatch)
+        self.mainwindow.connect(self.sellorder, SIGNAL("clicked()"), self.sellBatch)
+        self.mainwindow.connect(self.cancelsellorder, SIGNAL("clicked()"), self.cancelSellBatch)
+        self.mainwindow.connect(self.saveorder_2, SIGNAL("clicked()"), self.savePortfolio)
+        self.mainwindow.connect(self.saveorder, SIGNAL("clicked()"), self.savePortfolio)
+
+    def buyBatch(self):
+        self.portfolio.buyBatch()
+
+    def cancelBuyBatch(self):
+        self.portfolio.cancelBuyBatch()
+
+    def sellBatch(self):
+        self.portfolio.sellBatch()
+
+    def cancelSellBatch(self):
+        self.portfolio.cancelSellBatch()
+
+    def savePortfolio(self):
+        self.portfolio.savePortfolio()
+
+    def setbuypricepolicy(self, pindex):
+        self.portfolio.buypolicy = self.portfolio.pricepolicylist[pindex]
+
+    def setsellpricepolicy(self, pindex):
+        self.portfolio.sellpolicy = self.portfolio.pricepolicylist[pindex]
+
+    def showbostate(self):
+        self.statusbar.clearMessage()
+        self.statusbar.showMessage(u"组合状态: " + self.portfolio.bostate)
+
 def testslot(t):
     print t
 
@@ -1114,19 +1194,15 @@ def main(args):
         sys.exit(1)
     testsession.close()
 
-    window = QMainWindow()
-    ui = Ui_MainWindow()
-    ui.setupUi(window)
-
     shdbfn = "x:\\show2003.dbf"
     szdbfn = "x:\\sjshq.dbf"
     shmapfn = "shmap.pkl"
     szmapfn = "szmap.pkl"
     if not verifymap(shdbfn, shmapfn, "S1"):
-        print "Stock map file error."
+        print "SH stock map file error."
         sys.exit(1)
     if not verifymap(szdbfn, szmapfn, "HQZQDM"):
-        print "Stock map file error."
+        print "SZ stock map file error."
         sys.exit(1)
     #portfoliofn = "hs300.txt"
     portfoliofn = unicode(QFileDialog.getOpenFileName(None, u"选择投资组合", "./portfolio", "*.ptf"))
@@ -1141,7 +1217,14 @@ def main(args):
 
     # setup portfolio model for showing in table
     pmodel = PortfolioModel(p)
-    ui.stock.setModel(pmodel)
+
+    # run the portfolio updater
+    pupdater = PortfolioUpdater(shdbfn, shmapfn, szdbfn, szmapfn, p, pmodel)
+    pupdater.start()
+
+    # run the order info updater
+    orderupdater = OrderUpdater(p, pmodel, session_config)
+    orderupdater.start()
 
     # setup and run jzWorker threads
     jzWorkerNum = 10
@@ -1153,33 +1236,15 @@ def main(args):
     for i in range(jzWorkerNum):
         workers[i].start()
 
-    # run the portfolio updater
-    pupdater = PortfolioUpdater(shdbfn, shmapfn, szdbfn, szmapfn, p, pmodel)
-    pupdater.start()
-
-    # run the order info updater
-    orderupdater = OrderUpdater(p, pmodel, session_config)
-    orderupdater.start()
-
-    # setup price combobox
-    for price in p.pricepolicylist:
-        ui.pricepolicybuy.addItem(p.pricepolicynamemap[price])
-        ui.pricepolicysell.addItem(p.pricepolicynamemap[price])
-    ui.pricepolicybuy.setCurrentIndex(p.pricepolicylist.index(p.buypolicy))
-    ui.pricepolicysell.setCurrentIndex(p.pricepolicylist.index(p.sellpolicy))
-    window.connect(ui.pricepolicybuy, SIGNAL("currentIndexChanged(int)"), p.setbuypricepolicy)
-    window.connect(ui.pricepolicysell, SIGNAL("currentIndexChanged(int)"), p.setsellpricepolicy)
-
-    # setup batch order push button
-    window.connect(ui.buyorder, SIGNAL("clicked()"), p.buyBatch)
-    window.connect(ui.cancelbuyorder, SIGNAL("clicked()"), p.cancelBuyBatch)
-    window.connect(ui.sellorder, SIGNAL("clicked()"), p.sellBatch)
-    window.connect(ui.cancelsellorder, SIGNAL("clicked()"), p.cancelSellBatch)
-    window.connect(ui.saveorder_2, SIGNAL("clicked()"), p.savePortfolio)
-    window.connect(ui.saveorder, SIGNAL("clicked()"), p.savePortfolio)
+    # main window
+    window = QMainWindow()
+    uic = uicontrol(window, p, pmodel)
+    uic.setup()
 
     window.show()
     app.exec_()
+
+    # exit process
     print "notify updater threads to stop."
     pupdater.stop()
     orderupdater.stop()
