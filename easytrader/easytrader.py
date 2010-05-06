@@ -40,7 +40,6 @@ class PortfolioModel(QAbstractTableModel):
         return QVariant()
 
     def data(self, index, role):
-        # TODO: add order specific info
         if not index.isValid():
             return QVariant()
         elif role != Qt.DisplayRole:
@@ -48,7 +47,10 @@ class PortfolioModel(QAbstractTableModel):
         rowkey = self.portfolio.stocklist[index.row()]
         columnkey = self.portfolio.stockmodelattr[index.column()]
         try:
-            celldata = self.portfolio.stockinfo[rowkey][columnkey]
+            rawdata = self.portfolio.stockinfo[rowkey][columnkey]
+            if not isinstance(rawdata, unicode):# expect rawdata as numbers here
+                rawdata = str(rawdata)
+            celldata = QString(rawdata)
             return QVariant(celldata)
         except KeyError:
             return QVariant()
@@ -182,7 +184,6 @@ class Portfolio(object):
                 "b5":u"买五"
                 }
 
-        # make bostate as property
         self._bostate = Portfolio.BOUNORDERED
 
     def getbostate(self):
@@ -196,6 +197,7 @@ class Portfolio(object):
         except AttributeError:
             pass
 
+    # make bostate as property
     bostate = property(getbostate, setbostate)
 
     def __del__(self):
@@ -489,13 +491,14 @@ class Portfolio(object):
         qoresp = jz.QueryOrderResp(req.session)
         qoresp.recv()
         if qoresp.retcode == "0":
-            orec["dealcount"] = qoresp.records[-1][-11]
-            orec["dealamount"] = qoresp.records[-1][-9]
-            # dealprice may not right
-            orec["dealprice"] = qoresp.records[-1][-1]
+            # NOTE: the following update is left to OrderUpdater, otherwise
+            #orec["dealcount"] = qoresp.records[-1][-11]
+            #orec["dealamount"] = qoresp.records[-1][-9]
+            #orec["dealprice"] = qoresp.records[-1][-1]
 
+            dealcount = qoresp.records[-1][-11]
             if orec["order_state"] == Portfolio.CANCELBUYFAILED:
-                if orec["dealcount"] == orec["ordercount"]:
+                if dealcount == orec["ordercount"]:
                     #assert int(si["count"]) == si["pastbuycount"] + int(orec["dealcount"])
                     orec["order_state"] = Portfolio.BUYSUCCESS
                 else:
@@ -504,13 +507,14 @@ class Portfolio(object):
         else:
             assert False, "error when update order for %s (%s:%s)" % (si["order_id"], qoresp.retcode, qoresp.retinfo)
 
+        # NOTE: the following update is left to OrderUpdater, otherwise
         # update pastbuyxxx
-        if orec["order_state"] in (Portfolio.BUYSUCCESS, Portfolio.CANCELBUYSUCCESS):
-            # stock in Portfolio.BUYSUCCESS here is the one that's CANCELBUYFAILED
-            si["pastbuycount"] = si["pastbuycount"] + int(orec["dealcount"])
-            si["pastbuycost"] = si["pastbuycost"] + float(orec["dealamount"])
-            si["currentbuycount"] = si["pastbuycount"]
-            si["currentbuycost"] = si["pastbuycost"]
+        #if orec["order_state"] in (Portfolio.BUYSUCCESS, Portfolio.CANCELBUYSUCCESS):
+        #    # stock in Portfolio.BUYSUCCESS here is the one that's CANCELBUYFAILED
+        #    si["pastbuycount"] = si["pastbuycount"] + int(orec["dealcount"])
+        #    si["pastbuycost"] = si["pastbuycost"] + float(orec["dealamount"])
+        #    si["currentbuycount"] = si["pastbuycount"]
+        #    si["currentbuycost"] = si["pastbuycost"]
 
         self.bolock.acquire()
         self.bocount = self.bocount - 1
@@ -523,7 +527,6 @@ class Portfolio(object):
         self.bolock.acquire()
         print "batch selling"
 
-        self.bocount = 0
         if self.bostate == Portfolio.BOBUYSUCCESS:
             # only succeed when all buysuccess stocks are 100% buyed
             allbought = True
@@ -557,6 +560,7 @@ class Portfolio(object):
             respclass = jz.SubmitOrderResp
             trdcode = "0S"
             self.bostate = Portfolio.BOSELLING
+            self.bocount = 0
             for scode in self.stocklist:
                 si = self.stockinfo[scode]
                 orec = si["pastbuy"][-1]
@@ -612,6 +616,7 @@ class Portfolio(object):
             respclass = jz.SubmitOrderResp
             trdcode = "0S"
             self.bostate = Portfolio.BOSELLING
+            self.bocount = 0
             for scode in self.stocklist:
                 si = self.stockinfo[scode]
                 orec = si["pastbuy"][-1]
@@ -648,6 +653,7 @@ class Portfolio(object):
             respclass = jz.SubmitOrderResp
             trdcode = "0S"
             self.bostate = Portfolio.BOSELLING
+            self.bocount = 0
             for scode in self.stocklist:
                 si = self.stockinfo[scode]
                 try:
@@ -744,7 +750,7 @@ class Portfolio(object):
 
             if self.bocount == 0:
                 print "no stock to cancel selling"
-                self.bostate = Portfolio.BOSELLCANCELED
+                self.bostate = Portfolio.BOSELLSUCCESS
 
         else:
             print "not in sell cancel-able state"
@@ -784,13 +790,14 @@ class Portfolio(object):
         qoresp = jz.QueryOrderResp(req.session)
         qoresp.recv()
         if qoresp.retcode == "0":
-            orec["dealcount"] = qoresp.records[-1][-11]
-            orec["dealamount"] = qoresp.records[-1][-9]
-            # dealprice may not right
-            orec["dealprice"] = qoresp.records[-1][-1]
+            # NOTE: the following update is left to OrderUpdater, otherwise
+            #orec["dealcount"] = qoresp.records[-1][-11]
+            #orec["dealamount"] = qoresp.records[-1][-9]
+            #orec["dealprice"] = qoresp.records[-1][-1]
+            dealcount = qoresp.records[-1][-11]
 
             if orec["order_state"] == Portfolio.CANCELSELLFAILED:
-                if orec["dealcount"] == orec["ordercount"]:
+                if dealcount == orec["ordercount"]:
                     # TODO: race condition here. also at cancel buy
                     #assert si["pastbuycount"] == si["pastsellcount"] + int(orec["dealcount"])
                     orec["order_state"] = Portfolio.SELLSUCCESS
@@ -799,12 +806,13 @@ class Portfolio(object):
         else:
             assert False, "error when update order for %s (%s:%s)" % (si["order_id"], qoresp.retcode, qoresp.retinfo)
 
+        # NOTE: the following update is left to OrderUpdater, otherwise
         # update pastsellxxx
-        if orec["order_state"] in (Portfolio.SELLSUCCESS, Portfolio.CANCELSELLSUCCESS):
-            si["pastsellcount"] = si["pastsellcount"] + int(orec["dealcount"])
-            si["pastsellgain"] = si["pastsellgain"] + float(orec["dealamount"])
-            si["currentsellcount"] = si["pastsellcount"]
-            si["currentsellgain"] = si["pastsellgain"]
+        #if orec["order_state"] in (Portfolio.SELLSUCCESS, Portfolio.CANCELSELLSUCCESS):
+        #    si["pastsellcount"] = si["pastsellcount"] + int(orec["dealcount"])
+        #    si["pastsellgain"] = si["pastsellgain"] + float(orec["dealamount"])
+        #    si["currentsellcount"] = si["pastsellcount"]
+        #    si["currentsellgain"] = si["pastsellgain"]
 
         self.bolock.acquire()
         self.bocount = self.bocount - 1
@@ -923,10 +931,11 @@ class PortfolioUpdater(Thread):
                 stockinfo["tobuyprice"] = self.getpricesz(rec, self.portfolio.buypolicy)
                 stockinfo["tosellprice"] = self.getpricesz(rec, self.portfolio.sellpolicy)
 
-        self.portmodel.emit(SIGNAL("dataChanged(QModelIndex,QModelIndex)"),
-                self.portmodel.index(0,0), self.portmodel.index(
-                    len(self.portfolio.stockinfo)-1,
-                    len(self.portfolio.stockmodelattr)-1))
+            # update a row
+            rowindex = self.portfolio.stocklist.index(scode)
+            self.portmodel.emit(SIGNAL("dataChanged(QModelIndex,QModelIndex)"),
+                    self.portmodel.index(rowindex,0),
+                    self.portmodel.index(rowindex, len(self.portfolio.stockmodelattr)-1))
 
     def stop(self):
         self.runflag = False
@@ -1014,10 +1023,11 @@ class OrderUpdater(Thread):
                     print "error when query order for %s" % order["order_id"]
                     print qoresp.retcode, qoresp.retinfo
 
-        self.portmodel.emit(SIGNAL("dataChanged(QModelIndex,QModelIndex)"),
-                self.portmodel.index(0,0), self.portmodel.index(
-                    len(self.portfolio.stockinfo)-1,
-                    len(self.portfolio.stockmodelattr)-1))
+            # update a row
+            rowindex = self.portfolio.stocklist.index(scode)
+            self.portmodel.emit(SIGNAL("dataChanged(QModelIndex,QModelIndex)"),
+                    self.portmodel.index(rowindex,0),
+                    self.portmodel.index(rowindex, len(self.portfolio.stockmodelattr)-1))
 
     def stop(self):
         self.runflag = False
@@ -1114,6 +1124,9 @@ class uicontrol(Ui_MainWindow):
         self.mainwindow.connect(self.saveorder_2, SIGNAL("clicked()"), self.savePortfolio)
         self.mainwindow.connect(self.saveorder, SIGNAL("clicked()"), self.savePortfolio)
 
+        # update statusbar
+        self.showbostate()
+
     def buyBatch(self):
         self.portfolio.buyBatch()
 
@@ -1137,7 +1150,7 @@ class uicontrol(Ui_MainWindow):
 
     def showbostate(self):
         self.statusbar.clearMessage()
-        self.statusbar.showMessage(u"组合状态: " + self.portfolio.bostate)
+        self.statusbar.showMessage(QString(u"组合状态: " + self.portfolio.bostate))
 
 def testslot(t):
     print t
