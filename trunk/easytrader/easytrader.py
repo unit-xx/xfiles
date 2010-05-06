@@ -12,6 +12,7 @@ from datetime import datetime
 
 import jz
 from dbfpy import dbf
+from PyQt4 import Qt
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 from tradeui import Ui_MainWindow
@@ -54,6 +55,12 @@ class PortfolioModel(QAbstractTableModel):
             return QVariant(celldata)
         except KeyError:
             return QVariant()
+
+    @pyqtSlot(int)
+    def updaterow(self, rowindex):
+        self.emit(SIGNAL("dataChanged(QModelIndex,QModelIndex)"),
+                self.index(rowindex,0),
+                self.index(rowindex, len(self.portfolio.stockmodelattr)-1))
 
 class OrderRecord:
     orattr = [
@@ -189,6 +196,7 @@ class Portfolio(object):
     def getbostate(self):
         return self._bostate
 
+    @pyqtSlot()
     def setbostate(self, value):
         self._bostate = value
         try:
@@ -286,20 +294,20 @@ class Portfolio(object):
         self.stockset = set(self.stocklist)
 
     def savePortfolio(self, ptfn=None):
-        # TODO: alert user if portfolio is in buying/selling state
-        if ptfn == None:
-            f = open(self.ptfn, "wb")
-        else:
-            f = open(ptfn, "wb")
-        writer = csv.writer(f)
+        with self.bolock:
+            if ptfn == None:
+                f = open(self.ptfn, "wb")
+            else:
+                f = open(ptfn, "wb")
+            writer = csv.writer(f)
 
-        for scode in self.stocklist:
-            si = self.stockinfo[scode]
-            writer.writerow([si["market"], si["code"], si["count"], repr(si["pastbuy"]), repr(si["pastsell"])])
-        # portfolio state as a batch
-        writer.writerow(["BO", self.bostate.encode("utf-8")])
-        f.flush()
-        f.close()
+            for scode in self.stocklist:
+                si = self.stockinfo[scode]
+                writer.writerow([si["market"], si["code"], si["count"], repr(si["pastbuy"]), repr(si["pastsell"])])
+            # portfolio state as a batch
+            writer.writerow(["BO", self.bostate.encode("utf-8")])
+            f.flush()
+            f.close()
 
     def buyBatchTop(self):
         self.bolock.acquire()
@@ -911,31 +919,39 @@ class PortfolioUpdater(Thread):
         szmap = self.szmap
 
         for scode in self.portfolio.stocklist:
-            stockinfo = self.portfolio.stockinfo[scode]
-            if stockinfo["market"] == "SH":
-                rec = dbsh[shmap[scode]]
-                for f in self.shdbfield:
-                    if type(rec[f]) is types.StringType:
-                        stockinfo[self.shdbmapping[f]] = rec[f].decode("GBK")
-                    else:
-                        stockinfo[self.shdbmapping[f]] = rec[f]
-                stockinfo["tobuyprice"] = self.getpricesh(rec, self.portfolio.buypolicy)
-                stockinfo["tosellprice"] = self.getpricesh(rec, self.portfolio.sellpolicy)
-            elif stockinfo["market"] == "SZ":
-                rec = dbsz[szmap[scode]]
-                for f in self.szdbfield:
-                    if type(rec[f]) is types.StringType:
-                        stockinfo[self.szdbmapping[f]] = rec[f].decode("GBK")
-                    else:
-                        stockinfo[self.szdbmapping[f]] = rec[f]
-                stockinfo["tobuyprice"] = self.getpricesz(rec, self.portfolio.buypolicy)
-                stockinfo["tosellprice"] = self.getpricesz(rec, self.portfolio.sellpolicy)
+            with self.portfolio.bolock:
+                stockinfo = self.portfolio.stockinfo[scode]
+                if stockinfo["market"] == "SH":
+                    rec = dbsh[shmap[scode]]
+                    for f in self.shdbfield:
+                        if type(rec[f]) is types.StringType:
+                            stockinfo[self.shdbmapping[f]] = rec[f].decode("GBK")
+                        else:
+                            stockinfo[self.shdbmapping[f]] = rec[f]
+                    stockinfo["tobuyprice"] = self.getpricesh(rec, self.portfolio.buypolicy)
+                    stockinfo["tosellprice"] = self.getpricesh(rec, self.portfolio.sellpolicy)
+                elif stockinfo["market"] == "SZ":
+                    rec = dbsz[szmap[scode]]
+                    for f in self.szdbfield:
+                        if type(rec[f]) is types.StringType:
+                            stockinfo[self.szdbmapping[f]] = rec[f].decode("GBK")
+                        else:
+                            stockinfo[self.szdbmapping[f]] = rec[f]
+                    stockinfo["tobuyprice"] = self.getpricesz(rec, self.portfolio.buypolicy)
+                    stockinfo["tosellprice"] = self.getpricesz(rec, self.portfolio.sellpolicy)
 
-            # update a row
-            rowindex = self.portfolio.stocklist.index(scode)
-            self.portmodel.emit(SIGNAL("dataChanged(QModelIndex,QModelIndex)"),
-                    self.portmodel.index(rowindex,0),
-                    self.portmodel.index(rowindex, len(self.portfolio.stockmodelattr)-1))
+                # update a row
+                rowindex = self.portfolio.stocklist.index(scode)
+                QMetaObject.invokeMethod(self.portmodel, "updaterow", Qt.QueuedConnection,
+                        Q_ARG("int", rowindex))
+                #QMetaObject.invokeMethod(self.portmodel, "emit", Qt.QueuedConnection,
+                #        Q_ARG(pyqtSignal, SIGNAL("dataChanged(QModelIndex,QModelIndex)")),
+                #        Q_ARG(QModelIndex, self.portmodel.index(rowindex,0)),
+                #        Q_ARG(QModelIndex, self.portmodel.index(rowindex, len(self.portfolio.stockmodelattr)-1)))
+
+                #self.portmodel.emit(SIGNAL("dataChanged(QModelIndex,QModelIndex)"),
+                #        self.portmodel.index(rowindex,0),
+                #        self.portmodel.index(rowindex, len(self.portfolio.stockmodelattr)-1))
 
     def stop(self):
         self.runflag = False
@@ -961,73 +977,77 @@ class OrderUpdater(Thread):
 
     def update(self):
         for scode in self.portfolio.stocklist:
-            si = self.portfolio.stockinfo[scode]
-            # don't update buy if selled
-            if len(si["pastsell"]) != 0:
-                order = si["pastsell"][-1]
-            elif len(si["pastbuy"]) != 0:
-                order = si["pastbuy"][-1]
-            else:
-                continue
-
-            if order["order_id"] != "" and order["order_state"] in (Portfolio.BUYSUCCESS, Portfolio.SELLSUCCESS) and int(order["dealcount"]) < int(order["ordercount"]):
-                qoreq = jz.QueryOrderReq(self.session)
-                qoreq["begin_date"] = order["order_date"]
-                qoreq["end_date"] = order["order_date"]
-                qoreq["get_orders_mode"] = "0" # all submissions
-                qoreq["user_code"] = self.session["user_code"]
-                # a bug in protocol/document results in next odd line
-                qoreq["biz_no"] = order["order_id"]
-                qoreq.send()
-                qoresp = jz.QueryOrderResp(self.session)
-                qoresp.recv()
-                if qoresp.retcode == "0":
-                    # TODO: don't know whether multi-line records case exists.
-                    order["dealcount"] = qoresp.records[-1][-11]
-                    order["dealamount"] = qoresp.records[-1][-9]
-                    #try:
-                    #    order["dealprice"] = str( float(qoresp.records[0][-9]) / float(qoresp.records[0][-11]) )
-                    #except ZeroDivisionError:
-                    #    order["dealprice"] = "0.00"
-                    # TODO: dealprice is the average price? or last dealed price?
-                    order["dealprice"] = qoresp.records[-1][-1]
-                    #order["ordercount"] = qoresp.records[0][15]
-                    # TODO: a quick patch, need refine update to pastxxx
-                    #if order["ordercount"] == order["dealcount"]:
-                    #    if len(si["pastsell"]) != 0:
-                    #        si["pastsellcount"] = si["pastsellcount"] + int(order["dealcount"])
-                    #        si["pastsellgain"] = si["pastsellgain"] + float(order["dealamount"])
-                    #    else:
-                    #        si["pastbuycount"] = si["pastbuycount"] + int(order["dealcount"])
-                    #        si["pastbuycost"] = si["pastbuycost"] + float(order["dealamount"])
-                    if int(order["dealcount"]) < int(order["ordercount"]):
-                        # update pastxxx and currentxxx
-                        if len(si["pastsell"]) != 0:
-                            si["currentsellcount"] = si["pastsellcount"] + int(order["dealcount"])
-                            si["currentsellgain"] = si["pastsellgain"] + float(order["dealamount"])
-                        elif len(si["pastbuy"]) != 0:
-                            si["currentbuycount"] = si["pastbuycount"] + int(order["dealcount"])
-                            si["currentbuycost"] = si["pastbuycost"] + float(order["dealamount"])
-                    else: # int(order["dealcount"]) == int(order["ordercount"])
-                        if len(si["pastsell"]) != 0:
-                            si["pastsellcount"] = si["pastsellcount"] + int(order["dealcount"])
-                            si["pastsellgain"] = si["pastsellgain"] + float(order["dealamount"])
-                            si["currentsellcount"] = si["pastsellcount"]
-                            si["currentsellgain"] = si["pastsellgain"]
-                        elif len(si["pastbuy"]) != 0:
-                            si["pastbuycount"] = si["pastbuycount"] + int(order["dealcount"])
-                            si["pastbuycost"] = si["pastbuycost"] + float(order["dealamount"])
-                            si["currentbuycount"] = si["pastbuycount"]
-                            si["currentbuycost"] = si["pastbuycost"]
+            with self.portfolio.bolock:
+                si = self.portfolio.stockinfo[scode]
+                # don't update buy if selled
+                if len(si["pastsell"]) != 0:
+                    order = si["pastsell"][-1]
+                elif len(si["pastbuy"]) != 0:
+                    order = si["pastbuy"][-1]
                 else:
-                    print "error when query order for %s" % order["order_id"]
-                    print qoresp.retcode, qoresp.retinfo
+                    continue
 
-            # update a row
-            rowindex = self.portfolio.stocklist.index(scode)
-            self.portmodel.emit(SIGNAL("dataChanged(QModelIndex,QModelIndex)"),
-                    self.portmodel.index(rowindex,0),
-                    self.portmodel.index(rowindex, len(self.portfolio.stockmodelattr)-1))
+                if order["order_id"] != "" and order["order_state"] in (Portfolio.BUYSUCCESS, Portfolio.SELLSUCCESS) and int(order["dealcount"]) < int(order["ordercount"]):
+                    qoreq = jz.QueryOrderReq(self.session)
+                    qoreq["begin_date"] = order["order_date"]
+                    qoreq["end_date"] = order["order_date"]
+                    qoreq["get_orders_mode"] = "0" # all submissions
+                    qoreq["user_code"] = self.session["user_code"]
+                    # a bug in protocol/document results in next odd line
+                    qoreq["biz_no"] = order["order_id"]
+                    qoreq.send()
+                    qoresp = jz.QueryOrderResp(self.session)
+                    qoresp.recv()
+                    if qoresp.retcode == "0":
+                        # TODO: don't know whether multi-line records case exists.
+                        order["dealcount"] = qoresp.records[-1][-11]
+                        order["dealamount"] = qoresp.records[-1][-9]
+                        #try:
+                        #    order["dealprice"] = str( float(qoresp.records[0][-9]) / float(qoresp.records[0][-11]) )
+                        #except ZeroDivisionError:
+                        #    order["dealprice"] = "0.00"
+                        # TODO: dealprice is the average price? or last dealed price?
+                        order["dealprice"] = qoresp.records[-1][-1]
+                        #order["ordercount"] = qoresp.records[0][15]
+                        # TODO: a quick patch, need refine update to pastxxx
+                        #if order["ordercount"] == order["dealcount"]:
+                        #    if len(si["pastsell"]) != 0:
+                        #        si["pastsellcount"] = si["pastsellcount"] + int(order["dealcount"])
+                        #        si["pastsellgain"] = si["pastsellgain"] + float(order["dealamount"])
+                        #    else:
+                        #        si["pastbuycount"] = si["pastbuycount"] + int(order["dealcount"])
+                        #        si["pastbuycost"] = si["pastbuycost"] + float(order["dealamount"])
+                        if int(order["dealcount"]) < int(order["ordercount"]):
+                            # update pastxxx and currentxxx
+                            if len(si["pastsell"]) != 0:
+                                si["currentsellcount"] = si["pastsellcount"] + int(order["dealcount"])
+                                si["currentsellgain"] = si["pastsellgain"] + float(order["dealamount"])
+                            elif len(si["pastbuy"]) != 0:
+                                si["currentbuycount"] = si["pastbuycount"] + int(order["dealcount"])
+                                si["currentbuycost"] = si["pastbuycost"] + float(order["dealamount"])
+                        else: # int(order["dealcount"]) == int(order["ordercount"])
+                            if len(si["pastsell"]) != 0:
+                                si["pastsellcount"] = si["pastsellcount"] + int(order["dealcount"])
+                                si["pastsellgain"] = si["pastsellgain"] + float(order["dealamount"])
+                                si["currentsellcount"] = si["pastsellcount"]
+                                si["currentsellgain"] = si["pastsellgain"]
+                            elif len(si["pastbuy"]) != 0:
+                                si["pastbuycount"] = si["pastbuycount"] + int(order["dealcount"])
+                                si["pastbuycost"] = si["pastbuycost"] + float(order["dealamount"])
+                                si["currentbuycount"] = si["pastbuycount"]
+                                si["currentbuycost"] = si["pastbuycost"]
+                    else:
+                        print "error when query order for %s" % order["order_id"]
+                        print qoresp.retcode, qoresp.retinfo
+
+                # update a row
+                rowindex = self.portfolio.stocklist.index(scode)
+                retval = QString()
+                QMetaObject.invokeMethod(self.portmodel, "updaterow", Qt.QueuedConnection,
+                        Q_ARG("int", rowindex))
+                #self.portmodel.emit(SIGNAL("dataChanged(QModelIndex,QModelIndex)"),
+                #        self.portmodel.index(rowindex,0),
+                #        self.portmodel.index(rowindex, len(self.portfolio.stockmodelattr)-1))
 
     def stop(self):
         self.runflag = False
@@ -1127,30 +1147,36 @@ class uicontrol(Ui_MainWindow):
         # update statusbar
         self.showbostate()
 
+    @pyqtSlot()
     def buyBatch(self):
         self.portfolio.buyBatch()
 
+    @pyqtSlot()
     def cancelBuyBatch(self):
         self.portfolio.cancelBuyBatch()
 
+    @pyqtSlot()
     def sellBatch(self):
         self.portfolio.sellBatch()
 
+    @pyqtSlot()
     def cancelSellBatch(self):
         self.portfolio.cancelSellBatch()
 
+    @pyqtSlot()
     def savePortfolio(self):
         self.portfolio.savePortfolio()
 
+    @pyqtSlot(int)
     def setbuypricepolicy(self, pindex):
         self.portfolio.buypolicy = self.portfolio.pricepolicylist[pindex]
 
+    @pyqtSlot(int)
     def setsellpricepolicy(self, pindex):
         self.portfolio.sellpolicy = self.portfolio.pricepolicylist[pindex]
 
     def showbostate(self):
-        self.statusbar.clearMessage()
-        self.statusbar.showMessage(QString(u"组合状态: " + self.portfolio.bostate))
+        QMetaObject.invokeMethod(self.statusbar, "showMessage", Qt.QueuedConnection, Q_ARG("QString", QString(u"组合状态: " + self.portfolio.bostate)))
 
 def testslot(t):
     print t
@@ -1207,8 +1233,8 @@ def main(args):
         sys.exit(1)
     testsession.close()
 
-    shdbfn = "x:\\show2003.dbf"
-    szdbfn = "x:\\sjshq.dbf"
+    shdbfn = "z:\\show2003.dbf"
+    szdbfn = "z:\\sjshq.dbf"
     shmapfn = "shmap.pkl"
     szmapfn = "szmap.pkl"
     if not verifymap(shdbfn, shmapfn, "S1"):
