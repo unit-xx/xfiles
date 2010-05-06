@@ -19,10 +19,6 @@
   <property name="windowTitle">
    <string>EasyTrader</string>
   </property>
-  <property name="windowIcon">
-   <iconset>
-    <normaloff>zjzq.ico</normaloff>zjzq.ico</iconset>
-  </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout">
     <item>
