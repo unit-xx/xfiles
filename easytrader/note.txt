@@ -21,3 +21,4 @@ success 0
 
 create table xxx as select * from portfolio_template
 
+QObject::killTimers: timers cannot be stopped from another thread
