@@ -47,6 +47,7 @@ orderresp.recv()
 s.storetrade(orderreq, orderresp)
 print orderresp.retcode
 print orderresp.retinfo
+print orderresp.records[0][1]
 
 sys.exit(1)
 
