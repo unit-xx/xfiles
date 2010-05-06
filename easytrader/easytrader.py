@@ -1147,6 +1147,11 @@ class uicontrol(Ui_MainWindow):
         # update statusbar
         self.showbostate()
 
+        #icon = QIcon()
+        #icon.addPixmap(QPixmap("ztzq.ico"), QIcon.Normal, QIcon.Off)
+        #print os.getcwd()
+        #self.mainwindow.setWindowIcon(icon)
+
     @pyqtSlot()
     def buyBatch(self):
         self.portfolio.buyBatch()
