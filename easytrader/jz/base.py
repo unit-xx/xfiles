@@ -213,16 +213,16 @@ class response:
 
     def recv_single(self):
         header_len = int(self.recv_n(5)[0:4])
-        self.header_len = header_len
+        #self.header_len = header_len
         header_left = self.recv_n(header_len - 5)
         i = header_left.find("|")
-        self.payload_len = int(header_left[0:i])
-        payload = self.recv_n(self.payload_len)
+        payload_len = int(header_left[0:i])
+        payload = self.recv_n(payload_len)
         return header_len, header_left, payload
 
-    def recv(self):
+    def recv_first(self):
         header_len, self.header_left, self.payload = self.recv_single()
-        self.deserialize()
+        self.sections, self.records = self.deserialize()
         if self.hasnext == "1":
             # TODO: for debug only, comment this line after finish recv_all
             print "Has more results: %s" % type(self)
@@ -238,33 +238,21 @@ class response:
         # any one retcode is not 0, all failed
         # any one crc failed, all failed
 
-        header_len, self.header_left, payload = self.recv_single()
-        self.deserialize_headerleft()
-        if self.hasnext:
-            payload_list = [payload]
-            noerr = True
-            while 1:
-                # do it
-                req = GetNextReq(s)
-                req.send()
-                resp = GetNextResp(s)
-                x, y, z = resp.recv_single()
-                resp.deserialize_headerleft()
-                # TODO: error case
-                if(resp.retcode == 0 and resp.checkcrc() == True):
-                    payload_list.append(resp.payload)
-                else:
-                    noerr = False
-                    break
-                if(resp.hasnext):
-                    break
-            if noerr:
-                payload = "".join(payload_list)
-            else:
-                payload = ""
-                self.retcode = -1
+        self.records = []
+        while 1:
+            header_len, self.header_left, self.payload = self.recv_single()
+            self.deserialize_headerleft()
+            sections, records = self.deserialize_payload()
+            self.records.extend(records)
+            self.sections = sections
 
-        self.payload = payload
+            if self.hasnext == "1":
+                req = GetNextReq(self.session)
+                req.send()
+            else:
+                break
+
+    recv = recv_all
 
     def deserialize_headerleft(self):
         tmp = self.header_left[0:-1].split("|")
@@ -282,17 +270,20 @@ class response:
         # TODO: check crc
         # TODO: check return code is success or not
         self.deserialize_headerleft()
+        return self.deserialize_payload()
 
+    def deserialize_payload(self):
         tmp = self.payload[0:-1].split("|")
-        self.sections = tmp[0:self.sectionnumber]
-        self.records = []
+        sections = tmp[0:self.sectionnumber]
+        records = []
         start = self.sectionnumber
         end = start + self.sectionnumber
         for i in range(self.recordnumber):
             r = tmp[start:end]
-            self.records.append(r)
+            records.append(r)
             start = start + self.sectionnumber
             end = end + self.sectionnumber
+        return sections, records
 
 class CheckinReq(request):
     code = "100"

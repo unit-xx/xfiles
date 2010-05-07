@@ -19,7 +19,7 @@ except IndexError:
 try:
     f = open(stockfn, "r")
 except IOError:
-    print "Cannot open %s" % fn
+    print "Cannot open %s" % stockfn
     sys.exit(1)
 
 # read and make two stock lists
