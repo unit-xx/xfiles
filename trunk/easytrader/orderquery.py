@@ -55,5 +55,5 @@ for r in qoresp.records:
         print
 print qoresp.hasnext
 print qoresp.retcode
-print qoresp.retinfo
+print qoresp.retinfo.encode("GBK")
 print orders
