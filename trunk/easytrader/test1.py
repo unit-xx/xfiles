@@ -59,3 +59,4 @@ class MyTableModel(QAbstractTableModel):
 if __name__ == "__main__":
     main()
 
+#$Id$
