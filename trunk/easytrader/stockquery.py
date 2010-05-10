@@ -50,10 +50,10 @@ class StockInfoModel(QAbstractTableModel):
                 self.index(rowindex,0),
                 self.index(rowindex,self.columnCount()-1))
 
-class stockquerydlg(Ui_stockquery):
-    def __init__(self, dlg, sessioncfg):
+class stockquerydlg(QDialog, Ui_stockquery):
+    def __init__(self, sessioncfg):
+        QDialog.__init__(self)
         self.sessioncfg = sessioncfg
-        self.dlg = dlg
 
         self.siattr = ["market", "secu_name", "secu_code", "share_bln",
                 "share_avl", "share_trd_frz", "share_otd",
@@ -81,10 +81,8 @@ class stockquerydlg(Ui_stockquery):
         self.simodel = StockInfoModel(self.siattr, self.siattrmap, [])
 
     def setup(self):
-        self.setupUi(self.dlg)
+        self.setupUi(self)
 
-        self.dlg.connect(self.refresh, SIGNAL("clicked()"), self.on_refresh_clicked)
-        self.dlg.connect(self.quit, SIGNAL("clicked()"), self.on_quit_clicked)
         self.stockinfo.setModel(self.simodel)
 
         self.session = jz.session(self.sessioncfg)
@@ -152,11 +150,10 @@ def main(args):
     session_config["jzaccounttype"] = "Z"
     session_config["jzpasswd"] = "123444"
 
-    dialog = QDialog()
-    sqdlg = stockquerydlg(dialog, session_config)
+    sqdlg = stockquerydlg(session_config)
     if sqdlg.setup():
-        dialog.show()
-        dialog.activateWindow()
+        sqdlg.show()
+        sqdlg.activateWindow()
         QMetaObject.invokeMethod(sqdlg.refresh, "clicked", Qt.QueuedConnection)
         app.exec_()
     else:
