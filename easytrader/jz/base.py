@@ -211,7 +211,7 @@ class response:
 
         return "".join(content)
 
-    def recv_single(self):
+    def recv_single1(self):
         header_len = int(self.recv_n(5)[0:4])
         #self.header_len = header_len
         header_left = self.recv_n(header_len - 5)
@@ -219,6 +219,21 @@ class response:
         payload_len = int(header_left[0:i])
         payload = self.recv_n(payload_len)
         return header_len, header_left, payload
+
+    def recv_single2(self):
+        tmp = self.recv_n(5+11)
+        print tmp
+        tmp = tmp.split("|")
+        assert tmp[2] == ""
+        header_len = int(tmp[0])
+        payload_len = int(tmp[1])
+
+        tmp = self.recv_n(header_len + payload_len - 16)
+        header_left = tmp[0:header_len-16]
+        payload = tmp[header_len-16:]
+        return header_len, header_left, payload
+
+    recv_single = recv_single1
 
     def recv_first(self):
         header_len, self.header_left, self.payload = self.recv_single()
@@ -254,7 +269,7 @@ class response:
 
     recv = recv_all
 
-    def deserialize_headerleft(self):
+    def deserialize_headerleft1(self):
         tmp = self.header_left[0:-1].split("|")
         self.crc = tmp[1]
         self.version = tmp[2]
@@ -263,6 +278,18 @@ class response:
         self.hasnext = tmp[5]
         self.sectionnumber = int(tmp[6])
         self.recordnumber = int(tmp[7])
+
+    def deserialize_headerleft2(self):
+        tmp = self.header_left[0:-1].split("|")
+        self.crc = tmp[0]
+        self.version = tmp[1]
+        self.retcode = tmp[2]
+        self.retinfo = tmp[3].decode("GBK")
+        self.hasnext = tmp[4]
+        self.sectionnumber = int(tmp[5])
+        self.recordnumber = int(tmp[6])
+
+    deserialize_headerleft = deserialize_headerleft1
 
     def deserialize(self):
         # parse payload as an array of array, first line is section names.

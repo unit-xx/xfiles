@@ -45,6 +45,7 @@ print qoreq.payload
 
 qoresp = jz.QueryOrderResp(s)
 qoresp.recv()
+print qoresp.header_left
 print qoresp.sections
 print qoresp.records
 orders = []
