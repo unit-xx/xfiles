@@ -5,6 +5,8 @@ import csv
 import socket
 import pickle
 import Queue
+#from mx import Queue
+import cProfile
 from threading import Thread, currentThread, Lock
 import time
 import types
@@ -829,6 +831,17 @@ class Portfolio(object):
             print "batch sell canceled"
         self.bolock.release()
 
+class ProfiledThread(Thread):
+    # Overrides threading.Thread.run()
+    def run(self):
+        profiler = cProfile.Profile()
+        try:
+            print "run run"
+            return profiler.runcall(Thread.run, self)
+        finally:
+            print "dumping stats"
+            profiler.dump_stats('myprofile-%d.profile' % (self.ident,))
+
 class PortfolioUpdater(Thread):
     def __init__(self, shdbfn, shmapfn, szdbfn, szmapfn, portfolio, portmodel):
         Thread.__init__(self)
@@ -919,39 +932,30 @@ class PortfolioUpdater(Thread):
         szmap = self.szmap
 
         for scode in self.portfolio.stocklist:
-            with self.portfolio.bolock:
-                stockinfo = self.portfolio.stockinfo[scode]
-                if stockinfo["market"] == "SH":
-                    rec = dbsh[shmap[scode]]
-                    for f in self.shdbfield:
-                        if type(rec[f]) is types.StringType:
-                            stockinfo[self.shdbmapping[f]] = rec[f].decode("GBK")
-                        else:
-                            stockinfo[self.shdbmapping[f]] = rec[f]
-                    stockinfo["tobuyprice"] = self.getpricesh(rec, self.portfolio.buypolicy)
-                    stockinfo["tosellprice"] = self.getpricesh(rec, self.portfolio.sellpolicy)
-                elif stockinfo["market"] == "SZ":
-                    rec = dbsz[szmap[scode]]
-                    for f in self.szdbfield:
-                        if type(rec[f]) is types.StringType:
-                            stockinfo[self.szdbmapping[f]] = rec[f].decode("GBK")
-                        else:
-                            stockinfo[self.szdbmapping[f]] = rec[f]
-                    stockinfo["tobuyprice"] = self.getpricesz(rec, self.portfolio.buypolicy)
-                    stockinfo["tosellprice"] = self.getpricesz(rec, self.portfolio.sellpolicy)
+            stockinfo = self.portfolio.stockinfo[scode]
+            if stockinfo["market"] == "SH":
+                rec = dbsh[shmap[scode]]
+                for f in self.shdbfield:
+                    if type(rec[f]) is types.StringType:
+                        stockinfo[self.shdbmapping[f]] = rec[f].decode("GBK")
+                    else:
+                        stockinfo[self.shdbmapping[f]] = rec[f]
+                stockinfo["tobuyprice"] = self.getpricesh(rec, self.portfolio.buypolicy)
+                stockinfo["tosellprice"] = self.getpricesh(rec, self.portfolio.sellpolicy)
+            elif stockinfo["market"] == "SZ":
+                rec = dbsz[szmap[scode]]
+                for f in self.szdbfield:
+                    if type(rec[f]) is types.StringType:
+                        stockinfo[self.szdbmapping[f]] = rec[f].decode("GBK")
+                    else:
+                        stockinfo[self.szdbmapping[f]] = rec[f]
+                stockinfo["tobuyprice"] = self.getpricesz(rec, self.portfolio.buypolicy)
+                stockinfo["tosellprice"] = self.getpricesz(rec, self.portfolio.sellpolicy)
 
-                # update a row
-                rowindex = self.portfolio.stocklist.index(scode)
-                QMetaObject.invokeMethod(self.portmodel, "updaterow", Qt.QueuedConnection,
-                        Q_ARG("int", rowindex))
-                #QMetaObject.invokeMethod(self.portmodel, "emit", Qt.QueuedConnection,
-                #        Q_ARG(pyqtSignal, SIGNAL("dataChanged(QModelIndex,QModelIndex)")),
-                #        Q_ARG(QModelIndex, self.portmodel.index(rowindex,0)),
-                #        Q_ARG(QModelIndex, self.portmodel.index(rowindex, len(self.portfolio.stockmodelattr)-1)))
-
-                #self.portmodel.emit(SIGNAL("dataChanged(QModelIndex,QModelIndex)"),
-                #        self.portmodel.index(rowindex,0),
-                #        self.portmodel.index(rowindex, len(self.portfolio.stockmodelattr)-1))
+            # update a row
+            rowindex = self.portfolio.stocklist.index(scode)
+            QMetaObject.invokeMethod(self.portmodel, "updaterow", Qt.QueuedConnection,
+                    Q_ARG("int", rowindex))
 
     def stop(self):
         self.runflag = False
@@ -977,77 +981,73 @@ class OrderUpdater(Thread):
 
     def update(self):
         for scode in self.portfolio.stocklist:
-            with self.portfolio.bolock:
-                si = self.portfolio.stockinfo[scode]
-                # don't update buy if selled
-                if len(si["pastsell"]) != 0:
-                    order = si["pastsell"][-1]
-                elif len(si["pastbuy"]) != 0:
-                    order = si["pastbuy"][-1]
+            si = self.portfolio.stockinfo[scode]
+            # don't update buy if selled
+            if len(si["pastsell"]) != 0:
+                order = si["pastsell"][-1]
+            elif len(si["pastbuy"]) != 0:
+                order = si["pastbuy"][-1]
+            else:
+                continue
+
+            if order["order_id"] != "" and order["order_state"] in (Portfolio.BUYSUCCESS, Portfolio.SELLSUCCESS) and int(order["dealcount"]) < int(order["ordercount"]):
+                qoreq = jz.QueryOrderReq(self.session)
+                qoreq["begin_date"] = order["order_date"]
+                qoreq["end_date"] = order["order_date"]
+                qoreq["get_orders_mode"] = "0" # all submissions
+                qoreq["user_code"] = self.session["user_code"]
+                # a bug in protocol/document results in next odd line
+                qoreq["biz_no"] = order["order_id"]
+                qoreq.send()
+                qoresp = jz.QueryOrderResp(self.session)
+                qoresp.recv()
+                if qoresp.retcode == "0":
+                    # TODO: don't know whether multi-line records case exists.
+                    order["dealcount"] = qoresp.records[-1][-11]
+                    order["dealamount"] = qoresp.records[-1][-9]
+                    #try:
+                    #    order["dealprice"] = str( float(qoresp.records[0][-9]) / float(qoresp.records[0][-11]) )
+                    #except ZeroDivisionError:
+                    #    order["dealprice"] = "0.00"
+                    # TODO: dealprice is the average price? or last dealed price?
+                    order["dealprice"] = qoresp.records[-1][-1]
+                    #order["ordercount"] = qoresp.records[0][15]
+                    # TODO: a quick patch, need refine update to pastxxx
+                    #if order["ordercount"] == order["dealcount"]:
+                    #    if len(si["pastsell"]) != 0:
+                    #        si["pastsellcount"] = si["pastsellcount"] + int(order["dealcount"])
+                    #        si["pastsellgain"] = si["pastsellgain"] + float(order["dealamount"])
+                    #    else:
+                    #        si["pastbuycount"] = si["pastbuycount"] + int(order["dealcount"])
+                    #        si["pastbuycost"] = si["pastbuycost"] + float(order["dealamount"])
+                    if int(order["dealcount"]) < int(order["ordercount"]):
+                        # update pastxxx and currentxxx
+                        if len(si["pastsell"]) != 0:
+                            si["currentsellcount"] = si["pastsellcount"] + int(order["dealcount"])
+                            si["currentsellgain"] = si["pastsellgain"] + float(order["dealamount"])
+                        elif len(si["pastbuy"]) != 0:
+                            si["currentbuycount"] = si["pastbuycount"] + int(order["dealcount"])
+                            si["currentbuycost"] = si["pastbuycost"] + float(order["dealamount"])
+                    else: # int(order["dealcount"]) == int(order["ordercount"])
+                        if len(si["pastsell"]) != 0:
+                            si["pastsellcount"] = si["pastsellcount"] + int(order["dealcount"])
+                            si["pastsellgain"] = si["pastsellgain"] + float(order["dealamount"])
+                            si["currentsellcount"] = si["pastsellcount"]
+                            si["currentsellgain"] = si["pastsellgain"]
+                        elif len(si["pastbuy"]) != 0:
+                            si["pastbuycount"] = si["pastbuycount"] + int(order["dealcount"])
+                            si["pastbuycost"] = si["pastbuycost"] + float(order["dealamount"])
+                            si["currentbuycount"] = si["pastbuycount"]
+                            si["currentbuycost"] = si["pastbuycost"]
                 else:
-                    continue
+                    print "error when query order for %s" % order["order_id"]
+                    print qoresp.retcode, qoresp.retinfo
 
-                if order["order_id"] != "" and order["order_state"] in (Portfolio.BUYSUCCESS, Portfolio.SELLSUCCESS) and int(order["dealcount"]) < int(order["ordercount"]):
-                    qoreq = jz.QueryOrderReq(self.session)
-                    qoreq["begin_date"] = order["order_date"]
-                    qoreq["end_date"] = order["order_date"]
-                    qoreq["get_orders_mode"] = "0" # all submissions
-                    qoreq["user_code"] = self.session["user_code"]
-                    # a bug in protocol/document results in next odd line
-                    qoreq["biz_no"] = order["order_id"]
-                    qoreq.send()
-                    qoresp = jz.QueryOrderResp(self.session)
-                    qoresp.recv()
-                    if qoresp.retcode == "0":
-                        # TODO: don't know whether multi-line records case exists.
-                        order["dealcount"] = qoresp.records[-1][-11]
-                        order["dealamount"] = qoresp.records[-1][-9]
-                        #try:
-                        #    order["dealprice"] = str( float(qoresp.records[0][-9]) / float(qoresp.records[0][-11]) )
-                        #except ZeroDivisionError:
-                        #    order["dealprice"] = "0.00"
-                        # TODO: dealprice is the average price? or last dealed price?
-                        order["dealprice"] = qoresp.records[-1][-1]
-                        #order["ordercount"] = qoresp.records[0][15]
-                        # TODO: a quick patch, need refine update to pastxxx
-                        #if order["ordercount"] == order["dealcount"]:
-                        #    if len(si["pastsell"]) != 0:
-                        #        si["pastsellcount"] = si["pastsellcount"] + int(order["dealcount"])
-                        #        si["pastsellgain"] = si["pastsellgain"] + float(order["dealamount"])
-                        #    else:
-                        #        si["pastbuycount"] = si["pastbuycount"] + int(order["dealcount"])
-                        #        si["pastbuycost"] = si["pastbuycost"] + float(order["dealamount"])
-                        if int(order["dealcount"]) < int(order["ordercount"]):
-                            # update pastxxx and currentxxx
-                            if len(si["pastsell"]) != 0:
-                                si["currentsellcount"] = si["pastsellcount"] + int(order["dealcount"])
-                                si["currentsellgain"] = si["pastsellgain"] + float(order["dealamount"])
-                            elif len(si["pastbuy"]) != 0:
-                                si["currentbuycount"] = si["pastbuycount"] + int(order["dealcount"])
-                                si["currentbuycost"] = si["pastbuycost"] + float(order["dealamount"])
-                        else: # int(order["dealcount"]) == int(order["ordercount"])
-                            if len(si["pastsell"]) != 0:
-                                si["pastsellcount"] = si["pastsellcount"] + int(order["dealcount"])
-                                si["pastsellgain"] = si["pastsellgain"] + float(order["dealamount"])
-                                si["currentsellcount"] = si["pastsellcount"]
-                                si["currentsellgain"] = si["pastsellgain"]
-                            elif len(si["pastbuy"]) != 0:
-                                si["pastbuycount"] = si["pastbuycount"] + int(order["dealcount"])
-                                si["pastbuycost"] = si["pastbuycost"] + float(order["dealamount"])
-                                si["currentbuycount"] = si["pastbuycount"]
-                                si["currentbuycost"] = si["pastbuycost"]
-                    else:
-                        print "error when query order for %s" % order["order_id"]
-                        print qoresp.retcode, qoresp.retinfo
-
-                # update a row
-                rowindex = self.portfolio.stocklist.index(scode)
-                retval = QString()
-                QMetaObject.invokeMethod(self.portmodel, "updaterow", Qt.QueuedConnection,
-                        Q_ARG("int", rowindex))
-                #self.portmodel.emit(SIGNAL("dataChanged(QModelIndex,QModelIndex)"),
-                #        self.portmodel.index(rowindex,0),
-                #        self.portmodel.index(rowindex, len(self.portfolio.stockmodelattr)-1))
+            # update a row
+            rowindex = self.portfolio.stocklist.index(scode)
+            retval = QString()
+            QMetaObject.invokeMethod(self.portmodel, "updaterow", Qt.QueuedConnection,
+                    Q_ARG("int", rowindex))
 
     def stop(self):
         self.runflag = False
@@ -1073,7 +1073,7 @@ class jzWorker(Thread):
     def closesession(self):
         self.session.close()
 
-    def run(self):
+    def myrun(self):
         # TODO: what if easytrader is closed while tqueue is not empty
         if not self.setupsession():
             print "jzWorker", currentThread().ident, "cannot setup session, and will exit."
@@ -1087,7 +1087,24 @@ class jzWorker(Thread):
             except Queue.Empty:
                 pass
 
+        #while self.runflag:
+        #    if self.tqueue:
+        #        t = self.tqueue.pop()
+        #        self.dotask(t)
+        #    else:
+        #        time.sleep(0.05)
+
         self.session.close()
+
+    def profiledrun(self):
+        profiler = cProfile.Profile()
+
+        try:
+            return profiler.runcall(self.myrun)
+        finally:
+            profiler.dump_stats('myprofile-%d.profile' % (self.ident,))
+
+    run = myrun
 
     def dotask(self, t):
         """
