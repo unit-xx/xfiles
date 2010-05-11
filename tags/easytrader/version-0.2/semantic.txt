@@ -1,0 +1,3 @@
+update to a stock info is atomic
+
+pastbuyxxx hold stat until the last canceled/complete transaction

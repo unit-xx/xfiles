@@ -1,0 +1,28 @@
+17063581 网关:CRC请求包错
+
+failed -112 网关:CRC请求包错
+0063|0054|046acd21|KDGATEWAY1.0|18508076||8070|4|0123456789||||505|2010-04-12|2010-04-12|0|18508076|||||17063581|||||
+98777841
+
+似乎因为046acd21以0开始
+
+crc.cpp 算的是46acd210
+
+success 0
+0063|0054|5c9581cd|KDGATEWAY1.0|18508076||8070|4|0123456789||||505|2010-04-12|2010-04-12|0|18508076|||||17063581|||||
+09445908
+
+
+=========================
+
+金证可以同时有多个连接
+
+=========================
+
+create table xxx as select * from portfolio_template
+
+QObject::killTimers: timers cannot be stopped from another thread
+
+Exception KeyError: KeyError(4276,) in <module 'threading' from '<frozen>'> igno
+red
+

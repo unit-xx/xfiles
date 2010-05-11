@@ -1,0 +1,20 @@
+BUG:
+
+the exception at exit.
+
+performance:
+ - orderupdate/portfolio update should not use bolock
+ - storedb asynchronously
+ - stock state update asynchronously
+
+buy/sell failure, stopped stock case
+
+FEATURE:
+
+a initial stock state update (price, state, etc.) at startup
+
+log file
+
+portfolio in DB
+
+UI: login and table model
