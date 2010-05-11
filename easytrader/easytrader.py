@@ -5,6 +5,7 @@ import csv
 import socket
 import pickle
 import Queue
+import ConfigParser
 #from mx import Queue
 import cProfile
 from threading import Thread, currentThread, Lock
@@ -1237,9 +1238,19 @@ def main(args):
     session_config["jzaccount"] = "85804530"
     session_config["jzaccounttype"] = "Z"
     session_config["jzpasswd"] = "123444"
+    session_config["shdbfn"] = "z:\\show2003.dbf"
+    session_config["szdbfn"] = "z:\\sjshq.dbf"
+    configfn = "easytrader.cfg"
+    config = ConfigParser.RawConfigParser()
+    config.read(configfn)
+    for k,v in config.items("easytrader"):
+        session_config[k] = v
+    try:
+        session_config["jzport"] = int(session_config["jzport"])
+    except KeyError:
+        pass
 
-    # TODO: read last config from disk
-
+    # show config in dialog
     from logindiag import logindlg
     d = logindlg(session_config)
     d.show()
@@ -1255,8 +1266,13 @@ def main(args):
         sys.exit(1)
     testsession.close()
 
-    shdbfn = "z:\\show2003.dbf"
-    szdbfn = "z:\\sjshq.dbf"
+    # save config
+    #for k in session_config:
+    #    config.set("easytrader", k, session_config[k])
+    #config.write(configfn)
+
+    shdbfn = session_config["shdbfn"]
+    szdbfn = session_config["szdbfn"]
     shmapfn = "shmap.pkl"
     szmapfn = "szmap.pkl"
     if not verifymap(shdbfn, shmapfn, "S1"):

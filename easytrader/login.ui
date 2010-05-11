@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>242</width>
-    <height>147</height>
+    <width>240</width>
+    <height>197</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -23,44 +23,44 @@
    <bool>false</bool>
   </property>
   <layout class="QGridLayout" name="gridLayout">
-   <item row="0" column="0" colspan="2">
+   <item row="0" column="0">
     <widget class="QLabel" name="label">
      <property name="text">
       <string>服务器地址</string>
      </property>
     </widget>
    </item>
-   <item row="0" column="2" colspan="2">
+   <item row="0" column="1" colspan="2">
     <widget class="QLineEdit" name="servaddr"/>
    </item>
-   <item row="1" column="0" colspan="2">
+   <item row="1" column="0">
     <widget class="QLabel" name="label_2">
      <property name="text">
       <string>端口</string>
      </property>
     </widget>
    </item>
-   <item row="1" column="2" colspan="2">
+   <item row="1" column="1" colspan="2">
     <widget class="QLineEdit" name="servport"/>
    </item>
-   <item row="2" column="0" colspan="2">
+   <item row="2" column="0">
     <widget class="QLabel" name="label_3">
      <property name="text">
       <string>资金账号</string>
      </property>
     </widget>
    </item>
-   <item row="2" column="2" colspan="2">
+   <item row="2" column="1" colspan="2">
     <widget class="QLineEdit" name="account"/>
    </item>
-   <item row="3" column="0" colspan="2">
+   <item row="3" column="0">
     <widget class="QLabel" name="label_4">
      <property name="text">
       <string>密码</string>
      </property>
     </widget>
    </item>
-   <item row="3" column="2" colspan="2">
+   <item row="3" column="1" colspan="2">
     <widget class="QLineEdit" name="passwd">
      <property name="echoMode">
       <enum>QLineEdit::Password</enum>
@@ -68,6 +68,34 @@
     </widget>
    </item>
    <item row="4" column="0">
+    <widget class="QLabel" name="label_5">
+     <property name="text">
+      <string>上海行情</string>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="1" colspan="2">
+    <widget class="QLineEdit" name="shdbfn">
+     <property name="echoMode">
+      <enum>QLineEdit::Normal</enum>
+     </property>
+    </widget>
+   </item>
+   <item row="5" column="0">
+    <widget class="QLabel" name="label_6">
+     <property name="text">
+      <string>深圳行情</string>
+     </property>
+    </widget>
+   </item>
+   <item row="5" column="1" colspan="2">
+    <widget class="QLineEdit" name="szdbfn">
+     <property name="echoMode">
+      <enum>QLineEdit::Normal</enum>
+     </property>
+    </widget>
+   </item>
+   <item row="6" column="0">
     <spacer name="horizontalSpacer">
      <property name="orientation">
       <enum>Qt::Horizontal</enum>
@@ -80,14 +108,14 @@
      </property>
     </spacer>
    </item>
-   <item row="4" column="1" colspan="2">
+   <item row="6" column="1">
     <widget class="QPushButton" name="ok">
      <property name="text">
       <string>确定</string>
      </property>
     </widget>
    </item>
-   <item row="4" column="3">
+   <item row="6" column="2">
     <widget class="QPushButton" name="cancel">
      <property name="text">
       <string>取消</string>
