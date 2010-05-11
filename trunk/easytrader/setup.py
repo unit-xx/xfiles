@@ -3,7 +3,7 @@ from cx_Freeze import setup, Executable
 
 buildOptions = dict(
         #icon = "ztzq.ico",
-        include_files = ["shmap.pkl", "szmap.pkl", "tradeinfo.db", "ztzq.ico", "hs300.txt", "portfolio", "msvcr_redist"],
+        include_files = ["shmap.pkl", "szmap.pkl", "tradeinfo.db", "ztzq.ico", "hs300.txt", "easytrader.cfg", "portfolio", "msvcr_redist"],
         compressed = True)
 
 setup(

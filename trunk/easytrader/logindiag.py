@@ -16,6 +16,8 @@ class logindlg(QDialog):
         self.ui.servport.setText(str(config["jzport"]))
         self.ui.account.setText(config["jzaccount"])
         self.ui.passwd.setText(config["jzpasswd"])
+        self.ui.shdbfn.setText(config["shdbfn"])
+        self.ui.szdbfn.setText(config["szdbfn"])
 
         self.connect(self.ui.ok, SIGNAL("clicked()"), self.on_ok)
         self.connect(self.ui.cancel, SIGNAL("clicked()"), self.on_cancel)
@@ -27,6 +29,8 @@ class logindlg(QDialog):
         self.config["jzport"] = int(self.ui.servport.text())
         self.config["jzaccount"] = str(self.ui.account.text())
         self.config["jzpasswd"] = str(self.ui.passwd.text())
+        self.config["shdbfn"] = str(self.ui.shdbfn.text())
+        self.config["szdbfn"] = str(self.ui.szdbfn.text())
 
     def on_cancel(self):
         self.status = False
