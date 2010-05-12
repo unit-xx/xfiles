@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'tradeui.ui'
 #
-# Created: Thu May 06 16:36:24 2010
+# Created: Wed May 12 11:16:22 2010
 #      by: PyQt4 UI code generator 4.7.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -143,10 +143,19 @@ class Ui_MainWindow(object):
         self.menubar.setGeometry(QtCore.QRect(0, 0, 880, 19))
         self.menubar.setNativeMenuBar(True)
         self.menubar.setObjectName("menubar")
+        self.menu = QtGui.QMenu(self.menubar)
+        self.menu.setObjectName("menu")
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QtGui.QStatusBar(MainWindow)
         self.statusbar.setObjectName("statusbar")
         MainWindow.setStatusBar(self.statusbar)
+        self.stockinfoact = QtGui.QAction(MainWindow)
+        self.stockinfoact.setObjectName("stockinfoact")
+        self.posstatact = QtGui.QAction(MainWindow)
+        self.posstatact.setObjectName("posstatact")
+        self.menu.addAction(self.stockinfoact)
+        self.menu.addAction(self.posstatact)
+        self.menubar.addAction(self.menu.menuAction())
 
         self.retranslateUi(MainWindow)
         self.tabWidget.setCurrentIndex(0)
@@ -168,4 +177,7 @@ class Ui_MainWindow(object):
         self.autosubmit.setText(QtGui.QApplication.translate("MainWindow", "自动下单", None, QtGui.QApplication.UnicodeUTF8))
         self.saveorder.setText(QtGui.QApplication.translate("MainWindow", "保存组合", None, QtGui.QApplication.UnicodeUTF8))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_2), QtGui.QApplication.translate("MainWindow", "平仓", None, QtGui.QApplication.UnicodeUTF8))
+        self.menu.setTitle(QtGui.QApplication.translate("MainWindow", "查看", None, QtGui.QApplication.UnicodeUTF8))
+        self.stockinfoact.setText(QtGui.QApplication.translate("MainWindow", "股份查询", None, QtGui.QApplication.UnicodeUTF8))
+        self.posstatact.setText(QtGui.QApplication.translate("MainWindow", "持仓统计", None, QtGui.QApplication.UnicodeUTF8))
 
