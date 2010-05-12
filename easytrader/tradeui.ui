@@ -248,8 +248,26 @@
    <property name="nativeMenuBar">
     <bool>true</bool>
    </property>
+   <widget class="QMenu" name="menu">
+    <property name="title">
+     <string>查看</string>
+    </property>
+    <addaction name="stockinfoact"/>
+    <addaction name="posstatact"/>
+   </widget>
+   <addaction name="menu"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
+  <action name="stockinfoact">
+   <property name="text">
+    <string>股份查询</string>
+   </property>
+  </action>
+  <action name="posstatact">
+   <property name="text">
+    <string>持仓统计</string>
+   </property>
+  </action>
  </widget>
  <resources/>
  <connections/>
