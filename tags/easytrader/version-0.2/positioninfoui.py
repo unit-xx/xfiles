@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'positioninfo.ui'
+# Form implementation generated from reading ui file 'positioninfoui.ui'
 #
-# Created: Wed May 12 09:25:12 2010
+# Created: Wed May 12 13:42:10 2010
 #      by: PyQt4 UI code generator 4.7.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -13,6 +13,7 @@ class Ui_positioninfodlg(object):
     def setupUi(self, positioninfodlg):
         positioninfodlg.setObjectName("positioninfodlg")
         positioninfodlg.resize(354, 241)
+        positioninfodlg.setModal(True)
         self.gridLayout = QtGui.QGridLayout(positioninfodlg)
         self.gridLayout.setObjectName("gridLayout")
         self.groupBox = QtGui.QGroupBox(positioninfodlg)
@@ -24,24 +25,32 @@ class Ui_positioninfodlg(object):
         self.label_2.setObjectName("label_2")
         self.formLayout.setWidget(0, QtGui.QFormLayout.LabelRole, self.label_2)
         self.totalcost = QtGui.QLineEdit(self.groupBox)
+        self.totalcost.setFrame(True)
+        self.totalcost.setReadOnly(True)
         self.totalcost.setObjectName("totalcost")
         self.formLayout.setWidget(0, QtGui.QFormLayout.FieldRole, self.totalcost)
         self.label_3 = QtGui.QLabel(self.groupBox)
         self.label_3.setObjectName("label_3")
         self.formLayout.setWidget(1, QtGui.QFormLayout.LabelRole, self.label_3)
         self.mktval = QtGui.QLineEdit(self.groupBox)
+        self.mktval.setFrame(True)
+        self.mktval.setReadOnly(True)
         self.mktval.setObjectName("mktval")
         self.formLayout.setWidget(1, QtGui.QFormLayout.FieldRole, self.mktval)
         self.label = QtGui.QLabel(self.groupBox)
         self.label.setObjectName("label")
         self.formLayout.setWidget(2, QtGui.QFormLayout.LabelRole, self.label)
         self.profitval = QtGui.QLineEdit(self.groupBox)
+        self.profitval.setFrame(True)
+        self.profitval.setReadOnly(True)
         self.profitval.setObjectName("profitval")
         self.formLayout.setWidget(2, QtGui.QFormLayout.FieldRole, self.profitval)
         self.label_4 = QtGui.QLabel(self.groupBox)
         self.label_4.setObjectName("label_4")
         self.formLayout.setWidget(3, QtGui.QFormLayout.LabelRole, self.label_4)
         self.profitper = QtGui.QLineEdit(self.groupBox)
+        self.profitper.setFrame(True)
+        self.profitper.setReadOnly(True)
         self.profitper.setObjectName("profitper")
         self.formLayout.setWidget(3, QtGui.QFormLayout.FieldRole, self.profitper)
         self.gridLayout.addWidget(self.groupBox, 0, 0, 1, 3)
