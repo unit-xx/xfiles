@@ -19,6 +19,8 @@ from PyQt4 import Qt
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 from tradeui import Ui_MainWindow
+from stockquery import stockquerydlg
+from positioninfo import positioninfodlg
 
 class PortfolioModel(QAbstractTableModel):
     def __init__(self, portfolio, parent=None):
@@ -1132,8 +1134,9 @@ class jzWorker(Thread):
         self.runflag = False
 
 class uicontrol(Ui_MainWindow):
-    def __init__(self, mainwindow, portfolio, pmodel):
+    def __init__(self, mainwindow, session_cfg, portfolio, pmodel):
         self.mainwindow = mainwindow
+        self.session_cfg = session_cfg
         self.portfolio = portfolio
         self.pmodel = pmodel
 
@@ -1161,6 +1164,10 @@ class uicontrol(Ui_MainWindow):
         self.mainwindow.connect(self.cancelsellorder, SIGNAL("clicked()"), self.cancelSellBatch)
         self.mainwindow.connect(self.saveorder_2, SIGNAL("clicked()"), self.savePortfolio)
         self.mainwindow.connect(self.saveorder, SIGNAL("clicked()"), self.savePortfolio)
+
+        # setup menu
+        self.mainwindow.connect(self.stockinfoact, SIGNAL("triggered()"), self.showstockinfo)
+        self.mainwindow.connect(self.posstatact, SIGNAL("triggered()"), self.showposstat)
 
         # update statusbar
         self.showbostate()
@@ -1197,6 +1204,24 @@ class uicontrol(Ui_MainWindow):
     @pyqtSlot(int)
     def setsellpricepolicy(self, pindex):
         self.portfolio.sellpolicy = self.portfolio.pricepolicylist[pindex]
+
+    @pyqtSlot()
+    def showstockinfo(self):
+        sqdlg = stockquerydlg(self.session_cfg)
+        if sqdlg.setup():
+            sqdlg.show()
+            sqdlg.activateWindow()
+            QMetaObject.invokeMethod(sqdlg.refresh, "clicked", Qt.QueuedConnection)
+            sqdlg.exec_()
+        else:
+            QMessageBox.information(None, "", u"不能登录")
+
+    @pyqtSlot()
+    def showposstat(self):
+        pidlg = positioninfodlg(self.portfolio)
+        pidlg.setup()
+        QMetaObject.invokeMethod(pidlg.refresh, "clicked", Qt.QueuedConnection)
+        pidlg.exec_()
 
     def showbostate(self):
         QMetaObject.invokeMethod(self.statusbar, "showMessage", Qt.QueuedConnection, Q_ARG("QString", QString(u"组合状态: " + self.portfolio.bostate)))
@@ -1315,7 +1340,7 @@ def main(args):
 
     # main window
     window = QMainWindow()
-    uic = uicontrol(window, p, pmodel)
+    uic = uicontrol(window, session_config, p, pmodel)
     uic.setup()
 
     window.show()
