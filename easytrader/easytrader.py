@@ -273,10 +273,10 @@ class Portfolio(object):
                         si["pastsellcount"] = si["pastsellcount"] + int(r["dealcount"])
                         si["pastsellgain"] = si["pastsellgain"] + float(r["dealamount"])
                 # update currentxxxyyy
-                #si["currentbuycount"] = si["pastbuycount"]
-                #si["currentbuycost"] = si["pastbuycost"]
-                #si["currentsellcount"] = si["pastsellcount"]
-                #si["currentsellgain"] = si["pastsellgain"]
+                si["currentbuycount"] = si["pastbuycount"]
+                si["currentbuycost"] = si["pastbuycost"]
+                si["currentsellcount"] = si["pastsellcount"]
+                si["currentsellgain"] = si["pastsellgain"]
                 if len(si["pastsell"]) != 0:
                     if si["pastsell"][-1]["order_state"] == Portfolio.SELLSUCCESS:
                         if int(si["pastsell"][-1]["dealcount"]) < int(si["pastsell"][-1]["ordercount"]):
@@ -448,7 +448,7 @@ class Portfolio(object):
             respclass = jz.CancelOrderResp
 
             # block update to ALL orders
-            #self.updtlock.acquire()
+            self.updtlock.acquire()
 
             for scode in self.stocklist:
                 # only cancel (BUYSUCCESS and dealcount < ordercount) orders
@@ -470,7 +470,7 @@ class Portfolio(object):
                 print "no stock to cancel buy"
                 self.bostate = Portfolio.BOBUYSUCCESS
                 # no work to do, let OrderUpdater go on.
-                #self.updtlock.release()
+                self.updtlock.release()
         else:
             print "not in buy cancel-able state"
 
@@ -512,15 +512,13 @@ class Portfolio(object):
         qoresp = jz.QueryOrderResp(req.session)
         qoresp.recv()
         if qoresp.retcode == "0":
-            # NOTE: the following update is left to OrderUpdater, otherwise
-            #orec["dealcount"] = qoresp.records[-1][-11]
-            #orec["dealamount"] = qoresp.records[-1][-9]
-            #orec["dealprice"] = qoresp.records[-1][-1]
-
-            dealcount = qoresp.records[-1][-11]
+            dealcount, dealamount, dealprice = qoresp.getTotal()
+            orec["dealcount"] = str(dealcount)
+            orec["dealamount"] = str(dealamount)
+            orec["dealprice"] = str(dealprice)
             if orec["order_state"] == Portfolio.CANCELBUYFAILED:
-                if dealcount == orec["ordercount"]:
-                    #assert int(si["count"]) == si["pastbuycount"] + int(orec["dealcount"])
+                if orec["dealcount"] == orec["ordercount"]:
+                    assert int(si["count"]) == si["pastbuycount"] + int(orec["dealcount"])
                     orec["order_state"] = Portfolio.BUYSUCCESS
                 else:
                     # TODO: change state to ORDERSUCCESS in this case too? to enable next cancel?
@@ -528,18 +526,18 @@ class Portfolio(object):
         else:
             assert False, "error when update order for %s (%s:%s)" % (si["order_id"], qoresp.retcode, qoresp.retinfo)
 
-        # NOTE: the following update is left to OrderUpdater, otherwise
         # update pastbuyxxx
-        #if orec["order_state"] in (Portfolio.BUYSUCCESS, Portfolio.CANCELBUYSUCCESS):
-        #    # stock in Portfolio.BUYSUCCESS here is the one that's CANCELBUYFAILED
-        #    si["pastbuycount"] = si["pastbuycount"] + int(orec["dealcount"])
-        #    si["pastbuycost"] = si["pastbuycost"] + float(orec["dealamount"])
-        #    si["currentbuycount"] = si["pastbuycount"]
-        #    si["currentbuycost"] = si["pastbuycost"]
+        if orec["order_state"] in (Portfolio.BUYSUCCESS, Portfolio.CANCELBUYSUCCESS):
+            # stock in Portfolio.BUYSUCCESS here is the one that's CANCELBUYFAILED
+            si["pastbuycount"] = si["pastbuycount"] + int(orec["dealcount"])
+            si["pastbuycost"] = si["pastbuycost"] + float(orec["dealamount"])
+            si["currentbuycount"] = si["pastbuycount"]
+            si["currentbuycost"] = si["pastbuycost"]
 
         self.bolock.acquire()
         self.bocount = self.bocount - 1
         if self.bocount == 0:
+            self.updtlock.release()
             self.bostate = Portfolio.BOBUYCANCELED
             print "batch buy canceled"
         self.bolock.release()
@@ -749,6 +747,10 @@ class Portfolio(object):
 
             reqclass = jz.CancelOrderReq
             respclass = jz.CancelOrderResp
+
+            # block update to ALL orders
+            self.updtlock.acquire()
+
             for scode in self.stocklist:
                 # only cancel (SELLSUCCESS and dealcount < ordercount) orders
                 si = self.stockinfo[scode]
@@ -772,7 +774,8 @@ class Portfolio(object):
             if self.bocount == 0:
                 print "no stock to cancel selling"
                 self.bostate = Portfolio.BOSELLSUCCESS
-
+                # no work to do, let OrderUpdater go on.
+                self.updtlock.release()
         else:
             print "not in sell cancel-able state"
 
@@ -811,33 +814,30 @@ class Portfolio(object):
         qoresp = jz.QueryOrderResp(req.session)
         qoresp.recv()
         if qoresp.retcode == "0":
-            # NOTE: the following update is left to OrderUpdater, otherwise
-            #orec["dealcount"] = qoresp.records[-1][-11]
-            #orec["dealamount"] = qoresp.records[-1][-9]
-            #orec["dealprice"] = qoresp.records[-1][-1]
-            dealcount = qoresp.records[-1][-11]
-
+            dealcount, dealamount, dealprice = qoresp.getTotal()
+            orec["dealcount"] = str(dealcount)
+            orec["dealamount"] = str(dealamount)
+            orec["dealprice"] = str(dealprice)
             if orec["order_state"] == Portfolio.CANCELSELLFAILED:
-                if dealcount == orec["ordercount"]:
-                    # TODO: race condition here. also at cancel buy
-                    #assert si["pastbuycount"] == si["pastsellcount"] + int(orec["dealcount"])
+                if orec["dealcount"] == orec["ordercount"]:
+                    assert si["pastbuycount"] == si["pastsellcount"] + int(orec["dealcount"])
                     orec["order_state"] = Portfolio.SELLSUCCESS
                 else:
                     assert False, "Error: cancel failed while dealcount is smaller than count."
         else:
             assert False, "error when update order for %s (%s:%s)" % (si["order_id"], qoresp.retcode, qoresp.retinfo)
 
-        # NOTE: the following update is left to OrderUpdater, otherwise
         # update pastsellxxx
-        #if orec["order_state"] in (Portfolio.SELLSUCCESS, Portfolio.CANCELSELLSUCCESS):
-        #    si["pastsellcount"] = si["pastsellcount"] + int(orec["dealcount"])
-        #    si["pastsellgain"] = si["pastsellgain"] + float(orec["dealamount"])
-        #    si["currentsellcount"] = si["pastsellcount"]
-        #    si["currentsellgain"] = si["pastsellgain"]
+        if orec["order_state"] in (Portfolio.SELLSUCCESS, Portfolio.CANCELSELLSUCCESS):
+            si["pastsellcount"] = si["pastsellcount"] + int(orec["dealcount"])
+            si["pastsellgain"] = si["pastsellgain"] + float(orec["dealamount"])
+            si["currentsellcount"] = si["pastsellcount"]
+            si["currentsellgain"] = si["pastsellgain"]
 
         self.bolock.acquire()
         self.bocount = self.bocount - 1
         if self.bocount == 0:
+            self.updtlock.release()
             self.bostate = Portfolio.BOSELLCANCELED
             print "batch sell canceled"
         self.bolock.release()
@@ -993,70 +993,61 @@ class OrderUpdater(Thread):
 
     def update(self):
         for scode in self.portfolio.stocklist:
-            si = self.portfolio.stockinfo[scode]
-            # don't update buy if selled
-            if len(si["pastsell"]) != 0:
-                order = si["pastsell"][-1]
-            elif len(si["pastbuy"]) != 0:
-                order = si["pastbuy"][-1]
-            else:
-                continue
-
-            if order["order_id"] != "" and order["order_state"] in (Portfolio.BUYSUCCESS, Portfolio.SELLSUCCESS) and int(order["dealcount"]) < int(order["ordercount"]):
-                qoreq = jz.QueryOrderReq(self.session)
-                qoreq["begin_date"] = order["order_date"]
-                qoreq["end_date"] = order["order_date"]
-                qoreq["get_orders_mode"] = "0" # all submissions
-                qoreq["user_code"] = self.session["user_code"]
-                # a bug in protocol/document results in next odd line
-                qoreq["biz_no"] = order["order_id"]
-                qoreq.send()
-                qoresp = jz.QueryOrderResp(self.session)
-                qoresp.recv()
-                if qoresp.retcode == "0":
-                    # TODO: don't know whether multi-line records case exists.
-                    dealcount = 0
-                    dealamount = 0.0
-                    dealprice = 0.0
-                    # calculate total deal count/amount
-                    for r in qoresp.records:
-                        dealcount = dealcount + int(r[-11])
-                        dealamount = dealamount + float(r[-9])
-                    try:
-                        dealprice = dealamount / dealcount
-                    except ZeroDivisionError:
-                        pass
-                    order["dealcount"] = str(dealcount)
-                    order["dealamount"] = str(dealamount)
-                    order["dealprice"] = str(dealprice)
-                    if int(order["dealcount"]) < int(order["ordercount"]):
-                        # update pastxxx and currentxxx
-                        if len(si["pastsell"]) != 0:
-                            si["currentsellcount"] = si["pastsellcount"] + int(order["dealcount"])
-                            si["currentsellgain"] = si["pastsellgain"] + float(order["dealamount"])
-                        elif len(si["pastbuy"]) != 0:
-                            si["currentbuycount"] = si["pastbuycount"] + int(order["dealcount"])
-                            si["currentbuycost"] = si["pastbuycost"] + float(order["dealamount"])
-                    else: # int(order["dealcount"]) == int(order["ordercount"])
-                        if len(si["pastsell"]) != 0:
-                            si["pastsellcount"] = si["pastsellcount"] + int(order["dealcount"])
-                            si["pastsellgain"] = si["pastsellgain"] + float(order["dealamount"])
-                            si["currentsellcount"] = si["pastsellcount"]
-                            si["currentsellgain"] = si["pastsellgain"]
-                        elif len(si["pastbuy"]) != 0:
-                            si["pastbuycount"] = si["pastbuycount"] + int(order["dealcount"])
-                            si["pastbuycost"] = si["pastbuycost"] + float(order["dealamount"])
-                            si["currentbuycount"] = si["pastbuycount"]
-                            si["currentbuycost"] = si["pastbuycost"]
+            with self.updtlock:
+                si = self.portfolio.stockinfo[scode]
+                # don't update buy if selled
+                if len(si["pastsell"]) != 0:
+                    order = si["pastsell"][-1]
+                elif len(si["pastbuy"]) != 0:
+                    order = si["pastbuy"][-1]
                 else:
-                    print "error when query order for %s" % order["order_id"]
-                    print qoresp.retcode, qoresp.retinfo
+                    continue
 
-            # update a row
-            rowindex = self.portfolio.stocklist.index(scode)
-            retval = QString()
-            QMetaObject.invokeMethod(self.portmodel, "updaterow", Qt.QueuedConnection,
-                    Q_ARG("int", rowindex))
+                if order["order_id"] != "" and order["order_state"] in (Portfolio.BUYSUCCESS, Portfolio.SELLSUCCESS) and int(order["dealcount"]) < int(order["ordercount"]):
+                    qoreq = jz.QueryOrderReq(self.session)
+                    qoreq["begin_date"] = order["order_date"]
+                    qoreq["end_date"] = order["order_date"]
+                    qoreq["get_orders_mode"] = "0" # all submissions
+                    qoreq["user_code"] = self.session["user_code"]
+                    # a bug in protocol/document results in next odd line
+                    qoreq["biz_no"] = order["order_id"]
+                    qoreq.send()
+                    qoresp = jz.QueryOrderResp(self.session)
+                    qoresp.recv()
+                    if qoresp.retcode == "0":
+                        # TODO: don't know whether multi-line records case exists.
+                        dealcount, dealamount, dealprice = qoresp.getTotal()
+                        order["dealcount"] = str(dealcount)
+                        order["dealamount"] = str(dealamount)
+                        order["dealprice"] = str(dealprice)
+                        if int(order["dealcount"]) < int(order["ordercount"]):
+                            # update pastxxx and currentxxx
+                            if len(si["pastsell"]) != 0:
+                                si["currentsellcount"] = si["pastsellcount"] + int(order["dealcount"])
+                                si["currentsellgain"] = si["pastsellgain"] + float(order["dealamount"])
+                            elif len(si["pastbuy"]) != 0:
+                                si["currentbuycount"] = si["pastbuycount"] + int(order["dealcount"])
+                                si["currentbuycost"] = si["pastbuycost"] + float(order["dealamount"])
+                        else: # int(order["dealcount"]) == int(order["ordercount"])
+                            if len(si["pastsell"]) != 0:
+                                si["pastsellcount"] = si["pastsellcount"] + int(order["dealcount"])
+                                si["pastsellgain"] = si["pastsellgain"] + float(order["dealamount"])
+                                si["currentsellcount"] = si["pastsellcount"]
+                                si["currentsellgain"] = si["pastsellgain"]
+                            elif len(si["pastbuy"]) != 0:
+                                si["pastbuycount"] = si["pastbuycount"] + int(order["dealcount"])
+                                si["pastbuycost"] = si["pastbuycost"] + float(order["dealamount"])
+                                si["currentbuycount"] = si["pastbuycount"]
+                                si["currentbuycost"] = si["pastbuycost"]
+                    else:
+                        print "error when query order for %s" % order["order_id"]
+                        print qoresp.retcode, qoresp.retinfo
+
+                # update a row
+                rowindex = self.portfolio.stocklist.index(scode)
+                retval = QString()
+                QMetaObject.invokeMethod(self.portmodel, "updaterow", Qt.QueuedConnection,
+                        Q_ARG("int", rowindex))
 
     def stop(self):
         self.runflag = False

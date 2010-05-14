@@ -382,7 +382,20 @@ class QueryOrderReq(request):
     paramlist = ["begin_date", "end_date", "get_orders_mode", "user_code", "market", "secu_acc", "secu_code", "trd_id", "biz_no", "order_id", "branch", "account", "ext_inst"]
 
 class QueryOrderResp(response):
-    pass
+    def getTotal(self):
+        dealcount = 0
+        dealamount = 0.0
+        dealprice = 0.0
+        # calculate total deal count/amount
+        for r in self.records:
+            dealcount = dealcount + int(r[-11])
+            dealamount = dealamount + float(r[-9])
+        try:
+            dealprice = dealamount / dealcount
+        except ZeroDivisionError:
+            pass
+        return dealcount, dealamount, dealprice
+
 
 class DealReq(request):
     # TODO: return multiple line?
