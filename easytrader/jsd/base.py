@@ -1,30 +1,15 @@
-from binascii import crc32, unhexlify, hexlify
-from blowfish import Blowfish
-from datetime import datetime
+# -*- coding: utf-8 -*-
+
+import socket
+import datetime
 import sqlite3 as db
 
-def pad(s, length, padder=" "):
-    return s + "".join([padder * (length-len(s))])
-
-"""
-Maintains common fields in header, such as version, key, etc.
-"""
 class session:
-    def __init__(self, conn, dbfn):
-        # header fields
+    def __init__(self, sessioncfg):
+        self.sessioncfg = sessioncfg
+        self.conn = None
+        self.tradedbconn = None
         self.data = {}
-        self.data["flag"] = "R"
-        self.data["addr"] = ""
-        self.data["serial"] = ""
-        self.data["user"] = "9201"
-        self.data["passwd"] = "123"
-
-        # network connection
-        self.conn = conn
-
-        # db connections
-        self.dbfn = dbfn
-        self.dbconn = db.connect(dbfn)
 
     def __getitem__(self, key):
         return self.data[key]
@@ -32,26 +17,54 @@ class session:
     def __setitem__(self, key, value):
         self.data[key] = value
 
-    def storetrade(self, reqpayload, resppayload):
-        # TODO: not only raw
+    def setup(self):
+        try:
+            c = socket.socket()
+            c.connect((self.sessioncfg["jsdserver"], self.sessioncfg["jsdport"]))
+            self.conn = c
+
+            self.tradedbconn = db.connect(self.sessioncfg["tradedbfn"])
+        except socket.error:
+            return False
+
+        self["jsdaccount"] = self.sessioncfg["jsdaccount"]
+        self["jsdpasswd"] = self.sessioncfg["jsdpasswd"]
+        self["branchcode"] = self.sessioncfg["branchcode"]
+        self["ordermethod"] = self.sessioncfg["ordermethod"]
+
+        loginreq = LoginReq(self)
+        loginreq.send()
+        loginresp = LoginResp(self)
+        loginresp.recv()
+        if loginresp.anwser != "Y":
+            print "Login failed"
+            return False
+
+        print "Login ok"
+        return True
+
+    def storetrade(self, req, resp):
         t = datetime.now()
-        self.dbconn.execute('insert into rawoptiontradeinfo values (?, ?, ?)',
+        self.tradedbconn.execute('insert into rawtradeinfo values (?, ?, ?, ?)',
                 (str(t),
-                    reqpayload.decode("GBK"),
-                    resppayload.decode("GBK")))
-        self.dbconn.commit()
+                    req.payload.decode("GBK"),
+                    resp.payload.decode("GBK"),
+                    "%s:%s" % (resp.retcode, resp.retinfo)
+                    ))
+        self.tradedbconn.commit()
 
     def close(self):
-        self.dbconn.commit()
-        self.dbconn.close()
+        self.tradedbconn.commit()
+        self.tradedbconn.close()
         self.conn.close()
 
 class request:
-    # request code
+    """
+    a sample:
+R|||6011|||9201|123|
+    """
     code = ""
-    # controls what attributes to send and in what sequence, each 
-    # request should set paramlist explicitly.
-    paramlist = []
+    paramlist = [] # fields after user and password
 
     def __init__(self, session):
         self.session = session
@@ -63,176 +76,110 @@ class request:
             return self.params[key]
         # in case a param is not set, we assume it is empty
         except KeyError: 
-            return ""
+            return " "
 
     def __setitem__(self, key, value):
         self.params[key] = value
 
-    def check(self):
-        raise NotImplementedError()
-
     def serialize(self):
         header = self.genheader()
         payload = self.genpayload()
-        # return full data package
+        self.payload = payload
         return "".join( (header, payload) )
 
     def genheader(self):
-        return "|".join(
-                (
-                    self.session["flag"],
-                    self.session["addr"],
-                    self.session["serial"],
-                    ""
-                    )
-                )
+        return "R|||"
 
     def genpayload(self):
-        # reqcode|(params|)+
-        params = "|".join([self[k] for k in self.paramlist])
-        return "|".join([self.code, params, ""])
+        params = [self[k] for k in self.paramlist]
+        tmp = [self.code, self.session["branchcode"],
+                self.session["ordermethod"],
+                self.session["jsdaccount"],
+                self.session["jsdpasswd"]]
+        tmp.extend(params)
+        return "|".join(tmp)
 
     def send(self):
         data = self.serialize()
         self.session.conn.sendall(data)
 
 class response:
-    success_fieldcnt = 0
-    failed_fieldcnt = 0
+    """
+    a sample:
+A|||Y|‰∏≠ÊäïËØÅÂà∏|0.03|0.00|0|20100513|172.30.4.165|20100513|14:57:51|7|1|0|0||1000000000|6.6.5|800|Kingstar|20100513|2771009183|ÈªëÈæôÊ±üÂ§©Áê™ÊúüË¥ß|4/512|0
+
+    note: there may or may not be a '|' at the end of response. the above
+    sample is the response of login, and the following response of 6012
+    has '|' at the end
+
+A|||Y|‰∏≠ÊäïËØÅÂà∏|97272165.62|0.00|0.00|347328.00|2324049.60|0.00|0.00|94304028.02|
+96975405.62|0.0275|0|0.00|-296760.00|0.00|0.00|0.00|0.00|0.00|0.00|2671377.60|23
+63227.20|0.00|0.00|1|
+    
+    """
+    okfieldn = 0
+    failfieldn = 3 # N, retcode, retinfo
+    hasmore = 0
 
     def __init__(self, session):
         self.session = session
 
-    def check(self):
-        raise NotImplementedError()
-
-    def recv_n(self, n):
-        left = n
-        content = []
-        while 1:
-            if left <= 0:
-                break
-            buf = self.session.conn.recv(left)
-            content.append(buf)
-            left = left - len(buf)
-
-        return "".join(content)
-
     def recv_single(self):
-        #A|||N|40106|œØŒªŒ¥¥¶”⁄ø™≈Ã◊¥Ã¨--9201,IF1006,¬Ú,ø™,±£,1,3678.0000,00028184,cffex,cjis|40106|
-        # first receiv 4 fields (by counting "|"), we know it is ok or not, then receive all left fields.
-        header_len = int(self.recv_n(5)[0:4])
-        header_left = self.recv_n(header_len - 5)
-        i = header_left.find("|")
-        payload = self.recv_n(int(header_left[0:i]))
-        return header_len, header_left, payload
+        # jsd does not include header/payload length in protocol, so
+        # we just try to receive a long buffer, and with some assertions
+        # to make things right.
+        data = self.session.conn.recv(8192)
+        assert data[0] == "A"
 
-    def recv(self):
-        header_len, self.header_left, self.payload = self.recv_single()
-        self.deserialize()
+        records = data.split("|")[3:]
+        if records[-1] == "":
+            # the case when '|' at the end
+            del records[-1]
+        if records[0] == "Y":
+            assert len(records) >= self.okfieldn 
+        elif records[0] == "N":
+            assert len(records) >= self.failfieldn
+            self.failcode = records[1]
+            self.failinfo = records[2]
+        else:
+            assert False, "Not valid response"
+        self.anwser = records[0]
+        self.records = records
+        self.payload = data
 
     def recv_all(self):
-        # consider data in more than one responses
-        # recv header len
-        # recv full header
-        # recv payload, may involve multple receives
+        pass
 
-        while 1: # recv until no more responses
-            header_len = int(self.recv_n(5)[0:4])
-            self.header_left = self.recv_n(header_len - 5)
-            i = self.header_left.find("|")
-            # TODO: implement more packges receiving now,
-            # self.payload should be the concatenated results
-            # of multiple responses
-            self.payload = self.recv_n(int(self.header_left[0:i]))
-            break
-
-    def deserialize(self):
-        # parse payload as an array of array, first line is section names.
-        # implemented by sub-responses
-        # TODO: check crc
-        # TODO: check return code is success or not
-        tmp = self.header_left[0:-1].split("|")
-        self.crc = tmp[1]
-        self.version = tmp[2]
-        self.retcode = tmp[3]
-        self.retinfo = tmp[4].decode("GBK")
-        self.hasnext = int(tmp[5])
-        self.sectionnumber = int(tmp[6])
-        self.recordnumber = int(tmp[7])
-
-        tmp = self.payload[0:-1].split("|")
-        self.sections = tmp[0:self.sectionnumber]
-        self.records = []
-        start = self.sectionnumber
-        end = start + self.sectionnumber
-        for i in range(self.recordnumber):
-            r = tmp[start:end]
-            self.records.append(r)
-            start = start + self.sectionnumber
-            end = end + self.sectionnumber
-
-class CheckinReq(request):
-    code = "100"
-    paramlist = []
-
-class CheckinResp(response):
-    def getworkkey(self):
-        cipher = Blowfish("SZKINGDOM")
-        return cipher.decrypt(unhexlify(self.records[0][0]))
+    recv = recv_single
 
 class GetNextReq(request):
-    code = "99"
+    code = "0"
     paramlist = []
 
 class GetNextResp(response):
-    pass
-
-class MarketinfoReq(request):
-    code = "201"
-    paramlist = ["market"]
-
-class MarketinfoResp(response):
+    hasmore = 0
     pass
 
 class LoginReq(request):
-    code = "301"
-    paramlist = ["idtype", "id", "passwd"]
+    code = "6011"
+    paramlist = []
 
 class LoginResp(response):
-    def updatesession(self):
-        self.session["account"] = self.records[0][3]
-        self.session["user_code"] = self.records[0][4]
-        self.session["branch"] = self.records[0][6]
-        self.session["channel"] = "4"
-        self.session["session"] = self.records[0][7]
-        # TODO: update secu_code
-        for r in self.records:
-            if r[0] == "00":
-                self.session["secu_acc"]["sz"] = r[1]
-            if r[0] == "10":
-                self.session["secu_acc"]["sh"] = r[1]
-        assert(self.session["secu_acc"]["sz"] != "")
-        assert(self.session["secu_acc"]["sh"] != "")
+    okfieldn = 12
+    hasmore = 0
 
-class CapitalQueryReq(request):
-    code = "502"
-    paramlist = ["user_code", "account", "currency"]
+class TradeCapInfoReq(request):
+    code = "6012"
+    paramlist = ["date", "currency"]
 
-class CapitalQueryResp(response):
-    pass
+class TradeCapInfoResp(response):
+    okfieldn = 26
+    hasmore = 0
 
-class MaxTradeQueryReq(request):
-    code = "402"
-    paramlist = ["user_code", "market", "secu_acc", "account", "secu_code", "trd_id", "price", "ext_inst"]
+class QueryHQReq(request):
+    code = "6017"
+    paramlist = ["exchcode", "code"]
 
-class MaxTradeQueryResp(response):
-    pass
-
-class SubmitOrderReq(request):
-    code = "403"
-    paramlist = ["user_code", "market", "secu_acc", "account", "seat", "secu_code", "trd_id", "price", "qty", "biz_no", "ext_inst", "ext_rec_num", "op_remark", "match_seat", "match_num"]
-    pass
-
-class SubmitOrderResp(response):
-    pass
+class QueryHQResp(response):
+    okfieldn = 41
+    hasmore = 0

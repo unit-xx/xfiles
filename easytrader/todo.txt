@@ -17,4 +17,9 @@ log file
 
 portfolio in DB
 
-UI: login and table model
+ui: login and table model
+
+SUSPECT:
+
+multiple deal
+

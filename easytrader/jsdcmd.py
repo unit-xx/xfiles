@@ -1,23 +1,33 @@
-import socket
+import jsd
 import time
 
-jsdserver = "172.18.20.71"
-jsdport = 17990
+session_config = {}
+session_config["tradedbfn"] = "tradeinfo.db"
+session_config["jsdserver"] = "172.18.20.71"
+session_config["jsdport"] = 17990
+session_config["jsdaccount"] = "9201"
+session_config["jsdpasswd"] = "123"
+session_config["branchcode"] = ""
+session_config["ordermethod"] = ""
 
-conn = socket.socket()
-conn.connect((jsdserver, jsdport))
-conn.setblocking(0)
+s = jsd.session(session_config)
+if not s.setup():
+    print "Cannot login"
+    sys.exit(1)
 
-loginreq = "R|||6011|||9201|123|"
-queryreq = "R|||6017|||9201|123||IF1006|"
-getnextrowreq = "R|||0|||9201|123|"
-conn.sendall(loginreq)
-time.sleep(1)
-resp = conn.recv(4096)
-print len(resp)
-k = 1
-for i in resp.split("|")[3:]:
-    print k, i
-    k = k + 1
+tcinforeq = jsd.TradeCapInfoReq(s)
+tcinforeq["date"] = "20100512"
+tcinforeq.send()
+tcinforesp = jsd.TradeCapInfoResp(s)
+tcinforesp.recv()
+print tcinforesp.payload
+print tcinforesp.records
+# hq, order, cancelorder, orderinfo
 
-orderreq = "R|||6021|||9201|123|G|IF1006|0|0|1|1|3678|||"
+hqreq = jsd.QueryHQReq(s)
+hqreq["exchcode"] = "G"
+hqreq["code"] = "IF1005"
+hqreq.send()
+hqresp = jsd.QueryHQResp(s)
+hqresp.recv()
+print hqresp.payload
