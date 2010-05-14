@@ -20,6 +20,7 @@ class session:
     def setup(self):
         try:
             c = socket.socket()
+            c.settimeout(3)
             c.connect((self.sessioncfg["jsdserver"], self.sessioncfg["jsdport"]))
             self.conn = c
 
@@ -123,6 +124,7 @@ A|||Y|中投证券|97272165.62|0.00|0.00|347328.00|2324049.60|0.00|0.00|94304028
 
     def __init__(self, session):
         self.session = session
+        self.records = []
 
     def recv_single(self):
         # jsd does not include header/payload length in protocol, so
@@ -131,26 +133,64 @@ A|||Y|中投证券|97272165.62|0.00|0.00|347328.00|2324049.60|0.00|0.00|94304028
         data = self.session.conn.recv(8192)
         assert data[0] == "A"
 
-        records = data.split("|")[3:]
-        if records[-1] == "":
+        record = data.split("|")[3:]
+        if record[-1] == "":
             # the case when '|' at the end
-            del records[-1]
-        if records[0] == "Y":
-            assert len(records) >= self.okfieldn 
-        elif records[0] == "N":
-            assert len(records) >= self.failfieldn
-            self.failcode = records[1]
-            self.failinfo = records[2]
+            del record[-1]
+        if record[0] == "Y":
+            assert len(record) >= self.okfieldn, "less record fields: %d vs. %d" % (len(record), self.okfieldn)
+        elif record[0] == "N":
+            assert len(record) >= self.failfieldn
+            self.failcode = record[1]
+            self.failinfo = record[2]
         else:
             assert False, "Not valid response"
-        self.anwser = records[0]
+        self.anwser = record[0]
+        self.records = []
+        self.records.append(record)
+        self.nrec = 1
+
+    def recv_many(self):
+        # the case then multiple recv is needed, and the first package denote the number of succesive packages
+        data = self.session.conn.recv(8192)
+        assert data[0] == "A"
+        record = data.split("|")[3:]
+        if record[-1] == "":
+            # the case when '|' at the end
+            del record[-1]
+
+        self.anwser = record[0]
+        if record[0] == "Y":
+            nrec = int(record[1])
+            self.nrec = nrec
+            # read next packages
+            records = []
+            getnextreq = GetNextReq(self.session)
+            for i in range(nrec):
+                try:
+                    getnextreq.send()
+                    data = self.session.conn.recv(8192)
+                    record = data.split("|")
+                    if record[-1] == "":
+                        # the case when '|' at the end
+                        del record[-1]
+                    assert len(record) >= self.okfieldn, "less record fields: %d vs. %d" % (len(record), self.okfieldn)
+                    records.append(record)
+                except socket.timeout:
+                    pass
+        elif record[0] == "N":
+            assert len(record) >= self.failfieldn
+            self.failcode = record[1]
+            self.failinfo = record[2]
+        else:
+            assert False, "Not valid response"
         self.records = records
-        self.payload = data
 
-    def recv_all(self):
-        pass
-
-    recv = recv_single
+    def recv(self):
+        if self.hasmore:
+            self.recv_many()
+        else:
+            self.recv_single()
 
 class GetNextReq(request):
     code = "0"
@@ -181,5 +221,35 @@ class QueryHQReq(request):
     paramlist = ["exchcode", "code"]
 
 class QueryHQResp(response):
-    okfieldn = 41
+    okfieldn = 25
     hasmore = 0
+
+class QueryOrderReq(request):
+    code = "6020"
+    paramlist = ["order_id", "seat"]
+
+class QueryOrderResp(response):
+    okfieldn = 10
+    hasmore = 0
+
+class GetClientNumReq(request):
+    code = "6040"
+    paramlist = ["exchcode", "seat"]
+
+class GetClientNumResp(response):
+    okfieldn = 5
+    hasmore = 1
+
+class GetContractReq(request):
+    code = "6018"
+    paramlist = []
+
+class GetContractResp(response):
+    pass
+
+class OrderReq(request):
+    code = "6021"
+    #paramlist = ["exchcode", "code", "buysell", "openclose", "insure", "count", "price"]
+
+class OrderResp(response):
+    pass
