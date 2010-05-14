@@ -20,14 +20,20 @@ tcinforeq["date"] = "20100512"
 tcinforeq.send()
 tcinforesp = jsd.TradeCapInfoResp(s)
 tcinforesp.recv()
-print tcinforesp.payload
 print tcinforesp.records
 # hq, order, cancelorder, orderinfo
 
 hqreq = jsd.QueryHQReq(s)
-hqreq["exchcode"] = "G"
+#hqreq["exchcode"] = "G"
 hqreq["code"] = "IF1005"
 hqreq.send()
 hqresp = jsd.QueryHQResp(s)
 hqresp.recv()
-print hqresp.payload
+print hqresp.records
+
+getcnreq = jsd.GetClientNumReq(s)
+getcnreq.send()
+getcnresp = jsd.GetClientNumResp(s)
+getcnresp.recv()
+print getcnresp.records
+

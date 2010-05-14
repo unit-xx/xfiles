@@ -11,5 +11,5 @@ setup(
         version = "0.1",
         description = "The EasyTrader",
         options = dict(build_exe = buildOptions),
-        executables = [Executable("easytrader.py"), Executable("genstockindex.py")])
+        executables = [Executable("easytrader.py"), Executable("genstockindex.py"), Executable("jsdcmd.py")])
 
