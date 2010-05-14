@@ -128,7 +128,7 @@ class Portfolio(object):
     BOSELLCANCELING = u"正在撤销卖出"
     BOSELLCANCELED = u"卖出已撤单"
 
-    def __init__(self, ptfn, sessioncfg, tqueue):
+    def __init__(self, ptfn, sessioncfg, tqueue, updtlock):
         self.session = jz.session(sessioncfg)
         self.ptfn = ptfn
         if not self.session.setup():
@@ -136,6 +136,8 @@ class Portfolio(object):
             sys.exit(1)
         self.tqueue = tqueue
         self.bolock = Lock()
+
+        self.updtlock = updtlock
 
         # define stock data and buy/sell records attributes
         self.stocklist = []
@@ -164,7 +166,7 @@ class Portfolio(object):
                 #"order_state", "ordercount", "dealcount", "orderprice",
                 #"dealprice", "latestprice", "order_date", "order_time",
                 "latestprice", "tobuyprice", "tosellprice",
-                "currentbuycount", "currentbuycost", "currentsellcount", "currentsellgain"]
+                "pastbuycount", "currentbuycount", "currentbuycost", "pastsellcount", "currentsellcount", "currentsellgain"]
 
         self.stockattrnamemap = {
                 "count":u"数量",
@@ -271,15 +273,15 @@ class Portfolio(object):
                         si["pastsellcount"] = si["pastsellcount"] + int(r["dealcount"])
                         si["pastsellgain"] = si["pastsellgain"] + float(r["dealamount"])
                 # update currentxxxyyy
-                si["currentbuycount"] = si["pastbuycount"]
-                si["currentbuycost"] = si["pastbuycost"]
-                si["currentsellcount"] = si["pastsellcount"]
-                si["currentsellgain"] = si["pastsellgain"]
+                #si["currentbuycount"] = si["pastbuycount"]
+                #si["currentbuycost"] = si["pastbuycost"]
+                #si["currentsellcount"] = si["pastsellcount"]
+                #si["currentsellgain"] = si["pastsellgain"]
                 if len(si["pastsell"]) != 0:
                     if si["pastsell"][-1]["order_state"] == Portfolio.SELLSUCCESS:
                         if int(si["pastsell"][-1]["dealcount"]) < int(si["pastsell"][-1]["ordercount"]):
                             si["currentsellcount"] = si["pastsellcount"] + int(si["pastsell"][-1]["dealcount"])
-                            si["currentsellgain"] = si["pastsellgain"] + float(si["pastsell"][-1]["dealcount"])
+                            si["currentsellgain"] = si["pastsellgain"] + float(si["pastsell"][-1]["dealamount"])
                         else:
                             si["pastsellcount"] = si["pastsellcount"] + int(si["pastsell"][-1]["dealcount"])
                             si["pastsellgain"] = si["pastsellgain"] + float(si["pastsell"][-1]["dealamount"])
@@ -289,7 +291,7 @@ class Portfolio(object):
                     if si["pastbuy"][-1]["order_state"] == Portfolio.BUYSUCCESS:
                         if int(si["pastbuy"][-1]["dealcount"]) < int(si["pastbuy"][-1]["ordercount"]):
                             si["currentbuycount"] = si["pastbuycount"] + int(si["pastbuy"][-1]["dealcount"])
-                            si["currentbuycost"] = si["pastbuycost"] + float(si["pastbuy"][-1]["dealcount"])
+                            si["currentbuycost"] = si["pastbuycost"] + float(si["pastbuy"][-1]["dealamount"])
                         else:
                             si["pastbuycount"] = si["pastbuycount"] + int(si["pastbuy"][-1]["dealcount"])
                             si["pastbuycost"] = si["pastbuycost"] + float(si["pastbuy"][-1]["dealamount"])
@@ -418,10 +420,10 @@ class Portfolio(object):
         scode = mkt + param["secu_code"]
         orec = self.stockinfo[scode]["pastbuy"][-1]
         if resp.retcode == "0":
-            orec["order_id"] = resp.records[0][1]
             orec["order_state"] = Portfolio.BUYSUCCESS
             orec["order_date"] = today
             orec["order_time"] = str(datetime.now().time())
+            orec["order_id"] = resp.records[0][1]
         else:
             orec["order_state"] = Portfolio.BUYFAILED
 
@@ -444,6 +446,10 @@ class Portfolio(object):
             # submit each stock order
             reqclass = jz.CancelOrderReq
             respclass = jz.CancelOrderResp
+
+            # block update to ALL orders
+            #self.updtlock.acquire()
+
             for scode in self.stocklist:
                 # only cancel (BUYSUCCESS and dealcount < ordercount) orders
                 si = self.stockinfo[scode]
@@ -463,6 +469,8 @@ class Portfolio(object):
             if self.bocount == 0:
                 print "no stock to cancel buy"
                 self.bostate = Portfolio.BOBUYSUCCESS
+                # no work to do, let OrderUpdater go on.
+                #self.updtlock.release()
         else:
             print "not in buy cancel-able state"
 
@@ -717,10 +725,10 @@ class Portfolio(object):
         scode = mkt + param["secu_code"]
         orec = self.stockinfo[scode]["pastsell"][-1]
         if resp.retcode == "0":
-            orec["order_id"] = resp.records[0][1]
             orec["order_state"] = Portfolio.SELLSUCCESS
             orec["order_date"] = today
             orec["order_time"] = str(datetime.now().time())
+            orec["order_id"] = resp.records[0][1]
         else:
             orec["order_state"] = Portfolio.SELLFAILED
 
@@ -969,12 +977,13 @@ class PortfolioUpdater(Thread):
             time.sleep(2)
 
 class OrderUpdater(Thread):
-    def __init__(self, portfolio, portmodel, sessioncfg):
+    def __init__(self, portfolio, portmodel, sessioncfg, updtlock):
         Thread.__init__(self)
         self.portfolio = portfolio
         self.portmodel = portmodel
         self.runflag = True
         self.session = jz.session(sessioncfg)
+        self.updtlock = updtlock
         if not self.session.setup():
             print "Session setup failed."
             sys.exit(1)
@@ -1006,23 +1015,20 @@ class OrderUpdater(Thread):
                 qoresp.recv()
                 if qoresp.retcode == "0":
                     # TODO: don't know whether multi-line records case exists.
-                    order["dealcount"] = qoresp.records[-1][-11]
-                    order["dealamount"] = qoresp.records[-1][-9]
-                    #try:
-                    #    order["dealprice"] = str( float(qoresp.records[0][-9]) / float(qoresp.records[0][-11]) )
-                    #except ZeroDivisionError:
-                    #    order["dealprice"] = "0.00"
-                    # TODO: dealprice is the average price? or last dealed price?
-                    order["dealprice"] = qoresp.records[-1][-1]
-                    #order["ordercount"] = qoresp.records[0][15]
-                    # TODO: a quick patch, need refine update to pastxxx
-                    #if order["ordercount"] == order["dealcount"]:
-                    #    if len(si["pastsell"]) != 0:
-                    #        si["pastsellcount"] = si["pastsellcount"] + int(order["dealcount"])
-                    #        si["pastsellgain"] = si["pastsellgain"] + float(order["dealamount"])
-                    #    else:
-                    #        si["pastbuycount"] = si["pastbuycount"] + int(order["dealcount"])
-                    #        si["pastbuycost"] = si["pastbuycost"] + float(order["dealamount"])
+                    dealcount = 0
+                    dealamount = 0.0
+                    dealprice = 0.0
+                    # calculate total deal count/amount
+                    for r in qoresp.records:
+                        dealcount = dealcount + int(r[-11])
+                        dealamount = dealamount + float(r[-9])
+                    try:
+                        dealprice = dealamount / dealcount
+                    except ZeroDivisionError:
+                        pass
+                    order["dealcount"] = str(dealcount)
+                    order["dealamount"] = str(dealamount)
+                    order["dealprice"] = str(dealprice)
                     if int(order["dealcount"]) < int(order["ordercount"]):
                         # update pastxxx and currentxxx
                         if len(si["pastsell"]) != 0:
@@ -1312,9 +1318,10 @@ def main(args):
         print "No portfolio seleted."
         sys.exit(1)
 
+    updtlock = Lock()
     # setup portfolio
     tqueue = Queue.Queue()
-    p = Portfolio(portfoliofn, session_config, tqueue)
+    p = Portfolio(portfoliofn, session_config, tqueue, updtlock)
     p.loadPortfolio()
 
     # setup portfolio model for showing in table
@@ -1325,7 +1332,7 @@ def main(args):
     pupdater.start()
 
     # run the order info updater
-    orderupdater = OrderUpdater(p, pmodel, session_config)
+    orderupdater = OrderUpdater(p, pmodel, session_config, updtlock)
     orderupdater.start()
 
     # setup and run jzWorker threads
