@@ -1,6 +1,7 @@
 from binascii import crc32, unhexlify, hexlify
 from blowfish import Blowfish
 from datetime import datetime
+import logging
 import socket
 import sqlite3 as db
 
@@ -24,6 +25,7 @@ class session:
     def __init__(self, sessioncfg):
         self.initheader()
         self.sessioncfg = sessioncfg
+        self.logger = logging.getLogger()
 
     def __getitem__(self, key):
         return self.data[key]
@@ -61,7 +63,8 @@ class session:
         ciresp.recv()
         if ciresp.retcode != "0":
             # TODO: change this and two following print to return code or myexception
-            print "Checkin failed"
+            self.logger.warning("Checkin failed: %s, %s" %
+                    (loginresp.retcode, loginresp.retinfo))
             return False
         # update workkey
         self["workkey"] = ciresp.getworkkey()
@@ -76,11 +79,12 @@ class session:
         loginresp.recv()
         # update session fields from login response
         if loginresp.retcode != "0":
-            print "Login failed"
+            self.logger.warning("Login failed: %s, %s" %
+                    (loginresp.retcode, loginresp.retinfo))
             return False
 
         loginresp.updatesession()
-        print "Login ok"
+        self.logger.info("Login ok")
         return True
 
     def encrypt(self, s):
@@ -377,7 +381,6 @@ class SubmitOrderResp(response):
     pass
 
 class QueryOrderReq(request):
-    # TODO: return multiple line?
     code = "505"
     paramlist = ["begin_date", "end_date", "get_orders_mode", "user_code", "market", "secu_acc", "secu_code", "trd_id", "biz_no", "order_id", "branch", "account", "ext_inst"]
 
@@ -398,7 +401,6 @@ class QueryOrderResp(response):
 
 
 class DealReq(request):
-    # TODO: return multiple line?
     code = "506"
     paramlist = ["begin_date", "end_date", "user_code", "market", "secu_acc", "secu_code", "trd_id", "order_id", "branch", "account", "ext_inst"]
 
