@@ -10,8 +10,9 @@ import ConfigParser
 import cProfile
 from threading import Thread, currentThread, Lock
 import time
-import types
 from datetime import datetime
+import types
+import logging, logging.config
 
 import jz
 from dbfpy import dbf
@@ -131,8 +132,9 @@ class Portfolio(object):
     def __init__(self, ptfn, sessioncfg, tqueue, updtlock):
         self.session = jz.session(sessioncfg)
         self.ptfn = ptfn
+        self.logger = logging.getLogger()
         if not self.session.setup():
-            print "session setup failed."
+            self.logger.warning("session setup failed.")
             sys.exit(1)
         self.tqueue = tqueue
         self.bolock = Lock()
@@ -318,7 +320,7 @@ class Portfolio(object):
 
     def buyBatchTop(self):
         self.bolock.acquire()
-        print "batch buying", datetime.now().time()
+        self.logger.info("batch buying")
 
         if self.bostate == Portfolio.BOUNORDERED:
             # new and first batch buy order
@@ -399,11 +401,11 @@ class Portfolio(object):
                     self.tqueue.put( (reqclass, respclass, param, self.buyBatchBottom, True) )
 
             if self.bocount == 0:
-                print "not stock to buy."
+                self.logger.info("not stock to buy.")
                 self.bostate = Portfolio.BOBUYCANCELED
 
         else:
-            print "not in buy-able state"
+            self.logger.info("not in buy-able state")
 
         self.bolock.release()
 
@@ -431,12 +433,12 @@ class Portfolio(object):
         self.bocount = self.bocount - 1
         if self.bocount == 0:
             self.bostate = Portfolio.BOBUYSUCCESS
-            print "batch buy-ed", datetime.now().time()
+            self.logger.info("batch buy-ed")
         self.bolock.release()
 
     def cancelBuyBatchTop(self):
         self.bolock.acquire()
-        print "batch buy canceling"
+        self.logger.info("batch buy canceling")
 
         if self.bostate == Portfolio.BOBUYSUCCESS:
             # set Portfolio batch state
@@ -467,12 +469,12 @@ class Portfolio(object):
                     param["secu_code"] = self.stockinfo[scode]["code"]
                     self.tqueue.put( (reqclass, respclass, param, self.cancelBuyBatchBottom, True) )
             if self.bocount == 0:
-                print "no stock to cancel buy"
+                self.logger.info("no stock to cancel buy")
                 self.bostate = Portfolio.BOBUYSUCCESS
                 # no work to do, let OrderUpdater go on.
                 self.updtlock.release()
         else:
-            print "not in buy cancel-able state"
+            self.logger.info("not in buy cancel-able state")
 
         self.bolock.release()
 
@@ -539,12 +541,12 @@ class Portfolio(object):
         if self.bocount == 0:
             self.updtlock.release()
             self.bostate = Portfolio.BOBUYCANCELED
-            print "batch buy canceled"
+            self.logger.info("batch buy canceled")
         self.bolock.release()
 
     def sellBatchTop(self):
         self.bolock.acquire()
-        print "batch selling"
+        self.logger.info("batch selling")
 
         if self.bostate == Portfolio.BOBUYSUCCESS:
             # only succeed when all buysuccess stocks are 100% buyed
@@ -556,7 +558,7 @@ class Portfolio(object):
                 assert si["pastsellcount"] == 0
                 if orec["order_state"] == Portfolio.BUYSUCCESS:
                     if orec["ordercount"] != orec["dealcount"]:
-                        print "stock %s is in buying, cancel order fist and then sell." % scode
+                        self.logger.info("stock %s is in buying, cancel order fist and then sell." % scode)
                         allbought = False
                         break
                     else:
@@ -607,7 +609,7 @@ class Portfolio(object):
                     param["qty"] = orec["ordercount"]
                     self.tqueue.put( (reqclass, respclass, param, self.sellBatchBottom, True) )
             if self.bocount == 0:
-                print "no stock to sell"
+                self.logger.info("no stock to sell")
                 self.bostate = Portfolio.BOBUYSUCCESS
 
         elif self.bostate == Portfolio.BOBUYCANCELED:
@@ -663,7 +665,7 @@ class Portfolio(object):
                     param["qty"] = orec["ordercount"]
                     self.tqueue.put( (reqclass, respclass, param, self.sellBatchBottom, True) )
             if self.bocount == 0:
-                print "no stock to sell"
+                self.logger.info("no stock to sell")
                 self.bostate = Portfolio.BOBUYCANCELED
 
         elif self.bostate == Portfolio.BOSELLCANCELED:
@@ -703,10 +705,10 @@ class Portfolio(object):
                     param["qty"] = orec["ordercount"]
                     self.tqueue.put( (reqclass, respclass, param, self.sellBatchBottom, True) )
             if self.bocount == 0:
-                print "no stock to sell"
+                self.logger.info("no stock to sell")
                 self.bostate = Portfolio.BOSELLCANCELED
         else:
-            print "not in sell-able state"
+            self.logger.info("not in sell-able state")
 
         self.bolock.release()
 
@@ -734,12 +736,12 @@ class Portfolio(object):
         self.bocount = self.bocount - 1
         if self.bocount == 0:
             self.bostate = Portfolio.BOSELLSUCCESS
-            print "batch selled"
+            self.logger.info("batch selled")
         self.bolock.release()
 
     def cancelSellBatchTop(self):
         self.bolock.acquire()
-        print "batch sell canceling"
+        self.logger.info("batch sell canceling")
 
         if self.bostate == Portfolio.BOSELLSUCCESS:
             self.bostate = Portfolio.BOSELLCANCELING
@@ -772,12 +774,12 @@ class Portfolio(object):
                     self.tqueue.put( (reqclass, respclass, param, self.cancelSellBatchBottom, True) )
 
             if self.bocount == 0:
-                print "no stock to cancel selling"
+                self.logger.info("no stock to cancel selling")
                 self.bostate = Portfolio.BOSELLSUCCESS
                 # no work to do, let OrderUpdater go on.
                 self.updtlock.release()
         else:
-            print "not in sell cancel-able state"
+            self.logger.info("not in sell cancel-able state")
 
         self.bolock.release()
 
@@ -839,7 +841,7 @@ class Portfolio(object):
         if self.bocount == 0:
             self.updtlock.release()
             self.bostate = Portfolio.BOSELLCANCELED
-            print "batch sell canceled"
+            self.logger.info("batch sell canceled")
         self.bolock.release()
 
 class ProfiledThread(Thread):
@@ -871,6 +873,8 @@ class PortfolioUpdater(Thread):
         self.portfolio = portfolio
         self.portmodel = portmodel
         self.runflag = True
+        self.name = "PortfolioUpdater"
+        self.logger = logging.getLogger()
 
         # one-to-one mapping of dbfield to stockattr, for SH
         self.shdbfield = ["S1", "S2", "S8"]#, "S9", "S10"]
@@ -984,8 +988,10 @@ class OrderUpdater(Thread):
         self.runflag = True
         self.session = jz.session(sessioncfg)
         self.updtlock = updtlock
+        self.name = "OrderUpdater"
+        self.logger = logging.getLogger()
         if not self.session.setup():
-            print "Session setup failed."
+            self.logger.warning("Session setup failed.")
             sys.exit(1)
 
     def __del__(self):
@@ -1040,8 +1046,8 @@ class OrderUpdater(Thread):
                                 si["currentbuycount"] = si["pastbuycount"]
                                 si["currentbuycost"] = si["pastbuycost"]
                     else:
-                        print "error when query order for %s" % order["order_id"]
-                        print qoresp.retcode, qoresp.retinfo
+                        self.logger.warning("error when query order for %s: %s, %s"
+                                % (order["order_id"], qoresp.retcode, qoresp.retinfo))
 
                 # update a row
                 rowindex = self.portfolio.stocklist.index(scode)
@@ -1063,6 +1069,8 @@ class jzWorker(Thread):
         self.session_cfg = session_cfg
         self.tqueue = tqueue
         self.runflag = True
+        self.name = "jzWorker"
+        self.logger = logging.getLogger()
 
     def setupsession(self):
         self.session = jz.session(self.session_cfg)
@@ -1076,7 +1084,7 @@ class jzWorker(Thread):
     def myrun(self):
         # TODO: what if easytrader is closed while tqueue is not empty
         if not self.setupsession():
-            print "jzWorker", currentThread().ident, "cannot setup session, and will exit."
+            self.logger.warning("cannot setup session, and will exit.")
             return
 
         while self.runflag:
@@ -1136,8 +1144,9 @@ class uicontrol(Ui_MainWindow):
         self.session_cfg = session_cfg
         self.portfolio = portfolio
         self.pmodel = pmodel
-
         self.portfolio.uic = self
+
+        self.logger = logging.getLogger()
 
     def setup(self):
         self.setupUi(self.mainwindow)
@@ -1234,7 +1243,6 @@ def verifymap(dbfn, mapfn, codekey):
     for k in map:
         # k is sth like SH600000, SZ000338
         if k[2:] != db[map[k]][codekey]:
-            print k, map[k], db[map[k]]
             ret = False
             break
     f.close()
@@ -1248,11 +1256,31 @@ def main(args):
     #import psyco
     #psyco.full()
 
-    # chdir to app's directory
+    # main initialization
+
     app = QApplication(args)
+    # chdir to app's directory
     os.chdir(os.path.dirname(os.path.abspath(args[0])))
+    # make log directory
+    CONFIGFN = "easytrader.cfg"
+    LOGDIR = "log"
+    if not os.path.isdir(LOGDIR):
+        try:
+            os.mkdir(LOGDIR)
+        except OSError as e:
+            print "cannot make log directory: %d, %s." % (e.errno, e.strerror)
+            QMessageBox.information(None, "", u"不能创建log目录: %d, %s" % (e.errno, e.strerror))
+            sys.exit(1)
+
+    logging.config.fileConfig(CONFIGFN)
+    logger = logging.getLogger()
+    msg = "i'm started"
+    logger.info(msg)
 
     # read config
+    JZSEC = "jz"
+    JSDSEC = "jsd"
+
     session_config = {}
     session_config["tradedbfn"] = "tradeinfo.db"
     session_config["jzserver"] = "172.18.20.52"
@@ -1262,10 +1290,9 @@ def main(args):
     session_config["jzpasswd"] = "123444"
     session_config["shdbfn"] = "z:\\show2003.dbf"
     session_config["szdbfn"] = "z:\\sjshq.dbf"
-    configfn = "easytrader.cfg"
     config = ConfigParser.RawConfigParser()
-    config.read(configfn)
-    for k,v in config.items("easytrader"):
+    config.read(CONFIGFN)
+    for k,v in config.items(JZSEC):
         session_config[k] = v
     try:
         session_config["jzport"] = int(session_config["jzport"])
@@ -1278,13 +1305,13 @@ def main(args):
     d.show()
     d.exec_()
     if d.status == False:
-        print "User cancel login"
+        logger.info("User cancel login")
         sys.exit(1)
 
     session_config.update(d.config)
     testsession = jz.session(session_config)
     if not testsession.setup():
-        print "Cannot login."
+        logger.warning("Cannot login.")
         sys.exit(1)
     testsession.close()
 
@@ -1298,15 +1325,15 @@ def main(args):
     shmapfn = "shmap.pkl"
     szmapfn = "szmap.pkl"
     if not verifymap(shdbfn, shmapfn, "S1"):
-        print "SH stock map file error."
+        logger.warning("SH stock map file error.")
         sys.exit(1)
     if not verifymap(szdbfn, szmapfn, "HQZQDM"):
-        print "SZ stock map file error."
+        logger.warning("SZ stock map file error.")
         sys.exit(1)
     #portfoliofn = "hs300.txt"
     portfoliofn = unicode(QFileDialog.getOpenFileName(None, u"选择投资组合", "./portfolio", "*.ptf"))
     if portfoliofn == u"":
-        print "No portfolio seleted."
+        logger.info("No portfolio seleted.")
         sys.exit(1)
 
     updtlock = Lock()
@@ -1345,27 +1372,27 @@ def main(args):
     app.exec_()
 
     # exit process
-    print "notify updater threads to stop."
+    logger.info("notify updater threads to stop.")
     pupdater.stop()
     orderupdater.stop()
-    print "waiting updater threads to stop."
+    logger.info("waiting updater threads to stop.")
     pupdater.join()
     orderupdater.join()
-    print "updater threads stopped."
-    print "waiting jzWorkers to finalize jobs"
+    logger.info("updater threads stopped.")
+    logger.info("waiting jzWorkers to finalize jobs")
     # next line ensures all async request will be executed before exit.
     tqueue.join()
     for i in range(jzWorkerNum):
         workers[i].stop()
     for i in range(jzWorkerNum):
         workers[i].join()
-    print "jzWorkers stopped"
-    print "saving order info."
+    logger.info("jzWorkers stopped")
+    logger.info("saving order info.")
     p.savePortfolio()
     del p
     del pupdater
     del orderupdater
-    print "I will exit."
+    logger.info("I will exit.")
 
 if __name__=="__main__":
     main(sys.argv)
