@@ -82,6 +82,9 @@ R|||6011|||9201|123|
     def __setitem__(self, key, value):
         self.params[key] = value
 
+    def updateparams(self, params):
+        self.params.update(params)
+
     def serialize(self):
         header = self.genheader()
         payload = self.genpayload()
@@ -133,6 +136,7 @@ A|||Y|中投证券|97272165.62|0.00|0.00|347328.00|2324049.60|0.00|0.00|94304028
         data = self.session.conn.recv(8192)
         assert data[0] == "A"
 
+        data = data.decode("GBK")
         record = data.split("|")[3:]
         if record[-1] == "":
             # the case when '|' at the end
@@ -153,6 +157,7 @@ A|||Y|中投证券|97272165.62|0.00|0.00|347328.00|2324049.60|0.00|0.00|94304028
     def recv_many(self):
         # the case then multiple recv is needed, and the first package denote the number of succesive packages
         data = self.session.conn.recv(8192)
+        data = data.decode("GBK")
         assert data[0] == "A"
         record = data.split("|")[3:]
         if record[-1] == "":
@@ -170,6 +175,7 @@ A|||Y|中投证券|97272165.62|0.00|0.00|347328.00|2324049.60|0.00|0.00|94304028
                 try:
                     getnextreq.send()
                     data = self.session.conn.recv(8192)
+                    data = data.decode("GBK")
                     record = data.split("|")
                     if record[-1] == "":
                         # the case when '|' at the end
@@ -249,7 +255,16 @@ class GetContractResp(response):
 
 class OrderReq(request):
     code = "6021"
-    #paramlist = ["exchcode", "code", "buysell", "openclose", "insure", "count", "price"]
+    paramlist = ["exchcode", "code", "buysell", "openclose", "ifhedge", "count", "price", "tradenum", "seat"]
 
 class OrderResp(response):
-    pass
+    okfieldn = 31
+    hasmore = 0
+
+class CancelOrderReq(request):
+    code = "6022"
+    paramlist = ["exchcode", "code", "buysell", "openclose", "ifhedge", "count", "price", "order_id", "cancelcount", "syscode", "seat", "orderseat"]
+
+class CancelOrderResp(response):
+    okfieldn = 13
+    hasmore = 0
