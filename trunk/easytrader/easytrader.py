@@ -14,7 +14,7 @@ from datetime import datetime
 import types
 import logging, logging.config
 
-import jz
+import jz, jsd
 from dbfpy import dbf
 from PyQt4 import Qt
 from PyQt4.QtCore import *
@@ -168,7 +168,7 @@ class Portfolio(object):
                 #"order_state", "ordercount", "dealcount", "orderprice",
                 #"dealprice", "latestprice", "order_date", "order_time",
                 "latestprice", "tobuyprice", "tosellprice",
-                "pastbuycount", "currentbuycount", "currentbuycost", "pastsellcount", "currentsellcount", "currentsellgain"]
+                "currentbuycount", "currentbuycost", "currentsellcount", "currentsellgain"]
 
         self.stockattrnamemap = {
                 "count":u"数量",
@@ -1232,6 +1232,64 @@ class uicontrol(Ui_MainWindow):
     def showbostate(self):
         QMetaObject.invokeMethod(self.statusbar, "showMessage", Qt.QueuedConnection, Q_ARG("QString", QString(u"组合状态: " + self.portfolio.bostate)))
 
+class basediffUpdater(Thread):
+    def __init__(self, shdbfn, shmapfn, jsdcfg, uic):
+        Thread.__init__(self)
+        self.runflag = True
+
+        self.shdbfn = shdbfn
+        self.shmapfn = shmapfn
+        self.jsdcfg = jsdcfg
+        self.jsdsession = None
+        self.uic = uic
+
+        self.name = "basediffUpdater"
+        self.logger = logging.getLogger()
+
+    def run(self):
+        hs300code = "SH000300"
+
+        self.dbsh = dbf.Dbf(self.shdbfn, ignoreErrors=True, readOnly=True)
+        f = open(self.shmapfn)
+        self.shmap = pickle.load(f)
+        f.close()
+
+        self.jsdsession = jsd.session(self.jsdcfg)
+        if not self.jsdsession.setup():
+            self.logger.warning("jsd session setup failed.")
+        
+        # read contracts and fill stock index combobox.
+        self.sicontracts = ['IF1005', 'IF1006', 'IF1009', 'IF1012']
+        for sindex in self.sicontracts:
+            self.uic.sindexcmbox.addItem(sindex)
+        self.uic.sindexcmbox.setCurrentIndex(0)
+
+        while self.runflag:
+            # update hs300
+            rec = self.dbsh[self.shmap[hs300code]]
+            hs300latest = rec['S8']
+
+            # update selected stock index
+            hqreq = jsd.QueryHQReq(self.jsdsession)
+            hqreq["code"] = self.sicontracts[self.uic.sindexcmbox.currentIndex()]
+            hqreq.send()
+            hqresp = jsd.QueryHQResp(self.jsdsession)
+            hqresp.recv()
+            silatest = float(hqresp.records[0][9])
+
+            # calculate basediff
+            basediff = silatest - hs300latest
+
+            # update UI
+            self.uic.hs300line.setText(str(hs300latest))
+            self.uic.sindexline.setText(str(silatest))
+            self.uic.basediffline.setText(str(basediff))
+
+            time.sleep(1)
+
+    def stop(self):
+        self.runflag = False
+
 def testslot(t):
     print t
 
@@ -1368,10 +1426,25 @@ def main(args):
     uic = uicontrol(window, session_config, p, pmodel)
     uic.setup()
 
+
+    jsd_sessioncfg = {}
+    for k,v in config.items(JSDSEC):
+        jsd_sessioncfg[k] = v
+    try:
+        jsd_sessioncfg["jsdport"] = int(jsd_sessioncfg["jsdport"])
+    except KeyError:
+        pass
+    bdiffupdter = basediffUpdater(shdbfn, shmapfn, jsd_sessioncfg, uic)
+    bdiffupdter.start()
+
     window.show()
     app.exec_()
 
     # exit process
+    logger.info("waiting basediffUpdater to stop")
+    bdiffupdter.stop()
+    bdiffupdter.join()
+
     logger.info("notify updater threads to stop.")
     pupdater.stop()
     orderupdater.stop()

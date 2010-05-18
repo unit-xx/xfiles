@@ -19,12 +19,13 @@ class positioninfodlg(QDialog, Ui_positioninfodlg):
             mktval = mktval + si["currentbuycount"] * float(si["latestprice"])
         profitval = 0.0
         profitper = 0.0
+        profitval = "N/A"
+        profitper = "N/A"
         try:
             profitval = mktval - totalcost
             profitper = profitval / totalcost
         except ZeroDivisionError:
-            profitval = "N/A"
-            profitper = "N/A"
+            pass
 
         self.totalcost.setText(QString(str(totalcost)))
         self.mktval.setText(QString(str(mktval)))
