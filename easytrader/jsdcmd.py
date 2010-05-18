@@ -11,6 +11,13 @@ session_config["jsdpasswd"] = "123"
 session_config["branchcode"] = ""
 session_config["ordermethod"] = ""
 
+# global control flag
+cancelorder = False
+doorder = True
+if len(sys.argv) > 1:
+    oid = sys.argv[1]
+    doorder = False
+
 # login
 s = jsd.session(session_config)
 if not s.setup():
@@ -23,7 +30,15 @@ tcinforeq.send()
 tcinforesp = jsd.TradeCapInfoResp(s)
 tcinforesp.recv()
 print tcinforesp.records
+print
 # hq, order, cancelorder, orderinfo
+
+#qcreq = jsd.GetContractReq(s)
+#qcreq.send()
+#qcresp = jsd.GetContractResp(s)
+#qcresp.recv()
+#print qcresp.records
+#print
 
 hqreq = jsd.QueryHQReq(s)
 #hqreq["exchcode"] = "G"
@@ -32,17 +47,14 @@ hqreq.send()
 hqresp = jsd.QueryHQResp(s)
 hqresp.recv()
 print hqresp.records
+print
 
 getcnreq = jsd.GetClientNumReq(s)
 getcnreq.send()
 getcnresp = jsd.GetClientNumResp(s)
 getcnresp.recv()
 print getcnresp.records
-
-doorder = True
-if len(sys.argv) > 1:
-    oid = sys.argv[1]
-    doorder = False
+print
 
 if doorder:
     oreq = jsd.OrderReq(s)
@@ -59,6 +71,7 @@ if doorder:
     oresp = jsd.OrderResp(s)
     oresp.recv()
     print oresp.records
+    print
     #print len(oresp.records[0])
 
 qoreq = jsd.QueryOrderReq(s)
@@ -71,8 +84,8 @@ qoresp = jsd.QueryOrderResp(s)
 qoresp.recv()
 print qoresp.records
 print len(qoresp.records[0])
+print
 
-cancelorder = True
 if cancelorder:
     coreq = jsd.CancelOrderReq(s)
     coreq["exchcode"] = "G"
@@ -91,5 +104,6 @@ if cancelorder:
     print coresp.anwser
     print coresp.records
     print len(coresp.records[0])
+    print
 
 # $Id$

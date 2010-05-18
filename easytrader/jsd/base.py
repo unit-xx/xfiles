@@ -3,6 +3,7 @@
 import socket
 import datetime
 import sqlite3 as db
+import logging
 
 class session:
     def __init__(self, sessioncfg):
@@ -10,6 +11,7 @@ class session:
         self.conn = None
         self.tradedbconn = None
         self.data = {}
+        self.logger = logging.getLogger()
 
     def __getitem__(self, key):
         return self.data[key]
@@ -38,10 +40,10 @@ class session:
         loginresp = LoginResp(self)
         loginresp.recv()
         if loginresp.anwser != "Y":
-            print "Login failed"
+            self.logger.warning("Login failed")
             return False
 
-        print "Login ok"
+        self.logger.info("Login ok")
         return True
 
     def storetrade(self, req, resp):
@@ -176,7 +178,7 @@ A|||Y|中投证券|97272165.62|0.00|0.00|347328.00|2324049.60|0.00|0.00|94304028
                     getnextreq.send()
                     data = self.session.conn.recv(8192)
                     data = data.decode("GBK")
-                    record = data.split("|")
+                    record = data.split("|")[3:]
                     if record[-1] == "":
                         # the case when '|' at the end
                         del record[-1]
@@ -251,7 +253,8 @@ class GetContractReq(request):
     paramlist = []
 
 class GetContractResp(response):
-    pass
+    okfieldn = 10
+    hasmore = 1
 
 class OrderReq(request):
     code = "6021"
