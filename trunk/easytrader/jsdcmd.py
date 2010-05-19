@@ -29,6 +29,7 @@ tcinforeq["date"] = "20100512"
 tcinforeq.send()
 tcinforesp = jsd.TradeCapInfoResp(s)
 tcinforesp.recv()
+print "TradeCapital"
 print tcinforesp.records
 print
 # hq, order, cancelorder, orderinfo
@@ -46,6 +47,7 @@ hqreq["code"] = "IF1005"
 hqreq.send()
 hqresp = jsd.QueryHQResp(s)
 hqresp.recv()
+print "HQ"
 print hqresp.records
 print
 
@@ -53,6 +55,7 @@ getcnreq = jsd.GetClientNumReq(s)
 getcnreq.send()
 getcnresp = jsd.GetClientNumResp(s)
 getcnresp.recv()
+print "client number"
 print getcnresp.records
 print
 
@@ -63,13 +66,14 @@ if doorder:
     oreq["buysell"] = "0"
     oreq["openclose"] = "0"
     oreq["ifhedge"] = "0"
-    oreq["count"] = "2"
+    oreq["count"] = "5"
     oreq["price"] = "2800"
     oreq["tradenum"] = "00028184"
     #oreq["tradenum"] = "aaaaaaaaa9201a"
     oreq.send()
     oresp = jsd.OrderResp(s)
     oresp.recv()
+    print "order response"
     print oresp.records
     print
     #print len(oresp.records[0])
@@ -82,6 +86,7 @@ else:
 qoreq.send()
 qoresp = jsd.QueryOrderResp(s)
 qoresp.recv()
+print "order query"
 print qoresp.records
 print len(qoresp.records[0])
 print
@@ -101,6 +106,7 @@ if cancelorder:
     coreq.send()
     coresp = jsd.CancelOrderResp(s)
     coresp.recv()
+    print "cancel order"
     print coresp.anwser
     print coresp.records
     print len(coresp.records[0])
