@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'tradeui.ui'
 #
-# Created: Tue May 18 14:26:54 2010
+# Created: Wed May 19 09:50:09 2010
 #      by: PyQt4 UI code generator 4.7.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -78,7 +78,7 @@ class Ui_MainWindow(object):
         self.saveorder_2.setObjectName("saveorder_2")
         self.gridLayout_2.addWidget(self.saveorder_2, 0, 7, 1, 1)
         self.gridLayout_3.addWidget(self.groupBox_2, 0, 0, 1, 1)
-        spacerItem = QtGui.QSpacerItem(40, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
+        spacerItem = QtGui.QSpacerItem(40, 0, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
         self.gridLayout_3.addItem(spacerItem, 0, 1, 1, 1)
         self.tabWidget.addTab(self.tab, "")
         self.tab_2 = QtGui.QWidget()
@@ -135,7 +135,7 @@ class Ui_MainWindow(object):
         self.tabWidget.addTab(self.tab_2, "")
         self.gridLayout_6.addWidget(self.tabWidget, 0, 0, 1, 1)
         self.groupBox_3 = QtGui.QGroupBox(self.centralwidget)
-        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Minimum)
+        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.groupBox_3.sizePolicy().hasHeightForWidth())
@@ -210,10 +210,15 @@ class Ui_MainWindow(object):
         self.basediffline.setReadOnly(True)
         self.basediffline.setObjectName("basediffline")
         self.gridLayout_5.addWidget(self.basediffline, 0, 6, 1, 1)
-        spacerItem2 = QtGui.QSpacerItem(383, 40, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
+        spacerItem2 = QtGui.QSpacerItem(383, 0, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
         self.gridLayout_5.addItem(spacerItem2, 0, 7, 1, 1)
         self.gridLayout_6.addWidget(self.groupBox_3, 1, 0, 1, 1)
         self.stock = QtGui.QTableView(self.centralwidget)
+        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.stock.sizePolicy().hasHeightForWidth())
+        self.stock.setSizePolicy(sizePolicy)
         self.stock.setObjectName("stock")
         self.gridLayout_6.addWidget(self.stock, 2, 0, 1, 1)
         MainWindow.setCentralWidget(self.centralwidget)

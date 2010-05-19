@@ -8,6 +8,8 @@ import sqlite3 as db
 def pad(s, length, padder=" "):
     return s + "".join([padder * (length-len(s))])
 
+SHAMARKET = "10"
+SZAMARKET = "00"
 """
 Maintains common fields in header, such as version, key, etc.
 """
@@ -351,9 +353,9 @@ class LoginResp(response):
         self.session["channel"] = "4"
         self.session["session"] = self.records[0][7]
         for r in self.records:
-            if r[0] == "00":
+            if r[0] == SZAMARKET:
                 self.session["secu_acc"]["SZ"] = r[1]
-            if r[0] == "10":
+            if r[0] == SHAMARKET:
                 self.session["secu_acc"]["SH"] = r[1]
         assert(self.session["secu_acc"]["SZ"] != "")
         assert(self.session["secu_acc"]["SH"] != "")
@@ -415,8 +417,16 @@ class CancelOrderResp(response):
     pass
 
 class StockQueryReq(request):
+    # the stocks i hold
     code = "504"
     paramlist = ["user_code", "account", "market", "secu_acc", "secu_code", "ext_inst"]
 
 class StockQueryResp(response):
+    pass
+
+class SecuInfoReq(request):
+    code = "203"
+    paramlist = ["market", "secu_cls", "secu_code"]
+
+class SecuInfoResp(response):
     pass

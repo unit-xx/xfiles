@@ -68,6 +68,51 @@ class PortfolioModel(QAbstractTableModel):
                 self.index(rowindex,0),
                 self.index(rowindex, len(self.portfolio.stockmodelattr)-1))
 
+class StockIndexModel(QAbstractTableModel):
+    def __init__(self, portfolio, parent=None):
+        QAbstractTableModel.__init__(self, parent)
+        self.portfolio = portfolio
+
+    def rowCount(self, parent):
+        return len(self.portfolio.stocklist)
+
+    def columnCount(self, parent):
+        return len(self.portfolio.stockmodelattr)
+
+    def headerData(self, section, orientation, role):
+        if orientation == Qt.Horizontal and role == Qt.DisplayRole:
+            hname = self.portfolio.stockmodelattr[section]
+            try:
+                hname = self.portfolio.stockattrnamemap[hname]
+            except KeyError:
+                pass
+            return QVariant(hname)
+        if orientation == Qt.Vertical and role == Qt.DisplayRole:
+            return QVariant(str(section + 1))
+        return QVariant()
+
+    def data(self, index, role):
+        if not index.isValid():
+            return QVariant()
+        elif role != Qt.DisplayRole:
+            return QVariant()
+        rowkey = self.portfolio.stocklist[index.row()]
+        columnkey = self.portfolio.stockmodelattr[index.column()]
+        try:
+            rawdata = self.portfolio.stockinfo[rowkey][columnkey]
+            if not isinstance(rawdata, unicode):# expect rawdata as numbers here
+                rawdata = str(rawdata)
+            celldata = QString(rawdata)
+            return QVariant(celldata)
+        except KeyError:
+            return QVariant()
+
+    @pyqtSlot(int)
+    def updaterow(self, rowindex):
+        self.emit(SIGNAL("dataChanged(QModelIndex,QModelIndex)"),
+                self.index(rowindex,0),
+                self.index(rowindex, len(self.portfolio.stockmodelattr)-1))
+
 class OrderRecord:
     orattr = [
             # current (last) buy specific fields
@@ -145,7 +190,7 @@ class Portfolio(object):
         self.stocklist = []
         self.stockset = set()
         self.stockattr = [
-                # common fields, read from storage, except name
+                # common fields, read from storage, except name, of type str/unicode
                 "count", "market", "code", "name",
                 # buy and sell records, list of OrderRecord
                 "pastbuy", "pastsell",
@@ -157,8 +202,13 @@ class Portfolio(object):
                 # currentxxxyyy
                 "currentbuycount", "currentbuycost",
                 "currentsellcount", "currentsellgain",
-                # prices, update timely from dbf
-                "latestprice", "tobuyprice", "tosellprice"]
+                # prices, update timely from dbf, of type float
+                "latestprice", "tobuyprice", "tosellprice",
+                "open", "close",
+                # of type float (after conversion from jz)
+                "ceiling", "floor",
+                # of type boolean
+                "stopped"]
 
         # use market+stock number as key, dict of dict
         self.stockinfo = {}
@@ -167,6 +217,7 @@ class Portfolio(object):
         self.stockmodelattr = ["count", "market", "code", "name",
                 #"order_state", "ordercount", "dealcount", "orderprice",
                 #"dealprice", "latestprice", "order_date", "order_time",
+                "close", "open",
                 "latestprice", "tobuyprice", "tosellprice",
                 "currentbuycount", "currentbuycost", "currentsellcount", "currentsellgain"]
 
@@ -175,6 +226,8 @@ class Portfolio(object):
                 "market":u"市场",
                 "code":u"代码",
                 "name":u"名称",
+                "close":u"昨收",
+                "open":u"今开",
                 "latestprice":u"最新价",
                 "tobuyprice":u"建仓价",
                 "tosellprice":u"平仓价",
@@ -187,7 +240,7 @@ class Portfolio(object):
         self.pricepolicylist = ["latest", "s5", "s4", "s3", "s2", "s1", "b1", "b2", "b3", "b4", "b5"]
         self.buypolicy = "s5"
         self.sellpolicy = "b5"
-        self.pricepolicynamemap = {"latest":u"最新价", 
+        self.pricepolicynamemap = {"latest":u"最新价",
                 "s5":u"卖五",
                 "s4":u"卖四",
                 "s3":u"卖三",
@@ -201,6 +254,11 @@ class Portfolio(object):
                 }
 
         self._bostate = Portfolio.BOUNORDERED
+
+
+        self.sindex = ""
+        self.sindexattr = {}
+
 
     def getbostate(self):
         return self._bostate
@@ -217,7 +275,7 @@ class Portfolio(object):
     # make bostate as property
     bostate = property(getbostate, setbostate)
 
-    def __del__(self):
+    def close(self):
         self.session.close()
 
     def loadPortfolio(self, ptfn=None):
@@ -877,28 +935,28 @@ class PortfolioUpdater(Thread):
         self.logger = logging.getLogger()
 
         # one-to-one mapping of dbfield to stockattr, for SH
-        self.shdbfield = ["S1", "S2", "S8"]#, "S9", "S10"]
+        self.shdbfield = ["S1", "S2", "S3", "S4", "S8"]#, "S9", "S10"]
         self.shdbmapping = {
                 "S1":"code",
                 "S2":"name",
+                "S3":"close",
+                "S4":"open",
                 "S8":"latestprice"
-                #"S9":"tobuyprice",
-                #"S10":"tosellprice"
                 }
         assert(len(self.shdbfield) == len(self.shdbmapping))
 
         # for SZ
-        self.szdbfield = ["HQZQDM", "HQZQJC", "HQZJCJ"]#, "HQBJW1", "HQSJW1"]
+        self.szdbfield = ["HQZQDM", "HQZRSP", "HQJRKP", "HQZQJC", "HQZJCJ"]#, "HQBJW1", "HQSJW1"]
         self.szdbmapping = {
                 "HQZQDM":"code",
                 "HQZQJC":"name",
+                "HQZRSP":"close",
+                "HQJRKP":"open",
                 "HQZJCJ":"latestprice"
-                #"HQBJW1":"tobuyprice",
-                #"HQSJW1":"tosellprice"
                 }
         assert(len(self.szdbfield) == len(self.szdbmapping))
 
-    def __del__(self):
+    def close(self):
         self.dbsh.close()
         self.dbsz.close()
 
@@ -917,7 +975,7 @@ class PortfolioUpdater(Thread):
                 "s4":"S30",
                 "s5":"S32"
                 }
-        price = str(shrec[policymapping[pricepolicy]])
+        price = shrec[policymapping[pricepolicy]]
         assert(price != "")
         return price
 
@@ -936,7 +994,7 @@ class PortfolioUpdater(Thread):
                 "s4":"HQSJW4",
                 "s5":"HQSJW5"
                 }
-        price = str(szrec[policymapping[pricepolicy]])
+        price = szrec[policymapping[pricepolicy]]
         assert(price != "")
         return price
 
@@ -994,7 +1052,7 @@ class OrderUpdater(Thread):
             self.logger.warning("Session setup failed.")
             sys.exit(1)
 
-    def __del__(self):
+    def close(self):
         self.session.close()
 
     def update(self):
@@ -1153,6 +1211,7 @@ class uicontrol(Ui_MainWindow):
 
         # setup stock info model
         self.stock.setModel(self.pmodel)
+        self.stock.resizeColumnsToContents()
 
         # setup price combobox
         for price in self.portfolio.pricepolicylist:
@@ -1361,6 +1420,7 @@ def main(args):
     from logindiag import logindlg
     d = logindlg(session_config)
     d.show()
+    d.activateWindow()
     d.exec_()
     if d.status == False:
         logger.info("User cancel login")
@@ -1373,11 +1433,7 @@ def main(args):
         sys.exit(1)
     testsession.close()
 
-    # save config
-    #for k in session_config:
-    #    config.set("easytrader", k, session_config[k])
-    #config.write(configfn)
-
+    # verify stock mapping
     shdbfn = session_config["shdbfn"]
     szdbfn = session_config["szdbfn"]
     shmapfn = "shmap.pkl"
@@ -1388,7 +1444,13 @@ def main(args):
     if not verifymap(szdbfn, szmapfn, "HQZQDM"):
         logger.warning("SZ stock map file error.")
         sys.exit(1)
-    #portfoliofn = "hs300.txt"
+
+    # save config
+    #for k in session_config:
+    #    config.set("easytrader", k, session_config[k])
+    #config.write(configfn)
+
+    #load portfolio
     portfoliofn = unicode(QFileDialog.getOpenFileName(None, u"选择投资组合", "./portfolio", "*.ptf"))
     if portfoliofn == u"":
         logger.info("No portfolio seleted.")
@@ -1426,7 +1488,6 @@ def main(args):
     uic = uicontrol(window, session_config, p, pmodel)
     uic.setup()
 
-
     jsd_sessioncfg = {}
     for k,v in config.items(JSDSEC):
         jsd_sessioncfg[k] = v
@@ -1462,9 +1523,9 @@ def main(args):
     logger.info("jzWorkers stopped")
     logger.info("saving order info.")
     p.savePortfolio()
-    del p
-    del pupdater
-    del orderupdater
+    p.close()
+    pupdater.close()
+    orderupdater.close()
     logger.info("I will exit.")
 
 if __name__=="__main__":
