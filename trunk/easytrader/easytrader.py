@@ -74,16 +74,16 @@ class StockIndexModel(QAbstractTableModel):
         self.portfolio = portfolio
 
     def rowCount(self, parent):
-        return len(self.portfolio.stocklist)
+        return 1
 
     def columnCount(self, parent):
-        return len(self.portfolio.stockmodelattr)
+        return len(self.portfolio.sindexmodelattr)
 
     def headerData(self, section, orientation, role):
         if orientation == Qt.Horizontal and role == Qt.DisplayRole:
-            hname = self.portfolio.stockmodelattr[section]
+            hname = self.portfolio.sindexmodelattr[section]
             try:
-                hname = self.portfolio.stockattrnamemap[hname]
+                hname = self.portfolio.sindexattrnamemap[hname]
             except KeyError:
                 pass
             return QVariant(hname)
@@ -96,10 +96,9 @@ class StockIndexModel(QAbstractTableModel):
             return QVariant()
         elif role != Qt.DisplayRole:
             return QVariant()
-        rowkey = self.portfolio.stocklist[index.row()]
-        columnkey = self.portfolio.stockmodelattr[index.column()]
+        columnkey = self.portfolio.sindexmodelattr[index.column()]
         try:
-            rawdata = self.portfolio.stockinfo[rowkey][columnkey]
+            rawdata = self.portfolio.sindexinfo[columnkey]
             if not isinstance(rawdata, unicode):# expect rawdata as numbers here
                 rawdata = str(rawdata)
             celldata = QString(rawdata)
@@ -111,7 +110,7 @@ class StockIndexModel(QAbstractTableModel):
     def updaterow(self, rowindex):
         self.emit(SIGNAL("dataChanged(QModelIndex,QModelIndex)"),
                 self.index(rowindex,0),
-                self.index(rowindex, len(self.portfolio.stockmodelattr)-1))
+                self.index(rowindex, len(self.portfolio.sindexmodelattr)-1))
 
 class OrderRecord:
     orattr = [
@@ -255,10 +254,17 @@ class Portfolio(object):
 
         self._bostate = Portfolio.BOUNORDERED
 
-
         self.sindex = ""
-        self.sindexattr = {}
-
+        self.sindexattr = ["count", "code",
+                "latestprice",
+                "open", "close", "ceiling", "floor",
+                "stopped"]
+        self.sindexmodelattr = ["count", "code",
+                "latestprice",
+                "open", "close", "ceiling", "floor",
+                "stopped"]
+        self.sindexattrnamemap = {}
+        self.sindexinfo = {}
 
     def getbostate(self):
         return self._bostate
@@ -293,9 +299,12 @@ class Portfolio(object):
         reader = csv.reader(f)
         self.bostate = Portfolio.BOUNORDERED
         for i in reader:
-            assert(i[0] in ("BO", "SH", "SZ"))
+            assert(i[0] in ("BO", "IF", "SH", "SZ"))
             if i[0] == "BO":
                 self.bostate = i[1].decode("utf-8")
+            elif i[0] == "IF":
+                self.sindexinfo["code"] = i[1].upper()
+                self.sindexinfo["count"] = i[2]
             else:
                 scode = i[0].upper() + i[1]
                 self.stocklist.append(scode)
@@ -368,6 +377,8 @@ class Portfolio(object):
                 f = open(ptfn, "wb")
             writer = csv.writer(f)
 
+            # write IF first
+            writer.writerow(["IF", self.sindexinfo["code"], self.sindexinfo["count"]])
             for scode in self.stocklist:
                 si = self.stockinfo[scode]
                 writer.writerow([si["market"], si["code"], si["count"], repr(si["pastbuy"]), repr(si["pastsell"])])
@@ -1197,11 +1208,12 @@ class jzWorker(Thread):
         self.runflag = False
 
 class uicontrol(Ui_MainWindow):
-    def __init__(self, mainwindow, session_cfg, portfolio, pmodel):
+    def __init__(self, mainwindow, session_cfg, portfolio, pmodel, sindexmodel):
         self.mainwindow = mainwindow
         self.session_cfg = session_cfg
         self.portfolio = portfolio
         self.pmodel = pmodel
+        self.sindexmodel = sindexmodel
         self.portfolio.uic = self
 
         self.logger = logging.getLogger()
@@ -1212,6 +1224,7 @@ class uicontrol(Ui_MainWindow):
         # setup stock info model
         self.stock.setModel(self.pmodel)
         self.stock.resizeColumnsToContents()
+        self.stockindex.setModel(self.sindexmodel)
 
         # setup price combobox
         for price in self.portfolio.pricepolicylist:
@@ -1464,6 +1477,7 @@ def main(args):
 
     # setup portfolio model for showing in table
     pmodel = PortfolioModel(p)
+    sindexmodel = StockIndexModel(p)
 
     # run the portfolio updater
     pupdater = PortfolioUpdater(shdbfn, shmapfn, szdbfn, szmapfn, p, pmodel)
@@ -1485,7 +1499,7 @@ def main(args):
 
     # main window
     window = QMainWindow()
-    uic = uicontrol(window, session_config, p, pmodel)
+    uic = uicontrol(window, session_config, p, pmodel, sindexmodel)
     uic.setup()
 
     jsd_sessioncfg = {}
