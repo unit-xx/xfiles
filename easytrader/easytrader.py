@@ -1049,6 +1049,39 @@ class PortfolioUpdater(Thread):
             self.update()
             time.sleep(2)
 
+class SIFPriceUpdater(Thread):
+    def __init__(self, portfolio, sindexmodel, jsdcfg):
+        Thread.__init__(self)
+        self.portfolio = portfolio
+        self.sindexmodel = sindexmodel
+        self.jsdcfg = jsdcfg
+        self.jsdsession = None
+        self.runflag = True
+        self.logger = logging.getLogger()
+        self.name = "SIFPriceUpdater"
+
+    def close(self):
+        if not jsdsession:
+            jsdsession.close()
+
+    def update(self):
+        pass
+
+    def stop(self):
+        self.runflag = False
+
+    def run(self):
+        # setup session
+        s = jsd.session(self.jsdcfg)
+        if not s.setup():
+            self.logger.warning("Cannot login")
+            return False
+
+        # ... and run periodic update
+        while self.runflag:
+            self.update()
+            time.sleep(1)
+
 class OrderUpdater(Thread):
     def __init__(self, portfolio, portmodel, sessioncfg, updtlock):
         Thread.__init__(self)
@@ -1059,6 +1092,10 @@ class OrderUpdater(Thread):
         self.updtlock = updtlock
         self.name = "OrderUpdater"
         self.logger = logging.getLogger()
+        # TODO: session setup here is not right, dbconn will be
+        # created in mainthread, which is wrong.
+        # the bug is not triggered in realrun because we don't
+        # store anything in OrderUpdater
         if not self.session.setup():
             self.logger.warning("Session setup failed.")
             sys.exit(1)
@@ -1226,7 +1263,7 @@ class uicontrol(Ui_MainWindow):
         self.stock.resizeColumnsToContents()
         self.stockindex.setModel(self.sindexmodel)
 
-        # setup price combobox
+        # setup stock price combobox
         for price in self.portfolio.pricepolicylist:
             self.pricepolicybuy.addItem(self.portfolio.pricepolicynamemap[price])
             self.pricepolicysell.addItem(self.portfolio.pricepolicynamemap[price])
@@ -1234,6 +1271,9 @@ class uicontrol(Ui_MainWindow):
         self.pricepolicysell.setCurrentIndex(self.portfolio.pricepolicylist.index(self.portfolio.sellpolicy))
         self.mainwindow.connect(self.pricepolicybuy, SIGNAL("currentIndexChanged(int)"), self.setbuypricepolicy)
         self.mainwindow.connect(self.pricepolicysell, SIGNAL("currentIndexChanged(int)"), self.setsellpricepolicy)
+
+        # setup sif price combobox
+        # TODO
 
         # setup batch order push button
         self.mainwindow.connect(self.buyorder, SIGNAL("clicked()"), self.buyBatch)

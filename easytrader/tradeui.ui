@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>934</width>
+    <width>1042</width>
     <height>615</height>
    </rect>
   </property>
@@ -139,21 +139,21 @@
           </property>
           <layout class="QGridLayout" name="gridLayout_7">
            <item row="0" column="5">
-            <widget class="QPushButton" name="pushButton">
+            <widget class="QPushButton" name="opensifbtn">
              <property name="text">
               <string>空开</string>
              </property>
             </widget>
            </item>
            <item row="0" column="6">
-            <widget class="QPushButton" name="pushButton_2">
+            <widget class="QPushButton" name="cancelopensifbtn">
              <property name="text">
               <string>撤单</string>
              </property>
             </widget>
            </item>
            <item row="0" column="4">
-            <widget class="QLineEdit" name="pricefixbuy_2">
+            <widget class="QLineEdit" name="openpricefixline">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                <horstretch>0</horstretch>
@@ -176,7 +176,7 @@
             </widget>
            </item>
            <item row="0" column="1">
-            <widget class="QComboBox" name="pricepolicybuy_2">
+            <widget class="QComboBox" name="openpricecmbox">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                <horstretch>0</horstretch>
@@ -342,21 +342,21 @@
           </property>
           <layout class="QGridLayout" name="gridLayout_8">
            <item row="0" column="5">
-            <widget class="QPushButton" name="pushButton_3">
+            <widget class="QPushButton" name="closesifbtn">
              <property name="text">
               <string>空平</string>
              </property>
             </widget>
            </item>
            <item row="0" column="6">
-            <widget class="QPushButton" name="pushButton_4">
+            <widget class="QPushButton" name="cancelclosesifbtn">
              <property name="text">
               <string>撤单</string>
              </property>
             </widget>
            </item>
            <item row="0" column="4">
-            <widget class="QLineEdit" name="pricefixsell_2">
+            <widget class="QLineEdit" name="closepricefixline">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                <horstretch>0</horstretch>
@@ -372,7 +372,7 @@
             </widget>
            </item>
            <item row="0" column="2">
-            <widget class="QComboBox" name="pricepolicysell_2">
+            <widget class="QComboBox" name="closepricecmbox">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
                <horstretch>0</horstretch>
@@ -602,8 +602,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>934</width>
-     <height>19</height>
+     <width>1042</width>
+     <height>18</height>
     </rect>
    </property>
    <property name="nativeMenuBar">
