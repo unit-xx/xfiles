@@ -5,6 +5,8 @@ import datetime
 import sqlite3 as db
 import logging
 
+CFFEXCODE = "G"
+
 class session:
     def __init__(self, sessioncfg):
         self.sessioncfg = sessioncfg
@@ -42,6 +44,18 @@ class session:
         if loginresp.anwser != "Y":
             self.logger.warning("Login failed")
             return False
+
+        getcnreq = GetClientNumReq(self)
+        getcnreq["exchcode"] = CFFEXCODE
+        getcnreq.send()
+        getcnresp = GetClientNumResp(self)
+        getcnresp.recv()
+        if getcnresp.anwser != "Y" or len(getcnresp.records) == 0:
+            self.logger.warning("Login failed")
+            return False
+
+        self["clientnum"] = getcnresp.records[0][2]
+        self["seat"] = getcnresp.records[0][4]
 
         self.logger.info("Login ok")
         return True

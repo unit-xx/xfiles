@@ -106,11 +106,11 @@ class StockIndexModel(QAbstractTableModel):
         except KeyError:
             return QVariant()
 
-    @pyqtSlot(int)
-    def updaterow(self, rowindex):
+    @pyqtSlot()
+    def updaterow(self):
         self.emit(SIGNAL("dataChanged(QModelIndex,QModelIndex)"),
-                self.index(rowindex,0),
-                self.index(rowindex, len(self.portfolio.sindexmodelattr)-1))
+                self.index(0,0),
+                self.index(0, len(self.portfolio.sindexmodelattr)-1))
 
 class OrderRecord:
     orattr = [
@@ -173,6 +173,25 @@ class Portfolio(object):
     BOSELLCANCELING = u"正在撤销卖出"
     BOSELLCANCELED = u"卖出已撤单"
 
+    IFUNORDERED = u"未持仓"
+    IFOPENSHORTOK = u"空开成功"
+    IFOPENSHORTFAILED = u"空开失败"
+    IFCANCELOPENSHORTOK = u"取消空开成功"
+    IFCANCELOPENSHORTFAILED = u"取消空开失败"
+    IFCLOSESHORTOK = u"空平成功"
+    IFCLOSESHORTFAILED = u"空平失败"
+    IFCANCELCLOSESHORTOK = u"取消空平成功"
+    IFCANCELCLOSESHORTFAILED = u"取消空平失败"
+
+    IFOPENLONGOK = u"多开成功"
+    IFOPENLONGFAILED = u"多开失败"
+    IFCANCELOPENLONGOK = u"取消多开成功"
+    IFCANCELOPENLONGFAILED = u"取消多开失败"
+    IFCLOSELONGOK = u"多平成功"
+    IFCLOSELONGFAILED = u"多平失败"
+    IFCANCELCLOSELONGOK = u"取消多平成功"
+    IFCANCELCLOSELONGFAILED = u"取消多平失败"
+
     def __init__(self, ptfn, sessioncfg, tqueue, updtlock):
         self.session = jz.session(sessioncfg)
         self.ptfn = ptfn
@@ -182,6 +201,7 @@ class Portfolio(object):
             sys.exit(1)
         self.tqueue = tqueue
         self.bolock = Lock()
+        self.sindexlock = Lock()
 
         self.updtlock = updtlock
 
@@ -254,17 +274,33 @@ class Portfolio(object):
 
         self._bostate = Portfolio.BOUNORDERED
 
-        self.sindex = ""
         self.sindexattr = ["count", "code",
-                "latestprice",
-                "open", "close", "ceiling", "floor",
+                # of type float
+                "latestprice", "open", "close", "ceiling", "floor",
+                # of type flat
+                "openposprice", "closeposprice",
                 "stopped"]
         self.sindexmodelattr = ["count", "code",
-                "latestprice",
-                "open", "close", "ceiling", "floor",
+                "latestprice", "close", "open", "ceiling", "floor",
+                "openposprice", "closeposprice",
                 "stopped"]
-        self.sindexattrnamemap = {}
+        self.sindexattrnamemap = {
+                "count":u"数量",
+                "code":u"代码",
+                "latestprice":u"最新价",
+                "close":u"昨收",
+                "open":u"今开",
+                "ceiling":u"涨停",
+                "floor":u"跌停",
+                "openposprice":u"空开价",
+                "closeposprice":u"空平价",
+                "stopped":u"停牌"
+                }
         self.sindexinfo = {}
+        self.sindexpricepolicylist = ["latest", "s1", "b1"]
+        self.openpolicy = "b1"
+        self.closepolicy = "s1"
+        self.sindexstate = Portfolio.IFUNORDERED
 
     def getbostate(self):
         return self._bostate
@@ -378,7 +414,10 @@ class Portfolio(object):
             writer = csv.writer(f)
 
             # write IF first
-            writer.writerow(["IF", self.sindexinfo["code"], self.sindexinfo["count"]])
+            try:
+                writer.writerow(["IF", self.sindexinfo["code"], self.sindexinfo["count"]])
+            except KeyError:# no sif info
+                pass
             for scode in self.stocklist:
                 si = self.stockinfo[scode]
                 writer.writerow([si["market"], si["code"], si["count"], repr(si["pastbuy"]), repr(si["pastsell"])])
@@ -913,6 +952,36 @@ class Portfolio(object):
             self.logger.info("batch sell canceled")
         self.bolock.release()
 
+    def openshort(self):
+        if self.sindexstate == Portfolio.IFUNORDERED:
+            pass
+        elif self.sindexstate == Portfolio.IFCANCELOPENSHORTOK:
+            pass
+        else:
+            pass
+
+    def cancelopenshort(self):
+        if self.sindexstate == Portfolio.IFOPENSHORTOK:
+            pass
+        else:
+            pass
+
+    def closeshort(self):
+        if self.sindexstate == Portfolio.IFOPENSHORTOK:
+            pass
+        elif self.sindexstate == Portfolio.IFCANCELOPENSHORTOK:
+            pass
+        elif self.sindexstate == Portfolio.IFCANCELCLOSESHORTOK:
+            pass
+        else:
+            pass
+
+    def cancelcloseshort(self):
+        if self.sindexstate == Portfolio.IFCLOSESHORTOK:
+            pass
+        else:
+            pass
+
 class ProfiledThread(Thread):
     # Overrides threading.Thread.run()
     def run(self):
@@ -1061,11 +1130,34 @@ class SIFPriceUpdater(Thread):
         self.name = "SIFPriceUpdater"
 
     def close(self):
-        if not jsdsession:
-            jsdsession.close()
+        if self.jsdsession:
+            self.jsdsession.close()
 
     def update(self):
-        pass
+        hqreq = jsd.QueryHQReq(self.jsdsession)
+        #hqreq["exchcode"] = "G"
+        hqreq["code"] = self.portfolio.sindexinfo["code"]
+        hqreq.send()
+        hqresp = jsd.QueryHQResp(self.jsdsession)
+        hqresp.recv()
+        if hqresp.anwser == "Y":
+            self.portfolio.sindexinfo["latestprice"] = float(hqresp.records[0][9])
+            self.portfolio.sindexinfo["open"] = float(hqresp.records[0][6])
+            self.portfolio.sindexinfo["close"] = float(hqresp.records[0][5])
+            self.portfolio.sindexinfo["ceiling"] = float(hqresp.records[0][17])
+            self.portfolio.sindexinfo["floor"] = float(hqresp.records[0][18])
+            self.portfolio.sindexinfo["openposprice"] = self.getsindexprice(hqresp.records[0], self.portfolio.openpolicy)
+            self.portfolio.sindexinfo["closeposprice"] = self.getsindexprice(hqresp.records[0], self.portfolio.closepolicy)
+
+            QMetaObject.invokeMethod(self.sindexmodel, "updaterow", Qt.QueuedConnection)
+
+    def getsindexprice(self, hqrecord, pricepolicy):
+        policymapping = {
+                "latest":9,
+                "b1":13,
+                "s1":14
+                }
+        return float(hqrecord[policymapping[pricepolicy]])
 
     def stop(self):
         self.runflag = False
@@ -1076,11 +1168,14 @@ class SIFPriceUpdater(Thread):
         if not s.setup():
             self.logger.warning("Cannot login")
             return False
+        self.jsdsession = s
 
         # ... and run periodic update
         while self.runflag:
             self.update()
             time.sleep(1)
+
+        self.close()
 
 class OrderUpdater(Thread):
     def __init__(self, portfolio, portmodel, sessioncfg, updtlock):
@@ -1169,7 +1264,7 @@ class OrderUpdater(Thread):
             self.update()
             time.sleep(2)
 
-class jzWorker(Thread):
+class asyncWorker(Thread):
     def __init__(self, session_cfg, tqueue):
         Thread.__init__(self)
         self.session_cfg = session_cfg
@@ -1177,15 +1272,14 @@ class jzWorker(Thread):
         self.runflag = True
         self.name = "jzWorker"
         self.logger = logging.getLogger()
+        self.session = None
 
     def setupsession(self):
-        self.session = jz.session(self.session_cfg)
-        if not self.session.setup():
-            return False
-        return True
+        return False
 
     def closesession(self):
-        self.session.close()
+        if self.session:
+            self.session.close()
 
     def myrun(self):
         # TODO: what if easytrader is closed while tqueue is not empty
@@ -1208,7 +1302,7 @@ class jzWorker(Thread):
         #    else:
         #        time.sleep(0.05)
 
-        self.session.close()
+        self.closesession()
 
     def profiledrun(self):
         profiler = cProfile.Profile()
@@ -1244,6 +1338,30 @@ class jzWorker(Thread):
     def stop(self):
         self.runflag = False
 
+class jzWorker(asyncWorker):
+    def __init__(self, session_cfg, tqueue):
+        asyncWorker.__init__(self, session_cfg, tqueue)
+        self.runflag = True
+        self.name = "jzWorker"
+
+    def setupsession(self):
+        self.session = jz.session(self.session_cfg)
+        if not self.session.setup():
+            return False
+        return True
+
+class jsdWorker(asyncWorker):
+    def __init__(self, session_cfg, tqueue):
+        asyncWorker.__init__(self, session_cfg, tqueue)
+        self.runflag = True
+        self.name = "jsdWorker"
+
+    def setupsession(self):
+        self.session = jsd.session(self.session_cfg)
+        if not self.session.setup():
+            return False
+        return True
+
 class uicontrol(Ui_MainWindow):
     def __init__(self, mainwindow, session_cfg, portfolio, pmodel, sindexmodel):
         self.mainwindow = mainwindow
@@ -1262,6 +1380,7 @@ class uicontrol(Ui_MainWindow):
         self.stock.setModel(self.pmodel)
         self.stock.resizeColumnsToContents()
         self.stockindex.setModel(self.sindexmodel)
+        self.stockindex.resizeColumnsToContents()
 
         # setup stock price combobox
         for price in self.portfolio.pricepolicylist:
@@ -1273,7 +1392,13 @@ class uicontrol(Ui_MainWindow):
         self.mainwindow.connect(self.pricepolicysell, SIGNAL("currentIndexChanged(int)"), self.setsellpricepolicy)
 
         # setup sif price combobox
-        # TODO
+        for price in self.portfolio.sindexpricepolicylist:
+            self.openpricecmbox.addItem(self.portfolio.pricepolicynamemap[price])
+            self.closepricecmbox.addItem(self.portfolio.pricepolicynamemap[price])
+        self.openpricecmbox.setCurrentIndex(self.portfolio.sindexpricepolicylist.index(self.portfolio.openpolicy))
+        self.closepricecmbox.setCurrentIndex(self.portfolio.sindexpricepolicylist.index(self.portfolio.closepolicy))
+        self.mainwindow.connect(self.openpricecmbox, SIGNAL("currentIndexChanged(int)"), self.setopenpricepolicy)
+        self.mainwindow.connect(self.closepricecmbox, SIGNAL("currentIndexChanged(int)"), self.setclosepricepolicy)
 
         # setup batch order push button
         self.mainwindow.connect(self.buyorder, SIGNAL("clicked()"), self.buyBatch)
@@ -1322,6 +1447,14 @@ class uicontrol(Ui_MainWindow):
     @pyqtSlot(int)
     def setsellpricepolicy(self, pindex):
         self.portfolio.sellpolicy = self.portfolio.pricepolicylist[pindex]
+
+    @pyqtSlot(int)
+    def setopenpricepolicy(self, pindex):
+        self.portfolio.openpolicy = self.portfolio.sindexpricepolicylist[pindex]
+
+    @pyqtSlot(int)
+    def setclosepricepolicy(self, pindex):
+        self.portfolio.closepolicy = self.portfolio.sindexpricepolicylist[pindex]
 
     @pyqtSlot()
     def showstockinfo(self):
@@ -1537,11 +1670,7 @@ def main(args):
     for i in range(jzWorkerNum):
         workers[i].start()
 
-    # main window
-    window = QMainWindow()
-    uic = uicontrol(window, session_config, p, pmodel, sindexmodel)
-    uic.setup()
-
+    # get jsd session config
     jsd_sessioncfg = {}
     for k,v in config.items(JSDSEC):
         jsd_sessioncfg[k] = v
@@ -1549,6 +1678,18 @@ def main(args):
         jsd_sessioncfg["jsdport"] = int(jsd_sessioncfg["jsdport"])
     except KeyError:
         pass
+
+    # start stock index price updater
+    sifupdter = SIFPriceUpdater(p, sindexmodel, jsd_sessioncfg)
+    sifupdter.start()
+    time.sleep(0.5)
+
+    # main window
+    window = QMainWindow()
+    uic = uicontrol(window, session_config, p, pmodel, sindexmodel)
+    uic.setup()
+
+    # start base diff updater
     bdiffupdter = basediffUpdater(shdbfn, shmapfn, jsd_sessioncfg, uic)
     bdiffupdter.start()
 
@@ -1559,6 +1700,10 @@ def main(args):
     logger.info("waiting basediffUpdater to stop")
     bdiffupdter.stop()
     bdiffupdter.join()
+
+    logger.info("waiting SIFPriceUpdater to stop")
+    sifupdter.stop()
+    sifupdter.join()
 
     logger.info("notify updater threads to stop.")
     pupdater.stop()
