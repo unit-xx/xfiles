@@ -272,7 +272,7 @@ class GetContractResp(response):
 
 class OrderReq(request):
     code = "6021"
-    paramlist = ["exchcode", "code", "buysell", "openclose", "ifhedge", "count", "price", "tradenum", "seat"]
+    paramlist = ["exchcode", "code", "longshort", "openclose", "ifhedge", "count", "price", "tradenum", "seat"]
 
 class OrderResp(response):
     okfieldn = 31
@@ -280,7 +280,7 @@ class OrderResp(response):
 
 class CancelOrderReq(request):
     code = "6022"
-    paramlist = ["exchcode", "code", "buysell", "openclose", "ifhedge", "count", "price", "order_id", "cancelcount", "syscode", "seat", "orderseat"]
+    paramlist = ["exchcode", "code", "longshort", "openclose", "ifhedge", "count", "price", "order_id", "cancelcount", "syscode", "seat", "orderseat"]
 
 class CancelOrderResp(response):
     okfieldn = 13

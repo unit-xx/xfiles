@@ -144,6 +144,45 @@ class OrderRecord:
     def __repr__(self):
         return repr(self.data)
 
+class SIndexRecord:
+    sirattr = [
+            "order_id", "order_state", "order_date", "ordertime",
+            "ordercount", "orderprice" "openclose", "longshort", "ifhedge",
+            "orderseat", "syscenter",
+            "dealcount", "dealprice", "canceldate", "canceltime"]
+
+    def __init__(self, dictdata=None):
+        self.data = {}
+        self.data["order_id"] = ""
+        self.data["order_state"] = Portfolio.INVALID
+        self.data["order_date"] = ""
+        self.data["order_time"] = ""
+        self.data["ordercount"] = "0"
+        self.data["orderprice"] = "0.0"
+
+        self.data["openclose"] = "0"
+        self.data["longshort"] = "0"
+        self.data["ifhedge"] = "0"
+
+        self.data["orderseat"] = ""
+        self.data["syscenter"] = ""
+
+        self.data["dealcount"] = "0"
+        self.data["dealprice"] = "0.0"
+        self.data["cancel_date"] = ""
+        self.data["cancel_time"] = ""
+        if dictdata:
+            self.data.update(dictdata)
+
+    def __getitem__(self, key):
+        return self.data[key]
+
+    def __setitem__(self, key, value):
+        self.data[key] = value
+
+    def __repr__(self):
+        return repr(self.data)
+
 class Portfolio(object):
 
     # stock states can be:
@@ -279,6 +318,8 @@ class Portfolio(object):
                 "latestprice", "open", "close", "ceiling", "floor",
                 # of type flat
                 "openposprice", "closeposprice",
+                # of type SIndexRecord
+                "pastopen", "pastclose",
                 "stopped"]
         self.sindexmodelattr = ["count", "code",
                 "latestprice", "close", "open", "ceiling", "floor",
@@ -341,6 +382,20 @@ class Portfolio(object):
             elif i[0] == "IF":
                 self.sindexinfo["code"] = i[1].upper()
                 self.sindexinfo["count"] = i[2]
+                self.sindexinfo["pastopen"] = []
+                try:
+                    opens = eval(i[3])
+                    if r in opens:
+                        self.sindexinfo["pastopen"].append(SIndexRecord(r))
+                except IndexError:
+                    pass
+                self.sindexinfo["pastclose"] = []
+                try:
+                    closes = eval(i[4])
+                    if r in closes:
+                        self.sindexinfo["pastclose"].append(SIndexRecord(r))
+                except IndexError:
+                    pass
             else:
                 scode = i[0].upper() + i[1]
                 self.stocklist.append(scode)
@@ -415,7 +470,7 @@ class Portfolio(object):
 
             # write IF first
             try:
-                writer.writerow(["IF", self.sindexinfo["code"], self.sindexinfo["count"]])
+                writer.writerow(["IF", self.sindexinfo["code"], self.sindexinfo["count"], self.sindexinfo["pastopen"], self.sindexinfo["pastclose"]])
             except KeyError:# no sif info
                 pass
             for scode in self.stocklist:
@@ -954,7 +1009,51 @@ class Portfolio(object):
 
     def openshort(self):
         if self.sindexstate == Portfolio.IFUNORDERED:
-            pass
+            oreq = jsd.OrderReq(self.jsdsession)
+            oreq["exchcode"] = jsd.CFFEXCODE
+            oreq["code"] = self.sindexinfo["code"]
+            oreq["longshort"] = "1"
+            oreq["openclose"] = "0"
+            oreq["ifhedge"] = "0"
+            oreq["count"] = self.sindexinfo["count"]
+            oreq["price"] = self.sindexinfo["openposprice"]
+            oreq["clientnum"] = s["clientnum"]
+            oreq["seat"] = s["seat"]
+            oreq.send()
+            oresp = jsd.OrderResp(self.jsdsession)
+            oresp.recv()
+            sirec = SIndexRecord()
+            if oresp.anwser == "Y":
+                # NOTE: order state may change after ordering
+                resp = oresp.records[0]
+                sirec["order_id"] = resp[1]
+                sirec["order_state"] = Portfolio.IFOPENSHORTOK
+                sirec["order_date"] = str(datetime.today().date())
+                sirec["order_time"] = str(datetime.now().time())
+                sirec["ordercount"] = resp[14]
+                sirec["orderprice"] = resp[15]
+                sirec["openclose"] = "0"
+                sirec["longshort"] = "1"
+                sirec["ifhedge"] = "0"
+                sirec["orderseat"] = resp[30]
+                sirec["syscenter"] = resp[19]
+                # TODO: test storetrade ok
+                self.sindexinfo["pastopen"].append(sirec)
+            elif oresp.anwser == "N":
+                resp = oresp.records[0]
+                sirec["order_state"] = Portfolio.IFOPENSHORTFAILED
+                sirec["order_date"] = str(datetime.today().date())
+                sirec["order_time"] = str(datetime.now().time())
+                sirec["ordercount"] = self.sindexinfo["count"]
+                sirec["orderprice"] = self.sindexinfo["openposprice"]
+                sirec["openclose"] = "0"
+                sirec["longshort"] = "1"
+                sirec["ifhedge"] = "0"
+                # TODO: test storetrade ok
+                self.sindexinfo["pastopen"].append(sirec)
+            else:
+                self.logger.warning("unknow order response: %s" % str(oresp.records))
+
         elif self.sindexstate == Portfolio.IFCANCELOPENSHORTOK:
             pass
         else:

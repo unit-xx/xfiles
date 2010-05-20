@@ -12,7 +12,7 @@ session_config["branchcode"] = ""
 session_config["ordermethod"] = ""
 
 # global control flag
-cancelorder = False
+cancelorder = True
 doorder = True
 if len(sys.argv) > 1:
     oid = sys.argv[1]
@@ -34,13 +34,13 @@ print tcinforesp.records
 print
 # hq, order, cancelorder, orderinfo
 
-qcreq = jsd.GetContractReq(s)
-qcreq.send()
-qcresp = jsd.GetContractResp(s)
-qcresp.recv()
-print qcresp.records
-print len(qcresp.records)
-print
+#qcreq = jsd.GetContractReq(s)
+#qcreq.send()
+#qcresp = jsd.GetContractResp(s)
+#qcresp.recv()
+#print qcresp.records
+#print len(qcresp.records)
+#print
 
 hqreq = jsd.QueryHQReq(s)
 #hqreq["exchcode"] = "G"
@@ -65,7 +65,7 @@ if doorder:
     oreq = jsd.OrderReq(s)
     oreq["exchcode"] = jsd.CFFEXCODE
     oreq["code"] = "IF1006"
-    oreq["buysell"] = "0"
+    oreq["longshort"] = "0"
     oreq["openclose"] = "0"
     oreq["ifhedge"] = "0"
     oreq["count"] = "10"
