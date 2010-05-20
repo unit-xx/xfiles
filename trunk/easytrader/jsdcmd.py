@@ -34,16 +34,17 @@ print tcinforesp.records
 print
 # hq, order, cancelorder, orderinfo
 
-#qcreq = jsd.GetContractReq(s)
-#qcreq.send()
-#qcresp = jsd.GetContractResp(s)
-#qcresp.recv()
-#print qcresp.records
-#print
+qcreq = jsd.GetContractReq(s)
+qcreq.send()
+qcresp = jsd.GetContractResp(s)
+qcresp.recv()
+print qcresp.records
+print len(qcresp.records)
+print
 
 hqreq = jsd.QueryHQReq(s)
 #hqreq["exchcode"] = "G"
-hqreq["code"] = "IF1005"
+hqreq["code"] = "IF1006"
 hqreq.send()
 hqresp = jsd.QueryHQResp(s)
 hqresp.recv()
@@ -52,6 +53,7 @@ print hqresp.records
 print
 
 getcnreq = jsd.GetClientNumReq(s)
+getcnreq["exchcode"] = jsd.CFFEXCODE
 getcnreq.send()
 getcnresp = jsd.GetClientNumResp(s)
 getcnresp.recv()
@@ -61,14 +63,16 @@ print
 
 if doorder:
     oreq = jsd.OrderReq(s)
-    oreq["exchcode"] = "G"
+    oreq["exchcode"] = jsd.CFFEXCODE
     oreq["code"] = "IF1006"
     oreq["buysell"] = "0"
     oreq["openclose"] = "0"
     oreq["ifhedge"] = "0"
-    oreq["count"] = "5"
-    oreq["price"] = "2800"
-    oreq["tradenum"] = "00028184"
+    oreq["count"] = "10"
+    oreq["price"] = "2850"
+    oreq["clientnum"] = s["clientnum"]
+    oreq["seat"] = s["seat"]
+
     #oreq["tradenum"] = "aaaaaaaaa9201a"
     oreq.send()
     oresp = jsd.OrderResp(s)
