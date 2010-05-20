@@ -385,14 +385,14 @@ class Portfolio(object):
                 self.sindexinfo["pastopen"] = []
                 try:
                     opens = eval(i[3])
-                    if r in opens:
+                    for r in opens:
                         self.sindexinfo["pastopen"].append(SIndexRecord(r))
                 except IndexError:
                     pass
                 self.sindexinfo["pastclose"] = []
                 try:
                     closes = eval(i[4])
-                    if r in closes:
+                    for r in closes:
                         self.sindexinfo["pastclose"].append(SIndexRecord(r))
                 except IndexError:
                     pass
