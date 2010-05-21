@@ -88,12 +88,13 @@ def main(args):
 
     timeout = 2000 # 2sec
     MAX_QUOTA_ITEM_COUNT = 50
-    quotaData = KSFT_QUOTA_PUBDATA_ITEM * MAX_QUOTA_ITEM_COUNT
+    quotaData = (KSFT_QUOTA_PUBDATA_ITEM * MAX_QUOTA_ITEM_COUNT)()
+    print type(quotaData)
     while 1:
-        qcount = KSFTHQPUB_GetQuota(cast(quotaData, c_char_p),
-                size(KSFT_QUOTA_PUBDATA_ITEM)*MAX_QUOTA_ITEM_COUNT,
+        qcount = KSFTHQPUB_GetQuota(cast(quotaData, POINTER(KSFT_QUOTA_PUBDATA_ITEM)),
+                sizeof(KSFT_QUOTA_PUBDATA_ITEM)*MAX_QUOTA_ITEM_COUNT,
                 timeout,
-                errmsg)
+                byref(errmsg))
         if qcount < 0:
             print errmsg
         elif qcount > 0:
