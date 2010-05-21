@@ -24,7 +24,7 @@ class session:
     def setup(self):
         try:
             c = socket.socket()
-            c.settimeout(3)
+            c.settimeout(10)
             c.connect((self.sessioncfg["jsdserver"], self.sessioncfg["jsdport"]))
             self.conn = c
 
@@ -285,3 +285,19 @@ class CancelOrderReq(request):
 class CancelOrderResp(response):
     okfieldn = 13
     hasmore = 0
+
+class QueryPosReq(request):
+    code = "6014"
+    paramlist = ["date"]
+
+class QueryPosResp(response):
+    okfieldn = 19
+    hasmore = 1
+
+class QueryAllOrderReq(request):
+    code = "6019"
+    paramlist = []
+
+class QueryAllOrderResp(response):
+    okfieldn = 33
+    hasmore = 1

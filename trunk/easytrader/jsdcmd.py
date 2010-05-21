@@ -12,7 +12,7 @@ session_config["branchcode"] = ""
 session_config["ordermethod"] = ""
 
 # global control flag
-cancelorder = True
+cancelorder = False
 doorder = True
 if len(sys.argv) > 1:
     oid = sys.argv[1]
@@ -43,7 +43,7 @@ print
 #print
 
 hqreq = jsd.QueryHQReq(s)
-#hqreq["exchcode"] = "G"
+hqreq["exchcode"] = "G"
 hqreq["code"] = "IF1006"
 hqreq.send()
 hqresp = jsd.QueryHQResp(s)
@@ -69,7 +69,7 @@ if doorder:
     oreq["openclose"] = "0"
     oreq["ifhedge"] = "0"
     oreq["count"] = "10"
-    oreq["price"] = "2850"
+    oreq["price"] = "2750"
     oreq["clientnum"] = s["clientnum"]
     oreq["seat"] = s["seat"]
 
@@ -91,7 +91,9 @@ qoreq.send()
 qoresp = jsd.QueryOrderResp(s)
 qoresp.recv()
 print "order query"
-print qoresp.records
+for r in qoresp.records:
+    print r
+    print
 print len(qoresp.records[0])
 print
 
