@@ -1236,9 +1236,11 @@ class PortfolioUpdater(Thread):
         self.runflag = False
 
     def run(self):
+        self.update()
+        self.portmodel.resizeColumnsToContents()
         while self.runflag:
-            self.update()
             time.sleep(2)
+            self.update()
 
 class SIFPriceUpdater(Thread):
     def __init__(self, portfolio, sindexmodel, jsdcfg, uic):
@@ -1298,8 +1300,8 @@ class SIFPriceUpdater(Thread):
         self.update()
         self.uic.stockindex.resizeColumnsToContents()
         while self.runflag:
-            self.update()
             time.sleep(1)
+            self.update()
 
         self.close()
 
@@ -1366,9 +1368,6 @@ class SIFOrderPushee(Thread):
             self.conn.close()
 
     def setup(self):
-        """
-        setup and stop is called from mainthread
-        """
         ret = True
         self.conn = socket.socket()
         try:
@@ -1381,21 +1380,26 @@ class SIFOrderPushee(Thread):
         return ret
 
     def update(self):
-        pass
+        with self.sindexlock:
+            try:
+                data = self.conn.recv(8196)
+                # TODO: parse data and update last stock index order
+            except socket.timeout:
+                pass
+
+        # TODO: send ping message
 
     def stop(self):
         self.runflag = False
 
     def run(self):
-        while self.runflag:
-            with self.sindexlock:
-                try:
-                    data = self.conn.recv(8196)
-                    # TODO: parse data and update last stock index order
-                except socket.timeout:
-                    pass
+        if not self.setup():
+            return
 
-            # TODO: send ping message
+        while self.runflag:
+            self.update()
+
+        self.close()
 
 
 class OrderUpdater(Thread):
@@ -1599,7 +1603,6 @@ class uicontrol(Ui_MainWindow):
 
         # setup stock info model
         self.stock.setModel(self.pmodel)
-        self.stock.resizeColumnsToContents()
         self.stockindex.setModel(self.sindexmodel)
 
         # setup stock price combobox
@@ -1946,7 +1949,10 @@ def main(args):
     # start stock index price updater
     sifupdter = SIFPriceUpdater(p, sindexmodel, jsd_sessioncfg, uic)
     sifupdter.start()
-    time.sleep(1)
+
+    # start SIFOrderPushee
+    sifop = SIFOrderPushee(portfolio, sindexmodel, jsdcfg)
+    sifop.start()
 
     # start base diff updater
     bdiffupdter = basediffUpdater(shdbfn, shmapfn, jsd_sessioncfg, uic)
@@ -1963,6 +1969,10 @@ def main(args):
     logger.info("waiting SIFPriceUpdater to stop")
     sifupdter.stop()
     sifupdter.join()
+
+    logger.inf("waiting SIFOrderPushee to stop")
+    sifop.stop()
+    sifop.join()
 
     logger.info("notify updater threads to stop.")
     pupdater.stop()
