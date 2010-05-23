@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1042</width>
+    <width>1076</width>
     <height>615</height>
    </rect>
   </property>
@@ -79,22 +79,6 @@
              </property>
             </widget>
            </item>
-           <item row="0" column="3">
-            <widget class="QLineEdit" name="pricefixbuy">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>60</width>
-               <height>16777215</height>
-              </size>
-             </property>
-            </widget>
-           </item>
            <item row="0" column="4">
             <widget class="QPushButton" name="buyorder">
              <property name="text">
@@ -123,6 +107,37 @@
              </property>
             </widget>
            </item>
+           <item row="0" column="3">
+            <widget class="QDoubleSpinBox" name="buypricefixspin">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="frame">
+              <bool>true</bool>
+             </property>
+             <property name="buttonSymbols">
+              <enum>QAbstractSpinBox::UpDownArrows</enum>
+             </property>
+             <property name="prefix">
+              <string>￥</string>
+             </property>
+             <property name="suffix">
+              <string>元</string>
+             </property>
+             <property name="minimum">
+              <double>-999.990000000000009</double>
+             </property>
+             <property name="maximum">
+              <double>999.990000000000009</double>
+             </property>
+             <property name="singleStep">
+              <double>0.010000000000000</double>
+             </property>
+            </widget>
+           </item>
           </layout>
          </widget>
         </item>
@@ -138,33 +153,17 @@
            <string>股指期货</string>
           </property>
           <layout class="QGridLayout" name="gridLayout_7">
-           <item row="0" column="5">
+           <item row="0" column="4">
             <widget class="QPushButton" name="opensifbtn">
              <property name="text">
               <string>空开</string>
              </property>
             </widget>
            </item>
-           <item row="0" column="6">
+           <item row="0" column="5">
             <widget class="QPushButton" name="cancelopensifbtn">
              <property name="text">
               <string>撤单</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="4">
-            <widget class="QLineEdit" name="openpricefixline">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>60</width>
-               <height>16777215</height>
-              </size>
              </property>
             </widget>
            </item>
@@ -195,6 +194,40 @@
             <widget class="QLabel" name="label_8">
              <property name="text">
               <string>开仓价格</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="3">
+            <widget class="QDoubleSpinBox" name="openpricefixspin">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="frame">
+              <bool>true</bool>
+             </property>
+             <property name="buttonSymbols">
+              <enum>QAbstractSpinBox::UpDownArrows</enum>
+             </property>
+             <property name="prefix">
+              <string>￥</string>
+             </property>
+             <property name="suffix">
+              <string>元</string>
+             </property>
+             <property name="decimals">
+              <number>1</number>
+             </property>
+             <property name="minimum">
+              <double>-10000.000000000000000</double>
+             </property>
+             <property name="maximum">
+              <double>10000.000000000000000</double>
+             </property>
+             <property name="singleStep">
+              <double>0.200000000000000</double>
              </property>
             </widget>
            </item>
@@ -266,22 +299,6 @@
              </property>
             </widget>
            </item>
-           <item row="0" column="3">
-            <widget class="QLineEdit" name="pricefixsell">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>60</width>
-               <height>16777215</height>
-              </size>
-             </property>
-            </widget>
-           </item>
            <item row="0" column="4">
             <widget class="QPushButton" name="sellorder">
              <property name="text">
@@ -307,6 +324,25 @@
             <widget class="QPushButton" name="saveorder">
              <property name="text">
               <string>保存组合</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="3">
+            <widget class="QDoubleSpinBox" name="sellpricefixspin">
+             <property name="prefix">
+              <string>￥</string>
+             </property>
+             <property name="suffix">
+              <string>元</string>
+             </property>
+             <property name="minimum">
+              <double>-999.990000000000009</double>
+             </property>
+             <property name="maximum">
+              <double>999.990000000000009</double>
+             </property>
+             <property name="singleStep">
+              <double>0.010000000000000</double>
              </property>
             </widget>
            </item>
@@ -355,22 +391,6 @@
              </property>
             </widget>
            </item>
-           <item row="0" column="4">
-            <widget class="QLineEdit" name="closepricefixline">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>60</width>
-               <height>16777215</height>
-              </size>
-             </property>
-            </widget>
-           </item>
            <item row="0" column="2">
             <widget class="QComboBox" name="closepricecmbox">
              <property name="sizePolicy">
@@ -398,6 +418,28 @@
             <widget class="QLabel" name="label_11">
              <property name="text">
               <string>修正</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="4">
+            <widget class="QDoubleSpinBox" name="closepricefixspin">
+             <property name="prefix">
+              <string>￥</string>
+             </property>
+             <property name="suffix">
+              <string>元</string>
+             </property>
+             <property name="decimals">
+              <number>1</number>
+             </property>
+             <property name="minimum">
+              <double>-10000.000000000000000</double>
+             </property>
+             <property name="maximum">
+              <double>10000.000000000000000</double>
+             </property>
+             <property name="singleStep">
+              <double>0.200000000000000</double>
              </property>
             </widget>
            </item>
@@ -602,7 +644,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1042</width>
+     <width>1076</width>
      <height>18</height>
     </rect>
    </property>

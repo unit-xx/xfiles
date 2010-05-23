@@ -267,6 +267,8 @@ class Portfolio(object):
                 "ceiling", "floor",
                 # of type boolean
                 "stopped"]
+        self.buypricefix = 0.00
+        self.sellpricefix = 0.00
 
         # use market+stock number as key, dict of dict
         self.stockinfo = {}
@@ -317,7 +319,7 @@ class Portfolio(object):
         self.sindexattr = ["count", "code",
                 # of type float
                 "latestprice", "open", "close", "ceiling", "floor",
-                # of type flat
+                # of type float
                 "openposprice", "closeposprice",
                 # of type SIndexRecord
                 "pastopen", "pastclose",
@@ -350,6 +352,8 @@ class Portfolio(object):
         self.openpolicy = "b1"
         self.closepolicy = "s1"
         self.sindexstate = Portfolio.IFUNORDERED
+        self.openpricefix = 0.0
+        self.closepricefix = 0.0
 
     def getbostate(self):
         return self._bostate
@@ -1036,39 +1040,39 @@ class Portfolio(object):
                 oreq["clientnum"] = s["clientnum"]
                 oreq["seat"] = s["seat"]
                 oreq.send()
-                oresp = jsd.OrderResp(self.jsdsession)
-                oresp.recv()
-                sirec = SIndexRecord()
-                if oresp.anwser == "Y":
-                    # NOTE: order state may change after ordering
-                    resp = oresp.records[0]
-                    sirec["order_id"] = resp[1]
-                    sirec["order_state"] = Portfolio.IFOPENSHORTOK
-                    sirec["order_date"] = str(datetime.today().date())
-                    sirec["order_time"] = str(datetime.now().time())
-                    sirec["ordercount"] = resp[14]
-                    sirec["orderprice"] = resp[15]
-                    sirec["openclose"] = "0"
-                    sirec["longshort"] = "1"
-                    sirec["ifhedge"] = "0"
-                    sirec["orderseat"] = resp[30]
-                    sirec["syscenter"] = resp[19]
-                    # TODO: test storetrade ok
-                    self.sindexinfo["pastopen"].append(sirec)
-                elif oresp.anwser == "N":
-                    resp = oresp.records[0]
-                    sirec["order_state"] = Portfolio.IFOPENSHORTFAILED
-                    sirec["order_date"] = str(datetime.today().date())
-                    sirec["order_time"] = str(datetime.now().time())
-                    sirec["ordercount"] = oreq["count"]
-                    sirec["orderprice"] = oreq["price"]
-                    sirec["openclose"] = "0"
-                    sirec["longshort"] = "1"
-                    sirec["ifhedge"] = "0"
-                    # TODO: test storetrade ok
-                    self.sindexinfo["pastopen"].append(sirec)
-                else:
-                    self.logger.warning("unknow order response: %s" % str(oresp.records))
+                #oresp = jsd.OrderResp(self.jsdsession)
+                #oresp.recv()
+                #sirec = SIndexRecord()
+                #if oresp.anwser == "Y":
+                #    # NOTE: order state may change after ordering
+                #    resp = oresp.records[0]
+                #    sirec["order_id"] = resp[1]
+                #    sirec["order_state"] = Portfolio.IFOPENSHORTOK
+                #    sirec["order_date"] = str(datetime.today().date())
+                #    sirec["order_time"] = str(datetime.now().time())
+                #    sirec["ordercount"] = resp[14]
+                #    sirec["orderprice"] = resp[15]
+                #    sirec["openclose"] = "0"
+                #    sirec["longshort"] = "1"
+                #    sirec["ifhedge"] = "0"
+                #    sirec["orderseat"] = resp[30]
+                #    sirec["syscenter"] = resp[19]
+                #    # TODO: test storetrade ok
+                #    self.sindexinfo["pastopen"].append(sirec)
+                #elif oresp.anwser == "N":
+                #    resp = oresp.records[0]
+                #    sirec["order_state"] = Portfolio.IFOPENSHORTFAILED
+                #    sirec["order_date"] = str(datetime.today().date())
+                #    sirec["order_time"] = str(datetime.now().time())
+                #    sirec["ordercount"] = oreq["count"]
+                #    sirec["orderprice"] = oreq["price"]
+                #    sirec["openclose"] = "0"
+                #    sirec["longshort"] = "1"
+                #    sirec["ifhedge"] = "0"
+                #    # TODO: test storetrade ok
+                #    self.sindexinfo["pastopen"].append(sirec)
+                #else:
+                #    self.logger.warning("unknow order response: %s" % str(oresp.records))
 
             elif self.sindexstate == Portfolio.IFCANCELOPENSHORTOK:
                 pass
@@ -1211,8 +1215,8 @@ class PortfolioUpdater(Thread):
                         stockinfo[self.shdbmapping[f]] = rec[f].decode("GBK")
                     else:
                         stockinfo[self.shdbmapping[f]] = rec[f]
-                stockinfo["tobuyprice"] = self.getpricesh(rec, self.portfolio.buypolicy)
-                stockinfo["tosellprice"] = self.getpricesh(rec, self.portfolio.sellpolicy)
+                stockinfo["tobuyprice"] = self.getpricesh(rec, self.portfolio.buypolicy) + self.portfolio.buypricefix
+                stockinfo["tosellprice"] = self.getpricesh(rec, self.portfolio.sellpolicy) + self.portfolio.sellpricefix
             elif stockinfo["market"] == "SZ":
                 rec = dbsz[szmap[scode]]
                 for f in self.szdbfield:
@@ -1220,8 +1224,8 @@ class PortfolioUpdater(Thread):
                         stockinfo[self.szdbmapping[f]] = rec[f].decode("GBK")
                     else:
                         stockinfo[self.szdbmapping[f]] = rec[f]
-                stockinfo["tobuyprice"] = self.getpricesz(rec, self.portfolio.buypolicy)
-                stockinfo["tosellprice"] = self.getpricesz(rec, self.portfolio.sellpolicy)
+                stockinfo["tobuyprice"] = self.getpricesz(rec, self.portfolio.buypolicy) + self.portfolio.buypricefix
+                stockinfo["tosellprice"] = self.getpricesz(rec, self.portfolio.sellpolicy) + self.portfolio.sellpricefix
 
             # update a row
             rowindex = self.portfolio.stocklist.index(scode)
@@ -1265,8 +1269,8 @@ class SIFPriceUpdater(Thread):
             self.portfolio.sindexinfo["close"] = float(hqresp.records[0][5])
             self.portfolio.sindexinfo["ceiling"] = float(hqresp.records[0][17])
             self.portfolio.sindexinfo["floor"] = float(hqresp.records[0][18])
-            self.portfolio.sindexinfo["openposprice"] = self.getsindexprice(hqresp.records[0], self.portfolio.openpolicy)
-            self.portfolio.sindexinfo["closeposprice"] = self.getsindexprice(hqresp.records[0], self.portfolio.closepolicy)
+            self.portfolio.sindexinfo["openposprice"] = self.getsindexprice(hqresp.records[0], self.portfolio.openpolicy) + self.portfolio.openpricefix
+            self.portfolio.sindexinfo["closeposprice"] = self.getsindexprice(hqresp.records[0], self.portfolio.closepolicy) + self.portfolio.closepricefix
 
             QMetaObject.invokeMethod(self.sindexmodel, "updaterow", Qt.QueuedConnection)
             # TODO: also update earnings for stock index
@@ -1305,7 +1309,7 @@ class SIFOrderUpdater(Thread):
         self.portfolio = portfolio
         self.sindexmodel = sindexmodel
         self.jsdcfg = jsdcfg
-        self.updtlock = portfolio.sindexlock
+        self.sindexlock = portfolio.sindexlock
         self.name = "SIFOrderUpdater"
         self.logger = logging.getLogger()
         self.session = None
@@ -1316,7 +1320,7 @@ class SIFOrderUpdater(Thread):
             self.session.close()
 
     def update(self):
-        with self.updtlock:
+        with self.sindexlock:
             si = self.portfolio.sindexinfo
             if len(si["pastclose"]) != 0:
                 order = si["pastclose"][-1]
@@ -1343,6 +1347,55 @@ class SIFOrderUpdater(Thread):
             time.sleep(1)
 
         self.close()
+
+class SIFOrderPushee(Thread):
+    def __init__(self, portfolio, sindexmodel, jsdcfg):
+        Thread.__init__(self)
+        self.portfolio = portfolio
+        self.sindexmodel = sindexmodel
+        self.jsdcfg = jsdcfg
+        self.sindexlock = portfolio.sindexlock
+        self.name = "SIFOrderPushee"
+        self.logger = logging.getLogger()
+        self.session = None
+        self.runflag = True
+        self.conn = None
+
+    def close(self):
+        if self.conn:
+            self.conn.close()
+
+    def setup(self):
+        """
+        setup and stop is called from mainthread
+        """
+        ret = True
+        self.conn = socket.socket()
+        try:
+            self.conn.connect((self.jsdcfg["jsdserver"],
+                self.jsdcfg["jsdport"]+1))
+        except socket.error:
+            self.logging.warning("cannot connect to push address")
+            ret = False
+        self.conn.settimeout(10)
+        return ret
+
+    def update(self):
+        pass
+
+    def stop(self):
+        self.runflag = False
+
+    def run(self):
+        while self.runflag:
+            with self.sindexlock:
+                try:
+                    data = self.conn.recv(8196)
+                    # TODO: parse data and update last stock index order
+                except socket.timeout:
+                    pass
+
+            # TODO: send ping message
 
 
 class OrderUpdater(Thread):
@@ -1567,6 +1620,18 @@ class uicontrol(Ui_MainWindow):
         self.mainwindow.connect(self.openpricecmbox, SIGNAL("currentIndexChanged(int)"), self.setopenpricepolicy)
         self.mainwindow.connect(self.closepricecmbox, SIGNAL("currentIndexChanged(int)"), self.setclosepricepolicy)
 
+        # setup buy/sell batch price fix
+        self.portfolio.buypricefix = self.buypricefixspin.value()
+        self.portfolio.sellpricefix = self.sellpricefixspin.value()
+        self.mainwindow.connect(self.buypricefixspin, SIGNAL("valueChanged(double)"), self.setbuypricefix)
+        self.mainwindow.connect(self.sellpricefixspin, SIGNAL("valueChanged(double)"), self.setsellpricefix)
+
+        # setup stock index open/close price fix
+        self.portfolio.openpricefix = self.openpricefixspin.value()
+        self.portfolio.closepricefix = self.closepricefixspin.value()
+        self.mainwindow.connect(self.openpricefixspin, SIGNAL("valueChanged(double)"), self.setopenpricefix)
+        self.mainwindow.connect(self.closepricefixspin, SIGNAL("valueChanged(double)"), self.setclosepricefix)
+
         # setup batch order push button
         self.mainwindow.connect(self.buyorder, SIGNAL("clicked()"), self.buyBatch)
         self.mainwindow.connect(self.cancelbuyorder, SIGNAL("clicked()"), self.cancelBuyBatch)
@@ -1630,6 +1695,22 @@ class uicontrol(Ui_MainWindow):
     @pyqtSlot(int)
     def setclosepricepolicy(self, pindex):
         self.portfolio.closepolicy = self.portfolio.sindexpricepolicylist[pindex]
+
+    @pyqtSlot(double)
+    def setbuypricefix(self, value):
+        self.portfolio.buypricefix = value
+
+    @pyqtSlot(double)
+    def setsellpricefix(self, value):
+        self.portfolio.sellpricefix = value
+
+    @pyqtSlot(double)
+    def setopenpricefix(self, value):
+        self.portfolio.openpricefix = value
+
+    @pyqtSlot(double)
+    def setclosepricefix(self, value):
+        self.portfolio.closepricefix = value
 
     @pyqtSlot()
     def showstockinfo(self):
