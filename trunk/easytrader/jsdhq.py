@@ -72,7 +72,8 @@ class KSFT_QUOTA_PUBDATA_ITEM(Structure):
 def showquota(quotaData, qcount):
     for i in range(qcount):
         qd = quotaData[i]
-        print qd.contract_id, qd.exchCode, qd.varity_code, qd.openPrice, qd.closePrice, qd.lastPrice, qd.bidPrice1, qd.askPrice1
+        if qd.exchCode == "G" and qd.deliv_date == "1006":
+            print qd.exchCode, qd.varity_code, qd.deliv_date, qd.bidPrice1, qd.askPrice1, qd.openPrice, qd.closePrice, qd.lastPrice
 
 def main(args):
     dll = WinDLL("KsFtQtPub.dll")
