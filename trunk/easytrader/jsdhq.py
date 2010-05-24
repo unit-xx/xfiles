@@ -1,4 +1,5 @@
 import sys
+import os
 from ctypes import *
 
 MAX_QUOTA_STATUS_LEN = 2
@@ -73,9 +74,10 @@ def showquota(quotaData, qcount):
     for i in range(qcount):
         qd = quotaData[i]
         if qd.exchCode == "G" and qd.deliv_date == "1006":
-            print qd.exchCode, qd.varity_code, qd.deliv_date, qd.bidPrice1, qd.askPrice1, qd.openPrice, qd.closePrice, qd.lastPrice
+            print qd.exchCode, qd.varity_code, qd.deliv_date, qd.bidPrice1, qd.askPrice1, qd.openPrice, qd.preClosePrice, qd.lastPrice
 
 def main(args):
+    os.environ["PATH"] = os.environ["PATH"]+";jsdhqdll"
     dll = WinDLL("KsFtQtPub.dll")
     prototype = WINFUNCTYPE(c_bool, c_ushort, c_char_p)
     KSFTHQPUB_Start = prototype(("KSFTHQPUB_Start", dll))

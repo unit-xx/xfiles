@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1076</width>
+    <width>1106</width>
     <height>615</height>
    </rect>
   </property>
@@ -115,6 +115,18 @@
                <verstretch>0</verstretch>
               </sizepolicy>
              </property>
+             <property name="minimumSize">
+              <size>
+               <width>80</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>80</width>
+               <height>16777215</height>
+              </size>
+             </property>
              <property name="frame">
               <bool>true</bool>
              </property>
@@ -204,6 +216,18 @@
                <horstretch>0</horstretch>
                <verstretch>0</verstretch>
               </sizepolicy>
+             </property>
+             <property name="minimumSize">
+              <size>
+               <width>80</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>80</width>
+               <height>16777215</height>
+              </size>
              </property>
              <property name="frame">
               <bool>true</bool>
@@ -329,6 +353,18 @@
            </item>
            <item row="0" column="3">
             <widget class="QDoubleSpinBox" name="sellpricefixspin">
+             <property name="minimumSize">
+              <size>
+               <width>80</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>80</width>
+               <height>16777215</height>
+              </size>
+             </property>
              <property name="prefix">
               <string>￥</string>
              </property>
@@ -359,8 +395,8 @@
           </property>
           <property name="sizeHint" stdset="0">
            <size>
-            <width>40</width>
-            <height>20</height>
+            <width>0</width>
+            <height>0</height>
            </size>
           </property>
          </spacer>
@@ -423,6 +459,18 @@
            </item>
            <item row="0" column="4">
             <widget class="QDoubleSpinBox" name="closepricefixspin">
+             <property name="minimumSize">
+              <size>
+               <width>80</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>80</width>
+               <height>16777215</height>
+              </size>
+             </property>
              <property name="prefix">
               <string>￥</string>
              </property>
@@ -644,8 +692,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1076</width>
-     <height>18</height>
+     <width>1106</width>
+     <height>19</height>
     </rect>
    </property>
    <property name="nativeMenuBar">
