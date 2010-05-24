@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'tradeui.ui'
 #
-# Created: Sun May 23 17:45:27 2010
+# Created: Mon May 24 09:05:21 2010
 #      by: PyQt4 UI code generator 4.7.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -12,7 +12,7 @@ from PyQt4 import QtCore, QtGui
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(1076, 615)
+        MainWindow.resize(1106, 615)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Maximum, QtGui.QSizePolicy.Maximum)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -75,6 +75,8 @@ class Ui_MainWindow(object):
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.buypricefixspin.sizePolicy().hasHeightForWidth())
         self.buypricefixspin.setSizePolicy(sizePolicy)
+        self.buypricefixspin.setMinimumSize(QtCore.QSize(80, 0))
+        self.buypricefixspin.setMaximumSize(QtCore.QSize(80, 16777215))
         self.buypricefixspin.setFrame(True)
         self.buypricefixspin.setButtonSymbols(QtGui.QAbstractSpinBox.UpDownArrows)
         self.buypricefixspin.setMinimum(-999.99)
@@ -119,6 +121,8 @@ class Ui_MainWindow(object):
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.openpricefixspin.sizePolicy().hasHeightForWidth())
         self.openpricefixspin.setSizePolicy(sizePolicy)
+        self.openpricefixspin.setMinimumSize(QtCore.QSize(80, 0))
+        self.openpricefixspin.setMaximumSize(QtCore.QSize(80, 16777215))
         self.openpricefixspin.setFrame(True)
         self.openpricefixspin.setButtonSymbols(QtGui.QAbstractSpinBox.UpDownArrows)
         self.openpricefixspin.setDecimals(1)
@@ -172,13 +176,15 @@ class Ui_MainWindow(object):
         self.saveorder.setObjectName("saveorder")
         self.gridLayout.addWidget(self.saveorder, 0, 7, 1, 1)
         self.sellpricefixspin = QtGui.QDoubleSpinBox(self.groupBox)
+        self.sellpricefixspin.setMinimumSize(QtCore.QSize(80, 0))
+        self.sellpricefixspin.setMaximumSize(QtCore.QSize(80, 16777215))
         self.sellpricefixspin.setMinimum(-999.99)
         self.sellpricefixspin.setMaximum(999.99)
         self.sellpricefixspin.setSingleStep(0.01)
         self.sellpricefixspin.setObjectName("sellpricefixspin")
         self.gridLayout.addWidget(self.sellpricefixspin, 0, 3, 1, 1)
         self.gridLayout_4.addWidget(self.groupBox, 0, 0, 1, 1)
-        spacerItem1 = QtGui.QSpacerItem(40, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
+        spacerItem1 = QtGui.QSpacerItem(0, 0, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
         self.gridLayout_4.addItem(spacerItem1, 0, 2, 1, 1)
         self.groupBox_4 = QtGui.QGroupBox(self.tab_2)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Preferred)
@@ -211,6 +217,8 @@ class Ui_MainWindow(object):
         self.label_11.setObjectName("label_11")
         self.gridLayout_8.addWidget(self.label_11, 0, 3, 1, 1)
         self.closepricefixspin = QtGui.QDoubleSpinBox(self.groupBox_4)
+        self.closepricefixspin.setMinimumSize(QtCore.QSize(80, 0))
+        self.closepricefixspin.setMaximumSize(QtCore.QSize(80, 16777215))
         self.closepricefixspin.setDecimals(1)
         self.closepricefixspin.setMinimum(-10000.0)
         self.closepricefixspin.setMaximum(10000.0)
@@ -319,7 +327,7 @@ class Ui_MainWindow(object):
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtGui.QMenuBar(MainWindow)
         self.menubar.setEnabled(True)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 1076, 18))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 1106, 19))
         self.menubar.setNativeMenuBar(True)
         self.menubar.setObjectName("menubar")
         self.menu = QtGui.QMenu(self.menubar)

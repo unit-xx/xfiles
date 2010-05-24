@@ -9,12 +9,15 @@ import ConfigParser
 #from mx import Queue
 import cProfile
 from threading import Thread, currentThread, Lock
+from binascii import unhexlify
 import time
 from datetime import datetime
 import types
+from ctypes import *
 import logging, logging.config
 
 import jz, jsd
+import jsdhq
 from dbfpy import dbf
 from PyQt4 import Qt
 from PyQt4.QtCore import *
@@ -231,7 +234,8 @@ class Portfolio(object):
     IFCANCELCLOSELONGOK = u"取消多平成功"
     IFCANCELCLOSELONGFAILED = u"取消多平失败"
 
-    def __init__(self, ptfn, sessioncfg, tqueue, updtlock):
+    def __init__(self, ptfn, sessioncfg, tqueue, updtlock, jsdcfg):
+        # TODO: change to use jsdworker
         self.session = jz.session(sessioncfg)
         self.ptfn = ptfn
         self.logger = logging.getLogger()
@@ -354,6 +358,12 @@ class Portfolio(object):
         self.sindexstate = Portfolio.IFUNORDERED
         self.openpricefix = 0.0
         self.closepricefix = 0.0
+        self.jsdcfg = jsdcfg
+        s = jsd.session(self.jsdcfg)
+        if not s.setup():
+            self.logger.warning("Cannot login")
+        print "jsd login"
+        self.jsdsession = s
 
     def getbostate(self):
         return self._bostate
@@ -1037,42 +1047,42 @@ class Portfolio(object):
                 oreq["ifhedge"] = "0"
                 oreq["count"] = self.sindexinfo["count"]
                 oreq["price"] = self.sindexinfo["openposprice"]
-                oreq["clientnum"] = s["clientnum"]
-                oreq["seat"] = s["seat"]
+                oreq["clientnum"] = self.jsdsession["clientnum"]
+                oreq["seat"] = self.jsdsession["seat"]
                 oreq.send()
-                #oresp = jsd.OrderResp(self.jsdsession)
-                #oresp.recv()
-                #sirec = SIndexRecord()
-                #if oresp.anwser == "Y":
-                #    # NOTE: order state may change after ordering
-                #    resp = oresp.records[0]
-                #    sirec["order_id"] = resp[1]
-                #    sirec["order_state"] = Portfolio.IFOPENSHORTOK
-                #    sirec["order_date"] = str(datetime.today().date())
-                #    sirec["order_time"] = str(datetime.now().time())
-                #    sirec["ordercount"] = resp[14]
-                #    sirec["orderprice"] = resp[15]
-                #    sirec["openclose"] = "0"
-                #    sirec["longshort"] = "1"
-                #    sirec["ifhedge"] = "0"
-                #    sirec["orderseat"] = resp[30]
-                #    sirec["syscenter"] = resp[19]
-                #    # TODO: test storetrade ok
-                #    self.sindexinfo["pastopen"].append(sirec)
-                #elif oresp.anwser == "N":
-                #    resp = oresp.records[0]
-                #    sirec["order_state"] = Portfolio.IFOPENSHORTFAILED
-                #    sirec["order_date"] = str(datetime.today().date())
-                #    sirec["order_time"] = str(datetime.now().time())
-                #    sirec["ordercount"] = oreq["count"]
-                #    sirec["orderprice"] = oreq["price"]
-                #    sirec["openclose"] = "0"
-                #    sirec["longshort"] = "1"
-                #    sirec["ifhedge"] = "0"
-                #    # TODO: test storetrade ok
-                #    self.sindexinfo["pastopen"].append(sirec)
-                #else:
-                #    self.logger.warning("unknow order response: %s" % str(oresp.records))
+                oresp = jsd.OrderResp(self.jsdsession)
+                oresp.recv()
+                sirec = SIndexRecord()
+                if oresp.anwser == "Y":
+                    # NOTE: order state may change after ordering
+                    resp = oresp.records[0]
+                    sirec["order_id"] = resp[1]
+                    sirec["order_state"] = Portfolio.IFOPENSHORTOK
+                    sirec["order_date"] = str(datetime.today().date())
+                    sirec["order_time"] = str(datetime.now().time())
+                    sirec["ordercount"] = resp[14]
+                    sirec["orderprice"] = resp[15]
+                    sirec["openclose"] = "0"
+                    sirec["longshort"] = "1"
+                    sirec["ifhedge"] = "0"
+                    sirec["orderseat"] = resp[30]
+                    sirec["syscenter"] = resp[19]
+                    # TODO: test storetrade ok
+                    self.sindexinfo["pastopen"].append(sirec)
+                elif oresp.anwser == "N":
+                    resp = oresp.records[0]
+                    sirec["order_state"] = Portfolio.IFOPENSHORTFAILED
+                    sirec["order_date"] = str(datetime.today().date())
+                    sirec["order_time"] = str(datetime.now().time())
+                    sirec["ordercount"] = oreq["count"]
+                    sirec["orderprice"] = oreq["price"]
+                    sirec["openclose"] = "0"
+                    sirec["longshort"] = "1"
+                    sirec["ifhedge"] = "0"
+                    # TODO: test storetrade ok
+                    self.sindexinfo["pastopen"].append(sirec)
+                else:
+                    self.logger.warning("unknow order response: %s" % str(oresp.records))
 
             elif self.sindexstate == Portfolio.IFCANCELOPENSHORTOK:
                 pass
@@ -1237,12 +1247,11 @@ class PortfolioUpdater(Thread):
 
     def run(self):
         self.update()
-        self.portmodel.resizeColumnsToContents()
         while self.runflag:
             time.sleep(2)
             self.update()
 
-class SIFPriceUpdater(Thread):
+class SIFPriceUpdater_poll(Thread):
     def __init__(self, portfolio, sindexmodel, jsdcfg, uic):
         Thread.__init__(self)
         self.portfolio = portfolio
@@ -1305,6 +1314,85 @@ class SIFPriceUpdater(Thread):
 
         self.close()
 
+class SIFPriceUpdater_pushee(Thread):
+    def __init__(self, portfolio, sindexmodel, jsdcfg, uic):
+        Thread.__init__(self)
+        self.portfolio = portfolio
+        self.sindexmodel = sindexmodel
+        self.jsdcfg = jsdcfg
+        self.jsdsession = None
+        self.uic = uic
+        self.runflag = True
+        self.logger = logging.getLogger()
+        self.name = "SIFPriceUpdater"
+
+    def updateprice(self, quotaData, qcount):
+        for i in range(qcount):
+            qd = quotaData[i]
+            si = self.portfolio.sindexinfo
+            if qd.varity_code+qd.deliv_date == si["code"]:
+                si["latestprice"] = qd.lastPrice
+                si["open"] = qd.openPrice
+                si["close"] = qd.preClosePrice
+                si["ceiling"] = qd.upperLimitPrice
+                si["floor"] = qd.lowerLimitPrice
+                si["openposprice"] = self.getsindexprice(qd, self.portfolio.openpolicy) + self.portfolio.openpricefix
+                si["closeposprice"] = self.getsindexprice(qd, self.portfolio.closepolicy) + self.portfolio.closepricefix
+
+        QMetaObject.invokeMethod(self.sindexmodel, "updaterow", Qt.QueuedConnection)
+        # TODO: also update earnings for stock index
+
+    def getsindexprice(self, qd, pricepolicy):
+        policymapping = {
+                "latest":"lastPrice",
+                "b1":"bidPrice1",
+                "s1":"askPrice1"
+                }
+        return getattr(qd, policymapping[pricepolicy])
+
+    def stop(self):
+        self.runflag = False
+
+    def run(self):
+        os.environ["PATH"] = "".join([os.environ["PATH"], ";", self.jsdcfg["hqdllpath"]])
+        print os.environ["PATH"]
+        print self.jsdcfg["hqdll"]
+        dll = WinDLL(self.jsdcfg["hqdll"])
+        prototype = WINFUNCTYPE(c_bool, c_ushort, c_char_p)
+        KSFTHQPUB_Start = prototype(("KSFTHQPUB_Start", dll))
+
+        prototype = WINFUNCTYPE(None)
+        KSFTHQPUB_Stop = prototype(("KSFTHQPUB_Stop", dll))
+
+        prototype = WINFUNCTYPE(c_int, c_char_p, c_int, c_int, c_char_p)
+        KSFTHQPUB_GetQuota = prototype(("KSFTHQPUB_GetQuota", dll))
+
+        errmsg = create_string_buffer(1024)
+        ret = KSFTHQPUB_Start(int(self.jsdcfg["hqport"]), errmsg)
+        if not ret:
+            self.logger.warning("Error while start receiving hq: %s", errmsg)
+            return
+
+        timeout = 2000 # 2sec
+        jsdhq.MAX_QUOTA_ITEM_COUNT = 50
+        quotaData = (jsdhq.KSFT_QUOTA_PUBDATA_ITEM * jsdhq.MAX_QUOTA_ITEM_COUNT)()
+        while self.runflag:
+            qcount = KSFTHQPUB_GetQuota(cast(quotaData, c_char_p),
+                    sizeof(jsdhq.KSFT_QUOTA_PUBDATA_ITEM)*jsdhq.MAX_QUOTA_ITEM_COUNT,
+                    timeout,
+                    errmsg)
+            if qcount < 0:
+                self.logging.warning("Error while receiving hq: %s", errmsg)
+            elif qcount > 0:
+                self.updateprice(quotaData, qcount)
+                self.uic.stockindex.resizeColumnsToContents()
+            else:
+                print "no quota data"
+
+        KSFTHQPUB_Stop()
+
+SIFPriceUpdater = SIFPriceUpdater_pushee
+
 class SIFOrderUpdater(Thread):
     def __init__(self, portfolio, sindexmodel, jsdcfg):
         Thread.__init__(self)
@@ -1362,6 +1450,17 @@ class SIFOrderPushee(Thread):
         self.session = None
         self.runflag = True
         self.conn = None
+        self.msghandler = {
+                8020:self.pinghdl
+                }
+
+    def pinghdl(self, cmd, length):
+        print cmd, length
+
+    def defaulthdl(self, cmd, length):
+        print cmd, length
+        data = self.conn.recv(length)
+        print data
 
     def close(self):
         if self.conn:
@@ -1372,7 +1471,7 @@ class SIFOrderPushee(Thread):
         self.conn = socket.socket()
         try:
             self.conn.connect((self.jsdcfg["jsdserver"],
-                self.jsdcfg["jsdport"]+1))
+                self.jsdcfg["jsdport"]+2))
         except socket.error:
             self.logging.warning("cannot connect to push address")
             ret = False
@@ -1382,12 +1481,18 @@ class SIFOrderPushee(Thread):
     def update(self):
         with self.sindexlock:
             try:
-                data = self.conn.recv(8196)
-                # TODO: parse data and update last stock index order
+                data = self.conn.recv(4)
+                print len(data), data
+                cmd = data[0:2]
+                length = data[2:4]
             except socket.timeout:
                 pass
 
-        # TODO: send ping message
+        # TODO: send ping message, and recv pong
+        # TODO: can only work without htons, why?
+        self.conn.send(unhexlify("%04x" % (20)))
+        self.conn.send(unhexlify("%04x" % (0)))
+        data = self.conn.recv(4)
 
     def stop(self):
         self.runflag = False
@@ -1396,6 +1501,9 @@ class SIFOrderPushee(Thread):
         if not self.setup():
             return
 
+        # send connect signal
+        self.conn.send(unhexlify("%04x" % (1)))
+        self.conn.send(unhexlify("%04x" % (0)))
         while self.runflag:
             self.update()
 
@@ -1603,6 +1711,7 @@ class uicontrol(Ui_MainWindow):
 
         # setup stock info model
         self.stock.setModel(self.pmodel)
+        self.stock.resizeColumnsToContents()
         self.stockindex.setModel(self.sindexmodel)
 
         # setup stock price combobox
@@ -1699,19 +1808,19 @@ class uicontrol(Ui_MainWindow):
     def setclosepricepolicy(self, pindex):
         self.portfolio.closepolicy = self.portfolio.sindexpricepolicylist[pindex]
 
-    @pyqtSlot(double)
+    @pyqtSlot(float)
     def setbuypricefix(self, value):
         self.portfolio.buypricefix = value
 
-    @pyqtSlot(double)
+    @pyqtSlot(float)
     def setsellpricefix(self, value):
         self.portfolio.sellpricefix = value
 
-    @pyqtSlot(double)
+    @pyqtSlot(float)
     def setopenpricefix(self, value):
         self.portfolio.openpricefix = value
 
-    @pyqtSlot(double)
+    @pyqtSlot(float)
     def setclosepricefix(self, value):
         self.portfolio.closepricefix = value
 
@@ -1763,7 +1872,7 @@ class basediffUpdater(Thread):
             self.logger.warning("jsd session setup failed.")
         
         # read contracts and fill stock index combobox.
-        self.sicontracts = ['IF1005', 'IF1006', 'IF1009', 'IF1012']
+        self.sicontracts = ['IF1006', 'IF1007', 'IF1009', 'IF1012']
         for sindex in self.sicontracts:
             self.uic.sindexcmbox.addItem(sindex)
         self.uic.sindexcmbox.setCurrentIndex(0)
@@ -1774,6 +1883,7 @@ class basediffUpdater(Thread):
             hs300latest = rec['S8']
 
             # update selected stock index
+            # TODO: use hq pushee
             hqreq = jsd.QueryHQReq(self.jsdsession)
             hqreq["exchcode"] = jsd.CFFEXCODE
             hqreq["code"] = self.sicontracts[self.uic.sindexcmbox.currentIndex()]
@@ -1840,6 +1950,7 @@ def main(args):
     logging.config.fileConfig(CONFIGFN)
     logger = logging.getLogger()
     msg = "i'm started"
+    logger.info("========================")
     logger.info(msg)
 
     # read config
@@ -1904,10 +2015,19 @@ def main(args):
         logger.info("No portfolio seleted.")
         sys.exit(1)
 
+    # get jsd session config
+    jsd_sessioncfg = {}
+    for k,v in config.items(JSDSEC):
+        jsd_sessioncfg[k] = v
+    try:
+        jsd_sessioncfg["jsdport"] = int(jsd_sessioncfg["jsdport"])
+    except KeyError:
+        pass
+
     updtlock = Lock()
     # setup portfolio
     tqueue = Queue.Queue()
-    p = Portfolio(portfoliofn, session_config, tqueue, updtlock)
+    p = Portfolio(portfoliofn, session_config, tqueue, updtlock, jsd_sessioncfg)
     p.loadPortfolio()
 
     # setup portfolio model for showing in table
@@ -1932,15 +2052,6 @@ def main(args):
     for i in range(jzWorkerNum):
         workers[i].start()
 
-    # get jsd session config
-    jsd_sessioncfg = {}
-    for k,v in config.items(JSDSEC):
-        jsd_sessioncfg[k] = v
-    try:
-        jsd_sessioncfg["jsdport"] = int(jsd_sessioncfg["jsdport"])
-    except KeyError:
-        pass
-
     # main window
     window = QMainWindow()
     uic = uicontrol(window, session_config, p, pmodel, sindexmodel)
@@ -1951,7 +2062,7 @@ def main(args):
     sifupdter.start()
 
     # start SIFOrderPushee
-    sifop = SIFOrderPushee(portfolio, sindexmodel, jsdcfg)
+    sifop = SIFOrderPushee(p, sindexmodel, jsd_sessioncfg)
     sifop.start()
 
     # start base diff updater
@@ -1970,7 +2081,7 @@ def main(args):
     sifupdter.stop()
     sifupdter.join()
 
-    logger.inf("waiting SIFOrderPushee to stop")
+    logger.info("waiting SIFOrderPushee to stop")
     sifop.stop()
     sifop.join()
 

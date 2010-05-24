@@ -111,7 +111,7 @@ R|||6011|||9201|123|
         return "R|||"
 
     def genpayload(self):
-        params = [self[k] for k in self.paramlist]
+        params = [str(self[k]) for k in self.paramlist]
         tmp = [self.code, self.session["branchcode"],
                 self.session["ordermethod"],
                 self.session["jsdaccount"],
