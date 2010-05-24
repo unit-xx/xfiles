@@ -69,6 +69,11 @@ class KSFT_QUOTA_PUBDATA_ITEM(Structure):
             ("derive_asklot", c_int)
             ]
 
+def showquota(quotaData, qcount):
+    for i in range(qcount):
+        qd = quotaData[i]
+        print qd.contract_id, qd.exchCode, qd.varity_code, qd.openPrice, qd.closePrice, qd.lastPrice, qd.bidPrice1, qd.askPrice1
+
 def main(args):
     dll = WinDLL("KsFtQtPub.dll")
     prototype = WINFUNCTYPE(c_bool, c_ushort, c_char_p)
@@ -89,12 +94,11 @@ def main(args):
     timeout = 2000 # 2sec
     MAX_QUOTA_ITEM_COUNT = 50
     quotaData = (KSFT_QUOTA_PUBDATA_ITEM * MAX_QUOTA_ITEM_COUNT)()
-    print type(quotaData)
     while 1:
-        qcount = KSFTHQPUB_GetQuota(cast(quotaData, POINTER(KSFT_QUOTA_PUBDATA_ITEM)),
+        qcount = KSFTHQPUB_GetQuota(cast(quotaData, c_char_p),
                 sizeof(KSFT_QUOTA_PUBDATA_ITEM)*MAX_QUOTA_ITEM_COUNT,
                 timeout,
-                byref(errmsg))
+                errmsg)
         if qcount < 0:
             print errmsg
         elif qcount > 0:
