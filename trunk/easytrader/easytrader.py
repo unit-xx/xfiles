@@ -10,6 +10,7 @@ import ConfigParser
 import cProfile
 from threading import Thread, currentThread, Lock
 from binascii import unhexlify
+from struct import pack, unpack
 import time
 from datetime import datetime
 import types
@@ -1480,16 +1481,13 @@ class SIFOrderPushee(Thread):
         with self.sindexlock:
             try:
                 data = self.conn.recv(4)
-                print len(data), data
-                cmd = data[0:2]
-                length = data[2:4]
+                print unpack("!hh", data)
             except socket.timeout:
                 print "timeout"
 
         # TODO: send ping message, and recv pong
         # TODO: can only work without htons, why?
-        self.conn.send(unhexlify("%04x" % (20)))
-        self.conn.send(unhexlify("%04x" % (0)))
+        self.conn.send(pack("!hh", 20, 0))
         data = self.conn.recv(4)
 
     def stop(self):
@@ -1500,8 +1498,7 @@ class SIFOrderPushee(Thread):
             return
 
         # send connect signal
-        self.conn.send(unhexlify("%04x" % (1)))
-        self.conn.send(unhexlify("%04x" % (0)))
+        self.conn.send(pack("!hh", 1, 0))
         while self.runflag:
             self.update()
 
