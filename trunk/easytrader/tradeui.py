@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'tradeui.ui'
 #
-# Created: Mon May 24 09:05:21 2010
+# Created: Mon May 24 15:42:18 2010
 #      by: PyQt4 UI code generator 4.7.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -125,6 +125,7 @@ class Ui_MainWindow(object):
         self.openpricefixspin.setMaximumSize(QtCore.QSize(80, 16777215))
         self.openpricefixspin.setFrame(True)
         self.openpricefixspin.setButtonSymbols(QtGui.QAbstractSpinBox.UpDownArrows)
+        self.openpricefixspin.setPrefix("")
         self.openpricefixspin.setDecimals(1)
         self.openpricefixspin.setMinimum(-10000.0)
         self.openpricefixspin.setMaximum(10000.0)
@@ -219,6 +220,7 @@ class Ui_MainWindow(object):
         self.closepricefixspin = QtGui.QDoubleSpinBox(self.groupBox_4)
         self.closepricefixspin.setMinimumSize(QtCore.QSize(80, 0))
         self.closepricefixspin.setMaximumSize(QtCore.QSize(80, 16777215))
+        self.closepricefixspin.setPrefix("")
         self.closepricefixspin.setDecimals(1)
         self.closepricefixspin.setMinimum(-10000.0)
         self.closepricefixspin.setMaximum(10000.0)
@@ -364,8 +366,7 @@ class Ui_MainWindow(object):
         self.cancelopensifbtn.setText(QtGui.QApplication.translate("MainWindow", "撤单", None, QtGui.QApplication.UnicodeUTF8))
         self.label_9.setText(QtGui.QApplication.translate("MainWindow", "修正", None, QtGui.QApplication.UnicodeUTF8))
         self.label_8.setText(QtGui.QApplication.translate("MainWindow", "开仓价格", None, QtGui.QApplication.UnicodeUTF8))
-        self.openpricefixspin.setPrefix(QtGui.QApplication.translate("MainWindow", "￥", None, QtGui.QApplication.UnicodeUTF8))
-        self.openpricefixspin.setSuffix(QtGui.QApplication.translate("MainWindow", "元", None, QtGui.QApplication.UnicodeUTF8))
+        self.openpricefixspin.setSuffix(QtGui.QApplication.translate("MainWindow", "点", None, QtGui.QApplication.UnicodeUTF8))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab), QtGui.QApplication.translate("MainWindow", "建仓", None, QtGui.QApplication.UnicodeUTF8))
         self.groupBox.setTitle(QtGui.QApplication.translate("MainWindow", "股票组合", None, QtGui.QApplication.UnicodeUTF8))
         self.label.setText(QtGui.QApplication.translate("MainWindow", "卖出价格", None, QtGui.QApplication.UnicodeUTF8))
@@ -381,8 +382,7 @@ class Ui_MainWindow(object):
         self.cancelclosesifbtn.setText(QtGui.QApplication.translate("MainWindow", "撤单", None, QtGui.QApplication.UnicodeUTF8))
         self.label_10.setText(QtGui.QApplication.translate("MainWindow", "平仓价格", None, QtGui.QApplication.UnicodeUTF8))
         self.label_11.setText(QtGui.QApplication.translate("MainWindow", "修正", None, QtGui.QApplication.UnicodeUTF8))
-        self.closepricefixspin.setPrefix(QtGui.QApplication.translate("MainWindow", "￥", None, QtGui.QApplication.UnicodeUTF8))
-        self.closepricefixspin.setSuffix(QtGui.QApplication.translate("MainWindow", "元", None, QtGui.QApplication.UnicodeUTF8))
+        self.closepricefixspin.setSuffix(QtGui.QApplication.translate("MainWindow", "点", None, QtGui.QApplication.UnicodeUTF8))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_2), QtGui.QApplication.translate("MainWindow", "平仓", None, QtGui.QApplication.UnicodeUTF8))
         self.label_5.setText(QtGui.QApplication.translate("MainWindow", "沪深300：", None, QtGui.QApplication.UnicodeUTF8))
         self.label_6.setText(QtGui.QApplication.translate("MainWindow", "股指期货：", None, QtGui.QApplication.UnicodeUTF8))
