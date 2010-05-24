@@ -327,12 +327,12 @@ class Portfolio(object):
                 "openposprice", "closeposprice",
                 # of type SIndexRecord
                 "pastopen", "pastclose",
-                "opencount", "earning",
+                "opencount", "closecount", "earning",
                 "stopped", "state"]
         self.sindexmodelattr = ["count", "code",
                 "latestprice", "close", "open", "ceiling", "floor",
                 "openposprice", "closeposprice",
-                "opencount", "earning",
+                "opencount", "closecount", "earning",
                 "state"]
         # need state? or just a replication of order_state of last order
         assert set(self.sindexmodelattr) <= set(self.sindexattr)
@@ -348,6 +348,7 @@ class Portfolio(object):
                 "closeposprice":u"平仓价",
                 "stopped":u"停牌",
                 "opencount":u"建仓量",
+                "closecount":u"平仓量",
                 "earning":u"盈亏",
                 "state":u"状态"
                 }
@@ -362,7 +363,6 @@ class Portfolio(object):
         s = jsd.session(self.jsdcfg)
         if not s.setup():
             self.logger.warning("Cannot login")
-        print "jsd login"
         self.jsdsession = s
 
     def getbostate(self):
@@ -1355,8 +1355,6 @@ class SIFPriceUpdater_pushee(Thread):
 
     def run(self):
         os.environ["PATH"] = "".join([os.environ["PATH"], ";", self.jsdcfg["hqdllpath"]])
-        print os.environ["PATH"]
-        print self.jsdcfg["hqdll"]
         dll = WinDLL(self.jsdcfg["hqdll"])
         prototype = WINFUNCTYPE(c_bool, c_ushort, c_char_p)
         KSFTHQPUB_Start = prototype(("KSFTHQPUB_Start", dll))
@@ -1387,7 +1385,7 @@ class SIFPriceUpdater_pushee(Thread):
                 self.updateprice(quotaData, qcount)
                 self.uic.stockindex.resizeColumnsToContents()
             else:
-                print "no quota data"
+                pass
 
         KSFTHQPUB_Stop()
 
@@ -1486,7 +1484,7 @@ class SIFOrderPushee(Thread):
                 cmd = data[0:2]
                 length = data[2:4]
             except socket.timeout:
-                pass
+                print "timeout"
 
         # TODO: send ping message, and recv pong
         # TODO: can only work without htons, why?

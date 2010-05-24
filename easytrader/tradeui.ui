@@ -236,10 +236,10 @@
               <enum>QAbstractSpinBox::UpDownArrows</enum>
              </property>
              <property name="prefix">
-              <string>￥</string>
+              <string/>
              </property>
              <property name="suffix">
-              <string>元</string>
+              <string>点</string>
              </property>
              <property name="decimals">
               <number>1</number>
@@ -472,10 +472,10 @@
               </size>
              </property>
              <property name="prefix">
-              <string>￥</string>
+              <string/>
              </property>
              <property name="suffix">
-              <string>元</string>
+              <string>点</string>
              </property>
              <property name="decimals">
               <number>1</number>
