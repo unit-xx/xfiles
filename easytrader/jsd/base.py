@@ -301,3 +301,12 @@ class QueryAllOrderReq(request):
 class QueryAllOrderResp(response):
     okfieldn = 33
     hasmore = 1
+
+class QueryDealReq(request):
+    code = "6013"
+    paramlist = ["startdate", "enddate"]
+
+class QueryDealResp(response):
+    okfieldn = 21
+    hasmore = 1
+

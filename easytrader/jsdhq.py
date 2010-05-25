@@ -74,8 +74,7 @@ def showquota(quotaData, qcount):
     for i in range(qcount):
         qd = quotaData[i]
         if qd.exchCode == "G" and qd.deliv_date == "1006":
-            print qd.exchCode, qd.varity_code, qd.deliv_date, qd.bidPrice1, qd.askPrice1, qd.openPrice, qd.preClosePrice, qd.lastPrice
-
+            print qd.exchCode, qd.varity_code, qd.deliv_date, qd.lastPrice, qd.bidPrice1, qd.askPrice1, qd.openPrice, qd.preClosePrice
 def main(args):
     os.environ["PATH"] = os.environ["PATH"]+";jsdhqdll"
     dll = WinDLL("KsFtQtPub.dll")

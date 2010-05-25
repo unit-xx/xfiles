@@ -68,8 +68,8 @@ if doorder:
     oreq["longshort"] = "0"
     oreq["openclose"] = "0"
     oreq["ifhedge"] = "0"
-    oreq["count"] = "10"
-    oreq["price"] = "2750"
+    oreq["count"] = "1"
+    oreq["price"] = "2830"
     oreq["clientnum"] = s["clientnum"]
     oreq["seat"] = s["seat"]
 
