@@ -280,7 +280,7 @@ class OrderResp(response):
 
 class CancelOrderReq(request):
     code = "6022"
-    paramlist = ["exchcode", "code", "longshort", "openclose", "ifhedge", "count", "price", "order_id", "cancelcount", "syscode", "seat", "orderseat"]
+    paramlist = ["exchcode", "code", "longshort", "openclose", "ifhedge", "count", "price", "order_id", "cancelcount", "syscenter", "seat", "orderseat"]
 
 class CancelOrderResp(response):
     okfieldn = 13

@@ -190,7 +190,7 @@ class request:
 
     def genpayload(self):
         # reqcode|(params|)+
-        params = "|".join([self[k] for k in self.paramlist])
+        params = "|".join([str(self[k]) for k in self.paramlist])
         return "|".join([self.code, params, ""])
 
     def send(self):
