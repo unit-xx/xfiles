@@ -365,7 +365,7 @@ class Portfolio(object):
         self.jsdcfg = jsdcfg
         s = jsd.session(self.jsdcfg)
         if not s.setup():
-            self.logger.warning("Cannot login")
+            self.logger.warning("Cannot login into jsd")
         self.jsdsession = s
 
     def getbostate(self):
@@ -730,7 +730,7 @@ class Portfolio(object):
                     # TODO: change state to ORDERSUCCESS in this case too? to enable next cancel?
                     assert False, "Error: cancel failed while dealcount is smaller than count."
         else:
-            assert False, "error when update order for %s (%s:%s)" % (si["order_id"], qoresp.retcode, qoresp.retinfo)
+            self.logger.error("error when update order for %s (%s:%s)", si["order_id"], qoresp.retcode, qoresp.retinfo)
 
         # update pastbuyxxx
         if orec["order_state"] in (Portfolio.BUYSUCCESS, Portfolio.CANCELBUYSUCCESS):
@@ -1069,7 +1069,7 @@ class Portfolio(object):
                 oresp = jsd.OrderResp(self.jsdsession)
                 oresp.recv()
                 resp = oresp.records[0]
-                print resp
+                print "orderresp", resp
                 if oresp.anwser == "Y":
                     # NOTE: order state may change after ordering
                     sirec["order_id"] = resp[1]
@@ -1105,7 +1105,54 @@ class Portfolio(object):
     def cancelopenshort(self):
         with self.sindexlock:
             if self.sindexinfo["state"] == Portfolio.IFOPENSHORTOK:
-                pass
+                if self.sindexinfo["opencount"] < int(self.sindexinfo["count"]):
+                    si = self.sindexinfo
+                    orec = None
+                    if len(si["pastclose"]) != 0:
+                        orec = si["pastclose"][-1]
+                    elif len(si["pastopen"]) != 0:
+                        orec = si["pastopen"][-1]
+                    assert orec is not None
+
+                    coreq = jsd.CancelOrderReq(self.jsdsession)
+                    coreq["exchcode"] = jsd.CFFEXCODE
+                    coreq["code"] = si["code"]
+                    coreq["longshort"] = orec["longshort"]
+                    coreq["openclose"] = orec["openclose"]
+                    coreq["ifhedge"] = orec["ifhedge"]
+                    coreq["count"] = orec["ordercount"]
+                    coreq["price"] = orec["orderprice"]
+                    coreq["order_id"] = orec["order_id"]
+                    coreq["cancelcount"] = str( int(orec["ordercount"]) - si["opencount"] )
+                    coreq["syscenter"] = orec["syscenter"]
+                    coreq["seat"] = self.jsdsession["seat"]
+                    coreq["orderseat"] = orec["orderseat"]
+                    coreq.send()
+                    coresp = jsd.CancelOrderResp(self.jsdsession)
+                    coresp.recv()
+                    self.logger.info("cancel response: %s", str(coresp.records))
+                    if coresp.anwser == "Y":
+                        self.sindexinfo["state"] = Portfolio.IFCANCELOPENSHORTOK
+                    else:
+                        # check order state, if order already canceled, or totally
+                        # dealed, its state should be ok
+                        self.sindexinfo["state"] = Portfolio.IFCANCELOPENSHORTFAILED
+                        qoreq = jsd.QueryOrderReq(self.jsdsession)
+                        qoreq["order_id"] = orec["order_id"]
+                        qoreq.send()
+                        qoresp = jsd.QueryOrderResp(self.jsdsession)
+                        qoresp.recv()
+                        self.logger.info("query response when cancel open failed: %s", str(qoresp.records))
+                        if qoresp.anwser == "Y":
+                            #partial done, partial deleted
+                            if qoresp.records[0][1] == "b":
+                                self.sindexinfo["state"] = Portfolio.IFCANCELOPENSHORTOK
+                            elif qoresp.records[0][1] == "c":
+                                self.sindexinfo["state"] = Portfolio.IFOPENSHORTOK
+                            else:
+                                self.logger.error("unhandled order state when cancel")
+                        else:
+                            self.logger.error("error when query cancel-failed order")
             else:
                 self.logger.info("not in cancelopen-able state")
 
@@ -1189,7 +1236,6 @@ class Portfolio(object):
             if self.sindexinfo["state"] == Portfolio.IFCLOSESHORTOK:
                 pass
             else:
-                pass
                 self.logger.info("not in cancelclose-able state")
 
     def updateopencount(self):
@@ -1600,6 +1646,7 @@ class SIFOrderPushee(Thread):
         # NOTE: assumption: even it's dealed in OrderResp, we can also get a copy of
         # deal info here, so we ignore deal info in OrderResp, and update deal info here and
         # in dealhdl
+        self.logger.info("SIFOrderPushee receive order response: %d, %d, %s", cmd, length, data)
         rec = self.parsedata(data)
         sirec = self.getOrderRec()
         if rec[6] == sirec["order_id"]:
@@ -1615,22 +1662,24 @@ class SIFOrderPushee(Thread):
                     self.portfolio.updateclosecount()
             elif rec[11] in "qd":#sys/user diabled, so failed
                 if rec[13] == "0":#open
-                    si["state"] = portfolio.IFOPENSHORTFAILED
+                    si["state"] = self.portfolio.IFOPENSHORTFAILED
                 if rec[13] == "1":#close
-                    si["state"] = portfolio.IFCLOSESHORTFAILED
+                    si["state"] = self.portfolio.IFCLOSESHORTFAILED
             else:
-                self.logger.warning("unhandled state: %d, %d, %s",
-                        cmd, length, data)
+                self.logger.warning("unhandled order state (%s): %d, %d, %s",
+                        rec[11], cmd, length, data)
 
     def cancelhdl(self, cmd, length, data):
+        self.logger.info("SIFOrderPushee receive cancel response: %d, %d, %s", cmd, length, data)
         pass
 
     def dealhdl(self, cmd, length, data):
+        self.logger.info("SIFOrderPushee receive deal response: %d, %d, %s", cmd, length, data)
         rec = self.parsedata(data)
         sirec = self.getOrderRec()
         if rec[7] == sirec["order_id"]:
             si = self.portfolio.sindexinfo
-            if rec[14] in "pc":#partial or total complete
+            if rec[14] in "pcf":#partial or total complete or deleting
                 oid = rec[7]
                 si["deals"].setdefault(oid, [])
                 si["deals"][oid].append(( int(rec[8]), float(rec[9]) ))
@@ -1643,10 +1692,10 @@ class SIFOrderPushee(Thread):
                         cmd, length, data)
 
     def statechagehdl(self, cmd, length, data):
-        self.logger.info("SIFOrderPushee receive message: %d, %d, %s", cmd, length, data)
+        self.logger.info("SIFOrderPushee receive state change msg: %d, %d, %s", cmd, length, data)
 
     def infohdl(self, cmd, length, data):
-        self.logger.info("SIFOrderPushee receive message: %d, %d, %s", cmd, length, data)
+        self.logger.info("SIFOrderPushee receive some infomation: %d, %d, %s", cmd, length, data)
 
     def setup(self):
         ret = True
@@ -1654,10 +1703,10 @@ class SIFOrderPushee(Thread):
         try:
             self.conn.connect((self.jsdcfg["jsdserver"],
                 self.jsdcfg["jsdport"]+2))
+            self.conn.settimeout(6)
         except socket.error:
-            self.logging.warning("cannot connect to push address")
+            self.logger.warning("cannot connect to push address")
             ret = False
-        self.conn.settimeout(6)
         return ret
 
     def update(self):
@@ -1670,8 +1719,8 @@ class SIFOrderPushee(Thread):
             hdl = self.msghandler[cmd]
             with self.sindexlock:
                 # TODO: race condition may exist between operations caused by buttons, e.g. open/close/cancel
-                print cmd, length, data
                 hdl(cmd, length, data)
+                QMetaObject.invokeMethod(self.sindexmodel, "updaterow", Qt.QueuedConnection)
         except socket.timeout:
             # ping
             self.conn.send(pack("!HH", 20, 0))
@@ -1715,6 +1764,7 @@ class OrderUpdater(Thread):
 
     def update(self):
         for scode in self.portfolio.stocklist:
+            # TODO: why need this updtlock?
             with self.updtlock:
                 si = self.portfolio.stockinfo[scode]
                 # don't update buy if selled
@@ -2070,6 +2120,7 @@ class basediffUpdater(Thread):
         self.jsdsession = jsd.session(self.jsdcfg)
         if not self.jsdsession.setup():
             self.logger.warning("jsd session setup failed.")
+            return
         
         # read contracts and fill stock index combobox.
         self.sicontracts = ['IF1006', 'IF1007', 'IF1009', 'IF1012']

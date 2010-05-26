@@ -22,7 +22,6 @@ mktinforeq.send()
 mktinforesp = jz.MarketinfoResp(s)
 mktinforesp.recv()
 print mktinforesp.records
-sys.exit(1)
 #s.storetrade(mktinforeq, mktinforesp)
 
 # query capital info

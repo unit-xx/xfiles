@@ -18,4 +18,18 @@ if not s.setup():
 coreq = jsd.CancelOrderReq(s)
 coreq["exchcode"] = jsd.CFFEXCODE
 coreq["code"] = "IF1006"
-coreq["cancelcount"] = 
+coreq["longshort"] = "1"
+coreq["openclose"] = "0"
+coreq["ifhedge"] = "0"
+coreq["count"] = "49"
+coreq["price"] = '2826.80'
+coreq["order_id"] = '2656'
+coreq["cancelcount"] = "49"
+coreq["syscenter"] = "0"
+coreq["seat"] = 'cffex'
+coreq["orderseat"] = '244901'
+coreq.send()
+coresp = jsd.CancelOrderResp(s)
+coresp.recv()
+print coresp.records
+
