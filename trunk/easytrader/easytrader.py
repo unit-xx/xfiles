@@ -433,6 +433,7 @@ class Portfolio(object):
                     pass
                 self.updateopencount()
                 self.updateclosecount()
+                self.updateearning()
                 # TODO: update opencount, closecount, earning
                 # TODO: also save deals in savePortfolio
             else:
@@ -1258,6 +1259,26 @@ class Portfolio(object):
                     cc = cc + d[0]
         self.sindexinfo["closecount"] = cc
 
+    def updateearning(self):
+        gain = 0.0
+        paid = 0.0
+        for o in self.sindexinfo["pastopen"]:
+            oid = o["order_id"]
+            if oid != "" and oid in self.sindexinfo["deals"]:
+                for d in self.sindexinfo["deals"][oid]:
+                    gain = gain + d[0] * d[1]
+        for o in self.sindexinfo["pastclose"]:
+            oid = o["order_id"]
+            if oid != "" and oid in self.sindexinfo["deals"]:
+                for d in self.sindexinfo["deals"][oid]:
+                    paid = paid + d[0] * d[1]
+        self.sindexinfo["earning"] = 0.0
+        try:
+            self.sindexinfo["earning"] = gain - paid - self.sindexinfo["latestprice"] * (self.sindexinfo["opencount"] - self.sindexinfo["closecount"])
+        except KeyError:#latestprice is not updated
+            pass
+
+
 class ProfiledThread(Thread):
     # Overrides threading.Thread.run()
     def run(self):
@@ -1486,6 +1507,7 @@ class SIFPriceUpdater_pushee(Thread):
                 si["floor"] = qd.lowerLimitPrice
                 si["openposprice"] = self.getsindexprice(qd, self.portfolio.openpolicy) + self.portfolio.openpricefix
                 si["closeposprice"] = self.getsindexprice(qd, self.portfolio.closepolicy) + self.portfolio.closepricefix
+                self.portfolio.updateearning()
 
                 if not self.columnresized:
                     self.uic.stockindex.resizeColumnsToContents()
@@ -1658,8 +1680,10 @@ class SIFOrderPushee(Thread):
                 si["deals"][oid].append(( int(rec[7]), float(rec[8]) ))
                 if rec[13] == "0":#open
                     self.portfolio.updateopencount()
+                    self.updateearning()
                 if rec[13] == "1":#close
                     self.portfolio.updateclosecount()
+                    self.updateearning()
             elif rec[11] in "qd":#sys/user diabled, so failed
                 if rec[13] == "0":#open
                     si["state"] = self.portfolio.IFOPENSHORTFAILED
@@ -1685,8 +1709,10 @@ class SIFOrderPushee(Thread):
                 si["deals"][oid].append(( int(rec[8]), float(rec[9]) ))
                 if rec[16] == "0":#open
                     self.portfolio.updateopencount()
+                    self.updateearning()
                 if rec[16] == "1":#close
                     self.portfolio.updateclosecount()
+                    self.updateearning()
             else:
                 self.logger.warning("unhandled state: %d, %d, %s",
                         cmd, length, data)
