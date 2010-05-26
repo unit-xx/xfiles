@@ -55,7 +55,7 @@ class session:
             c.connect((self.sessioncfg["jzserver"], self.sessioncfg["jzport"]))
             self.conn = c
 
-            self.tradedbconn = db.connect(self.sessioncfg["tradedbfn"])
+            self.tradedbconn = db.connect(self.sessioncfg["tradedbfn"], timeout=30)
         except socket.error:
             return False
 
