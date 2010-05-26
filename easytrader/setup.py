@@ -8,7 +8,7 @@ buildOptions = dict(
         optimize = 2)
 
 setup(
-        name = "hello",
+        name = "easytrader",
         version = "0.1",
         description = "The EasyTrader",
         options = dict(build_exe = buildOptions),
