@@ -19,8 +19,8 @@ if not s.setup():
 
 qoreq = jz.QueryOrderReq(s)
 today = str(datetime.today().date())
-qoreq["begin_date"] = "2010-05-26"
-qoreq["end_date"] = "2010-05-26"
+qoreq["begin_date"] = today
+qoreq["end_date"] = today
 qoreq["get_orders_mode"] = "0" # all submissions
 qoreq["user_code"] = s["user_code"]
 print s["user_code"]
