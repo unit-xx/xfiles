@@ -1721,27 +1721,30 @@ class SIFOrderPushee(Thread):
         self.logger.info("SIFOrderPushee receive order response: %d, %d, %s", cmd, length, data)
         rec = self.parsedata(data)
         sirec = self.getOrderRec()
-        if rec[6] == sirec["order_id"]:
-            si = self.portfolio.sindexinfo
-            if rec[11] in "pc":#partial or total complete
-                oid = rec[6]
-                si["deals"].setdefault(oid, [])
-                # count, price
-                si["deals"][oid].append(( int(rec[7]), float(rec[8]) ))
-                if rec[13] == "0":#open
-                    self.portfolio.updateopencount()
-                    self.portfolio.updateearning()
-                if rec[13] == "1":#close
-                    self.portfolio.updateclosecount()
-                    self.portfolio.updateearning()
-            elif rec[11] in "qd":#sys/user diabled, so failed
-                if rec[13] == "0":#open
-                    si["state"] = self.portfolio.IFOPENSHORTFAILED
-                if rec[13] == "1":#close
-                    si["state"] = self.portfolio.IFCLOSESHORTFAILED
-            else:
-                self.logger.warning("unhandled order state (%s): %d, %d, %s",
-                        rec[11], cmd, length, data)
+        if sirec is None or rec[7] != sirec["order_id"]:
+            self.logger.info("Receive an order that's not issued by me.")
+            return
+
+        si = self.portfolio.sindexinfo
+        if rec[11] in "pc":#partial or total complete
+            oid = rec[6]
+            si["deals"].setdefault(oid, [])
+            # count, price
+            si["deals"][oid].append(( int(rec[7]), float(rec[8]) ))
+            if rec[13] == "0":#open
+                self.portfolio.updateopencount()
+                self.portfolio.updateearning()
+            if rec[13] == "1":#close
+                self.portfolio.updateclosecount()
+                self.portfolio.updateearning()
+        elif rec[11] in "qd":#sys/user diabled, so failed
+            if rec[13] == "0":#open
+                si["state"] = self.portfolio.IFOPENSHORTFAILED
+            if rec[13] == "1":#close
+                si["state"] = self.portfolio.IFCLOSESHORTFAILED
+        else:
+            self.logger.warning("unhandled order state (%s): %d, %d, %s",
+                    rec[11], cmd, length, data)
 
     def cancelhdl(self, cmd, length, data):
         self.logger.info("SIFOrderPushee receive cancel response: %d, %d, %s", cmd, length, data)
@@ -1751,21 +1754,24 @@ class SIFOrderPushee(Thread):
         self.logger.info("SIFOrderPushee receive deal response: %d, %d, %s", cmd, length, data)
         rec = self.parsedata(data)
         sirec = self.getOrderRec()
-        if rec[7] == sirec["order_id"]:
-            si = self.portfolio.sindexinfo
-            if rec[14] in "pcf":#partial or total complete or deleting
-                oid = rec[7]
-                si["deals"].setdefault(oid, [])
-                si["deals"][oid].append(( int(rec[8]), float(rec[9]) ))
-                if rec[16] == "0":#open
-                    self.portfolio.updateopencount()
-                    self.portfolio.updateearning()
-                if rec[16] == "1":#close
-                    self.portfolio.updateclosecount()
-                    self.portfolio.updateearning()
-            else:
-                self.logger.warning("unhandled state: %d, %d, %s",
-                        cmd, length, data)
+        if sirec is None or rec[7] != sirec["order_id"]:
+            self.logger.info("Receive an order that's not issued by me.")
+            return
+
+        si = self.portfolio.sindexinfo
+        if rec[14] in "pcf":#partial or total complete or deleting
+            oid = rec[7]
+            si["deals"].setdefault(oid, [])
+            si["deals"][oid].append(( int(rec[8]), float(rec[9]) ))
+            if rec[16] == "0":#open
+                self.portfolio.updateopencount()
+                self.portfolio.updateearning()
+            if rec[16] == "1":#close
+                self.portfolio.updateclosecount()
+                self.portfolio.updateearning()
+        else:
+            self.logger.warning("unhandled state: %d, %d, %s",
+                    cmd, length, data)
 
     def statechagehdl(self, cmd, length, data):
         self.logger.info("SIFOrderPushee receive state change msg: %d, %d, %s", cmd, length, data)
