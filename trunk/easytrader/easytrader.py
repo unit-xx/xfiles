@@ -2265,7 +2265,7 @@ def verifymap(dbfn, mapfn, codekey):
         db = dbf.Dbf(dbfn, ignoreErrors=True, readOnly=True)
         f = open(mapfn)
     except IOError, e:
-        self.logger.exception("cannot find file.")
+        logging.getLogger().exception("cannot find file.")
         return False
 
     map = pickle.load(f)
