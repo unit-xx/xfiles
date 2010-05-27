@@ -1,20 +1,32 @@
 import sys
 import pickle
 from dbfpy import dbf
+import ConfigParser
 
 # read (market, code) pairs and generate scode->record mappings,
 # for SH and SZ market
 
-szmapfn = "szmap.pkl"
-shmapfn = "shmap.pkl"
-szdbfn = "z:\\sjshq.dbf"
-shdbfn = "z:\\show2003.dbf"
-stockfn = "hs300.txt"
+CONFIGFN = "easytrader.cfg"
+JZSEC = "jz"
+JSDSEC = "jsd"
+config = ConfigParser.RawConfigParser()
+config.read(CONFIGFN)
 
-try:
-    stockfn = sys.argv[1]
-except IndexError:
-    print "No input stock list file, use %s" % stockfn
+print "Use setting in %s" % CONFIGFN
+print
+shmapfn = config.get(JZSEC, "shmapfn")
+szmapfn = config.get(JZSEC, "szmapfn")
+shdbfn = config.get(JZSEC, "shdbfn")
+szdbfn = config.get(JZSEC, "szdbfn")
+stockfn = config.get(JZSEC, "indexstockset")
+print "stock info dbf is %s (SH) and %s (SZ)" % (shdbfn, szdbfn)
+print "stock to be indexed is in %s" % stockfn
+print "index files are %s (SH) and %s (SZ)" % (shmapfn, szmapfn)
+print
+anwser = raw_input("Ok to continue? (y/n): ")
+if anwser.lower() != "y":
+    print "You choose abort"
+    sys.exit(1)
 
 try:
     f = open(stockfn, "r")
@@ -64,3 +76,4 @@ shmapf.close()
 szmapf = open(szmapfn, "w")
 pickle.dump(szmap, szmapf)
 szmapf.close()
+print "stock index generated."
