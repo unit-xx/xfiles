@@ -88,3 +88,7 @@ Traceback (most recent call last):
   File "F:\easytrader-trunk\jz\base.py", line 193, in genpayload
 TypeError: sequence item 7: expected string or Unicode, float found
 
+================
+
+jsd order pushee even receive responses of order issued from
+different machines!!!

@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'tradeui.ui'
 #
-# Created: Tue May 25 09:28:52 2010
+# Created: Thu May 27 14:40:49 2010
 #      by: PyQt4 UI code generator 4.7.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -443,7 +443,7 @@ class Ui_MainWindow(object):
         self.label_7.setText(QtGui.QApplication.translate("MainWindow", "基差绝对值：", None, QtGui.QApplication.UnicodeUTF8))
         self.label_12.setText(QtGui.QApplication.translate("MainWindow", "基差百分比：", None, QtGui.QApplication.UnicodeUTF8))
         self.label_13.setText(QtGui.QApplication.translate("MainWindow", "建仓信号阈值", None, QtGui.QApplication.UnicodeUTF8))
-        self.openthresholdspin.setSuffix(QtGui.QApplication.translate("MainWindow", "点", None, QtGui.QApplication.UnicodeUTF8))
+        self.openthresholdspin.setSuffix(QtGui.QApplication.translate("MainWindow", " %", None, QtGui.QApplication.UnicodeUTF8))
         self.label_14.setText(QtGui.QApplication.translate("MainWindow", "%   ", None, QtGui.QApplication.UnicodeUTF8))
         self.menu.setTitle(QtGui.QApplication.translate("MainWindow", "查看", None, QtGui.QApplication.UnicodeUTF8))
         self.stockinfoact.setText(QtGui.QApplication.translate("MainWindow", "股份查询", None, QtGui.QApplication.UnicodeUTF8))
