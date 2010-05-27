@@ -242,7 +242,7 @@ class Portfolio(object):
         self.logger = logging.getLogger()
         if not self.session.setup():
             self.logger.warning("session setup failed.")
-            sys.exit(1)
+            #sys.exit(1)
         self.tqueue = tqueue
         self.bolock = Lock()
         self.sindexlock = Lock()
@@ -731,7 +731,7 @@ class Portfolio(object):
                     # TODO: change state to ORDERSUCCESS in this case too? to enable next cancel?
                     assert False, "Error: cancel failed while dealcount is smaller than count."
         else:
-            self.logger.error("error when update order for %s (%s:%s)", si["order_id"], qoresp.retcode, qoresp.retinfo)
+            self.logger.error("error when update order for %s (%s:%s)", orec["order_id"], qoresp.retcode, qoresp.retinfo)
 
         # update pastbuyxxx
         if orec["order_state"] in (Portfolio.BUYSUCCESS, Portfolio.CANCELBUYSUCCESS):
@@ -1131,7 +1131,7 @@ class Portfolio(object):
                     coreq.send()
                     coresp = jsd.CancelOrderResp(self.jsdsession)
                     coresp.recv()
-                    self.logger.info("cancel response: %s", str(coresp.records))
+                    self.logger.info("cancel open response: %s", str(coresp.records))
                     if coresp.anwser == "Y":
                         self.sindexinfo["state"] = Portfolio.IFCANCELOPENSHORTOK
                     else:
@@ -1235,7 +1235,55 @@ class Portfolio(object):
     def cancelcloseshort(self):
         with self.sindexlock:
             if self.sindexinfo["state"] == Portfolio.IFCLOSESHORTOK:
-                pass
+                if self.sindexinfo["closecount"] < self.sindexinfo["opencount"]:
+                    si = self.sindexinfo
+                    orec = None
+                    if len(si["pastclose"]) != 0:
+                        orec = si["pastclose"][-1]
+                    elif len(si["pastopen"]) != 0:
+                        orec = si["pastopen"][-1]
+                    assert orec is not None
+
+                    coreq = jsd.CancelOrderReq(self.jsdsession)
+                    coreq["exchcode"] = jsd.CFFEXCODE
+                    coreq["code"] = si["code"]
+                    coreq["longshort"] = orec["longshort"]
+                    coreq["openclose"] = orec["openclose"]
+                    coreq["ifhedge"] = orec["ifhedge"]
+                    coreq["count"] = orec["ordercount"]
+                    coreq["price"] = orec["orderprice"]
+                    coreq["order_id"] = orec["order_id"]
+                    coreq["cancelcount"] = str( si["opencount"] - si["closecount"] )
+                    coreq["syscenter"] = orec["syscenter"]
+                    coreq["seat"] = self.jsdsession["seat"]
+                    coreq["orderseat"] = orec["orderseat"]
+                    coreq.send()
+                    coresp = jsd.CancelOrderResp(self.jsdsession)
+                    coresp.recv()
+                    self.logger.info("cancel close response: %s", str(coresp.records))
+                    if coresp.anwser == "Y":
+                        self.sindexinfo["state"] = Portfolio.IFCANCELCLOSESHORTOK
+                    else:
+                        # check order state, if order already canceled, or totally
+                        # dealed, its state should be ok
+                        self.sindexinfo["state"] = Portfolio.IFCANCELCLOSESHORTFAILED
+                        qoreq = jsd.QueryOrderReq(self.jsdsession)
+                        qoreq["order_id"] = orec["order_id"]
+                        qoreq.send()
+                        qoresp = jsd.QueryOrderResp(self.jsdsession)
+                        qoresp.recv()
+                        self.logger.info("query response when cancel close failed: %s", str(qoresp.records))
+                        if qoresp.anwser == "Y":
+                            #partial done, partial deleted
+                            if qoresp.records[0][1] == "b":
+                                self.sindexinfo["state"] = Portfolio.IFCANCELCLOSESHORTOK
+                            elif qoresp.records[0][1] == "c":
+                                self.sindexinfo["state"] = Portfolio.IFCLOSESHORTOK
+                            else:
+                                self.logger.error("unhandled order state when cancel")
+                        else:
+                            self.logger.error("error when query cancel-failed order")
+
             else:
                 self.logger.info("not in cancelclose-able state")
 
@@ -1415,6 +1463,8 @@ class PortfolioUpdater(Thread):
         while self.runflag:
             time.sleep(2)
             self.update()
+
+        self.close()
 
 class SIFPriceUpdater_poll(Thread):
     def __init__(self, portfolio, sindexmodel, jsdcfg, uic):
@@ -1680,10 +1730,10 @@ class SIFOrderPushee(Thread):
                 si["deals"][oid].append(( int(rec[7]), float(rec[8]) ))
                 if rec[13] == "0":#open
                     self.portfolio.updateopencount()
-                    self.updateearning()
+                    self.portfolio.updateearning()
                 if rec[13] == "1":#close
                     self.portfolio.updateclosecount()
-                    self.updateearning()
+                    self.portfolio.updateearning()
             elif rec[11] in "qd":#sys/user diabled, so failed
                 if rec[13] == "0":#open
                     si["state"] = self.portfolio.IFOPENSHORTFAILED
@@ -1709,10 +1759,10 @@ class SIFOrderPushee(Thread):
                 si["deals"][oid].append(( int(rec[8]), float(rec[9]) ))
                 if rec[16] == "0":#open
                     self.portfolio.updateopencount()
-                    self.updateearning()
+                    self.portfolio.updateearning()
                 if rec[16] == "1":#close
                     self.portfolio.updateclosecount()
-                    self.updateearning()
+                    self.portfolio.updateearning()
             else:
                 self.logger.warning("unhandled state: %d, %d, %s",
                         cmd, length, data)
@@ -1776,13 +1826,6 @@ class OrderUpdater(Thread):
         self.updtlock = updtlock
         self.name = "OrderUpdater"
         self.logger = logging.getLogger()
-        # TODO: session setup here is not right, dbconn will be
-        # created in mainthread, which is wrong.
-        # the bug is not triggered in realrun because we don't
-        # store anything in OrderUpdater
-        if not self.session.setup():
-            self.logger.warning("Session setup failed.")
-            sys.exit(1)
 
     def close(self):
         if self.session:
@@ -1850,9 +1893,15 @@ class OrderUpdater(Thread):
         self.runflag = False
 
     def run(self):
+        if not self.session.setup():
+            self.logger.warning("Session setup failed.")
+            return
+
         while self.runflag:
             self.update()
             time.sleep(2)
+
+        self.close()
 
 class asyncWorker(Thread):
     def __init__(self, session_cfg, tqueue):
@@ -2281,11 +2330,11 @@ def main(args):
         sys.exit(1)
 
     session_config.update(d.config)
-    testsession = jz.session(session_config)
-    if not testsession.setup():
-        logger.warning("Cannot login.")
-        sys.exit(1)
-    testsession.close()
+    #testsession = jz.session(session_config)
+    #if not testsession.setup():
+    #    logger.warning("Cannot login.")
+    #    sys.exit(1)
+    #testsession.close()
 
     # verify stock mapping
     shdbfn = session_config["shdbfn"]
@@ -2399,8 +2448,6 @@ def main(args):
     logger.info("saving order info.")
     p.savePortfolio()
     p.close()
-    pupdater.close()
-    orderupdater.close()
     logger.info("I will exit.")
 
 if __name__=="__main__":
