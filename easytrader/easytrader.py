@@ -1458,12 +1458,14 @@ class PortfolioUpdater(Thread):
         self.runflag = False
 
     def run(self):
-        self.update()
-        while self.runflag:
-            time.sleep(2)
+        try:
             self.update()
-
-        self.close()
+            while self.runflag:
+                time.sleep(2)
+                self.update()
+            self.close()
+        except Exception:
+            self.logger.exception("Oh!!!")
 
 class SIFPriceUpdater_poll(Thread):
     def __init__(self, portfolio, sindexmodel, jsdcfg, uic):
@@ -1513,20 +1515,23 @@ class SIFPriceUpdater_poll(Thread):
 
     def run(self):
         # setup session
-        s = jsd.session(self.jsdcfg)
-        if not s.setup():
-            self.logger.warning("Cannot login")
-            return False
-        self.jsdsession = s
+        try:
+            s = jsd.session(self.jsdcfg)
+            if not s.setup():
+                self.logger.warning("Cannot login")
+                return False
+            self.jsdsession = s
 
-        # ... and run periodic update
-        self.update()
-        self.uic.stockindex.resizeColumnsToContents()
-        while self.runflag:
-            time.sleep(1)
+            # ... and run periodic update
             self.update()
+            self.uic.stockindex.resizeColumnsToContents()
+            while self.runflag:
+                time.sleep(1)
+                self.update()
 
-        self.close()
+            self.close()
+        except Exception:
+            self.logger.exception("Oh!!!")
 
 class SIFPriceUpdater_pushee(Thread):
     def __init__(self, portfolio, sindexmodel, jsdcfg, uic):
@@ -1576,39 +1581,42 @@ class SIFPriceUpdater_pushee(Thread):
         self.runflag = False
 
     def run(self):
-        os.environ["PATH"] = "".join([os.environ["PATH"], ";", self.jsdcfg["hqdllpath"]])
-        dll = WinDLL(self.jsdcfg["hqdll"])
-        prototype = WINFUNCTYPE(c_bool, c_ushort, c_char_p)
-        KSFTHQPUB_Start = prototype(("KSFTHQPUB_Start", dll))
+        try:
+            os.environ["PATH"] = "".join([os.environ["PATH"], ";", self.jsdcfg["hqdllpath"]])
+            dll = WinDLL(self.jsdcfg["hqdll"])
+            prototype = WINFUNCTYPE(c_bool, c_ushort, c_char_p)
+            KSFTHQPUB_Start = prototype(("KSFTHQPUB_Start", dll))
 
-        prototype = WINFUNCTYPE(None)
-        KSFTHQPUB_Stop = prototype(("KSFTHQPUB_Stop", dll))
+            prototype = WINFUNCTYPE(None)
+            KSFTHQPUB_Stop = prototype(("KSFTHQPUB_Stop", dll))
 
-        prototype = WINFUNCTYPE(c_int, c_char_p, c_int, c_int, c_char_p)
-        KSFTHQPUB_GetQuota = prototype(("KSFTHQPUB_GetQuota", dll))
+            prototype = WINFUNCTYPE(c_int, c_char_p, c_int, c_int, c_char_p)
+            KSFTHQPUB_GetQuota = prototype(("KSFTHQPUB_GetQuota", dll))
 
-        errmsg = create_string_buffer(1024)
-        ret = KSFTHQPUB_Start(int(self.jsdcfg["hqport"]), errmsg)
-        if not ret:
-            self.logger.warning("Error while start receiving hq: %s", errmsg)
-            return
+            errmsg = create_string_buffer(1024)
+            ret = KSFTHQPUB_Start(int(self.jsdcfg["hqport"]), errmsg)
+            if not ret:
+                self.logger.warning("Error while start receiving hq: %s", errmsg)
+                return
 
-        timeout = 2000 # 2sec
-        jsdhq.MAX_QUOTA_ITEM_COUNT = 50
-        quotaData = (jsdhq.KSFT_QUOTA_PUBDATA_ITEM * jsdhq.MAX_QUOTA_ITEM_COUNT)()
-        while self.runflag:
-            qcount = KSFTHQPUB_GetQuota(cast(quotaData, c_char_p),
-                    sizeof(jsdhq.KSFT_QUOTA_PUBDATA_ITEM)*jsdhq.MAX_QUOTA_ITEM_COUNT,
-                    timeout,
-                    errmsg)
-            if qcount < 0:
-                self.logging.warning("Error while receiving hq: %s", errmsg)
-            elif qcount > 0:
-                self.updateprice(quotaData, qcount)
-            else:
-                pass
+            timeout = 2000 # 2sec
+            jsdhq.MAX_QUOTA_ITEM_COUNT = 50
+            quotaData = (jsdhq.KSFT_QUOTA_PUBDATA_ITEM * jsdhq.MAX_QUOTA_ITEM_COUNT)()
+            while self.runflag:
+                qcount = KSFTHQPUB_GetQuota(cast(quotaData, c_char_p),
+                        sizeof(jsdhq.KSFT_QUOTA_PUBDATA_ITEM)*jsdhq.MAX_QUOTA_ITEM_COUNT,
+                        timeout,
+                        errmsg)
+                if qcount < 0:
+                    self.logging.warning("Error while receiving hq: %s", errmsg)
+                elif qcount > 0:
+                    self.updateprice(quotaData, qcount)
+                else:
+                    pass
 
-        KSFTHQPUB_Stop()
+            KSFTHQPUB_Stop()
+        except Exception:
+            self.logger.exception("Oh!!!")
 
 SIFPriceUpdater = SIFPriceUpdater_pushee
 
@@ -1645,17 +1653,20 @@ class SIFOrderUpdater(Thread):
         self.runflag = False
 
     def run(self):
-        s = jsd.session(self.jsdcfg)
-        if not s.setup():
-            self.logger.warning("Cannot login")
-            return False
-        self.session = s
+        try:
+            s = jsd.session(self.jsdcfg)
+            if not s.setup():
+                self.logger.warning("Cannot login")
+                return False
+            self.session = s
 
-        while self.runflag:
-            self.update()
-            time.sleep(1)
+            while self.runflag:
+                self.update()
+                time.sleep(1)
 
-        self.close()
+            self.close()
+        except Exception:
+            self.logger.exception("Oh!!!")
 
 class SIFOrderPushee(Thread):
     """
@@ -1810,15 +1821,18 @@ class SIFOrderPushee(Thread):
         self.runflag = False
 
     def run(self):
-        if not self.setup():
-            self.logger.warning("SIFOrderPushee cannot setup itself")
-            return
+        try:
+            if not self.setup():
+                self.logger.warning("SIFOrderPushee cannot setup itself")
+                return
 
-        # send connect signal
-        self.conn.send(pack("!hh", 1, 0))
-        while self.runflag:
-            self.update()
-        self.close()
+            # send connect signal
+            self.conn.send(pack("!hh", 1, 0))
+            while self.runflag:
+                self.update()
+            self.close()
+        except Exception:
+            self.logger.exception("Oh!!!")
 
 
 class OrderUpdater(Thread):
@@ -1898,15 +1912,18 @@ class OrderUpdater(Thread):
         self.runflag = False
 
     def run(self):
-        if not self.session.setup():
-            self.logger.warning("Session setup failed.")
-            return
+        try:
+            if not self.session.setup():
+                self.logger.warning("Session setup failed.")
+                return
 
-        while self.runflag:
-            self.update()
-            time.sleep(2)
+            while self.runflag:
+                self.update()
+                time.sleep(2)
 
-        self.close()
+            self.close()
+        except Exception:
+            self.logger.exception("Oh!!!")
 
 class asyncWorker(Thread):
     def __init__(self, session_cfg, tqueue):
@@ -1926,30 +1943,33 @@ class asyncWorker(Thread):
             self.session.close()
 
     def myrun(self):
-        # TODO: what if easytrader is closed while tqueue is not empty
-        if not self.setupsession():
-            self.logger.warning("cannot setup session, and will exit.")
-            return
+        try:
+            # TODO: what if easytrader is closed while tqueue is not empty
+            if not self.setupsession():
+                self.logger.warning("cannot setup session, and will exit.")
+                return
 
-        while self.runflag:
-            try:
-                t = self.tqueue.get(True, 2)
+            while self.runflag:
                 try:
-                    self.dotask(t)
-                except Exception:
-                    self.logger.exception("Exception while run some task, req (%s), param (%s)" % str(type(t[0])), str(t[2]))
-                self.tqueue.task_done()
-            except Queue.Empty:
-                pass
+                    t = self.tqueue.get(True, 2)
+                    try:
+                        self.dotask(t)
+                    except Exception:
+                        self.logger.exception("Exception while run some task, req (%s), param (%s)" % str(type(t[0])), str(t[2]))
+                    self.tqueue.task_done()
+                except Queue.Empty:
+                    pass
 
-        #while self.runflag:
-        #    if self.tqueue:
-        #        t = self.tqueue.pop()
-        #        self.dotask(t)
-        #    else:
-        #        time.sleep(0.05)
+            #while self.runflag:
+            #    if self.tqueue:
+            #        t = self.tqueue.pop()
+            #        self.dotask(t)
+            #    else:
+            #        time.sleep(0.05)
 
-        self.closesession()
+            self.closesession()
+        except Exception:
+            self.logger.exception("Oh!!!")
 
     def profiledrun(self):
         profiler = cProfile.Profile()
@@ -2237,68 +2257,71 @@ class basediffUpdater(Thread):
         self.logger = logging.getLogger()
 
     def run(self):
-        hs300code = "SH000300"
+        try:
+            hs300code = "SH000300"
 
-        self.dbsh = dbf.Dbf(self.shdbfn, ignoreErrors=True, readOnly=True)
-        f = open(self.shmapfn)
-        self.shmap = pickle.load(f)
-        f.close()
+            self.dbsh = dbf.Dbf(self.shdbfn, ignoreErrors=True, readOnly=True)
+            f = open(self.shmapfn)
+            self.shmap = pickle.load(f)
+            f.close()
 
-        self.jsdsession = jsd.session(self.jsdcfg)
-        if not self.jsdsession.setup():
-            self.logger.warning("jsd session setup failed.")
-            return
-        
-        # read contracts and fill stock index combobox.
-        self.sicontracts = ['IF1006', 'IF1007', 'IF1009', 'IF1012']
-        for sindex in self.sicontracts:
-            self.uic.sindexcmbox.addItem(sindex)
-        self.uic.sindexcmbox.setCurrentIndex(0)
+            self.jsdsession = jsd.session(self.jsdcfg)
+            if not self.jsdsession.setup():
+                self.logger.warning("jsd session setup failed.")
+                return
+            
+            # read contracts and fill stock index combobox.
+            self.sicontracts = ['IF1006', 'IF1007', 'IF1009', 'IF1012']
+            for sindex in self.sicontracts:
+                self.uic.sindexcmbox.addItem(sindex)
+            self.uic.sindexcmbox.setCurrentIndex(0)
 
-        while self.runflag:
-            # update hs300
-            rec = self.dbsh[self.shmap[hs300code]]
-            hs300latest = rec['S8']
+            while self.runflag:
+                # update hs300
+                rec = self.dbsh[self.shmap[hs300code]]
+                hs300latest = rec['S8']
 
-            # update selected stock index
-            # TODO: use hq pushee
-            hqreq = jsd.QueryHQReq(self.jsdsession)
-            hqreq["exchcode"] = jsd.CFFEXCODE
-            hqreq["code"] = self.sicontracts[self.uic.sindexcmbox.currentIndex()]
-            hqreq.send()
-            hqresp = jsd.QueryHQResp(self.jsdsession)
-            hqresp.recv()
-            if hqresp.anwser == "N":
-                continue
-            silatest = float(hqresp.records[0][9])
+                # update selected stock index
+                # TODO: use hq pushee
+                hqreq = jsd.QueryHQReq(self.jsdsession)
+                hqreq["exchcode"] = jsd.CFFEXCODE
+                hqreq["code"] = self.sicontracts[self.uic.sindexcmbox.currentIndex()]
+                hqreq.send()
+                hqresp = jsd.QueryHQResp(self.jsdsession)
+                hqresp.recv()
+                if hqresp.anwser == "N":
+                    continue
+                silatest = float(hqresp.records[0][9])
 
-            # calculate basediff
-            basediff = silatest - hs300latest
-            basediffper = basediff / hs300latest * 100
+                # calculate basediff
+                basediff = silatest - hs300latest
+                basediffper = basediff / hs300latest * 100
 
-            # update UI
-            QMetaObject.invokeMethod(self.uic.hs300line, "setText", Qt.QueuedConnection,
-                    Q_ARG("QString", QString(str(hs300latest))))
-            QMetaObject.invokeMethod(self.uic.sindexline, "setText", Qt.QueuedConnection,
-                    Q_ARG("QString", QString(str(silatest))))
-            QMetaObject.invokeMethod(self.uic.basediffline, "setText", Qt.QueuedConnection,
-                    Q_ARG("QString", QString(str(basediff))))
-            QMetaObject.invokeMethod(self.uic.basediffperline, "setText", Qt.QueuedConnection,
-                    Q_ARG("QString", QString(str("%.3f" % basediffper))))
+                # update UI
+                QMetaObject.invokeMethod(self.uic.hs300line, "setText", Qt.QueuedConnection,
+                        Q_ARG("QString", QString(str(hs300latest))))
+                QMetaObject.invokeMethod(self.uic.sindexline, "setText", Qt.QueuedConnection,
+                        Q_ARG("QString", QString(str(silatest))))
+                QMetaObject.invokeMethod(self.uic.basediffline, "setText", Qt.QueuedConnection,
+                        Q_ARG("QString", QString(str(basediff))))
+                QMetaObject.invokeMethod(self.uic.basediffperline, "setText", Qt.QueuedConnection,
+                        Q_ARG("QString", QString(str("%.3f" % basediffper))))
 
-            #self.uic.hs300line.setText(str(hs300latest))
-            #self.uic.sindexline.setText(str(silatest))
-            #self.uic.basediffline.setText(str(basediff))
-            #self.uic.basediffperline.setText("%.3f" % basediffper)
-            openthreshold = self.uic.openthresholdspin.value()
-            if basediffper >= openthreshold:
-                QMetaObject.invokeMethod(self.uic.openthresholdspin, "setStyleSheet",
-                        Qt.QueuedConnection, Q_ARG("QString", QString(str("background-color: rgb(255, 0, 0);"))))
-            else:
-                QMetaObject.invokeMethod(self.uic.openthresholdspin, "setStyleSheet",
-                        Qt.QueuedConnection, Q_ARG("QString", QString(str("background-color: rgb(255, 255, 255);"))))
+                #self.uic.hs300line.setText(str(hs300latest))
+                #self.uic.sindexline.setText(str(silatest))
+                #self.uic.basediffline.setText(str(basediff))
+                #self.uic.basediffperline.setText("%.3f" % basediffper)
+                openthreshold = self.uic.openthresholdspin.value()
+                if basediffper >= openthreshold:
+                    QMetaObject.invokeMethod(self.uic.openthresholdspin, "setStyleSheet",
+                            Qt.QueuedConnection, Q_ARG("QString", QString(str("background-color: rgb(255, 0, 0);"))))
+                else:
+                    QMetaObject.invokeMethod(self.uic.openthresholdspin, "setStyleSheet",
+                            Qt.QueuedConnection, Q_ARG("QString", QString(str("background-color: rgb(255, 255, 255);"))))
 
-            time.sleep(1)
+                time.sleep(1)
+        except Exception:
+            self.logger.exception("Oh!!!")
 
     def stop(self):
         self.runflag = False
