@@ -242,7 +242,6 @@ class Portfolio(object):
         self.logger = logging.getLogger()
         if not self.session.setup():
             self.logger.warning("session setup failed.")
-            #sys.exit(1)
         self.tqueue = tqueue
         self.bolock = Lock()
         self.sindexlock = Lock()
@@ -304,8 +303,8 @@ class Portfolio(object):
                 }
         # price policies
         self.pricepolicylist = ["latest", "s5", "s4", "s3", "s2", "s1", "b1", "b2", "b3", "b4", "b5"]
-        self.buypolicy = "s5"
-        self.sellpolicy = "b5"
+        self.buypolicy = "latest"
+        self.sellpolicy = "latest"
         self.pricepolicynamemap = {"latest":u"最新价",
                 "s5":u"卖五",
                 "s4":u"卖四",
@@ -358,8 +357,8 @@ class Portfolio(object):
                 }
         self.sindexinfo = {}
         self.sindexpricepolicylist = ["latest", "s1", "b1"]
-        self.openpolicy = "b1"
-        self.closepolicy = "s1"
+        self.openpolicy = "latest"
+        self.closepolicy = "latest"
         self.openpricefix = 0.0
         self.closepricefix = 0.0
         self.jsdcfg = jsdcfg
@@ -1721,7 +1720,7 @@ class SIFOrderPushee(Thread):
         self.logger.info("SIFOrderPushee receive order response: %d, %d, %s", cmd, length, data)
         rec = self.parsedata(data)
         sirec = self.getOrderRec()
-        if sirec is None or rec[7] != sirec["order_id"]:
+        if sirec is None or rec[6] != sirec["order_id"]:
             self.logger.info("Receive an order that's not issued by me.")
             return
 
@@ -1802,7 +1801,7 @@ class SIFOrderPushee(Thread):
             with self.sindexlock:
                 # TODO: race condition may exist between operations caused by buttons, e.g. open/close/cancel
                 hdl(cmd, length, data)
-                QMetaObject.invokeMethod(self.sindexmodel, "updaterow", Qt.QueuedConnection)
+            QMetaObject.invokeMethod(self.sindexmodel, "updaterow", Qt.QueuedConnection)
         except socket.timeout:
             # ping
             self.conn.send(pack("!HH", 20, 0))
@@ -1935,7 +1934,10 @@ class asyncWorker(Thread):
         while self.runflag:
             try:
                 t = self.tqueue.get(True, 2)
-                self.dotask(t)
+                try:
+                    self.dotask(t)
+                except Exception:
+                    self.logger.exception("Exception while run some task, req (%s), param (%s)" % str(type(t[0])), str(t[2]))
                 self.tqueue.task_done()
             except Queue.Empty:
                 pass
@@ -2084,40 +2086,84 @@ class uicontrol(Ui_MainWindow):
 
     @pyqtSlot()
     def buyBatch(self):
-        self.portfolio.buyBatch()
+        ret = QMessageBox.warning(self.mainwindow,
+                u"",
+                u"<H3>确认买入股票组合？（买入档位：<FONT COLOR='#FF0000'>%s</FONT>，价格修正：<FONT COLOR='#FF0000'>%s</FONT>）</H3>"
+                % (self.portfolio.pricepolicynamemap[self.portfolio.buypolicy],
+                    self.portfolio.buypricefix),
+                QMessageBox.Ok|QMessageBox.Cancel)
+        if QMessageBox.Ok == ret:
+            # self.portfolio.pricepolicynamemap[self.portfolio.buypolicy], self.buypricefix
+            self.portfolio.buyBatch()
 
     @pyqtSlot()
     def cancelBuyBatch(self):
-        self.portfolio.cancelBuyBatch()
+        ret = QMessageBox.warning(self.mainwindow,
+                u"", u"<H3>确认<FONT COLOR='#FF0000'>撤销买入</FONT>？</H3>",
+                QMessageBox.Ok|QMessageBox.Cancel)
+        if QMessageBox.Ok == ret:
+            self.portfolio.cancelBuyBatch()
 
     @pyqtSlot()
     def sellBatch(self):
-        self.portfolio.sellBatch()
+        ret = QMessageBox.warning(self.mainwindow,
+                u"",
+                u"<H3>确认卖出股票组合？（卖出档位：<FONT COLOR='#FF0000'>%s</FONT>，价格修正：<FONT COLOR='#FF0000'>%s</FONT>）</H3>"
+                % (self.portfolio.pricepolicynamemap[self.portfolio.sellpolicy],
+                    self.portfolio.sellpricefix),
+                QMessageBox.Ok|QMessageBox.Cancel)
+        if QMessageBox.Ok == ret:
+            self.portfolio.sellBatch()
 
     @pyqtSlot()
     def cancelSellBatch(self):
-        self.portfolio.cancelSellBatch()
-
+        ret = QMessageBox.warning(self.mainwindow,
+                u"", u"<H3>确认<FONT COLOR='#FF0000'>撤销卖出</FONT>？</H3>",
+                QMessageBox.Ok|QMessageBox.Cancel)
+        if QMessageBox.Ok == ret:
+            self.portfolio.cancelSellBatch()
 
     @pyqtSlot()
     def openshort(self):
-        self.portfolio.openshort()
-        QMetaObject.invokeMethod(self.sindexmodel, "updaterow", Qt.QueuedConnection)
+        ret = QMessageBox.warning(self.mainwindow,
+                u"",
+                u"<H3>确认股指期货建仓？（建仓档位：<FONT COLOR='#FF0000'>%s</FONT>，点数修正：<FONT COLOR='#FF0000'>%s</FONT>）</H3>"
+                % (self.portfolio.pricepolicynamemap[self.portfolio.openpolicy],
+                    self.portfolio.openpricefix),
+                QMessageBox.Ok|QMessageBox.Cancel)
+        if QMessageBox.Ok == ret:
+            self.portfolio.openshort()
+            QMetaObject.invokeMethod(self.sindexmodel, "updaterow", Qt.QueuedConnection)
 
     @pyqtSlot()
     def cancelopen(self):
-        self.portfolio.cancelopenshort()
-        QMetaObject.invokeMethod(self.sindexmodel, "updaterow", Qt.QueuedConnection)
+        ret = QMessageBox.warning(self.mainwindow,
+                u"", u"<H3>确认<FONT COLOR='#FF0000'>取消建仓</FONT>？</H3>",
+                QMessageBox.Ok|QMessageBox.Cancel)
+        if QMessageBox.Ok == ret:
+            self.portfolio.cancelopenshort()
+            QMetaObject.invokeMethod(self.sindexmodel, "updaterow", Qt.QueuedConnection)
 
     @pyqtSlot()
     def closeshort(self):
-        self.portfolio.closeshort()
-        QMetaObject.invokeMethod(self.sindexmodel, "updaterow", Qt.QueuedConnection)
+        ret = QMessageBox.warning(self.mainwindow,
+                u"",
+                u"<H3>确认股指期货平仓？（平仓档位：<FONT COLOR='#FF0000'>%s</FONT>，点数修正：<FONT COLOR='#FF0000'>%s</FONT>）</H3>"
+                % (self.portfolio.pricepolicynamemap[self.portfolio.closepolicy],
+                    self.portfolio.closepricefix),
+                QMessageBox.Ok|QMessageBox.Cancel)
+        if QMessageBox.Ok == ret:
+            self.portfolio.closeshort()
+            QMetaObject.invokeMethod(self.sindexmodel, "updaterow", Qt.QueuedConnection)
 
     @pyqtSlot()
     def cancelclose(self):
-        self.portfolio.cancelcloseshort()
-        QMetaObject.invokeMethod(self.sindexmodel, "updaterow", Qt.QueuedConnection)
+        ret = QMessageBox.warning(self.mainwindow,
+                u"", u"<H3>确认<FONT COLOR='#FF0000'>取消平仓</FONT>？</H3>",
+                QMessageBox.Ok|QMessageBox.Cancel)
+        if QMessageBox.Ok == ret:
+            self.portfolio.cancelcloseshort()
+            QMetaObject.invokeMethod(self.sindexmodel, "updaterow", Qt.QueuedConnection)
 
     @pyqtSlot()
     def savePortfolio(self):
@@ -2164,7 +2210,7 @@ class uicontrol(Ui_MainWindow):
             QMetaObject.invokeMethod(sqdlg.refresh, "clicked", Qt.QueuedConnection)
             sqdlg.exec_()
         else:
-            QMessageBox.information(None, "", u"不能登录")
+            QMessageBox.information(self.mainwindow, "", u"不能登录")
 
     @pyqtSlot()
     def showposstat(self):
@@ -2341,11 +2387,11 @@ def main(args):
         sys.exit(1)
 
     session_config.update(d.config)
-    #testsession = jz.session(session_config)
-    #if not testsession.setup():
-    #    logger.warning("Cannot login.")
-    #    sys.exit(1)
-    #testsession.close()
+    testsession = jz.session(session_config)
+    if not testsession.setup():
+        logger.warning("Cannot login.")
+        sys.exit(1)
+    testsession.close()
 
     # verify stock mapping
     shdbfn = session_config["shdbfn"]
