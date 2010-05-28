@@ -92,3 +92,7 @@ TypeError: sequence item 7: expected string or Unicode, float found
 
 jsd order pushee even receive responses of order issued from
 different machines!!!
+
+================
+
+QCoreApplication::sendPostedEvents: Cannot send posted events for objects in another thread
