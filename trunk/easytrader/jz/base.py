@@ -41,11 +41,11 @@ class session:
         self.data = {}
         self.data["version"] = "KDGATEWAY1.0"
         self.data["user_code"] = ""
-        self.data["site"] = ""
+        self.data["site"] = socket.gethostbyname(socket.gethostname())
         self.data["branch"] = ""
         self.data["channel"] = ""
         self.data["session"] = ""
-        self.data["reserve1"] = ""
+        self.data["reserve1"] = "1"
         self.data["reserve2"] = ""
         self.data["reserve3"] = ""
         self.data["workkey"] = "88888888"
@@ -354,7 +354,7 @@ class LoginResp(response):
         self.session["account"] = self.records[0][3]
         self.session["user_code"] = self.records[0][4]
         self.session["branch"] = self.records[0][6]
-        self.session["channel"] = "4"
+        self.session["channel"] = "7"
         self.session["session"] = self.records[0][7]
         assert len(self.records) == 2
         for r in self.records:
