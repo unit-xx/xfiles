@@ -366,6 +366,7 @@ class Portfolio(object):
         s = jsd.session(self.jsdcfg)
         if not s.setup():
             self.logger.warning("Cannot login into jsd")
+            self.close()
         self.jsdsession = s
 
     def getbostate(self):
@@ -1847,7 +1848,7 @@ class OrderUpdater(Thread):
         self.portfolio = portfolio
         self.portmodel = portmodel
         self.runflag = True
-        self.session = jz.session(sessioncfg)
+        self.session = None
         self.updtlock = updtlock
         self.name = "OrderUpdater"
         self.logger = logging.getLogger()
@@ -1920,8 +1921,10 @@ class OrderUpdater(Thread):
 
     def run(self):
         try:
+            self.session = jz.session(sessioncfg)
             if not self.session.setup():
                 self.logger.warning("Session setup failed.")
+                self.close()
                 return
 
             while self.runflag:
