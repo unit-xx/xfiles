@@ -1847,6 +1847,7 @@ class OrderUpdater(Thread):
         Thread.__init__(self)
         self.portfolio = portfolio
         self.portmodel = portmodel
+        self.sessioncfg = sessioncfg
         self.runflag = True
         self.session = None
         self.updtlock = updtlock
@@ -1921,7 +1922,7 @@ class OrderUpdater(Thread):
 
     def run(self):
         try:
-            self.session = jz.session(sessioncfg)
+            self.session = jz.session(self.sessioncfg)
             if not self.session.setup():
                 self.logger.warning("Session setup failed.")
                 self.close()
