@@ -242,6 +242,7 @@ class Portfolio(object):
         self.logger = logging.getLogger()
         if not self.session.setup():
             self.logger.warning("session setup failed.")
+            self.close()
         self.tqueue = tqueue
         self.bolock = Lock()
         self.sindexlock = Lock()
@@ -383,7 +384,9 @@ class Portfolio(object):
     bostate = property(getbostate, setbostate)
 
     def close(self):
-        self.session.close()
+        if self.session:
+            self.session.close()
+            self.session = None
 
     def loadPortfolio(self, ptfn=None):
         """
@@ -1482,6 +1485,7 @@ class SIFPriceUpdater_poll(Thread):
     def close(self):
         if self.jsdsession:
             self.jsdsession.close()
+            self.jsdsession = None
 
     def update(self):
         hqreq = jsd.QueryHQReq(self.jsdsession)
@@ -1635,6 +1639,7 @@ class SIFOrderUpdater(Thread):
     def close(self):
         if self.session:
             self.session.close()
+            self.session = None
 
     def update(self):
         with self.sindexlock:
@@ -1701,6 +1706,7 @@ class SIFOrderPushee(Thread):
     def close(self):
         if self.conn:
             self.conn.close()
+            self.conn = None
 
     def parsedata(self, data):
         data = data.strip("|")
@@ -1849,6 +1855,7 @@ class OrderUpdater(Thread):
     def close(self):
         if self.session:
             self.session.close()
+            self.session = None
 
     def update(self):
         for scode in self.portfolio.stocklist:
@@ -1941,12 +1948,14 @@ class asyncWorker(Thread):
     def closesession(self):
         if self.session:
             self.session.close()
+            self.session = None
 
     def myrun(self):
         try:
             # TODO: what if easytrader is closed while tqueue is not empty
             if not self.setupsession():
                 self.logger.warning("cannot setup session, and will exit.")
+                self.closesession()
                 return
 
             while self.runflag:
