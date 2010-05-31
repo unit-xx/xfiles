@@ -1064,7 +1064,7 @@ class Portfolio(object):
                 opencount = int(self.sindexinfo["count"]) - self.sindexinfo["opencount"]
                 assert opencount > 0
                 oreq["count"] = str(opencount)
-                oreq["price"] = self.sindexinfo["openposprice"]
+                oreq["price"] = "%0.1f" % self.sindexinfo["openposprice"]
                 oreq["clientnum"] = self.jsdsession["clientnum"]
                 oreq["seat"] = self.jsdsession["seat"]
                 oreq.send()
@@ -1194,7 +1194,7 @@ class Portfolio(object):
                     oreq["ifhedge"] = "0"
                     assert closecount > 0
                     oreq["count"] = str(closecount)
-                    oreq["price"] = self.sindexinfo["closeposprice"]
+                    oreq["price"] = "%0.1f" % self.sindexinfo["closeposprice"]
                     oreq["clientnum"] = self.jsdsession["clientnum"]
                     oreq["seat"] = self.jsdsession["seat"]
                     oreq.send()
