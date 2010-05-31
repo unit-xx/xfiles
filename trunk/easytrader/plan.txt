@@ -1,26 +1,7 @@
-DONE: atomic batch operation (submit, cancel)
-DONE: the bug: cancel will failed before dealcount is updated
+make stock batch order more reliable
 
-DONE: stock/batch workflow (need re-submit process)
-DONE: buy/cancel/rebuy seems ok, need sell part
-DONE: change update part accordingly
+  - some kind of buy/sell/cancel may fail, but should be retried, sooner or later
+  - invalid order will be deleted immediately.
+  - sell number may be greater than expected
 
-model and view: divide stock info into hard state and soft state
-
-buyfailed stocks may be stopped or price error, treat them differently
-and consider bocount == 0 case
-
-NOTTRUE: SHOULD use dealquery, especially for partial dealed orders
-
-DONE: store finished orders in local db
-
-DONE: a login/config dialog
-
-DONE: update view at places where data is changed
-DONE: check session instance, because multi-threads may miss use session
-
-HALF: change easy trader into MVC structure
-HALF: use db and in memory db, use csv and in memory list/dict now
-
-DONE: create index for locating stock in dbf file quickly
-DONE: use worker threads improve performance of batch order/cancel
+internet version of easytrader

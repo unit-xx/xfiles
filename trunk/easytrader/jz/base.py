@@ -28,6 +28,8 @@ class session:
         self.initheader()
         self.sessioncfg = sessioncfg
         self.logger = logging.getLogger()
+        self.tradedbconn = None
+        self.conn = None
 
     def __getitem__(self, key):
         return self.data[key]
@@ -115,6 +117,8 @@ class session:
         self.tradedbconn.commit()
         self.tradedbconn.close()
         self.conn.close()
+        self.tradedbconn = None
+        self.conn = None
 
 class request:
     # request code

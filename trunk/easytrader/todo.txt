@@ -1,25 +1,27 @@
-BUG:
+DONE: atomic batch operation (submit, cancel)
+DONE: the bug: cancel will failed before dealcount is updated
 
-the exception at exit.
+DONE: stock/batch workflow (need re-submit process)
+DONE: buy/cancel/rebuy seems ok, need sell part
+DONE: change update part accordingly
 
-performance:
- - orderupdate/portfolio update should not use bolock
- - storedb asynchronously
- - stock state update asynchronously
+model and view: divide stock info into hard state and soft state
 
-buy/sell failure, stopped stock case
+buyfailed stocks may be stopped or price error, treat them differently
+and consider bocount == 0 case
 
-FEATURE:
+NOTTRUE: SHOULD use dealquery, especially for partial dealed orders
 
-a initial stock state update (price, state, etc.) at startup
+DONE: store finished orders in local db
 
-log file
+DONE: a login/config dialog
 
-portfolio in DB
+DONE: update view at places where data is changed
+DONE: check session instance, because multi-threads may miss use session
 
-ui: login and table model
+HALF: change easy trader into MVC structure
+HALF: use db and in memory db, use csv and in memory list/dict now
 
-SUSPECT:
-
-multiple deal
+DONE: create index for locating stock in dbf file quickly
+DONE: use worker threads improve performance of batch order/cancel
 
