@@ -568,7 +568,7 @@ class Portfolio(object):
                 param["account"] = self.session["account"]
                 param["secu_code"] = si["code"]
                 param["trd_id"] = trdcode
-                param["price"] = orec["orderprice"]
+                param["price"] = "%0.3f" % orec["orderprice"]
                 param["qty"] = orec["ordercount"]
                 self.tqueue.put( (reqclass, respclass, param, self.buyBatchBottom, True) )
 
@@ -604,7 +604,7 @@ class Portfolio(object):
                     param["account"] = self.session["account"]
                     param["secu_code"] = si["code"]
                     param["trd_id"] = trdcode
-                    param["price"] = orec["orderprice"]
+                    param["price"] = "%0.3f" % orec["orderprice"]
                     param["qty"] = orec["ordercount"]
                     self.tqueue.put( (reqclass, respclass, param, self.buyBatchBottom, True) )
 
@@ -813,7 +813,7 @@ class Portfolio(object):
                     param["account"] = self.session["account"]
                     param["secu_code"] = si["code"]
                     param["trd_id"] = trdcode
-                    param["price"] = orec["orderprice"]
+                    param["price"] = "%0.3f" % orec["orderprice"]
                     param["qty"] = orec["ordercount"]
                     self.tqueue.put( (reqclass, respclass, param, self.sellBatchBottom, True) )
             if self.bocount == 0:
@@ -869,7 +869,7 @@ class Portfolio(object):
                     param["account"] = self.session["account"]
                     param["secu_code"] = si["code"]
                     param["trd_id"] = trdcode
-                    param["price"] = orec["orderprice"]
+                    param["price"] = "%0.3f" % orec["orderprice"]
                     param["qty"] = orec["ordercount"]
                     self.tqueue.put( (reqclass, respclass, param, self.sellBatchBottom, True) )
             if self.bocount == 0:
@@ -909,7 +909,7 @@ class Portfolio(object):
                     param["account"] = self.session["account"]
                     param["secu_code"] = si["code"]
                     param["trd_id"] = trdcode
-                    param["price"] = orec["orderprice"]
+                    param["price"] = "%0.3f" % orec["orderprice"]
                     param["qty"] = orec["ordercount"]
                     self.tqueue.put( (reqclass, respclass, param, self.sellBatchBottom, True) )
             if self.bocount == 0:
