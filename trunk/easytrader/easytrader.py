@@ -2,6 +2,7 @@
 
 import os, sys
 import csv
+import zlib
 import socket
 import pickle
 import Queue
@@ -1341,7 +1342,7 @@ class ProfiledThread(Thread):
             print "dumping stats"
             profiler.dump_stats('myprofile-%d.profile' % (self.ident,))
 
-class PortfolioUpdater(Thread):
+class PortfolioUpdater_dbf(Thread):
     def __init__(self, shdbfn, shmapfn, szdbfn, szmapfn, portfolio, portmodel):
         Thread.__init__(self)
         self.shdbfn = shdbfn
@@ -1359,7 +1360,7 @@ class PortfolioUpdater(Thread):
         self.portfolio = portfolio
         self.portmodel = portmodel
         self.runflag = True
-        self.name = "PortfolioUpdater"
+        self.name = "PortfolioUpdater_dbf"
         self.logger = logging.getLogger()
 
         # one-to-one mapping of dbfield to stockattr, for SH
@@ -1470,6 +1471,143 @@ class PortfolioUpdater(Thread):
             self.close()
         except Exception:
             self.logger.exception("Oh!!!")
+
+class PortfolioUpdater_net(Thread):
+    def __init__(self, servhost, servport, portfolio, portmodel):
+        Thread.__init__(self)
+        self.servhost = servhost
+        self.servport = servport
+        self.conn = None
+        self.portfolio = portfolio
+        self.pmodel = portmodel
+        self.runflag = True
+        self.name = "PortfolioUpdater_net"
+        self.logger = logging.getLogger()
+
+        # one-to-one mapping of dbfield to stockattr, for SH
+        self.shdbfield = ["S1", "S2", "S3", "S4", "S8"]#, "S9", "S10"]
+        self.shdbmapping = {
+                "S1":"code",
+                "S2":"name",
+                "S3":"close",
+                "S4":"open",
+                "S8":"latestprice"
+                }
+        assert(len(self.shdbfield) == len(self.shdbmapping))
+
+        # for SZ
+        self.szdbfield = ["HQZQDM", "HQZRSP", "HQJRKP", "HQZQJC", "HQZJCJ"]#, "HQBJW1", "HQSJW1"]
+        self.szdbmapping = {
+                "HQZQDM":"code",
+                "HQZQJC":"name",
+                "HQZRSP":"close",
+                "HQJRKP":"open",
+                "HQZJCJ":"latestprice"
+                }
+        assert(len(self.szdbfield) == len(self.szdbmapping))
+
+    def getpricesh(self, shrec, pricepolicy):
+        price = ""
+        policymapping = {
+                "latest":"S8",
+                "b1":"S9",
+                "b2":"S16",
+                "b3":"S18",
+                "b4":"S26",
+                "b5":"S28",
+                "s1":"S10",
+                "s2":"S22",
+                "s3":"S24",
+                "s4":"S30",
+                "s5":"S32"
+                }
+        price = shrec[policymapping[pricepolicy]]
+        assert(price != "")
+        return price
+
+    def getpricesz(self, szrec, pricepolicy):
+        price = ""
+        policymapping = {
+                "latest":"HQZJCJ",
+                "b1":"HQBJW1",
+                "b2":"HQBJW2",
+                "b3":"HQBJW3",
+                "b4":"HQBJW4",
+                "b5":"HQBJW5",
+                "s1":"HQSJW1",
+                "s2":"HQSJW2",
+                "s3":"HQSJW3",
+                "s4":"HQSJW4",
+                "s5":"HQSJW5"
+                }
+        price = szrec[policymapping[pricepolicy]]
+        assert(price != "")
+        return price
+
+    def update(self):
+        (pktlen,) = unpack("!I", self.conn.recv(4))
+        left = pktlen
+        content = []
+        while 1:
+            if left <= 0:
+                break
+            buf = self.conn.recv(left)
+            content.append(buf)
+            left = left - len(buf)
+
+        data = "".join(content)
+        data = pickle.loads(zlib.decompress(data))
+
+        for rec in data["SH"]:
+            scode = "SH"+rec["S1"]
+            if scode in self.portfolio.stocklist:
+                stockinfo = self.portfolio.stockinfo[scode]
+                for f in self.shdbfield:
+                    if type(rec[f]) is types.StringType:
+                        stockinfo[self.shdbmapping[f]] = rec[f].decode("GBK")
+                    else:
+                        stockinfo[self.shdbmapping[f]] = rec[f]
+                stockinfo["tobuyprice"] = self.getpricesh(rec, self.portfolio.buypolicy) + self.portfolio.buypricefix
+                stockinfo["tosellprice"] = self.getpricesh(rec, self.portfolio.sellpolicy) + self.portfolio.sellpricefix
+
+                rowindex = self.portfolio.stocklist.index(scode)
+                QMetaObject.invokeMethod(self.pmodel, "updaterow", Qt.QueuedConnection,
+                        Q_ARG("int", rowindex))
+
+        for rec in data["SZ"]:
+            scode = "SZ"+rec["HQZQDM"]
+            if scode in self.portfolio.stocklist:
+                stockinfo = self.portfolio.stockinfo[scode]
+                for f in self.szdbfield:
+                    if type(rec[f]) is types.StringType:
+                        stockinfo[self.szdbmapping[f]] = rec[f].decode("GBK")
+                    else:
+                        stockinfo[self.szdbmapping[f]] = rec[f]
+                stockinfo["tobuyprice"] = self.getpricesz(rec, self.portfolio.buypolicy) + self.portfolio.buypricefix
+                stockinfo["tosellprice"] = self.getpricesz(rec, self.portfolio.sellpolicy) + self.portfolio.sellpricefix
+
+                rowindex = self.portfolio.stocklist.index(scode)
+                QMetaObject.invokeMethod(self.pmodel, "updaterow", Qt.QueuedConnection,
+                        Q_ARG("int", rowindex))
+
+    def stop(self):
+        self.runflag = False
+
+    def run(self):
+        try:
+            self.conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.conn.connect((self.servhost, self.servport))
+        except socket.error:
+            self.logger.exception("cannot connect to quoteserver")
+            return
+
+        try:
+            while self.runflag:
+                self.update()
+        except Exception:
+            self.logger.exception("Oh!!!")
+
+PortfolioUpdater = PortfolioUpdater_net
 
 class SIFPriceUpdater_poll(Thread):
     def __init__(self, portfolio, sindexmodel, jsdcfg, uic):
@@ -2484,7 +2622,8 @@ def main(args):
     sindexmodel = StockIndexModel(p)
 
     # run the portfolio updater
-    pupdater = PortfolioUpdater(shdbfn, shmapfn, szdbfn, szmapfn, p, pmodel)
+    #pupdater = PortfolioUpdater(shdbfn, shmapfn, szdbfn, szmapfn, p, pmodel)
+    pupdater = PortfolioUpdater("172.30.4.165", 21888, p, pmodel)
     pupdater.start()
 
     # run the order info updater

@@ -24,16 +24,19 @@ class StockQuotePusher(QuotePusher):
 
     def updatequote(self):
         time.sleep(1)
-        reclist = []
+        shreclist = []
         for scode in self.shmap:
             rec = self.dbsh[self.shmap[scode]]
-            reclist.append(rec)
+            shreclist.append(rec)
 
+        szreclist = []
         for scode in self.szmap:
             rec = self.dbsz[self.szmap[scode]]
-            reclist.append(rec)
+            szreclist.append(rec)
 
-        price = pickle.dumps(reclist, -1)
+        quoteinfo = {"SH":shreclist, "SZ":szreclist}
+
+        price = pickle.dumps(quoteinfo, -1)
         print len(price)
         price = zlib.compress(price)
         print len(price)

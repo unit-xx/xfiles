@@ -32,7 +32,7 @@ while 1:
     assert len(received) == pktlen
     price = pickle.loads(zlib.decompress(received))
     print "Received: %s" % len(price)
-    print type(price[1])
-    print price[1]
-    print price[-1]
+    print type(price)
+    print price["SH"]
+    print price["SZ"]
 
