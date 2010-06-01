@@ -2425,8 +2425,11 @@ def main(args):
     session_config.update(d.config)
     testsession = jz.session(session_config)
     if not testsession.setup():
-        logger.warning("Cannot login.")
-        sys.exit(1)
+        logger.warning("Cannot login jz.")
+        QMessageBox.warning(None,
+                u"",
+                u"<H3><FONT COLOR='#FF0000'>金证系统不能登录，勿进行股票操作！</FONT></H3>",
+                QMessageBox.Ok)
     testsession.close()
 
     # verify stock mapping
@@ -2460,6 +2463,14 @@ def main(args):
         jsd_sessioncfg["jsdport"] = int(jsd_sessioncfg["jsdport"])
     except KeyError:
         pass
+    testsession = jsd.session(jsd_sessioncfg)
+    if not testsession.setup():
+        logger.warning("Cannot login jsd.")
+        QMessageBox.warning(None,
+                u"",
+                u"<H3><FONT COLOR='#FF0000'>金士达系统不能登录，勿进行股指期货操作！</FONT></H3>",
+                QMessageBox.Ok)
+    testsession.close()
 
     # TODO: lock portfolio file to be used by one instance of easytrader
     updtlock = Lock()

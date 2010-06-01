@@ -114,11 +114,13 @@ class session:
         self.tradedbconn.commit()
 
     def close(self):
-        self.tradedbconn.commit()
-        self.tradedbconn.close()
-        self.conn.close()
-        self.tradedbconn = None
-        self.conn = None
+        if self.tradedbconn:
+            self.tradedbconn.commit()
+            self.tradedbconn.close()
+            self.tradedbconn = None
+        if self.conn:
+            self.conn.close()
+            self.conn = None
 
 class request:
     # request code
