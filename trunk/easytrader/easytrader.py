@@ -1743,11 +1743,11 @@ class SIFPriceUpdater_pushee(Thread):
                 return
 
             timeout = 2000 # 2sec
-            jsdhq.MAX_QUOTA_ITEM_COUNT = 50
-            quotaData = (jsdhq.KSFT_QUOTA_PUBDATA_ITEM * jsdhq.MAX_QUOTA_ITEM_COUNT)()
+            MAX_QUOTA_ITEM_COUNT = 50
+            quotaData = (jsdhq.KSFT_QUOTA_PUBDATA_ITEM * MAX_QUOTA_ITEM_COUNT)()
             while self.runflag:
                 qcount = KSFTHQPUB_GetQuota(cast(quotaData, c_char_p),
-                        sizeof(jsdhq.KSFT_QUOTA_PUBDATA_ITEM)*jsdhq.MAX_QUOTA_ITEM_COUNT,
+                        sizeof(jsdhq.KSFT_QUOTA_PUBDATA_ITEM)*MAX_QUOTA_ITEM_COUNT,
                         timeout,
                         errmsg)
                 if qcount < 0:
