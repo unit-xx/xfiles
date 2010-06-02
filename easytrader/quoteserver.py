@@ -39,10 +39,13 @@ class QuotePusher(Thread):
         while self.runflag:
             try:
                 quote = self.updatequote()
-                self.pset.broadcast(quote)
+                if quote is not None:
+                    self.pset.broadcast(quote)
             except:
                 self.logger.exception("Exception while updating quote.")
                 self.runflag = False
+
+        self.finalize()
         self.pset.closeall()
 
     def updatequote(self):
@@ -50,6 +53,9 @@ class QuotePusher(Thread):
         return "no quote"
 
     def setup(self, param):
+        pass
+
+    def finalize(self):
         pass
 
     def stop(self):
@@ -150,5 +156,5 @@ def startserver(configfn, QuotePusherClass, param = {}, QuoteServerClass=QuoteSe
 
 if __name__=="__main__":
     configfn = "quoteserver.cfg"
-    startserver(configfn, QuoteServer, QuotePusher)
+    startserver(configfn, QuotePusher)
 
