@@ -73,7 +73,7 @@ class PortfolioModel(QAbstractTableModel):
                 self.index(rowindex,0),
                 self.index(rowindex, len(self.portfolio.stockmodelattr)-1))
 
-    @pyqtSlot(int)
+    @pyqtSlot()
     def updateall(self):
         self.emit(SIGNAL("dataChanged(QModelIndex,QModelIndex)"),
                 self.index(0,0),
@@ -735,11 +735,13 @@ class Portfolio(object):
             orec["dealprice"] = str(dealprice)
             if orec["order_state"] == Portfolio.CANCELBUYFAILED:
                 if orec["dealcount"] == orec["ordercount"]:
-                    assert int(si["count"]) == si["pastbuycount"] + int(orec["dealcount"])
+                    #assert int(si["count"]) == si["pastbuycount"] + int(orec["dealcount"])
                     orec["order_state"] = Portfolio.BUYSUCCESS
                 else:
                     # TODO: change state to ORDERSUCCESS in this case too? to enable next cancel?
-                    assert False, "Error: cancel failed while dealcount is smaller than count."
+                    self.logger.error("Error: cancel failed while dealcount is smaller than count. (%s:%s)",
+                            scode, orec["order_id"])
+
         else:
             self.logger.error("error when update order for %s (%s:%s)", orec["order_id"], qoresp.retcode, qoresp.retinfo)
 
@@ -777,7 +779,11 @@ class Portfolio(object):
                         allbought = False
                         break
                     else:
-                        assert int(si["count"]) == si["pastbuycount"]# + int(orec["dealcount"])
+                        try:
+                            assert int(si["count"]) == si["pastbuycount"]# + int(orec["dealcount"])
+                        except AssertionError:
+                            self.logger.warning("total buy is not equal to expected, %s, %s:%d",
+                                    scode, si["count"], si["pastbuycount"])
             if allbought == False:
                 self.bolock.release()
                 return
@@ -1037,12 +1043,14 @@ class Portfolio(object):
             orec["dealprice"] = str(dealprice)
             if orec["order_state"] == Portfolio.CANCELSELLFAILED:
                 if orec["dealcount"] == orec["ordercount"]:
-                    assert si["pastbuycount"] == si["pastsellcount"] + int(orec["dealcount"])
+                    #assert si["pastbuycount"] == si["pastsellcount"] + int(orec["dealcount"])
                     orec["order_state"] = Portfolio.SELLSUCCESS
                 else:
-                    assert False, "Error: cancel failed while dealcount is smaller than count."
+                    self.logger.error("Error: cancel failed while dealcount is smaller than count. (%s:%s)",
+                            scode, orec["order_id"])
         else:
-            assert False, "error when update order for %s (%s:%s)" % (si["order_id"], qoresp.retcode, qoresp.retinfo)
+            self.logger.error("error when update order for %s (%s:%s)",
+                    si["order_id"], qoresp.retcode, qoresp.retinfo)
 
         # update pastsellxxx
         if orec["order_state"] in (Portfolio.SELLSUCCESS, Portfolio.CANCELSELLSUCCESS):
@@ -1475,11 +1483,13 @@ class PortfolioUpdater_dbf(Thread):
                         stockinfo[self.szdbmapping[f]] = rec[f]
                 stockinfo["tobuyprice"] = self.getpricesz(rec, self.portfolio.buypolicy) + self.portfolio.buypricefix
                 stockinfo["tosellprice"] = self.getpricesz(rec, self.portfolio.sellpolicy) + self.portfolio.sellpricefix
-
             # update a row
             rowindex = self.portfolio.stocklist.index(scode)
-            QMetaObject.invokeMethod(self.portmodel, "updaterow", Qt.QueuedConnection,
+            QMetaObject.invokeMethod(self.portmodel,
+                    "updaterow", Qt.QueuedConnection,
                     Q_ARG("int", rowindex))
+
+        #QMetaObject.invokeMethod(self.portmodel, "updateall", Qt.QueuedConnection)
 
     def stop(self):
         self.runflag = False
@@ -1622,8 +1632,7 @@ class PortfolioUpdater_net(Thread):
             elif scode in self.hookquote:
                 self.hookquote[scode] = rec
 
-        QMetaObject.invokeMethod(self.pmodel, "updateall", Qt.QueuedConnection,
-                Q_ARG("int", rowindex))
+        QMetaObject.invokeMethod(self.pmodel, "updateall", Qt.QueuedConnection)
 
     def stop(self):
         self.runflag = False
