@@ -37,12 +37,6 @@ def main(args):
     MYSEC = "itrader"
 
     session_config = {}
-    session_config["tradedbfn"] = "tradeinfo.db"
-    session_config["jzserver"] = "172.18.20.52"
-    session_config["jzport"] = 9100
-    session_config["jzaccount"] = "85804530"
-    session_config["jzaccounttype"] = "Z"
-    session_config["jzpasswd"] = "123444"
     config = ConfigParser.RawConfigParser()
     config.read(CONFIGFN)
     for k,v in config.items(JZSEC):
@@ -53,7 +47,7 @@ def main(args):
         pass
 
     # show config in dialog
-    from logindiag import logindlg
+    from ilogindiag import logindlg
     d = logindlg(session_config)
     d.show()
     d.activateWindow()
@@ -112,8 +106,6 @@ def main(args):
     sindexmodel = StockIndexModel(p)
 
     # run the portfolio updater
-    #pupdater = PortfolioUpdater(shdbfn, shmapfn, szdbfn, szmapfn, p, pmodel)
-
     servhost = config.get(MYSEC, "stockhqservhost")
     servport = config.getint(MYSEC, "stockhqservport")
     pupdater = PortfolioUpdater(servhost, servport, p, pmodel)
@@ -147,7 +139,7 @@ def main(args):
     sifop.start()
 
     # start base diff updater
-    bdiffupdter = basediffUpdater(shdbfn, shmapfn, jsd_sessioncfg, uic)
+    bdiffupdter = basediffUpdater(pupdater, jsd_sessioncfg, uic)
     bdiffupdter.start()
 
     window.show()
