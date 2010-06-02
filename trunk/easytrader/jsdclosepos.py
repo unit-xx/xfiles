@@ -22,8 +22,8 @@ oreq["code"] = "IF1006"
 oreq["longshort"] = "0"
 oreq["openclose"] = "1"
 oreq["ifhedge"] = "0"
-oreq["count"] = "49"
-oreq["price"] = "2840.00"
+oreq["count"] = "50"
+oreq["price"] = "2766.00"
 oreq["clientnum"] = s["clientnum"]
 oreq["seat"] = s["seat"]
 
