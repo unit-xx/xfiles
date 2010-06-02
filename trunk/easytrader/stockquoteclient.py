@@ -4,7 +4,7 @@ import zlib
 import pickle
 from struct import unpack
 
-HOST, PORT = "localhost", 21888
+HOST, PORT = "172.30.4.165", 21888
 data = "sdfasdf"
 
 # Create a socket (SOCK_STREAM means a TCP socket)

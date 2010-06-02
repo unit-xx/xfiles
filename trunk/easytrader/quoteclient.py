@@ -1,7 +1,7 @@
 import socket
 import sys
 
-HOST, PORT = "localhost", 20888
+HOST, PORT = "172.30.4.165", 21888
 data = "sdfasdf"
 
 # Create a socket (SOCK_STREAM means a TCP socket)
