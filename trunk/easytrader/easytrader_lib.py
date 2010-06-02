@@ -77,7 +77,7 @@ class PortfolioModel(QAbstractTableModel):
     def updateall(self):
         self.emit(SIGNAL("dataChanged(QModelIndex,QModelIndex)"),
                 self.index(0,0),
-                self.index(len(self.portfolio.stocklist)-1), len(self.portfolio.stockmodelattr)-1))
+                self.index(len(self.portfolio.stocklist)-1, len(self.portfolio.stockmodelattr)-1))
 
 class StockIndexModel(QAbstractTableModel):
     def __init__(self, portfolio, parent=None):
