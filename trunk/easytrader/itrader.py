@@ -15,7 +15,7 @@ def main(args):
     # chdir to app's directory
     os.chdir(os.path.dirname(os.path.abspath(args[0])))
     # make log directory
-    CONFIGFN = "easytrader.cfg"
+    CONFIGFN = "itrader.cfg"
     LOGDIR = "log"
     if not os.path.isdir(LOGDIR):
         try:
@@ -34,6 +34,7 @@ def main(args):
     # read config
     JZSEC = "jz"
     JSDSEC = "jsd"
+    MYSEC = "itrader"
 
     session_config = {}
     session_config["tradedbfn"] = "tradeinfo.db"
@@ -42,8 +43,6 @@ def main(args):
     session_config["jzaccount"] = "85804530"
     session_config["jzaccounttype"] = "Z"
     session_config["jzpasswd"] = "123444"
-    session_config["shdbfn"] = "z:\\show2003.dbf"
-    session_config["szdbfn"] = "z:\\sjshq.dbf"
     config = ConfigParser.RawConfigParser()
     config.read(CONFIGFN)
     for k,v in config.items(JZSEC):
@@ -72,18 +71,6 @@ def main(args):
                 u"<H3><FONT COLOR='#FF0000'>金证系统不能登录，勿进行股票操作！</FONT></H3>",
                 QMessageBox.Ok)
     testsession.close()
-
-    # verify stock mapping
-    shdbfn = session_config["shdbfn"]
-    szdbfn = session_config["szdbfn"]
-    shmapfn = "shmap.pkl"
-    szmapfn = "szmap.pkl"
-    if not verifymap(shdbfn, shmapfn, "S1"):
-        logger.warning("SH stock map file error.")
-        sys.exit(1)
-    if not verifymap(szdbfn, szmapfn, "HQZQDM"):
-        logger.warning("SZ stock map file error.")
-        sys.exit(1)
 
     # save config
     #for k in session_config:
@@ -126,7 +113,10 @@ def main(args):
 
     # run the portfolio updater
     #pupdater = PortfolioUpdater(shdbfn, shmapfn, szdbfn, szmapfn, p, pmodel)
-    pupdater = PortfolioUpdater("172.30.4.165", 21888, p, pmodel)
+
+    servhost = config.get(MYSEC, "stockhqservhost")
+    servport = config.getint(MYSEC, "stockhqservport")
+    pupdater = PortfolioUpdater(servhost, servport, p, pmodel)
     pupdater.start()
 
     # run the order info updater
