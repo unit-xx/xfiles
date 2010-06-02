@@ -1480,6 +1480,7 @@ class PortfolioUpdater_net(Thread):
         self.conn = None
         self.portfolio = portfolio
         self.pmodel = portmodel
+        self.hookquote = {}
         self.runflag = True
         self.name = "PortfolioUpdater_net"
         self.logger = logging.getLogger()
@@ -1544,6 +1545,15 @@ class PortfolioUpdater_net(Thread):
         assert(price != "")
         return price
 
+    def addhook(self, code):
+        self.hookquote[code] = None
+
+    def gethookquote(self, code):
+        try:
+            return self.hookquote[code]
+        except KeyError:
+            return None
+
     def update(self):
         (pktlen,) = unpack("!I", self.conn.recv(4))
         left = pktlen
@@ -1573,6 +1583,8 @@ class PortfolioUpdater_net(Thread):
                 rowindex = self.portfolio.stocklist.index(scode)
                 QMetaObject.invokeMethod(self.pmodel, "updaterow", Qt.QueuedConnection,
                         Q_ARG("int", rowindex))
+            elif scode in self.hookquote:
+                self.hookquote[scode] = rec
 
         for rec in data["SZ"]:
             scode = "SZ"+rec["HQZQDM"]
@@ -1589,6 +1601,8 @@ class PortfolioUpdater_net(Thread):
                 rowindex = self.portfolio.stocklist.index(scode)
                 QMetaObject.invokeMethod(self.pmodel, "updaterow", Qt.QueuedConnection,
                         Q_ARG("int", rowindex))
+            elif scode in self.hookquote:
+                self.hookquote[scode] = rec
 
     def stop(self):
         self.runflag = False
@@ -2390,28 +2404,22 @@ class uicontrol(Ui_MainWindow):
         QMetaObject.invokeMethod(self.statusbar, "showMessage", Qt.QueuedConnection, Q_ARG("QString", QString(u"组合状态: " + self.portfolio.bostate)))
 
 class basediffUpdater(Thread):
-    def __init__(self, shdbfn, shmapfn, jsdcfg, uic):
+    def __init__(self, pupdter, jsdcfg, uic):
         Thread.__init__(self)
         self.runflag = True
 
-        self.shdbfn = shdbfn
-        self.shmapfn = shmapfn
         self.jsdcfg = jsdcfg
         self.jsdsession = None
         self.uic = uic
+        self.pupdter = pupdter
+        self.hs300code = "SH000300"
+        self.pupdter.addhook(self.hs300code)
 
         self.name = "basediffUpdater"
         self.logger = logging.getLogger()
 
     def run(self):
         try:
-            hs300code = "SH000300"
-
-            self.dbsh = dbf.Dbf(self.shdbfn, ignoreErrors=True, readOnly=True)
-            f = open(self.shmapfn)
-            self.shmap = pickle.load(f)
-            f.close()
-
             self.jsdsession = jsd.session(self.jsdcfg)
             if not self.jsdsession.setup():
                 self.logger.warning("jsd session setup failed.")
@@ -2424,8 +2432,12 @@ class basediffUpdater(Thread):
             self.uic.sindexcmbox.setCurrentIndex(0)
 
             while self.runflag:
+                time.sleep(1)
                 # update hs300
-                rec = self.dbsh[self.shmap[hs300code]]
+                rec = self.pupdter.gethookquote(self.hs300code)
+                if rec is None:
+                    continue
+
                 hs300latest = rec['S8']
 
                 # update selected stock index
@@ -2466,7 +2478,6 @@ class basediffUpdater(Thread):
                     QMetaObject.invokeMethod(self.uic.openthresholdspin, "setStyleSheet",
                             Qt.QueuedConnection, Q_ARG("QString", QString(str("background-color: rgb(255, 255, 255);"))))
 
-                time.sleep(1)
         except Exception:
             self.logger.exception("Oh!!!")
 
