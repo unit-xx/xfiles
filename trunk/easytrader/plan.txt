@@ -10,3 +10,8 @@ code refactor:
 
   - recv_n
   - reorganize class hierarchy, price updater, etc.
+
+fixes:
+
+  - add timeout to sockets
+  - sell number maybe more than expected
