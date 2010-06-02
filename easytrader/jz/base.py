@@ -59,37 +59,42 @@ class session:
 
             self.tradedbconn = db.connect(self.sessioncfg["tradedbfn"], timeout=30)
         except socket.error:
+            self.close()
             return False
 
-        cireq = CheckinReq(self)
-        cireq.send()
-        ciresp = CheckinResp(self)
-        ciresp.recv()
-        if ciresp.retcode != "0":
-            # TODO: change this and two following print to return code or myexception
-            self.logger.warning("Checkin failed: %s, %s" %
-                    (loginresp.retcode, loginresp.retinfo))
-            return False
-        # update workkey
-        self["workkey"] = ciresp.getworkkey()
+        try:
+            cireq = CheckinReq(self)
+            cireq.send()
+            ciresp = CheckinResp(self)
+            ciresp.recv()
+            if ciresp.retcode != "0":
+                # TODO: change this and two following print to return code or myexception
+                self.logger.warning("Checkin failed: %s, %s" %
+                        (loginresp.retcode, loginresp.retinfo))
+                return False
+            # update workkey
+            self["workkey"] = ciresp.getworkkey()
 
-        loginreq = LoginReq(self)
-        loginreq["idtype"] = self.sessioncfg["jzaccounttype"]
-        loginreq["id"] = self.sessioncfg["jzaccount"]
-        loginreq["passwd"] = self.encrypt(pad(self.sessioncfg["jzpasswd"],
-            (len(self.sessioncfg["jzpasswd"])/8+1)*8))
-        loginreq.send()
-        loginresp = LoginResp(self)
-        loginresp.recv()
-        # update session fields from login response
-        if loginresp.retcode != "0":
-            self.logger.warning("Login failed: %s, %s" %
-                    (loginresp.retcode, loginresp.retinfo))
-            return False
+            loginreq = LoginReq(self)
+            loginreq["idtype"] = self.sessioncfg["jzaccounttype"]
+            loginreq["id"] = self.sessioncfg["jzaccount"]
+            loginreq["passwd"] = self.encrypt(pad(self.sessioncfg["jzpasswd"],
+                (len(self.sessioncfg["jzpasswd"])/8+1)*8))
+            loginreq.send()
+            loginresp = LoginResp(self)
+            loginresp.recv()
+            # update session fields from login response
+            if loginresp.retcode != "0":
+                self.logger.warning("Login failed: %s, %s" %
+                        (loginresp.retcode, loginresp.retinfo))
+                return False
 
-        loginresp.updatesession()
-        self.logger.info("Login ok")
-        return True
+            loginresp.updatesession()
+            self.logger.info("Login ok")
+            return True
+        except socket.error:
+            self.close()
+            return False
 
     def encrypt(self, s):
         assert(len(s) % 8 == 0)

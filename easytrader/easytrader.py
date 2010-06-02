@@ -36,14 +36,6 @@ def main(args):
     JSDSEC = "jsd"
 
     session_config = {}
-    session_config["tradedbfn"] = "tradeinfo.db"
-    session_config["jzserver"] = "172.18.20.52"
-    session_config["jzport"] = 9100
-    session_config["jzaccount"] = "85804530"
-    session_config["jzaccounttype"] = "Z"
-    session_config["jzpasswd"] = "123444"
-    session_config["shdbfn"] = "z:\\show2003.dbf"
-    session_config["szdbfn"] = "z:\\sjshq.dbf"
     config = ConfigParser.RawConfigParser()
     config.read(CONFIGFN)
     for k,v in config.items(JZSEC):
@@ -157,7 +149,7 @@ def main(args):
     sifop.start()
 
     # start base diff updater
-    bdiffupdter = basediffUpdater(shdbfn, shmapfn, jsd_sessioncfg, uic)
+    bdiffupdter = basediffUpdater(pupdater, jsd_sessioncfg, uic)
     bdiffupdter.start()
 
     window.show()
