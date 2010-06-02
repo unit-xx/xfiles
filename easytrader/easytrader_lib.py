@@ -73,6 +73,12 @@ class PortfolioModel(QAbstractTableModel):
                 self.index(rowindex,0),
                 self.index(rowindex, len(self.portfolio.stockmodelattr)-1))
 
+    @pyqtSlot(int)
+    def updateall(self):
+        self.emit(SIGNAL("dataChanged(QModelIndex,QModelIndex)"),
+                self.index(0,0),
+                self.index(len(self.portfolio.stocklist)-1), len(self.portfolio.stockmodelattr)-1))
+
 class StockIndexModel(QAbstractTableModel):
     def __init__(self, portfolio, parent=None):
         QAbstractTableModel.__init__(self, parent)
@@ -1597,8 +1603,6 @@ class PortfolioUpdater_net(Thread):
                 stockinfo["tosellprice"] = self.getpricesh(rec, self.portfolio.sellpolicy) + self.portfolio.sellpricefix
 
                 rowindex = self.portfolio.stocklist.index(scode)
-                QMetaObject.invokeMethod(self.pmodel, "updaterow", Qt.QueuedConnection,
-                        Q_ARG("int", rowindex))
             elif scode in self.hookquote:
                 self.hookquote[scode] = rec
 
@@ -1615,10 +1619,11 @@ class PortfolioUpdater_net(Thread):
                 stockinfo["tosellprice"] = self.getpricesz(rec, self.portfolio.sellpolicy) + self.portfolio.sellpricefix
 
                 rowindex = self.portfolio.stocklist.index(scode)
-                QMetaObject.invokeMethod(self.pmodel, "updaterow", Qt.QueuedConnection,
-                        Q_ARG("int", rowindex))
             elif scode in self.hookquote:
                 self.hookquote[scode] = rec
+
+        QMetaObject.invokeMethod(self.pmodel, "updateall", Qt.QueuedConnection,
+                Q_ARG("int", rowindex))
 
     def stop(self):
         self.runflag = False
@@ -2514,7 +2519,7 @@ class basediffUpdater(Thread):
                 self.logger.warning("jsd session setup failed.")
                 return
             
-            # read contracts and fill stock index combobox.
+            # TODO: read contracts and fill stock index combobox.
             self.sicontracts = ['IF1006', 'IF1007', 'IF1009', 'IF1012']
             for sindex in self.sicontracts:
                 self.uic.sindexcmbox.addItem(sindex)
