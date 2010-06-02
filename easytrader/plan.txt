@@ -3,6 +3,7 @@ make stock batch order more reliable
   - some kind of buy/sell/cancel may fail, but should be retried, sooner or later
   - invalid order will be deleted immediately.
   - sell number may be greater than expected
+  - stopped stock
 
 internet version of easytrader
 
@@ -14,4 +15,3 @@ code refactor:
 fixes:
 
   - add timeout to sockets
-  - sell number maybe more than expected
