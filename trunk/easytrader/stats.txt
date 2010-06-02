@@ -1,0 +1,19 @@
+worker:buy time
+
+5:13.579
+10:7.578
+20:8.218
+
+基金100, 84支
+
+2010-05-28 10:34:31,296 & INFO & easytrader.py & buyBatchTop & L:528 & P:2700 &
+T:MainThread & batch buying
+2010-05-28 10:34:32,375 & INFO & easytrader.py & buyBatchBottom & L:641 & P:2700
+ & T:jzWorker & batch buy-ed
+
+300zhi, 580024
+2010-05-28 13:09:12,733 & INFO & easytrader.py & buyBatchTop & L:528 & P:4452 &
+T:MainThread & batch buying
+2010-05-28 13:09:20,250 & INFO & easytrader.py & buyBatchBottom & L:643 & P:4452
+ & T:jzWorker & batch buy-ed
+

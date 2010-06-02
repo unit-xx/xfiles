@@ -5,3 +5,7 @@ make stock batch order more reliable
   - sell number may be greater than expected
 
 internet version of easytrader
+
+code refactor:
+
+  - recv_n
