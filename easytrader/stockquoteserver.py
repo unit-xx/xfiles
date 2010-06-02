@@ -37,10 +37,7 @@ class StockQuotePusher(QuotePusher):
         quoteinfo = {"SH":shreclist, "SZ":szreclist}
 
         price = pickle.dumps(quoteinfo, -1)
-        print len(price)
         price = zlib.compress(price)
-        print len(price)
-        print
         return price
 
 if __name__=="__main__":

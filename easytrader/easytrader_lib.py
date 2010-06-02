@@ -1360,7 +1360,8 @@ class PortfolioUpdater_dbf(Thread):
         self.portfolio = portfolio
         self.portmodel = portmodel
         self.runflag = True
-        self.name = "PortfolioUpdater_dbf"
+        self.hookquote = {}
+        self.name = self.__class__.__name__
         self.logger = logging.getLogger()
 
         # one-to-one mapping of dbfield to stockattr, for SH
@@ -1388,6 +1389,15 @@ class PortfolioUpdater_dbf(Thread):
     def close(self):
         self.dbsh.close()
         self.dbsz.close()
+
+    def addhook(self, code):
+        self.hookquote[code] = None
+
+    def gethookquote(self, code):
+        try:
+            return self.hookquote[code]
+        except KeyError:
+            return None
 
     def getpricesh(self, shrec, pricepolicy):
         price = ""
@@ -1432,6 +1442,12 @@ class PortfolioUpdater_dbf(Thread):
         dbsz = self.dbsz
         shmap = self.shmap
         szmap = self.szmap
+
+        for scode in self.hookquote:
+            if scode[0:2] == "SH":
+                self.hookquote[scode] = dbsh[shmap[scode]]
+            if scode[0:2] == "SZ":
+                self.hookquote[scode] = dbsz[szmap[scode]]
 
         for scode in self.portfolio.stocklist:
             stockinfo = self.portfolio.stockinfo[scode]
@@ -1482,7 +1498,7 @@ class PortfolioUpdater_net(Thread):
         self.pmodel = portmodel
         self.hookquote = {}
         self.runflag = True
-        self.name = "PortfolioUpdater_net"
+        self.name = self.__class__.__name__
         self.logger = logging.getLogger()
 
         # one-to-one mapping of dbfield to stockattr, for SH
@@ -1631,7 +1647,7 @@ class SIFPriceUpdater_poll(Thread):
         self.uic = uic
         self.runflag = True
         self.logger = logging.getLogger()
-        self.name = "SIFPriceUpdater"
+        self.name = self.__class__.__name__
 
     def close(self):
         if self.jsdsession:
@@ -1702,7 +1718,7 @@ class SIFPriceUpdater_pushee(Thread):
         self.runflag = True
         self.columnresized = False
         self.logger = logging.getLogger()
-        self.name = "SIFPriceUpdater"
+        self.name = self.__class__.__name__
 
     def updateprice(self, quotaData, qcount):
         for i in range(qcount):
@@ -1722,7 +1738,6 @@ class SIFPriceUpdater_pushee(Thread):
                     self.uic.stockindex.resizeColumnsToContents()
                     self.columnresized = True
                 QMetaObject.invokeMethod(self.sindexmodel, "updaterow", Qt.QueuedConnection)
-        # TODO: also update earnings for stock index
 
     def getsindexprice(self, qd, pricepolicy):
         policymapping = {
@@ -1773,6 +1788,80 @@ class SIFPriceUpdater_pushee(Thread):
         except Exception:
             self.logger.exception("Oh!!!")
 
+class SIFPriceUpdater_net(Thread):
+    def __init__(self, servhost, servport, portfolio, sindexmodel, uic):
+        Thread.__init__(self)
+        self.servhost = servhost
+        self.servport = servport
+        self.portfolio = portfolio
+        self.sindexmodel = sindexmodel
+        self.uic = uic
+        self.conn = None
+        self.runflag = True
+        self.columnresized = False
+        self.logger = logging.getLogger()
+        self.name = self.__class__.__name__
+
+    def getsindexprice(self, qd, pricepolicy):
+        policymapping = {
+                "latest":"lastPrice",
+                "b1":"bidPrice1",
+                "s1":"askPrice1"
+                }
+        return getattr(qd, policymapping[pricepolicy])
+
+    def stop(self):
+        self.runflag = False
+
+    def updateprice(self, quotaData):
+        for qd in quotaData:
+            si = self.portfolio.sindexinfo
+            if qd.varity_code+qd.deliv_date == si["code"]:
+                si["latestprice"] = qd.lastPrice
+                si["open"] = qd.openPrice
+                si["close"] = qd.preClosePrice
+                si["ceiling"] = qd.upperLimitPrice
+                si["floor"] = qd.lowerLimitPrice
+                si["openposprice"] = self.getsindexprice(qd, self.portfolio.openpolicy) + self.portfolio.openpricefix
+                si["closeposprice"] = self.getsindexprice(qd, self.portfolio.closepolicy) + self.portfolio.closepricefix
+                self.portfolio.updateearning()
+
+                if not self.columnresized:
+                    self.uic.stockindex.resizeColumnsToContents()
+                    self.columnresized = True
+                QMetaObject.invokeMethod(self.sindexmodel, "updaterow", Qt.QueuedConnection)
+
+    def update(self):
+        (pktlen,) = unpack("!I", self.conn.recv(4))
+        left = pktlen
+        content = []
+        while 1:
+            if left <= 0:
+                break
+            buf = self.conn.recv(left)
+            content.append(buf)
+            left = left - len(buf)
+
+        data = "".join(content)
+        data = pickle.loads(zlib.decompress(data))
+
+        self.updateprice(data)
+
+    def run(self):
+        try:
+            self.conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.conn.connect((self.servhost, self.servport))
+        except socket.error:
+            self.logger.exception("cannot connect to quoteserver")
+            return
+
+        try:
+            while self.runflag:
+                self.update()
+        except Exception:
+            self.logger.exception("Oh!!!")
+
+
 class SIFOrderUpdater(Thread):
     def __init__(self, portfolio, sindexmodel, jsdcfg):
         Thread.__init__(self)
@@ -1780,7 +1869,7 @@ class SIFOrderUpdater(Thread):
         self.sindexmodel = sindexmodel
         self.jsdcfg = jsdcfg
         self.sindexlock = portfolio.sindexlock
-        self.name = "SIFOrderUpdater"
+        self.name = self.__class__.__name__
         self.logger = logging.getLogger()
         self.session = None
         self.runflag = True
@@ -1837,7 +1926,7 @@ class SIFOrderPushee(Thread):
         self.sindexmodel = sindexmodel
         self.jsdcfg = jsdcfg
         self.sindexlock = portfolio.sindexlock
-        self.name = "SIFOrderPushee"
+        self.name = self.__class__.__name__
         self.logger = logging.getLogger()
         self.session = None
         self.runflag = True
@@ -1999,7 +2088,7 @@ class OrderUpdater(Thread):
         self.runflag = True
         self.session = None
         self.updtlock = updtlock
-        self.name = "OrderUpdater"
+        self.name = self.__class__.__name__
         self.logger = logging.getLogger()
 
     def close(self):
@@ -2090,7 +2179,7 @@ class asyncWorker(Thread):
         self.session_cfg = session_cfg
         self.tqueue = tqueue
         self.runflag = True
-        self.name = "jzWorker"
+        self.name = self.__class__.__name__
         self.logger = logging.getLogger()
         self.session = None
 
@@ -2170,7 +2259,7 @@ class jzWorker(asyncWorker):
     def __init__(self, session_cfg, tqueue):
         asyncWorker.__init__(self, session_cfg, tqueue)
         self.runflag = True
-        self.name = "jzWorker"
+        self.name = self.__class__.__name__
 
     def setupsession(self):
         self.session = jz.session(self.session_cfg)
@@ -2182,7 +2271,7 @@ class jsdWorker(asyncWorker):
     def __init__(self, session_cfg, tqueue):
         asyncWorker.__init__(self, session_cfg, tqueue)
         self.runflag = True
-        self.name = "jsdWorker"
+        self.name = self.__class__.__name__
 
     def setupsession(self):
         self.session = jsd.session(self.session_cfg)
@@ -2415,7 +2504,7 @@ class basediffUpdater(Thread):
         self.hs300code = "SH000300"
         self.pupdter.addhook(self.hs300code)
 
-        self.name = "basediffUpdater"
+        self.name = self.__class__.__name__
         self.logger = logging.getLogger()
 
     def run(self):

@@ -9,3 +9,4 @@ internet version of easytrader
 code refactor:
 
   - recv_n
+  - reorganize class hierarchy, price updater, etc.
