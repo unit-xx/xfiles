@@ -2,7 +2,7 @@
 
 from easytrader_lib import *
 
-PortfolioUpdater = PortfolioUpdater_net
+PortfolioUpdater = PortfolioUpdater_dbf
 SIFPriceUpdater = SIFPriceUpdater_pushee
 
 def main(args):
@@ -117,8 +117,8 @@ def main(args):
     sindexmodel = StockIndexModel(p)
 
     # run the portfolio updater
-    #pupdater = PortfolioUpdater(shdbfn, shmapfn, szdbfn, szmapfn, p, pmodel)
-    pupdater = PortfolioUpdater("172.30.4.165", 21888, p, pmodel)
+    pupdater = PortfolioUpdater(shdbfn, shmapfn, szdbfn, szmapfn, p, pmodel)
+    #pupdater = PortfolioUpdater("172.30.4.165", 21888, p, pmodel)
     pupdater.start()
 
     # run the order info updater
