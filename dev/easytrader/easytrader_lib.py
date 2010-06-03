@@ -1484,12 +1484,12 @@ class PortfolioUpdater_dbf(Thread):
                 stockinfo["tobuyprice"] = self.getpricesz(rec, self.portfolio.buypolicy) + self.portfolio.buypricefix
                 stockinfo["tosellprice"] = self.getpricesz(rec, self.portfolio.sellpolicy) + self.portfolio.sellpricefix
             # update a row
-            rowindex = self.portfolio.stocklist.index(scode)
-            QMetaObject.invokeMethod(self.portmodel,
-                    "updaterow", Qt.QueuedConnection,
-                    Q_ARG("int", rowindex))
+            #rowindex = self.portfolio.stocklist.index(scode)
+            #QMetaObject.invokeMethod(self.portmodel,
+            #        "updaterow", Qt.QueuedConnection,
+            #        Q_ARG("int", rowindex))
 
-        #QMetaObject.invokeMethod(self.portmodel, "updateall", Qt.QueuedConnection)
+        QMetaObject.invokeMethod(self.portmodel, "updateall", Qt.QueuedConnection)
 
     def stop(self):
         self.runflag = False
