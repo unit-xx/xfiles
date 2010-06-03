@@ -4,20 +4,24 @@ from PyQt4.QtCore import *
 
 
 class logindlg(QDialog):
-    def __init__(self, config):
+    def __init__(self, jzconfig, jsdconfig):
         QDialog.__init__(self)
         self.status = False
         self.ui = Ui_logindlg()
         self.ui.setupUi(self)
-        self.config = config
+        self.jzconfig = jzconfig
+        self.jsdconfig = jsdconfig
 
         # set data for lineedit controls
-        self.ui.servaddr.setText(config["jzserver"])
-        self.ui.servport.setText(str(config["jzport"]))
-        self.ui.account.setText(config["jzaccount"])
-        self.ui.passwd.setText(config["jzpasswd"])
-        self.ui.shdbfn.setText(config["shdbfn"])
-        self.ui.szdbfn.setText(config["szdbfn"])
+        self.ui.servaddr.setText(jzconfig["jzserver"])
+        self.ui.servport.setText(str(jzconfig["jzport"]))
+        self.ui.account.setText(jzconfig["jzaccount"])
+        self.ui.passwd.setText(jzconfig["jzpasswd"])
+
+        self.ui.servaddr_jsd.setText(jsdconfig["jsdserver"])
+        self.ui.servport_jsd.setText(str(jsdconfig["jsdport"]))
+        self.ui.account_jsd.setText(jsdconfig["jsdaccount"])
+        self.ui.passwd_jsd.setText(jsdconfig["jsdpasswd"])
 
         self.connect(self.ui.ok, SIGNAL("clicked()"), self.on_ok)
         self.connect(self.ui.cancel, SIGNAL("clicked()"), self.on_cancel)
@@ -25,12 +29,15 @@ class logindlg(QDialog):
     def on_ok(self):
         self.done(1)
         self.status = True
-        self.config["jzserver"] = str(self.ui.servaddr.text())
-        self.config["jzport"] = int(self.ui.servport.text())
-        self.config["jzaccount"] = str(self.ui.account.text())
-        self.config["jzpasswd"] = str(self.ui.passwd.text())
-        self.config["shdbfn"] = str(self.ui.shdbfn.text())
-        self.config["szdbfn"] = str(self.ui.szdbfn.text())
+        self.jzconfig["jzserver"] = str(self.ui.servaddr.text())
+        self.jzconfig["jzport"] = int(self.ui.servport.text())
+        self.jzconfig["jzaccount"] = str(self.ui.account.text())
+        self.jzconfig["jzpasswd"] = str(self.ui.passwd.text())
+
+        self.jsdconfig["jsdserver"] = str(self.ui.servaddr_jsd.text())
+        self.jsdconfig["jsdport"] = int(self.ui.servport_jsd.text())
+        self.jsdconfig["jsdaccount"] = str(self.ui.account_jsd.text())
+        self.jsdconfig["jsdpasswd"] = str(self.ui.passwd_jsd.text())
 
     def on_cancel(self):
         self.status = False

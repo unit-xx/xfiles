@@ -40,6 +40,7 @@ def main(args):
     JSDSEC = "jsd"
 
     session_config = {}
+
     config = ConfigParser.RawConfigParser()
     config.read(CONFIGFN)
     for k,v in config.items(JZSEC):
@@ -49,9 +50,18 @@ def main(args):
     except KeyError:
         pass
 
+    # get jsd session config
+    jsd_sessioncfg = {}
+    for k,v in config.items(JSDSEC):
+        jsd_sessioncfg[k] = v
+    try:
+        jsd_sessioncfg["jsdport"] = int(jsd_sessioncfg["jsdport"])
+    except KeyError:
+        pass
+
     # show config in dialog
     from logindiag import logindlg
-    d = logindlg(session_config)
+    d = logindlg(session_config, jsd_sessioncfg)
     d.show()
     d.activateWindow()
     d.exec_()
@@ -59,15 +69,28 @@ def main(args):
         logger.info("User cancel login")
         sys.exit(1)
 
-    session_config.update(d.config)
+    session_config.update(d.jzconfig)
+    jsd_sessioncfg.update(d.jsdconfig)
+
     testsession = jz.session(session_config)
     if not testsession.setup():
         logger.warning("Cannot login jz.")
         QMessageBox.warning(None,
                 u"",
-                u"<H3><FONT COLOR='#FF0000'>金证系统不能登录，勿进行股票操作！</FONT></H3>",
+                u"<H3><FONT COLOR='#FF0000'>金证系统不能登录！</FONT></H3>",
                 QMessageBox.Ok)
     testsession.close()
+    sys.exit(1)
+
+    testsession = jsd.session(jsd_sessioncfg)
+    if not testsession.setup():
+        logger.warning("Cannot login jsd.")
+        QMessageBox.warning(None,
+                u"",
+                u"<H3><FONT COLOR='#FF0000'>金士达系统不能登录！</FONT></H3>",
+                QMessageBox.Ok)
+    testsession.close()
+    sys.exit(1)
 
     # verify stock mapping
     shdbfn = session_config["shdbfn"]
@@ -91,23 +114,6 @@ def main(args):
     if portfoliofn == u"":
         logger.info("No portfolio seleted.")
         sys.exit(1)
-
-    # get jsd session config
-    jsd_sessioncfg = {}
-    for k,v in config.items(JSDSEC):
-        jsd_sessioncfg[k] = v
-    try:
-        jsd_sessioncfg["jsdport"] = int(jsd_sessioncfg["jsdport"])
-    except KeyError:
-        pass
-    testsession = jsd.session(jsd_sessioncfg)
-    if not testsession.setup():
-        logger.warning("Cannot login jsd.")
-        QMessageBox.warning(None,
-                u"",
-                u"<H3><FONT COLOR='#FF0000'>金士达系统不能登录，勿进行股指期货操作！</FONT></H3>",
-                QMessageBox.Ok)
-    testsession.close()
 
     # TODO: lock portfolio file to be used by one instance of easytrader
     updtlock = Lock()
