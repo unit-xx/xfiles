@@ -1,11 +1,12 @@
 make stock batch order more reliable
 
+  - individual stock state
   - some kind of buy/sell/cancel may fail, but should be retried, sooner or later
+  - stopped stock
   - invalid order will be deleted immediately.
   - sell number may be greater than expected
-  - stopped stock
 
-internet version of easytrader
+DONE: internet version of easytrader
 
 code refactor:
 

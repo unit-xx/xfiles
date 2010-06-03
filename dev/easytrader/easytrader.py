@@ -16,6 +16,10 @@ def main(args):
     os.chdir(os.path.dirname(os.path.abspath(args[0])))
     # make log directory
     CONFIGFN = "easytrader.cfg"
+    try:
+        CONFIGFN = sys.argv[1]
+    except IndexError:
+        pass
     LOGDIR = "log"
     if not os.path.isdir(LOGDIR):
         try:
