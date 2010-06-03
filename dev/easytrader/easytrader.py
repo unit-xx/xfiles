@@ -73,24 +73,30 @@ def main(args):
     jsd_sessioncfg.update(d.jsdconfig)
 
     testsession = jz.session(session_config)
+    loginok = True
     if not testsession.setup():
+        loginok = False
         logger.warning("Cannot login jz.")
         QMessageBox.warning(None,
                 u"",
                 u"<H3><FONT COLOR='#FF0000'>金证系统不能登录！</FONT></H3>",
                 QMessageBox.Ok)
     testsession.close()
-    sys.exit(1)
+    if not loginok:
+        sys.exit(1)
 
     testsession = jsd.session(jsd_sessioncfg)
+    loginok = True
     if not testsession.setup():
+        loginok = False
         logger.warning("Cannot login jsd.")
         QMessageBox.warning(None,
                 u"",
                 u"<H3><FONT COLOR='#FF0000'>金士达系统不能登录！</FONT></H3>",
                 QMessageBox.Ok)
     testsession.close()
-    sys.exit(1)
+    if not loginok:
+        sys.exit(1)
 
     # verify stock mapping
     shdbfn = session_config["shdbfn"]
