@@ -5,7 +5,7 @@ import datetime
 import sqlite3 as db
 import logging
 
-CFFEXCODE = "G"
+CFFEXCODE = "D"
 
 class session:
     def __init__(self, sessioncfg):
