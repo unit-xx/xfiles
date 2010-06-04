@@ -65,7 +65,18 @@ class PortfolioModel(QAbstractTableModel):
             celldata = QString(rawdata)
             return QVariant(celldata)
         except KeyError:
-            return QVariant()
+            if columnkey == "state":
+                si = self.portfolio.stockinfo[rowkey]
+                rawdata = ""
+                if len(si["pastsell"]) > 0:
+                    rawdata = si["pastsell"][-1]["order_state"]
+                elif len(si["pastbuy"]) > 0:
+                    rawdata = si["pastbuy"][-1]["order_state"]
+                if rawdata != "":
+                    rawdata = self.portfolio.stockstatemap[rawdata]
+                return QVariant(QString(rawdata))
+            else:
+                return QVariant()
 
     @pyqtSlot(int)
     def updaterow(self, rowindex):
@@ -211,6 +222,21 @@ class Portfolio(object):
     CANCELSELLSUCCESS = "CANCELSELLSUCCESS"
     CANCELSELLFAILED = "CANCELSELLFAILED"
 
+    stockstatemap = {
+            INVALID:u"非法",
+            UNORDERED:u"未委托",
+            # first is buy states,
+            BUYSUCCESS:u"买入成功",
+            BUYFAILED:u"买入失败",
+            # assumption: only success order can be canceled,
+            CANCELBUYSUCCESS:u"撤买成功",
+            CANCELBUYFAILED:u"撤买失败",
+            # next comes sell states,
+            SELLSUCCESS:u"卖出成功",
+            SELLFAILED:u"卖出失败",
+            CANCELSELLSUCCESS:u"撤卖成功",
+            CANCELSELLFAILED:u"撤卖失败"
+            }
 
     # batch operation status
     BOUNORDERED = u"未委托"
@@ -278,7 +304,9 @@ class Portfolio(object):
                 # of type float (after conversion from jz)
                 "ceiling", "floor",
                 # of type boolean
-                "stopped"]
+                "stopped",
+                # of type utf8 string
+                "state"]
         self.buypricefix = 0.00
         self.sellpricefix = 0.00
 
@@ -291,7 +319,7 @@ class Portfolio(object):
                 #"dealprice", "latestprice", "order_date", "order_time",
                 "close", "open",
                 "latestprice", "tobuyprice", "tosellprice",
-                "currentbuycount", "currentbuycost", "currentsellcount", "currentsellgain"]
+                "currentbuycount", "currentbuycost", "currentsellcount", "currentsellgain", "state"]
         assert set(self.stockmodelattr) <= set(self.stockattr)
 
         self.stockattrnamemap = {
@@ -307,7 +335,8 @@ class Portfolio(object):
                 "currentbuycount":u"买入量",
                 "currentbuycost":u"买入成本",
                 "currentsellcount":u"卖出量",
-                "currentsellgain":u"卖出获利"
+                "currentsellgain":u"卖出获利",
+                "state":u"操作状态"
                 }
         # price policies
         self.pricepolicylist = ["latest", "s5", "s4", "s3", "s2", "s1", "b1", "b2", "b3", "b4", "b5"]
@@ -527,7 +556,10 @@ class Portfolio(object):
                 pass
             for scode in self.stocklist:
                 si = self.stockinfo[scode]
-                writer.writerow([si["market"], si["code"], si["count"], repr(si["pastbuy"]), repr(si["pastsell"])])
+                writer.writerow([si["market"], si["code"],
+                    si["count"],
+                    repr(si["pastbuy"]),
+                    repr(si["pastsell"])])
             # portfolio state as a batch
             writer.writerow(["BO", self.bostate.encode("utf-8")])
             f.flush()
