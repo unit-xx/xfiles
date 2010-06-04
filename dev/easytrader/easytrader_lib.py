@@ -650,6 +650,7 @@ class Portfolio(object):
             self.bostate = Portfolio.BOBUYSUCCESS
             self.logger.info("batch buy-ed")
         self.bolock.release()
+        self.savePortfolio()
 
     def cancelBuyBatchTop(self):
         self.bolock.acquire()
@@ -760,6 +761,7 @@ class Portfolio(object):
             self.bostate = Portfolio.BOBUYCANCELED
             self.logger.info("batch buy canceled")
         self.bolock.release()
+        self.savePortfolio()
 
     def sellBatchTop(self):
         self.bolock.acquire()
@@ -959,6 +961,7 @@ class Portfolio(object):
             self.bostate = Portfolio.BOSELLSUCCESS
             self.logger.info("batch selled")
         self.bolock.release()
+        self.savePortfolio()
 
     def cancelSellBatchTop(self):
         self.bolock.acquire()
@@ -1066,6 +1069,7 @@ class Portfolio(object):
             self.bostate = Portfolio.BOSELLCANCELED
             self.logger.info("batch sell canceled")
         self.bolock.release()
+        self.savePortfolio()
 
     def openshort(self):
         with self.sindexlock:
@@ -2418,6 +2422,7 @@ class uicontrol(Ui_MainWindow):
         if QMessageBox.Ok == ret:
             self.portfolio.openshort()
             QMetaObject.invokeMethod(self.sindexmodel, "updaterow", Qt.QueuedConnection)
+            self.savePortfolio()
 
     @pyqtSlot()
     def cancelopen(self):
@@ -2427,6 +2432,7 @@ class uicontrol(Ui_MainWindow):
         if QMessageBox.Ok == ret:
             self.portfolio.cancelopenshort()
             QMetaObject.invokeMethod(self.sindexmodel, "updaterow", Qt.QueuedConnection)
+            self.savePortfolio()
 
     @pyqtSlot()
     def closeshort(self):
@@ -2439,6 +2445,7 @@ class uicontrol(Ui_MainWindow):
         if QMessageBox.Ok == ret:
             self.portfolio.closeshort()
             QMetaObject.invokeMethod(self.sindexmodel, "updaterow", Qt.QueuedConnection)
+            self.savePortfolio()
 
     @pyqtSlot()
     def cancelclose(self):
@@ -2448,6 +2455,7 @@ class uicontrol(Ui_MainWindow):
         if QMessageBox.Ok == ret:
             self.portfolio.cancelcloseshort()
             QMetaObject.invokeMethod(self.sindexmodel, "updaterow", Qt.QueuedConnection)
+            self.savePortfolio()
 
     @pyqtSlot()
     def savePortfolio(self):
