@@ -137,6 +137,10 @@ def main(args):
     #pupdater = PortfolioUpdater("172.30.4.165", 21888, p, pmodel)
     pupdater.start()
 
+    # run SecuInfoUpdater
+    siupdter = SecuInfoUpdater(p, pmodel, session_config)
+    siupdter.start()
+
     # run the order info updater
     orderupdater = OrderUpdater(p, pmodel, session_config, updtlock)
     orderupdater.start()
@@ -191,6 +195,11 @@ def main(args):
     pupdater.join()
     orderupdater.join()
     logger.info("updater threads stopped.")
+
+    logger.info("waiting SecuInfoUpdater to stop")
+    siupdter.stop()
+    siupdter.join()
+
     logger.info("waiting jzWorkers to finalize jobs")
     # next line ensures all async request will be executed before exit.
     tqueue.join()

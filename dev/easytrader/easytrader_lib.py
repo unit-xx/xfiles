@@ -319,7 +319,10 @@ class Portfolio(object):
                 #"dealprice", "latestprice", "order_date", "order_time",
                 "close", "open",
                 "latestprice", "tobuyprice", "tosellprice",
-                "currentbuycount", "currentbuycost", "currentsellcount", "currentsellgain", "state"]
+                "currentbuycount", "currentbuycost",
+                "currentsellcount", "currentsellgain",
+                "state",
+                "stopped"]
         assert set(self.stockmodelattr) <= set(self.stockattr)
 
         self.stockattrnamemap = {
@@ -1687,6 +1690,68 @@ class PortfolioUpdater_net(Thread):
         except Exception:
             self.logger.exception("Oh!!!")
 
+class SecuInfoUpdater(Thread):
+    def __init__(self, portfolio, pmodel, sessioncfg):
+        """
+        Update floor/ceiling price and stop flag,
+        I think updater lock is not needed here
+        """
+        Thread.__init__(self)
+        self.portfolio = portfolio
+        self.pmodel = pmodel
+        self.sessioncfg = sessioncfg
+        self.session = None
+        self.runflag = True
+        self.logger = logging.getLogger()
+        self.name = self.__class__.__name__
+
+    def update(self):
+        rowindex = -1
+        for scode in self.portfolio.stocklist:
+            rowindex += 1
+            si = self.portfolio.stockinfo[scode]
+            sireq = jz.SecuInfoReq(self.session)
+            mkt = si["market"]
+            code = si["code"]
+            if mkt == "SH":
+                sireq["market"] = jz.SHAMARKET
+            elif mkt == "SZ":
+                sireq["market"] = jz.SZAMARKET
+            sireq["secu_code"] = code
+            sireq.send()
+            siresp = jz.SecuInfoResp(self.session)
+            siresp.recv()
+            if siresp.retcode == "0":
+                si["ceiling"] = float(siresp.records[0][10])
+                si["floor"] = float(siresp.records[0][11])
+                si["stopped"] = (siresp.records[0][12] == "1")
+                QMetaObject.invokeMethod(self.pmodel, "updaterow", Qt.QueuedConnection,
+                        Q_ARG("int", rowindex))
+
+    def stop(self):
+        self.runflag = False
+
+    def close(self):
+        if self.session:
+            self.session.close()
+            self.session = None
+
+    def run(self):
+        try:
+            self.session = jz.session(self.sessioncfg)
+            if not self.session.setup():
+                self.logger.warning("Session setup failed.")
+                self.close()
+                return
+
+            while self.runflag:
+                self.update()
+                time.sleep(300)# 5mins
+
+            self.close()
+        except Exception:
+            self.logger.exception("Oh!!!")
+
 class SIFPriceUpdater_poll(Thread):
     def __init__(self, portfolio, sindexmodel, jsdcfg, uic):
         Thread.__init__(self)
@@ -2102,6 +2167,7 @@ class SIFOrderPushee(Thread):
             data = ""
             if length > 0:
                 data = self.conn.recv(length)
+                data = data.decode("GBK")
             hdl = self.msghandler[cmd]
             with self.sindexlock:
                 # TODO: race condition may exist between operations caused by buttons, e.g. open/close/cancel
