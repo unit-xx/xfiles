@@ -1107,7 +1107,7 @@ class Portfolio(object):
         with self.sindexlock:
             if self.sindexinfo["state"] in (Portfolio.IFUNORDERED, Portfolio.IFCANCELOPENSHORTOK):
                 oreq = jsd.OrderReq(self.jsdsession)
-                oreq["exchcode"] = jsd.CFFEXCODE
+                oreq["exchcode"] = self.jsdsession["cffexcode"]
                 oreq["code"] = self.sindexinfo["code"]
                 oreq["longshort"] = "1"
                 oreq["openclose"] = "0"
@@ -1170,7 +1170,7 @@ class Portfolio(object):
                     assert orec is not None
 
                     coreq = jsd.CancelOrderReq(self.jsdsession)
-                    coreq["exchcode"] = jsd.CFFEXCODE
+                    coreq["exchcode"] = self.jsdsession["cffexcode"]
                     coreq["code"] = si["code"]
                     coreq["longshort"] = orec["longshort"]
                     coreq["openclose"] = orec["openclose"]
@@ -1238,7 +1238,7 @@ class Portfolio(object):
 
                 if candoclose:
                     oreq = jsd.OrderReq(self.jsdsession)
-                    oreq["exchcode"] = jsd.CFFEXCODE
+                    oreq["exchcode"] = self.jsdsession["cffexcode"]
                     oreq["code"] = self.sindexinfo["code"]
                     oreq["longshort"] = "0"
                     oreq["openclose"] = "1"
@@ -1299,7 +1299,7 @@ class Portfolio(object):
                     assert orec is not None
 
                     coreq = jsd.CancelOrderReq(self.jsdsession)
-                    coreq["exchcode"] = jsd.CFFEXCODE
+                    coreq["exchcode"] = self.jsdsession["cffexcode"]
                     coreq["code"] = si["code"]
                     coreq["longshort"] = orec["longshort"]
                     coreq["openclose"] = orec["openclose"]
@@ -2586,7 +2586,7 @@ class basediffUpdater(Thread):
                 # update selected stock index
                 # TODO: use hq pushee
                 hqreq = jsd.QueryHQReq(self.jsdsession)
-                hqreq["exchcode"] = jsd.CFFEXCODE
+                hqreq["exchcode"] = self.jsdsession["cffexcode"]
                 hqreq["code"] = self.sicontracts[self.uic.sindexcmbox.currentIndex()]
                 hqreq.send()
                 hqresp = jsd.QueryHQResp(self.jsdsession)

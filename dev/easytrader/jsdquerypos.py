@@ -8,6 +8,7 @@ session_config["jsdaccount"] = "9201"
 session_config["jsdpasswd"] = "123"
 session_config["branchcode"] = ""
 session_config["ordermethod"] = ""
+session_config["cffexcode"] = "G"
 
 # login
 s = jsd.session(session_config)

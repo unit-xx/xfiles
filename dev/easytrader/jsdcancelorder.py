@@ -8,6 +8,7 @@ session_config["jsdaccount"] = "9201"
 session_config["jsdpasswd"] = "123"
 session_config["branchcode"] = ""
 session_config["ordermethod"] = ""
+session_config["cffexcode"] = "G"
 
 # login
 s = jsd.session(session_config)
@@ -16,7 +17,7 @@ if not s.setup():
     sys.exit(1)
 
 coreq = jsd.CancelOrderReq(s)
-coreq["exchcode"] = jsd.CFFEXCODE
+coreq["exchcode"] = s["cffexcode"]
 coreq["code"] = "IF1006"
 coreq["longshort"] = "1"
 coreq["openclose"] = "0"

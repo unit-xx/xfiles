@@ -5,8 +5,6 @@ import datetime
 import sqlite3 as db
 import logging
 
-CFFEXCODE = "D"
-
 class session:
     def __init__(self, sessioncfg):
         self.sessioncfg = sessioncfg
@@ -37,6 +35,7 @@ class session:
         self["jsdpasswd"] = self.sessioncfg["jsdpasswd"]
         self["branchcode"] = self.sessioncfg["branchcode"]
         self["ordermethod"] = self.sessioncfg["ordermethod"]
+        self["cffexcode"] = self.sessioncfg["cffexcode"]
 
         try:
             loginreq = LoginReq(self)
@@ -48,7 +47,7 @@ class session:
                 return False
 
             getcnreq = GetClientNumReq(self)
-            getcnreq["exchcode"] = CFFEXCODE
+            getcnreq["exchcode"] = self["cffexcode"]
             getcnreq.send()
             getcnresp = GetClientNumResp(self)
             getcnresp.recv()

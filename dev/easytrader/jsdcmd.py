@@ -10,6 +10,7 @@ session_config["jsdaccount"] = "9201"
 session_config["jsdpasswd"] = "123"
 session_config["branchcode"] = ""
 session_config["ordermethod"] = ""
+session_config["cffexcode"] = "G"
 
 # global control flag
 cancelorder = False
@@ -53,7 +54,7 @@ print hqresp.records
 print
 
 getcnreq = jsd.GetClientNumReq(s)
-getcnreq["exchcode"] = jsd.CFFEXCODE
+getcnreq["exchcode"] = s["cffexcode"]
 getcnreq.send()
 getcnresp = jsd.GetClientNumResp(s)
 getcnresp.recv()
@@ -63,7 +64,7 @@ print
 
 if doorder:
     oreq = jsd.OrderReq(s)
-    oreq["exchcode"] = jsd.CFFEXCODE
+    oreq["exchcode"] = s["cffexcode"]
     oreq["code"] = "IF1006"
     oreq["longshort"] = "0"
     oreq["openclose"] = "0"
