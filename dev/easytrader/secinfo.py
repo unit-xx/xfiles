@@ -19,7 +19,7 @@ if not s.setup():
 
 sireq = jz.SecuInfoReq(s)
 sireq["market"] = jz.SHAMARKET
-sireq["secu_code"] = "601398"
+sireq["secu_code"] = "600350"
 sireq.send()
 siresp = jz.SecuInfoResp(s)
 siresp.recv()

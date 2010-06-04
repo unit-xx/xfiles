@@ -9,7 +9,7 @@ import Queue
 import ConfigParser
 #from mx import Queue
 import cProfile
-from threading import Thread, currentThread, Lock
+from threading import Thread, currentThread, Lock, Event
 from binascii import unhexlify
 from struct import pack, unpack
 import time
@@ -54,29 +54,40 @@ class PortfolioModel(QAbstractTableModel):
     def data(self, index, role):
         if not index.isValid():
             return QVariant()
-        elif role != Qt.DisplayRole:
-            return QVariant()
-        rowkey = self.portfolio.stocklist[index.row()]
-        columnkey = self.portfolio.stockmodelattr[index.column()]
-        try:
-            rawdata = self.portfolio.stockinfo[rowkey][columnkey]
-            if not isinstance(rawdata, unicode):# expect rawdata as numbers here
-                rawdata = str(rawdata)
-            celldata = QString(rawdata)
-            return QVariant(celldata)
-        except KeyError:
-            if columnkey == "state":
-                si = self.portfolio.stockinfo[rowkey]
-                rawdata = ""
-                if len(si["pastsell"]) > 0:
-                    rawdata = si["pastsell"][-1]["order_state"]
-                elif len(si["pastbuy"]) > 0:
-                    rawdata = si["pastbuy"][-1]["order_state"]
-                if rawdata != "":
-                    rawdata = self.portfolio.stockstatemap[rawdata]
-                return QVariant(QString(rawdata))
-            else:
-                return QVariant()
+
+        if role == Qt.DisplayRole:
+            rowkey = self.portfolio.stocklist[index.row()]
+            columnkey = self.portfolio.stockmodelattr[index.column()]
+            try:
+                rawdata = self.portfolio.stockinfo[rowkey][columnkey]
+                if not isinstance(rawdata, unicode):# expect rawdata as numbers here
+                    rawdata = str(rawdata)
+                celldata = QString(rawdata)
+                return QVariant(celldata)
+            except KeyError:
+                if columnkey == "state":
+                    # "state" is special, it's not a real key in si
+                    # but virtual. It represent the state of last
+                    # operation on a stock.
+                    si = self.portfolio.stockinfo[rowkey]
+                    rawdata = ""
+                    if len(si["pastsell"]) > 0:
+                        rawdata = si["pastsell"][-1]["order_state"]
+                    elif len(si["pastbuy"]) > 0:
+                        rawdata = si["pastbuy"][-1]["order_state"]
+                    if rawdata != "":
+                        rawdata = self.portfolio.stockstatemap[rawdata]
+                    return QVariant(QString(rawdata))
+        elif role == Qt.BackgroundRole:
+            rowkey = self.portfolio.stocklist[index.row()]
+            si = self.portfolio.stockinfo[rowkey]
+            try:
+                if si["stopped"] == True:
+                    return QVariant(QColor(Qt.gray))
+            except KeyError:
+                pass
+
+        return QVariant()
 
     @pyqtSlot(int)
     def updaterow(self, rowindex):
@@ -321,8 +332,7 @@ class Portfolio(object):
                 "latestprice", "tobuyprice", "tosellprice",
                 "currentbuycount", "currentbuycost",
                 "currentsellcount", "currentsellgain",
-                "state",
-                "stopped"]
+                "state"]
         assert set(self.stockmodelattr) <= set(self.stockattr)
 
         self.stockattrnamemap = {
@@ -1702,6 +1712,7 @@ class SecuInfoUpdater(Thread):
         self.sessioncfg = sessioncfg
         self.session = None
         self.runflag = True
+        self.evt = Event()
         self.logger = logging.getLogger()
         self.name = self.__class__.__name__
 
@@ -1730,6 +1741,7 @@ class SecuInfoUpdater(Thread):
 
     def stop(self):
         self.runflag = False
+        self.evt.set()
 
     def close(self):
         if self.session:
@@ -1746,7 +1758,7 @@ class SecuInfoUpdater(Thread):
 
             while self.runflag:
                 self.update()
-                time.sleep(300)# 5mins
+                self.evt.wait(300)#5mins
 
             self.close()
         except Exception:
