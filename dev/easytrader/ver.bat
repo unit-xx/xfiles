@@ -1,1 +1,1 @@
-SubWCRev.exe . VERSION.tmpl VERSION -f
+SubWCRev.exe . VERSION.tmpl VERSION.py -f
