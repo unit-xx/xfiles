@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'tradeui.ui'
 #
-# Created: Thu Jun 03 13:36:49 2010
+# Created: Sat Jun 05 22:24:36 2010
 #      by: PyQt4 UI code generator 4.7.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -307,7 +307,7 @@ class Ui_MainWindow(object):
         self.basediffline.setObjectName("basediffline")
         self.gridLayout_5.addWidget(self.basediffline, 0, 6, 1, 1)
         spacerItem2 = QtGui.QSpacerItem(383, 0, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
-        self.gridLayout_5.addItem(spacerItem2, 0, 12, 1, 1)
+        self.gridLayout_5.addItem(spacerItem2, 0, 13, 1, 1)
         self.basediffperline = QtGui.QLineEdit(self.groupBox_3)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(1)
@@ -362,6 +362,10 @@ class Ui_MainWindow(object):
         self.label_14.setSizePolicy(sizePolicy)
         self.label_14.setObjectName("label_14")
         self.gridLayout_5.addWidget(self.label_14, 0, 9, 1, 1)
+        self.playsignalchk = QtGui.QCheckBox(self.groupBox_3)
+        self.playsignalchk.setChecked(True)
+        self.playsignalchk.setObjectName("playsignalchk")
+        self.gridLayout_5.addWidget(self.playsignalchk, 0, 12, 1, 1)
         self.gridLayout_6.addWidget(self.groupBox_3, 2, 0, 1, 1)
         self.stock = QtGui.QTableView(self.centralwidget)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
@@ -383,7 +387,7 @@ class Ui_MainWindow(object):
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtGui.QMenuBar(MainWindow)
         self.menubar.setEnabled(True)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 1106, 19))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 1106, 18))
         self.menubar.setNativeMenuBar(True)
         self.menubar.setObjectName("menubar")
         self.menu = QtGui.QMenu(self.menubar)
@@ -445,6 +449,7 @@ class Ui_MainWindow(object):
         self.label_13.setText(QtGui.QApplication.translate("MainWindow", "建仓信号阈值", None, QtGui.QApplication.UnicodeUTF8))
         self.openthresholdspin.setSuffix(QtGui.QApplication.translate("MainWindow", " %", None, QtGui.QApplication.UnicodeUTF8))
         self.label_14.setText(QtGui.QApplication.translate("MainWindow", "%   ", None, QtGui.QApplication.UnicodeUTF8))
+        self.playsignalchk.setText(QtGui.QApplication.translate("MainWindow", "报警", None, QtGui.QApplication.UnicodeUTF8))
         self.menu.setTitle(QtGui.QApplication.translate("MainWindow", "查看", None, QtGui.QApplication.UnicodeUTF8))
         self.stockinfoact.setText(QtGui.QApplication.translate("MainWindow", "股份查询", None, QtGui.QApplication.UnicodeUTF8))
         self.posstatact.setText(QtGui.QApplication.translate("MainWindow", "持仓统计", None, QtGui.QApplication.UnicodeUTF8))

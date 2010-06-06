@@ -3,6 +3,7 @@
 import os, sys
 import csv
 import zlib
+import random
 import socket
 import pickle
 import Queue
@@ -24,6 +25,7 @@ from dbfpy import dbf
 from PyQt4 import Qt
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
+from PyQt4.phonon import *
 from tradeui import Ui_MainWindow
 from stockquery import stockquerydlg
 from positioninfo import positioninfodlg
@@ -2415,7 +2417,6 @@ class uicontrol(Ui_MainWindow):
         self.pmodel = pmodel
         self.sindexmodel = sindexmodel
         self.portfolio.uic = self
-
         self.logger = logging.getLogger()
 
     def setup(self):
@@ -2636,16 +2637,32 @@ class basediffUpdater(Thread):
         self.hs300code = "SH000300"
         self.pupdter.addhook(self.hs300code)
 
+        self.m_media = Phonon.MediaObject(self.uic.mainwindow)
+        audioOutput = Phonon.AudioOutput(Phonon.MusicCategory,
+                self.uic.mainwindow)
+        Phonon.createPath(self.m_media, audioOutput)
+        self.playsignal = self.uic.playsignalchk.isChecked()
+        self.uic.mainwindow.connect(self.uic.playsignalchk,
+                SIGNAL("stateChanged(int)"), self.setplay)
+        self.uic.mainwindow.connect(self.m_media,
+                SIGNAL("aboutToFinish()"), self.addsong)
+
         self.name = self.__class__.__name__
         self.logger = logging.getLogger()
 
     def run(self):
         try:
+
             self.jsdsession = jsd.session(self.jsdcfg)
             if not self.jsdsession.setup():
                 self.logger.warning("jsd session setup failed.")
                 return
             
+            musicdir = u"music"
+            self.musicfn = random.choice(os.listdir(musicdir))
+            self.m_media.setCurrentSource(QString(os.path.join(musicdir,
+                self.musicfn)))
+
             # TODO: read contracts and fill stock index combobox.
             self.sicontracts = ['IF1006', 'IF1007', 'IF1009', 'IF1012']
             for sindex in self.sicontracts:
@@ -2695,15 +2712,39 @@ class basediffUpdater(Thread):
                 if basediffper >= openthreshold:
                     QMetaObject.invokeMethod(self.uic.openthresholdspin, "setStyleSheet",
                             Qt.QueuedConnection, Q_ARG("QString", QString(str("background-color: rgb(255, 0, 0);"))))
+                    self.play()
                 else:
                     QMetaObject.invokeMethod(self.uic.openthresholdspin, "setStyleSheet",
                             Qt.QueuedConnection, Q_ARG("QString", QString(str("background-color: rgb(255, 255, 255);"))))
+                    self.stopplay()
 
         except Exception:
             self.logger.exception("Oh!!!")
 
     def stop(self):
         self.runflag = False
+
+    @pyqtSlot(int)
+    def setplay(self, state):
+        self.playsignal = self.uic.playsignalchk.isChecked()
+        if self.playsignal:
+            self.play()
+        else:
+            self.pause()
+
+    @pyqtSlot()
+    def addsong(self):
+        self.m_media.enqueue(QString(os.path.join(musicdir,
+            self.musicfn)))
+
+    @pyqtSlot()
+    def play(self):
+        if self.playsignal:
+            self.m_media.play()
+
+    @pyqtSlot()
+    def stopplay(self):
+        self.m_media.pause()
 
 def testslot(t):
     print t

@@ -637,7 +637,7 @@
          </property>
         </widget>
        </item>
-       <item row="0" column="12">
+       <item row="0" column="13">
         <spacer name="horizontalSpacer_3">
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
@@ -769,6 +769,16 @@
          </property>
         </widget>
        </item>
+       <item row="0" column="12">
+        <widget class="QCheckBox" name="playsignalchk">
+         <property name="text">
+          <string>报警</string>
+         </property>
+         <property name="checked">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
       </layout>
      </widget>
     </item>
@@ -809,7 +819,7 @@
      <x>0</x>
      <y>0</y>
      <width>1106</width>
-     <height>19</height>
+     <height>18</height>
     </rect>
    </property>
    <property name="nativeMenuBar">
