@@ -2642,10 +2642,13 @@ class basediffUpdater(Thread):
                 self.uic.mainwindow)
         Phonon.createPath(self.m_media, audioOutput)
         self.playsignal = self.uic.playsignalchk.isChecked()
-        self.uic.mainwindow.connect(self.uic.playsignalchk,
-                SIGNAL("stateChanged(int)"), self.setplay)
-        self.uic.mainwindow.connect(self.m_media,
-                SIGNAL("aboutToFinish()"), self.addsong)
+        self.uic.mainwindow.connect(self.uic.playsignalchk, SIGNAL("stateChanged(int)"), self.setplay)
+        self.uic.mainwindow.connect(self.m_media, SIGNAL("aboutToFinish()"), self.addsong)
+
+        musicdir = u"music"
+        self.musicfn = random.choice(os.listdir(musicdir))
+        self.m_media.setCurrentSource(Phonon.MediaSource(os.path.join(musicdir,
+            self.musicfn)))
 
         self.name = self.__class__.__name__
         self.logger = logging.getLogger()
@@ -2658,11 +2661,6 @@ class basediffUpdater(Thread):
                 self.logger.warning("jsd session setup failed.")
                 return
             
-            musicdir = u"music"
-            self.musicfn = random.choice(os.listdir(musicdir))
-            self.m_media.setCurrentSource(Phonon.MediaSource(os.path.join(musicdir,
-                self.musicfn)))
-
             # TODO: read contracts and fill stock index combobox.
             self.sicontracts = ['IF1006', 'IF1007', 'IF1009', 'IF1012']
             for sindex in self.sicontracts:
@@ -2733,8 +2731,7 @@ class basediffUpdater(Thread):
 
     @pyqtSlot()
     def addsong(self):
-        self.m_media.enqueue(Phonon.MediaSource(os.path.join(musicdir,
-            self.musicfn)))
+        self.m_media.enqueue(Phonon.MediaSource(os.path.join(musicdir, self.musicfn)))
 
     @pyqtSlot()
     def play(self):
