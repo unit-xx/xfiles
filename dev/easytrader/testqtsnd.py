@@ -4,7 +4,7 @@ import sys
 
 from PyQt4.QtGui import QApplication, QMainWindow, QDirModel, QColumnView
 from PyQt4.QtGui import QFrame
-from PyQt4.QtCore import SIGNAL
+from PyQt4.QtCore import *
 from PyQt4.phonon import Phonon
 
 class MainWindow(QMainWindow):
@@ -27,6 +27,9 @@ class MainWindow(QMainWindow):
         for c in cl:
             print c
         
+    @pyqtSlot(int)
+    def showtick(self, t):
+        print t
 
     def play(self, index):
         self.delayedInit()
@@ -40,6 +43,8 @@ class MainWindow(QMainWindow):
             self.m_media = Phonon.MediaObject(self)
             audioOutput = Phonon.AudioOutput(Phonon.MusicCategory, self)
             Phonon.createPath(self.m_media, audioOutput)
+            self.m_media.setTickInterval(1000)
+            self.connect(self.m_media, SIGNAL("tick(int)"), self.showtick)
 
 def main():
     app = QApplication(sys.argv)
