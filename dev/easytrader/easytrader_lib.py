@@ -2660,7 +2660,7 @@ class basediffUpdater(Thread):
             
             musicdir = u"music"
             self.musicfn = random.choice(os.listdir(musicdir))
-            self.m_media.setCurrentSource(QString(os.path.join(musicdir,
+            self.m_media.setCurrentSource(Phonon.MediaSource(os.path.join(musicdir,
                 self.musicfn)))
 
             # TODO: read contracts and fill stock index combobox.
@@ -2723,18 +2723,17 @@ class basediffUpdater(Thread):
 
     def stop(self):
         self.runflag = False
+        self.stopplay()
 
     @pyqtSlot(int)
     def setplay(self, state):
         self.playsignal = self.uic.playsignalchk.isChecked()
-        if self.playsignal:
-            self.play()
-        else:
-            self.pause()
+        if not self.playsignal:
+            self.stopplay()
 
     @pyqtSlot()
     def addsong(self):
-        self.m_media.enqueue(QString(os.path.join(musicdir,
+        self.m_media.enqueue(Phonon.MediaSource(os.path.join(musicdir,
             self.musicfn)))
 
     @pyqtSlot()
