@@ -1,9 +1,13 @@
 from cx_Freeze import setup, Executable
+import os, sys
 
+def backenddir():
+    pypath = os.path.join(sys.prefix, "Lib\site-packages\PyQt4\plugins\phonon_backend")
+    return pypath
 
 buildOptions = dict(
         icon = "ztzq.ico",
-        include_files = ["shmap.pkl", "szmap.pkl", "tradeinfo.db", "ztzq.ico", "hs300.txt", "easytrader.cfg", "easytrader-prod.cfg", "portfolio", "msvcr_redist", "jsdhqdll", "music"],
+        include_files = ["shmap.pkl", "szmap.pkl", "tradeinfo.db", "ztzq.ico", "hs300.txt", "easytrader.cfg", "easytrader-prod.cfg", "portfolio", "msvcr_redist", "jsdhqdll", "music", (backenddir(), "phonon_backend")],
         compressed = True,
         optimize = 2)
 
