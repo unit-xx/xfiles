@@ -27,7 +27,7 @@ class MainWindow(QMainWindow):
         for c in cl:
             print c
         
-    @pyqtSlot(int)
+    @pyqtSlot(long)
     def showtick(self, t):
         print t
 
@@ -44,7 +44,7 @@ class MainWindow(QMainWindow):
             audioOutput = Phonon.AudioOutput(Phonon.MusicCategory, self)
             Phonon.createPath(self.m_media, audioOutput)
             self.m_media.setTickInterval(1000)
-            self.connect(self.m_media, SIGNAL("tick(int)"), self.showtick)
+            print self.connect(self.m_media, SIGNAL("tick(qint64)"), self.showtick)
 
 def main():
     app = QApplication(sys.argv)
