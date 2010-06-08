@@ -627,7 +627,7 @@ class Portfolio(object):
                 orec = OrderRecord()
                 orec["order_state"] = Portfolio.UNORDERED
                 orec["ordercount"] = str( round100(int(si["count"]) - si["pastbuycount"]) )
-                orec["orderprice"] = si["tobuyprice"]
+                orec["orderprice"] = "%0.3f" % si["tobuyprice"]
                 si["pastbuy"].append(orec)
 
                 param = {}
@@ -641,7 +641,7 @@ class Portfolio(object):
                 param["account"] = self.session["account"]
                 param["secu_code"] = si["code"]
                 param["trd_id"] = trdcode
-                param["price"] = "%0.3f" % orec["orderprice"]
+                param["price"] = orec["orderprice"]
                 param["qty"] = orec["ordercount"]
                 self.tqueue.put( (reqclass, respclass, param, self.buyBatchBottom, True) )
 
@@ -670,7 +670,7 @@ class Portfolio(object):
                     orec = OrderRecord()
                     orec["order_state"] = Portfolio.UNORDERED
                     orec["ordercount"] = str( round100(int(si["count"]) - si["pastbuycount"]) )
-                    orec["orderprice"] = si["tobuyprice"]
+                    orec["orderprice"] = "%0.3f" % si["tobuyprice"]
                     si["pastbuy"].append(orec)
 
                     param = {}
@@ -684,7 +684,7 @@ class Portfolio(object):
                     param["account"] = self.session["account"]
                     param["secu_code"] = si["code"]
                     param["trd_id"] = trdcode
-                    param["price"] = "%0.3f" % orec["orderprice"]
+                    param["price"] = orec["orderprice"]
                     param["qty"] = orec["ordercount"]
                     self.tqueue.put( (reqclass, respclass, param, self.buyBatchBottom, True) )
 
@@ -890,7 +890,7 @@ class Portfolio(object):
                     orec = OrderRecord()
                     orec["order_state"] = Portfolio.UNORDERED
                     orec["ordercount"] = str( si["pastbuycount"] - si["pastsellcount"] )
-                    orec["orderprice"] = si["tosellprice"]
+                    orec["orderprice"] = "%0.3f" % si["tosellprice"]
                     si["pastsell"].append(orec)
 
                     param = {}
@@ -904,7 +904,7 @@ class Portfolio(object):
                     param["account"] = self.session["account"]
                     param["secu_code"] = si["code"]
                     param["trd_id"] = trdcode
-                    param["price"] = "%0.3f" % orec["orderprice"]
+                    param["price"] = orec["orderprice"]
                     param["qty"] = orec["ordercount"]
                     self.tqueue.put( (reqclass, respclass, param, self.sellBatchBottom, True) )
             if self.bocount == 0:
@@ -949,7 +949,7 @@ class Portfolio(object):
                     orec = OrderRecord()
                     orec["order_state"] = Portfolio.UNORDERED
                     orec["ordercount"] = str( si["pastbuycount"] - si["pastsellcount"] )
-                    orec["orderprice"] = si["tosellprice"]
+                    orec["orderprice"] = "%0.3f" % si["tosellprice"]
                     si["pastsell"].append(orec)
 
                     param = {}
@@ -963,7 +963,7 @@ class Portfolio(object):
                     param["account"] = self.session["account"]
                     param["secu_code"] = si["code"]
                     param["trd_id"] = trdcode
-                    param["price"] = "%0.3f" % orec["orderprice"]
+                    param["price"] = orec["orderprice"]
                     param["qty"] = orec["ordercount"]
                     self.tqueue.put( (reqclass, respclass, param, self.sellBatchBottom, True) )
             if self.bocount == 0:
@@ -993,7 +993,7 @@ class Portfolio(object):
                     orec = OrderRecord()
                     orec["order_state"] = Portfolio.UNORDERED
                     orec["ordercount"] = str( si["pastbuycount"] - si["pastsellcount"] )
-                    orec["orderprice"] = si["tosellprice"]
+                    orec["orderprice"] = "%0.3f" % si["tosellprice"]
                     si["pastsell"].append(orec)
 
                     param = {}
@@ -1007,7 +1007,7 @@ class Portfolio(object):
                     param["account"] = self.session["account"]
                     param["secu_code"] = si["code"]
                     param["trd_id"] = trdcode
-                    param["price"] = "%0.3f" % orec["orderprice"]
+                    param["price"] = orec["orderprice"]
                     param["qty"] = orec["ordercount"]
                     self.tqueue.put( (reqclass, respclass, param, self.sellBatchBottom, True) )
             if self.bocount == 0:
