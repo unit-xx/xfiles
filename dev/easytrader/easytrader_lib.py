@@ -331,7 +331,8 @@ class Portfolio(object):
                 #"order_state", "ordercount", "dealcount", "orderprice",
                 #"dealprice", "latestprice", "order_date", "order_time",
                 "close", "open",
-                "latestprice", "tobuyprice", "tosellprice",
+                "latestprice", "ceiling", "floor",
+                "tobuyprice", "tosellprice",
                 "currentbuycount", "currentbuycost",
                 "currentsellcount", "currentsellgain",
                 "state"]
@@ -351,7 +352,9 @@ class Portfolio(object):
                 "currentbuycost":u"买入成本",
                 "currentsellcount":u"卖出量",
                 "currentsellgain":u"卖出获利",
-                "state":u"操作状态"
+                "state":u"操作状态",
+                "ceiling":u"涨停",
+                "floor":u"跌停"
                 }
         # price policies
         self.pricepolicylist = ["latest", "s5", "s4", "s3", "s2", "s1", "b1", "b2", "b3", "b4", "b5"]
@@ -589,6 +592,8 @@ class Portfolio(object):
             return False
         if si["tosellprice"] > si["ceiling"] or si["tosellprice"] < si["floor"]:
             return False
+        if si["tobuyprice"] == 0 or si["tosellprice"] == 0:
+            return False
         return True
 
     def buyBatchTop(self):
@@ -640,6 +645,9 @@ class Portfolio(object):
                 param["qty"] = orec["ordercount"]
                 self.tqueue.put( (reqclass, respclass, param, self.buyBatchBottom, True) )
 
+            if self.bocount == 0:
+                self.logger.info("not stock to buy.")
+                self.bostate = Portfolio.BOUNORDERED
             #assert len(self.stockinfo) == self.bocount
             # assert not true on stopped stocks
 
