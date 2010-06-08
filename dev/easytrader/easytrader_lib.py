@@ -2682,6 +2682,7 @@ class basediffUpdater(Thread):
         self.uic.mainwindow.connect(self.m_media, SIGNAL("aboutToFinish()"), self.addsong)
 
         musicdir = u"music"
+        self.musicdir = musicdir
         self.musicfn = random.choice(os.listdir(musicdir))
         self.m_media.setCurrentSource(Phonon.MediaSource(os.path.join(musicdir,
             self.musicfn)))
@@ -2767,7 +2768,8 @@ class basediffUpdater(Thread):
 
     @pyqtSlot()
     def addsong(self):
-        self.m_media.enqueue(Phonon.MediaSource(os.path.join(musicdir, self.musicfn)))
+        self.musicfn = random.choice(os.listdir(self.musicdir))
+        self.m_media.enqueue(Phonon.MediaSource(os.path.join(self.musicdir, self.musicfn)))
 
     @pyqtSlot()
     def play(self):
