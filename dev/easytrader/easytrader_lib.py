@@ -580,6 +580,17 @@ class Portfolio(object):
             f.flush()
             f.close()
 
+    def isvalidorder(self, si, scode):
+        if si["stopped"]:
+            return False
+        if int(si["count"]) < 100:
+            return False
+        if si["tobuyprice"] > si["ceiling"] or si["tobuyprice"] < si["floor"]:
+            return False
+        if si["tosellprice"] > si["ceiling"] or si["tosellprice"] < si["floor"]:
+            return False
+        return True
+
     def buyBatchTop(self):
         self.bolock.acquire()
         self.logger.info("batch buying")
@@ -595,6 +606,9 @@ class Portfolio(object):
             trdcode = "0B"
             for scode in self.stocklist:
                 si = self.stockinfo[scode]
+                if not self.isvalidorder(si, scode):
+                    continue
+
                 assert si["pastbuy"] == []
                 assert si["pastsell"] == []
                 assert si["pastbuycount"] == 0
@@ -626,7 +640,8 @@ class Portfolio(object):
                 param["qty"] = orec["ordercount"]
                 self.tqueue.put( (reqclass, respclass, param, self.buyBatchBottom, True) )
 
-            assert len(self.stockinfo) == self.bocount
+            #assert len(self.stockinfo) == self.bocount
+            # assert not true on stopped stocks
 
         elif self.bostate == Portfolio.BOBUYCANCELED:
             # re-buy: only buy stock in CANCELBUYSUCCESS state
@@ -638,6 +653,9 @@ class Portfolio(object):
             trdcode = "0B"
             for scode in self.stocklist:
                 si = self.stockinfo[scode]
+                if not self.isvalidorder(si, scode):
+                    continue
+
                 if si["pastbuy"][-1]["order_state"] == Portfolio.CANCELBUYSUCCESS:
                     self.bocount = self.bocount + 1
 
@@ -854,6 +872,9 @@ class Portfolio(object):
             self.bocount = 0
             for scode in self.stocklist:
                 si = self.stockinfo[scode]
+                if not self.isvalidorder(si, scode):
+                    continue
+
                 orec = si["pastbuy"][-1]
                 if orec["order_state"] == Portfolio.BUYSUCCESS:
                     # DO sell
@@ -910,6 +931,9 @@ class Portfolio(object):
             self.bocount = 0
             for scode in self.stocklist:
                 si = self.stockinfo[scode]
+                if not self.isvalidorder(si, scode):
+                    continue
+
                 orec = si["pastbuy"][-1]
                 if orec["order_state"] in (Portfolio.BUYSUCCESS, Portfolio.CANCELBUYSUCCESS):
                     # DO sell
@@ -951,6 +975,10 @@ class Portfolio(object):
                     orec = si["pastsell"][-1]
                 except IndexError:
                     continue
+
+                if not self.isvalidorder(si, scode):
+                    continue
+
                 if orec["order_state"] == Portfolio.CANCELSELLSUCCESS:
                     # DO sell
                     self.bocount = self.bocount + 1
