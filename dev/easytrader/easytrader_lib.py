@@ -664,7 +664,8 @@ class Portfolio(object):
                 if not self.isvalidorder(si, scode):
                     continue
 
-                if si["pastbuy"][-1]["order_state"] == Portfolio.CANCELBUYSUCCESS:
+                # there's case that a stock is never ordered, e.g. stopped yestoday.
+                if len(si["pastbuy"]) == 0 or si["pastbuy"][-1]["order_state"] == Portfolio.CANCELBUYSUCCESS:
                     self.bocount = self.bocount + 1
 
                     orec = OrderRecord()
@@ -979,15 +980,10 @@ class Portfolio(object):
             self.bocount = 0
             for scode in self.stocklist:
                 si = self.stockinfo[scode]
-                try:
-                    orec = si["pastsell"][-1]
-                except IndexError:
-                    continue
-
                 if not self.isvalidorder(si, scode):
                     continue
 
-                if orec["order_state"] == Portfolio.CANCELSELLSUCCESS:
+                if len(si["pastsell"]) == 0 or si["pastsell"][-1]["order_state"] == Portfolio.CANCELSELLSUCCESS:
                     # DO sell
                     self.bocount = self.bocount + 1
                     orec = OrderRecord()
