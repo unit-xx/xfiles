@@ -1,0 +1,3 @@
+IF,IF1006,1,空平成功,"[{'cancel_time': '', 'order_time': '09:15:32.273000', 'order_id': u'1519', 'orderseat': u'016802', 'ifhedge': '0', 'openclose': '0', 'orderprice': u'2721.20', 'syscenter': u'0', 'cancel_date': '', 'order_date': '2010-06-09', 'longshort': '1', 'ordercount': u'1'}]","[{'cancel_time': '', 'order_time': '09:15:46.760000', 'order_id': u'1543', 'orderseat': u'016802', 'ifhedge': '0', 'openclose': '1', 'orderprice': u'2721.00', 'syscenter': u'0', 'cancel_date': '', 'order_date': '2010-06-09', 'longshort': '0', 'ordercount': u'1'}]","{u'1519': [(1, 2721.4000000000001)], u'1543': [(1, 2721.0)]}"
+SH,601398,100,[],[]
+BO,未委托
