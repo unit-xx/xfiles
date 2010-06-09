@@ -1,7 +1,10 @@
+import sys
 from cx_Freeze import setup, Executable
 
 buildOptions = dict(
-        include_files = ["quoteserver.cfg", "sindexquoteserver.cfg", "stockquoteserver.cfg"],
+        build-exe = "build\\servers",
+        include_files = ["quoteserver.cfg", "sindexquoteserver.cfg", "stockquoteserver.cfg", "hs300.txt"],
+        #includes = ["jsdhq", "genstockindex"],
         compressed = True,
         optimize = 2)
 
