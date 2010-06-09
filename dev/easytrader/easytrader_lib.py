@@ -583,16 +583,25 @@ class Portfolio(object):
             f.flush()
             f.close()
 
-    def isvalidorder(self, si, scode):
+    def isvalidbuy(self, si, scode):
         if si["stopped"]:
             return False
         if int(si["count"]) < 100:
             return False
         if si["tobuyprice"] > si["ceiling"] or si["tobuyprice"] < si["floor"]:
             return False
+        if si["tobuyprice"] == 0:
+            return False
+        return True
+
+    def isvalidsell(self, si, scode):
+        if si["stopped"]:
+            return False
+        if si["pastbuycount"] <= 0:
+            return False
         if si["tosellprice"] > si["ceiling"] or si["tosellprice"] < si["floor"]:
             return False
-        if si["tobuyprice"] == 0 or si["tosellprice"] == 0:
+        if si["tosellprice"] == 0:
             return False
         return True
 
@@ -611,7 +620,7 @@ class Portfolio(object):
             trdcode = "0B"
             for scode in self.stocklist:
                 si = self.stockinfo[scode]
-                if not self.isvalidorder(si, scode):
+                if not self.isvalidbuy(si, scode):
                     continue
 
                 assert si["pastbuy"] == []
@@ -661,7 +670,7 @@ class Portfolio(object):
             trdcode = "0B"
             for scode in self.stocklist:
                 si = self.stockinfo[scode]
-                if not self.isvalidorder(si, scode):
+                if not self.isvalidbuy(si, scode):
                     continue
 
                 # there's case that a stock is never ordered, e.g. stopped yestoday.
@@ -881,7 +890,7 @@ class Portfolio(object):
             self.bocount = 0
             for scode in self.stocklist:
                 si = self.stockinfo[scode]
-                if not self.isvalidorder(si, scode):
+                if not self.isvalidsell(si, scode):
                     continue
 
                 orec = si["pastbuy"][-1]
@@ -940,7 +949,7 @@ class Portfolio(object):
             self.bocount = 0
             for scode in self.stocklist:
                 si = self.stockinfo[scode]
-                if not self.isvalidorder(si, scode):
+                if not self.isvalidsell(si, scode):
                     continue
 
                 orec = si["pastbuy"][-1]
@@ -980,7 +989,7 @@ class Portfolio(object):
             self.bocount = 0
             for scode in self.stocklist:
                 si = self.stockinfo[scode]
-                if not self.isvalidorder(si, scode):
+                if not self.isvalidsell(si, scode):
                     continue
 
                 if len(si["pastsell"]) == 0 or si["pastsell"][-1]["order_state"] == Portfolio.CANCELSELLSUCCESS:
