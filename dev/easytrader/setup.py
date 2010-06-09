@@ -6,6 +6,7 @@ def backenddir():
     return pypath
 
 buildOptions = dict(
+        build_exe = "build\\easytrader",
         icon = "ztzq.ico",
         include_files = ["shmap.pkl", "szmap.pkl", "tradeinfo.db", "ztzq.ico", "hs300.txt", "easytrader.cfg", "easytrader-prod.cfg", "portfolio", "msvcr_redist", "jsdhqdll", "music", (backenddir(), "phonon_backend")],
         compressed = True,
