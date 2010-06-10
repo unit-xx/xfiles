@@ -2461,6 +2461,16 @@ class uicontrol(QMainWindow, Ui_MainWindow):
         self.portfolio.uic = self
         self.logger = logging.getLogger()
 
+    def closeEvent(self, evt):
+        ret = QMessageBox.warning(self.mainwindow,
+                u"",
+                u"<FONT COLOR='#FF0000'>退出交易？</FONT>",
+                QMessageBox.Ok|QMessageBox.Cancel)
+        if QMessageBox.Ok == ret:
+            evt.accept()
+        else:
+            evt.ignore()
+
     def setup(self):
         self.setupUi(self.mainwindow)
 
