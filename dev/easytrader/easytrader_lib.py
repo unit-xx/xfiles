@@ -702,6 +702,47 @@ class Portfolio(object):
                 self.logger.info("not stock to buy.")
                 self.bostate = Portfolio.BOBUYCANCELED
 
+        elif self.bostate == Portfolio.BOBUYSUCCESS:
+            self.bostate = Portfolio.BOBUYING
+            self.bocount = 0
+
+            reqclass = jz.SubmitOrderReq
+            respclass = jz.SubmitOrderResp
+            trdcode = "0B"
+            for scode in self.stocklist:
+                si = self.stockinfo[scode]
+                if not self.isvalidbuy(si, scode):
+                    continue
+
+                # only buy fresh stocks, e.g. recovered from stop.
+                if len(si["pastbuy"]) == 0:
+                    self.bocount = self.bocount + 1
+
+                    orec = OrderRecord()
+                    orec["order_state"] = Portfolio.UNORDERED
+                    orec["ordercount"] = str( round100(int(si["count"]) - si["pastbuycount"]) )
+                    orec["orderprice"] = "%0.3f" % si["tobuyprice"]
+                    si["pastbuy"].append(orec)
+
+                    param = {}
+                    param["user_code"] = self.session["user_code"]
+                    if si["market"] == "SH":
+                        param["market"] = "10"
+                        param["secu_acc"] = self.session["secu_acc"]["SH"]
+                    elif si["market"] == "SZ":
+                        param["market"] = "00"
+                        param["secu_acc"] = self.session["secu_acc"]["SZ"]
+                    param["account"] = self.session["account"]
+                    param["secu_code"] = si["code"]
+                    param["trd_id"] = trdcode
+                    param["price"] = orec["orderprice"]
+                    param["qty"] = orec["ordercount"]
+                    self.tqueue.put( (reqclass, respclass, param, self.buyBatchBottom, True) )
+
+            if self.bocount == 0:
+                self.logger.info("not stock to buy.")
+                self.bostate = Portfolio.BOBUYSUCCESS
+
         else:
             self.logger.info("not in buy-able state")
 
@@ -1018,6 +1059,46 @@ class Portfolio(object):
             if self.bocount == 0:
                 self.logger.info("no stock to sell")
                 self.bostate = Portfolio.BOSELLCANCELED
+
+        elif self.bostate == Portfolio.BOSELLSUCCESS:
+            # At this point, pastsellxxx should be updated correctly.
+            reqclass = jz.SubmitOrderReq
+            respclass = jz.SubmitOrderResp
+            trdcode = "0S"
+            self.bostate = Portfolio.BOSELLING
+            self.bocount = 0
+            for scode in self.stocklist:
+                si = self.stockinfo[scode]
+                if not self.isvalidsell(si, scode):
+                    continue
+
+                if len(si["pastsell"]) == 0:
+                    # DO sell
+                    self.bocount = self.bocount + 1
+                    orec = OrderRecord()
+                    orec["order_state"] = Portfolio.UNORDERED
+                    orec["ordercount"] = str( si["pastbuycount"] - si["pastsellcount"] )
+                    orec["orderprice"] = "%0.3f" % si["tosellprice"]
+                    si["pastsell"].append(orec)
+
+                    param = {}
+                    param["user_code"] = self.session["user_code"]
+                    if si["market"] == "SH":
+                        param["market"] = "10"
+                        param["secu_acc"] = self.session["secu_acc"]["SH"]
+                    elif si["market"] == "SZ":
+                        param["market"] = "00"
+                        param["secu_acc"] = self.session["secu_acc"]["SZ"]
+                    param["account"] = self.session["account"]
+                    param["secu_code"] = si["code"]
+                    param["trd_id"] = trdcode
+                    param["price"] = orec["orderprice"]
+                    param["qty"] = orec["ordercount"]
+                    self.tqueue.put( (reqclass, respclass, param, self.sellBatchBottom, True) )
+            if self.bocount == 0:
+                self.logger.info("no stock to sell")
+                self.bostate = Portfolio.BOSELLSUCCESS
+
         else:
             self.logger.info("not in sell-able state")
 
