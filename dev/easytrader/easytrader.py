@@ -156,8 +156,7 @@ def main(args):
         workers[i].start()
 
     # main window
-    window = QMainWindow()
-    uic = uicontrol(window, session_config, p, pmodel, sindexmodel)
+    uic = uicontrol(session_config, p, pmodel, sindexmodel)
     uic.setup()
 
     # start stock index price updater
@@ -172,7 +171,7 @@ def main(args):
     bdiffupdter = basediffUpdater(pupdater, jsd_sessioncfg, uic)
     bdiffupdter.start()
 
-    window.show()
+    uic.show()
     app.exec_()
 
     # exit process

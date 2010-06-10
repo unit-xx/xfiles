@@ -2450,9 +2450,10 @@ class jsdWorker(asyncWorker):
             return False
         return True
 
-class uicontrol(Ui_MainWindow):
-    def __init__(self, mainwindow, session_cfg, portfolio, pmodel, sindexmodel):
-        self.mainwindow = mainwindow
+class uicontrol(QMainWindow, Ui_MainWindow):
+    def __init__(self, session_cfg, portfolio, pmodel, sindexmodel):
+        QMainWindow.__init__(self)
+        self.mainwindow = self#for backward code compatibility
         self.session_cfg = session_cfg
         self.portfolio = portfolio
         self.pmodel = pmodel
