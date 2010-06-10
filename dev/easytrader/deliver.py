@@ -30,18 +30,23 @@ class deliverdlg(QDialog, Ui_deliverdlg):
         #if not s.setup():
         #    pass
 
+    @pyqtSlot()
+    def fullcombo(self):
+        self.sindexcmb.addItem(u"你好啊")
+
 class updater(Thread):
     def __init__(self, ui):
         Thread.__init__(self)
         self.ui = ui
 
-    @pyqtSlot()
-    def fullcombo(self):
-
     def run(self):
-        QMetaObject.invokeMethod(self.ui.sindexcmb, "addItem",
-                Qt.QueuedConnection,
-                Q_ARG("QString", QString(u"你好啊")))
+        #QMetaObject.invokeMethod(self.ui.sindexcmb, "addItem",
+        #        Qt.QueuedConnection,
+        #        Q_ARG("QString", QString(u"你好啊")))
+
+        QMetaObject.invokeMethod(self.ui, "fullcombo",
+                Qt.QueuedConnection)
+
         #self.ui.sindexcmb.addItem(u"你好啊")
 
 def main(args):
