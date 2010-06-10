@@ -405,8 +405,8 @@ class QueryOrderResp(response):
         dealprice = 0.0
         # calculate total deal count/amount
         for r in self.records:
-            dealcount = dealcount + int(r[-11])
-            dealamount = dealamount + float(r[-9])
+            dealcount = dealcount + int(r[22])
+            dealamount = dealamount + float(r[24])
         try:
             dealprice = dealamount / dealcount
         except ZeroDivisionError:
