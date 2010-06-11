@@ -1,10 +1,13 @@
 make stock batch order more reliable
 
+  TOBECHECK {
   - individual stock state
-  - some kind of buy/sell/cancel may fail, but should be retried, sooner or later
   - stopped stock
-  - invalid order will be deleted immediately.
   - sell number may be greater than expected
+  }
+
+  - some kind of buy/sell/cancel may fail, but should be retried, sooner or later
+  - invalid order will be deleted immediately.
 
 DONE: internet version of easytrader
 
