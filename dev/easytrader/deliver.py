@@ -14,15 +14,9 @@ from PyQt4.QtCore import *
 import jsd
 from deliverdlg import Ui_deliverdlg
 
-START = datetime.time(13, 00, 00)
-END = datetime.time(15, 00, 00)
-dbfn = "z:\\show2003.dbf"
-hs300code = "000300"
-
 class deliverdlg(QDialog, Ui_deliverdlg):
-    def __init__(self, jsdcfg):
+    def __init__(self):
         QDialog.__init__(self)
-        self.jsdcfg = jsdcfg
 
     def setup(self):
         self.setupUi(self)
@@ -31,19 +25,34 @@ class deliverdlg(QDialog, Ui_deliverdlg):
         #if not s.setup():
         #    pass
 
-    @pyqtSlot()
-    def fullcombo(self):
-        self.sindexcmb.addItem(u"你好啊")
+    @pyqtSlot(QString)
+    def fillcombo(self, item):
+        self.sindexcmb.addItem(item)
 
 class updater(Thread):
-    def __init__(self, ui):
+    def __init__(self, ui, config):
         Thread.__init__(self)
         self.ui = ui
+        self.config = config
+        self.runflag = True
+
+        self.hs300index = ""
+        self.dbsh = None
+        self.jsdsession = None
+
+        self.sindexlist = ["IF1006", "IF1007", "IF1009", "IF1012"]
+
+    def setnotice(self, msg):
+        QMetaObject.invokeMethod(self.ui.statusline, "setText",
+                Qt.QueuedConnection,
+                Q_ARG("QString", QString(msg)))
 
     def setup(self):
+        dbfn = self.config.get("deliver", "dbfn")
         dbsh = dbf.Dbf(dbfn, ignoreErrors=True, readOnly=True)
         i = 0
         hs300index = -1
+        hs300code = "000300"
         for rec in dbsh:
             if rec["S1"] == hs300code:
                 hs300index = i
@@ -54,58 +63,121 @@ class updater(Thread):
             return False
 
         self.hs300index = hs300index
+        self.dbsh = dbsh
 
+        JSDSEC = "jsd"
+        jsdcfg = {}
+        for k,v in self.config.items(JSDSEC):
+            jsdcfg[k] = v
+        try:
+            jsdcfg["jsdport"] = int(jsdcfg["jsdport"])
+        except KeyError:
+            pass
+        
+        s = jsd.session(jsdcfg)
+        if not s.setup():
+            self.setnotice(u"不能连接金士达")
+            s.close()
+            return False
+        self.jsdsession = s
 
+        for sindex in self.sindexlist:
+            QMetaObject.invokeMethod(self.ui, "fillcombo",
+                    Qt.QueuedConnection,
+                    Q_ARG("QString", QString(sindex)))
 
+        return True
 
     def run(self):
-
-        if not self.setup()
+        if not self.setup():
             return
+
+        START = datetime.time(13, 00, 00)
+        END = datetime.time(15, 00, 00)
 
         now = datetime.datetime.now().time()
 
         if now < START:
-            ddlg.statusline.setText("等待开始计算（%s）", str(START))
-            print "waiting to start at", START
+            self.setnotice(u"等待开始计算时间：%s" % str(START))
 
-            while 1:
+            while 1 and self.runflag:
                 time.sleep(1)
                 now = datetime.datetime.now().time()
                 if now >= START:
                     break
 
+        if not self.runflag:
+            return
+
         avg = 0
         n = 0
-        print "start calculating delivery price."
-        while 1:
-            a = dbsh[hs300index]["S8"]
-            avg = avg * n / (n+1) + a / (n+1)
-            n = n + 1
-            print "%0.3f" % avg
-            time.sleep(5)
+        self.setnotice(u"正在计算收割价格")
+        while self.runflag:
             now = datetime.datetime.now().time()
             if now > END:
+                self.setnotice(u"计算完成")
                 break
 
-        #QMetaObject.invokeMethod(self.ui.sindexcmb, "addItem",
-        #        Qt.QueuedConnection,
-        #        Q_ARG("QString", QString(u"你好啊")))
+            # delivery price
+            a = self.dbsh[self.hs300index]["S8"]
+            avg = avg * n / (n+1) + a / (n+1)
+            n = n + 1
+            QMetaObject.invokeMethod(self.ui.hs300avgline,
+                    "setText",
+                    Qt.QueuedConnection,
+                    Q_ARG("QString", QString("%0.3f"%avg)))
 
-        QMetaObject.invokeMethod(self.ui, "fullcombo",
-                Qt.QueuedConnection)
+            # stock index price
+            hqreq = jsd.QueryHQReq(self.jsdsession)
+            hqreq["exchcode"] = self.jsdsession["cffexcode"]
+            hqreq["code"] = self.sindexlist[self.ui.sindexcmb.currentIndex()]
+            hqreq.send()
+            hqresp = jsd.QueryHQResp(self.jsdsession)
+            hqresp.recv()
+            if hqresp.anwser == "N":
+                continue
+            silatest = float(hqresp.records[0][9])
+            QMetaObject.invokeMethod(self.ui.sindexline,
+                    "setText",
+                    Qt.QueuedConnection,
+                    Q_ARG("QString", QString("%0.3f"%silatest)))
 
-        #self.ui.sindexcmb.addItem(u"你好啊")
+            # the price diff
+            diff = silatest - avg
+            QMetaObject.invokeMethod(self.ui.diffline,
+                    "setText",
+                    Qt.QueuedConnection,
+                    Q_ARG("QString", QString("%0.3f"%diff)))
+
+            time.sleep(1)
+
+        #QMetaObject.invokeMethod(self.ui, "fullcombo",
+        #        Qt.QueuedConnection)
+
+    def stop(self):
+        self.runflag = False
 
 def main(args):
     app = QApplication(args)
-    ddlg = deliverdlg(jsdcfg)
+    ddlg = deliverdlg()
     ddlg.setup()
 
-    updater(ddlg).start()
+    cfgfn = "deliver.cfg"
+    try:
+        cfgfn = sys.argv[1]
+    except IndexError:
+        pass
+
+    config = ConfigParser.RawConfigParser()
+    config.read(cfgfn)
+
+    u = updater(ddlg, config)
+    u.start()
 
     ddlg.show()
     app.exec_()
+
+    u.stop()
 
 if __name__=="__main__":
     main(sys.argv)

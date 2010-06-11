@@ -96,3 +96,9 @@ different machines!!!
 ================
 
 QCoreApplication::sendPostedEvents: Cannot send posted events for objects in another thread
+
+================
+
+the crash after easytrader exit must be caused by memory reference
+1. a thread still update ui and reference deleted data
+2. some object should not be deleted by python, but by qt
