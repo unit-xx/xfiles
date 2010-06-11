@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>286</width>
-    <height>136</height>
+    <width>306</width>
+    <height>188</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -20,16 +20,6 @@
       <string/>
      </property>
      <layout class="QGridLayout" name="gridLayout">
-      <item row="2" column="2">
-       <widget class="QLineEdit" name="diffline"/>
-      </item>
-      <item row="2" column="0" colspan="2">
-       <widget class="QLabel" name="label_4">
-        <property name="text">
-         <string>价差</string>
-        </property>
-       </widget>
-      </item>
       <item row="0" column="0" colspan="2">
        <widget class="QLabel" name="label_2">
         <property name="text">
@@ -37,11 +27,8 @@
         </property>
        </widget>
       </item>
-      <item row="1" column="1">
-       <widget class="QComboBox" name="sindexcmb"/>
-      </item>
-      <item row="1" column="2">
-       <widget class="QLineEdit" name="sindexline"/>
+      <item row="0" column="2" colspan="2">
+       <widget class="QLineEdit" name="hs300avgline"/>
       </item>
       <item row="1" column="0">
        <widget class="QLabel" name="label_3">
@@ -50,17 +37,63 @@
         </property>
        </widget>
       </item>
-      <item row="0" column="2">
-       <widget class="QLineEdit" name="hs300avgline"/>
+      <item row="1" column="1">
+       <widget class="QComboBox" name="sindexcmb"/>
+      </item>
+      <item row="1" column="2" colspan="2">
+       <widget class="QLineEdit" name="sindexline"/>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="label_4">
+        <property name="text">
+         <string>价差</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="2" colspan="2">
+       <widget class="QLineEdit" name="diffline"/>
+      </item>
+      <item row="3" column="0" colspan="2">
+       <widget class="QLabel" name="label_6">
+        <property name="text">
+         <string>价差比值</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="2" colspan="2">
+       <widget class="QLineEdit" name="diffperline"/>
+      </item>
+      <item row="4" column="0" colspan="2">
+       <widget class="QLabel" name="label_5">
+        <property name="text">
+         <string>报警阈值</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="2">
+       <widget class="QDoubleSpinBox" name="warnspin">
+        <property name="suffix">
+         <string> %</string>
+        </property>
+        <property name="singleStep">
+         <double>0.010000000000000</double>
+        </property>
+        <property name="value">
+         <double>0.400000000000000</double>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="3">
+       <widget class="QCheckBox" name="playsignalchk">
+        <property name="text">
+         <string>报警</string>
+        </property>
+        <property name="checked">
+         <bool>true</bool>
+        </property>
+       </widget>
       </item>
      </layout>
-     <zorder>diffline</zorder>
-     <zorder>label_4</zorder>
-     <zorder>label_2</zorder>
-     <zorder>sindexcmb</zorder>
-     <zorder>sindexline</zorder>
-     <zorder>label_3</zorder>
-     <zorder>hs300avgline</zorder>
     </widget>
    </item>
    <item row="1" column="0">

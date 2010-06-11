@@ -3,6 +3,7 @@
 import os
 import sys
 import time
+import random
 import datetime
 from threading import Thread
 import ConfigParser
@@ -10,6 +11,7 @@ import ConfigParser
 from dbfpy import dbf
 from PyQt4.QtGui import *
 from PyQt4.QtCore import *
+from PyQt4.phonon import *
 
 import jsd
 from deliverdlg import Ui_deliverdlg
@@ -41,6 +43,20 @@ class updater(Thread):
         self.jsdsession = None
 
         self.sindexlist = ["IF1006", "IF1007", "IF1009", "IF1012"]
+
+        self.m_media = Phonon.MediaObject(self.ui)
+        audioOutput = Phonon.AudioOutput(Phonon.MusicCategory,
+                self.ui)
+        Phonon.createPath(self.m_media, audioOutput)
+        self.playsignal = self.ui.playsignalchk.isChecked()
+        self.ui.connect(self.ui.playsignalchk, SIGNAL("stateChanged(int)"), self.setplay)
+        self.ui.connect(self.m_media, SIGNAL("aboutToFinish()"), self.addsong)
+
+        musicdir = u"music"
+        self.musicdir = musicdir
+        self.musicfn = random.choice(os.listdir(musicdir))
+        self.m_media.setCurrentSource(Phonon.MediaSource(os.path.join(musicdir,
+            self.musicfn)))
 
     def setnotice(self, msg):
         QMetaObject.invokeMethod(self.ui.statusline, "setText",
@@ -148,7 +164,16 @@ class updater(Thread):
                     "setText",
                     Qt.QueuedConnection,
                     Q_ARG("QString", QString("%0.3f"%diff)))
-
+            diffper = diff / avg * 100
+            QMetaObject.invokeMethod(self.ui.diffperline,
+                    "setText",
+                    Qt.QueuedConnection,
+                    Q_ARG("QString", QString("%0.2f %%"%diffper)))
+            warnthreshold = self.ui.warnspin.value()
+            if diffper >= warnthreshold or -diffper <= warnthreshold:
+                self.play()
+            else:
+                self.stopplay()
             time.sleep(1)
 
         #QMetaObject.invokeMethod(self.ui, "fullcombo",
@@ -156,6 +181,26 @@ class updater(Thread):
 
     def stop(self):
         self.runflag = False
+
+    @pyqtSlot(int)
+    def setplay(self, state):
+        self.playsignal = self.ui.playsignalchk.isChecked()
+        if not self.playsignal:
+            self.stopplay()
+
+    @pyqtSlot()
+    def addsong(self):
+        self.musicfn = random.choice(os.listdir(self.musicdir))
+        self.m_media.enqueue(Phonon.MediaSource(os.path.join(self.musicdir, self.musicfn)))
+
+    @pyqtSlot()
+    def play(self):
+        if self.playsignal:
+            self.m_media.play()
+
+    @pyqtSlot()
+    def stopplay(self):
+        self.m_media.pause()
 
 def main(args):
     app = QApplication(args)
@@ -178,6 +223,7 @@ def main(args):
     app.exec_()
 
     u.stop()
+    u.join()
 
 if __name__=="__main__":
     main(sys.argv)
