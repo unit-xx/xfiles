@@ -36,46 +36,16 @@ def main(args):
     JSDSEC = "jsd"
     MYSEC = "itrader"
 
-    session_config = {}
     config = ConfigParser.RawConfigParser()
     config.read(CONFIGFN)
+
+    session_config = {}
     for k,v in config.items(JZSEC):
         session_config[k] = v
     try:
         session_config["jzport"] = int(session_config["jzport"])
     except KeyError:
         pass
-
-    # show config in dialog
-    from ilogindiag import logindlg
-    d = logindlg(session_config)
-    d.show()
-    d.activateWindow()
-    d.exec_()
-    if d.status == False:
-        logger.info("User cancel login")
-        sys.exit(1)
-
-    session_config.update(d.config)
-    testsession = jz.session(session_config)
-    if not testsession.setup():
-        logger.warning("Cannot login jz.")
-        QMessageBox.warning(None,
-                u"",
-                u"<H3><FONT COLOR='#FF0000'>金证系统不能登录，勿进行股票操作！</FONT></H3>",
-                QMessageBox.Ok)
-    testsession.close()
-
-    # save config
-    #for k in session_config:
-    #    config.set("easytrader", k, session_config[k])
-    #config.write(configfn)
-
-    #load portfolio
-    portfoliofn = unicode(QFileDialog.getOpenFileName(None, u"选择投资组合", "./portfolio", "*.ptf"))
-    if portfoliofn == u"":
-        logger.info("No portfolio seleted.")
-        sys.exit(1)
 
     # get jsd session config
     jsd_sessioncfg = {}
@@ -85,14 +55,51 @@ def main(args):
         jsd_sessioncfg["jsdport"] = int(jsd_sessioncfg["jsdport"])
     except KeyError:
         pass
-    testsession = jsd.session(jsd_sessioncfg)
+
+    # show config in dialog
+    from ilogindiag import logindlg
+    d = logindlg(session_config, jsd_sessioncfg)
+    d.show()
+    d.activateWindow()
+    d.exec_()
+    if d.status == False:
+        logger.info("User cancel login")
+        sys.exit(1)
+
+    session_config.update(d.jzconfig)
+    jsd_sessioncfg.update(d.jsdconfig)
+
+    testsession = jz.session(session_config)
+    loginok = True
     if not testsession.setup():
+        loginok = False
+        logger.warning("Cannot login jz.")
+        QMessageBox.warning(None,
+                u"",
+                u"<H3><FONT COLOR='#FF0000'>金证系统不能登录！</FONT></H3>",
+                QMessageBox.Ok)
+    testsession.close()
+    if not loginok:
+        sys.exit(1)
+
+    testsession = jsd.session(jsd_sessioncfg)
+    loginok = True
+    if not testsession.setup():
+        loginok = False
         logger.warning("Cannot login jsd.")
         QMessageBox.warning(None,
                 u"",
-                u"<H3><FONT COLOR='#FF0000'>金士达系统不能登录，勿进行股指期货操作！</FONT></H3>",
+                u"<H3><FONT COLOR='#FF0000'>金士达系统不能登录！</FONT></H3>",
                 QMessageBox.Ok)
     testsession.close()
+    if not loginok:
+        sys.exit(1)
+
+    #load portfolio
+    portfoliofn = unicode(QFileDialog.getOpenFileName(None, u"选择投资组合", "./portfolio", "*.ptf"))
+    if portfoliofn == u"":
+        logger.info("No portfolio seleted.")
+        sys.exit(1)
 
     # TODO: lock portfolio file to be used by one instance of easytrader
     updtlock = Lock()
@@ -111,6 +118,10 @@ def main(args):
     pupdater = PortfolioUpdater(servhost, servport, p, pmodel)
     pupdater.start()
 
+    # run SecuInfoUpdater
+    siupdter = SecuInfoUpdater(p, pmodel, session_config)
+    siupdter.start()
+
     # run the order info updater
     orderupdater = OrderUpdater(p, pmodel, session_config, updtlock)
     orderupdater.start()
@@ -126,8 +137,7 @@ def main(args):
         workers[i].start()
 
     # main window
-    window = QMainWindow()
-    uic = uicontrol(window, session_config, p, pmodel, sindexmodel)
+    uic = uicontrol(session_config, p, pmodel, sindexmodel)
     uic.setup()
 
     # start stock index price updater
@@ -144,7 +154,7 @@ def main(args):
     bdiffupdter = basediffUpdater(pupdater, jsd_sessioncfg, uic)
     bdiffupdter.start()
 
-    window.show()
+    uic.show()
     app.exec_()
 
     # exit process
@@ -167,6 +177,11 @@ def main(args):
     pupdater.join()
     orderupdater.join()
     logger.info("updater threads stopped.")
+
+    logger.info("waiting SecuInfoUpdater to stop")
+    siupdter.stop()
+    siupdter.join()
+
     logger.info("waiting jzWorkers to finalize jobs")
     # next line ensures all async request will be executed before exit.
     tqueue.join()

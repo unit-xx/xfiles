@@ -60,10 +60,10 @@ class SIndexQuotePusher(QuotePusher):
             return None
         else:
             price = pickle.dumps(quote, -1)
-            print len(price)
+            #print len(price)
             price = zlib.compress(price)
-            print len(price)
-            print
+            #print len(price)
+            #print
             return price
 
     def finalize(self):

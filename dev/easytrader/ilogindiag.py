@@ -4,16 +4,20 @@ from PyQt4.QtCore import *
 
 
 class logindlg(QDialog):
-    def __init__(self, config):
+    def __init__(self, jzconfig, jsdconfig):
         QDialog.__init__(self)
         self.status = False
         self.ui = Ui_logindlg()
         self.ui.setupUi(self)
-        self.config = config
+        self.jzconfig = jzconfig
+        self.jsdconfig = jsdconfig
 
         # set data for lineedit controls
-        self.ui.account.setText(config["jzaccount"])
-        self.ui.passwd.setText(config["jzpasswd"])
+        self.ui.accountstock.setText(jzconfig["jzaccount"])
+        self.ui.passwdstock.setText(jzconfig["jzpasswd"])
+
+        self.ui.accountsindex.setText(jsdconfig["jsdaccount"])
+        self.ui.passwdsindex.setText(jsdconfig["jsdpasswd"])
 
         self.connect(self.ui.ok, SIGNAL("clicked()"), self.on_ok)
         self.connect(self.ui.cancel, SIGNAL("clicked()"), self.on_cancel)
@@ -21,8 +25,10 @@ class logindlg(QDialog):
     def on_ok(self):
         self.done(1)
         self.status = True
-        self.config["jzaccount"] = str(self.ui.account.text())
-        self.config["jzpasswd"] = str(self.ui.passwd.text())
+        self.jzconfig["jzaccount"] = str(self.ui.accountstock.text())
+        self.jzconfig["jzpasswd"] = str(self.ui.passwdstock.text())
+        self.jsdconfig["jsdaccount"] = str(self.ui.accountsindex.text())
+        self.jsdconfig["jsdpasswd"] = str(self.ui.passwdsindex.text())
 
     def on_cancel(self):
         self.status = False

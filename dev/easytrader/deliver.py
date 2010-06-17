@@ -15,6 +15,7 @@ from PyQt4.phonon import *
 
 import jsd
 from deliverdlg import Ui_deliverdlg
+from easytrader_lib import calsicontracts
 
 class deliverdlg(QDialog, Ui_deliverdlg):
     def __init__(self):
@@ -42,7 +43,7 @@ class updater(Thread):
         self.dbsh = None
         self.jsdsession = None
 
-        self.sindexlist = ["IF1006", "IF1007", "IF1009", "IF1012"]
+        self.sindexlist = calsicontracts()
 
         self.m_media = Phonon.MediaObject(self.ui)
         audioOutput = Phonon.AudioOutput(Phonon.MusicCategory,

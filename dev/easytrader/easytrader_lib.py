@@ -14,7 +14,7 @@ from threading import Thread, currentThread, Lock, Event
 from binascii import unhexlify
 from struct import pack, unpack
 import time
-from datetime import datetime
+from datetime import datetime, date, timedelta
 import types
 from ctypes import *
 import logging, logging.config
@@ -1823,6 +1823,8 @@ class PortfolioUpdater_net(Thread):
                 self.update()
         except Exception:
             self.logger.exception("Oh!!!")
+        finally:
+            self.conn.close()
 
 class SecuInfoUpdater(Thread):
     def __init__(self, portfolio, pmodel, sessioncfg):
@@ -2111,7 +2113,8 @@ class SIFPriceUpdater_net(Thread):
                 self.update()
         except Exception:
             self.logger.exception("Oh!!!")
-
+        finally:
+            self.conn.close()
 
 class SIFOrderUpdater(Thread):
     def __init__(self, portfolio, sindexmodel, jsdcfg):
@@ -2795,8 +2798,7 @@ class basediffUpdater(Thread):
                 self.logger.warning("jsd session setup failed.")
                 return
             
-            # TODO: read contracts and fill stock index combobox.
-            self.sicontracts = ['IF1006', 'IF1007', 'IF1009', 'IF1012']
+            self.sicontracts = calsicontracts()
             for sindex in self.sicontracts:
                 self.uic.sindexcmbox.addItem(sindex)
             self.uic.sindexcmbox.setCurrentIndex(0)
@@ -2901,3 +2903,42 @@ def verifymap(dbfn, mapfn, codekey):
 
 def round100(n):
     return int(round(n/100.0)*100)
+
+def incmonth(yearmonth, inc=1):
+    # yearmonth is a (year, month) tuple
+    year, month = yearmonth
+    for i in range(inc):
+        if month == 12:
+            year += 1
+            month = 1
+        else:
+            month += 1
+    return (year, month)
+
+def calsicontracts():
+    # if today <= deliver data: this month, next month, next quarter, n-next quarter
+    # else: next month, next next month, ...
+    today = date.today()
+    deliverday = date(today.year, today.month, 1)
+    oneday = timedelta(1)
+    fridaycount = 0
+    contracts = []
+    while deliverday < today:
+        if deliverday.isoweekday() == 5:
+            fridaycount += 1
+        deliverday += oneday
+    contract = (today.year, today.month)
+    if fridaycount >= 3:
+        contract = incmonth(contract)
+
+    contracts.append(contract)
+    contract = incmonth(contract)
+    contracts.append(contract)
+
+    for i in range(2):
+        while 1:
+            contract = incmonth(contract)
+            if contract[1] % 3 == 0:
+                contracts.append(contract)
+                break
+    return [ "".join(("IF", str(year)[2:], "%02d"%month)) for (year, month) in contracts]
