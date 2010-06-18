@@ -361,7 +361,7 @@ class LoginResp(response):
         self.session["account"] = self.records[0][3]
         self.session["user_code"] = self.records[0][4]
         self.session["branch"] = self.records[0][6]
-        self.session["channel"] = "7"
+        self.session["channel"] = "2"
         self.session["session"] = self.records[0][7]
         assert len(self.records) == 2
         for r in self.records:

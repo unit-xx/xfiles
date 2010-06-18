@@ -795,6 +795,9 @@ class Portfolio(object):
             for scode in self.stocklist:
                 # only cancel (BUYSUCCESS and dealcount < ordercount) orders
                 si = self.stockinfo[scode]
+                if len(si["pastbuy"]) == 0:
+                    continue
+
                 orec = si["pastbuy"][-1]
                 if orec["order_state"] == Portfolio.BUYSUCCESS and int(orec["dealcount"]) < int(orec["ordercount"]):
                     self.bocount = self.bocount + 1
