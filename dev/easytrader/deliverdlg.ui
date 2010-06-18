@@ -6,16 +6,22 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>306</width>
-    <height>188</height>
+    <width>318</width>
+    <height>341</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>股指交割价格</string>
   </property>
-  <layout class="QGridLayout" name="gridLayout_2">
+  <layout class="QGridLayout" name="gridLayout_3">
    <item row="0" column="0" colspan="2">
     <widget class="QGroupBox" name="groupBox">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
      <property name="title">
       <string/>
      </property>
@@ -23,54 +29,64 @@
       <item row="0" column="0" colspan="2">
        <widget class="QLabel" name="label_2">
         <property name="text">
-         <string>沪深300算术平均</string>
+         <string>沪深300现值</string>
         </property>
        </widget>
       </item>
       <item row="0" column="2" colspan="2">
+       <widget class="QLineEdit" name="hs300line"/>
+      </item>
+      <item row="1" column="0" colspan="2">
+       <widget class="QLabel" name="label_9">
+        <property name="text">
+         <string>沪深300算术平均</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="2" colspan="2">
        <widget class="QLineEdit" name="hs300avgline"/>
       </item>
-      <item row="1" column="0">
+      <item row="2" column="0">
        <widget class="QLabel" name="label_3">
         <property name="text">
          <string>股指</string>
         </property>
        </widget>
       </item>
-      <item row="1" column="1">
+      <item row="2" column="1">
        <widget class="QComboBox" name="sindexcmb"/>
       </item>
-      <item row="1" column="2" colspan="2">
+      <item row="2" column="2" colspan="2">
        <widget class="QLineEdit" name="sindexline"/>
       </item>
-      <item row="2" column="0">
+      <item row="3" column="0">
        <widget class="QLabel" name="label_4">
         <property name="text">
          <string>价差</string>
         </property>
        </widget>
       </item>
-      <item row="2" column="2" colspan="2">
+      <item row="3" column="2" colspan="2">
        <widget class="QLineEdit" name="diffline"/>
       </item>
-      <item row="3" column="0" colspan="2">
+      <item row="4" column="0" colspan="2">
        <widget class="QLabel" name="label_6">
         <property name="text">
          <string>价差比值</string>
         </property>
        </widget>
       </item>
-      <item row="3" column="2" colspan="2">
+      <item row="4" column="2" colspan="2">
        <widget class="QLineEdit" name="diffperline"/>
       </item>
-      <item row="4" column="0" colspan="2">
+      <item row="5" column="0" colspan="2">
        <widget class="QLabel" name="label_5">
         <property name="text">
          <string>报警阈值</string>
         </property>
        </widget>
       </item>
-      <item row="4" column="2">
+      <item row="5" column="2">
        <widget class="QDoubleSpinBox" name="warnspin">
         <property name="suffix">
          <string> %</string>
@@ -83,7 +99,7 @@
         </property>
        </widget>
       </item>
-      <item row="4" column="3">
+      <item row="5" column="3">
        <widget class="QCheckBox" name="playsignalchk">
         <property name="text">
          <string>报警</string>
@@ -96,14 +112,49 @@
      </layout>
     </widget>
    </item>
-   <item row="1" column="0">
+   <item row="1" column="0" colspan="2">
+    <widget class="QGroupBox" name="groupBox_2">
+     <property name="title">
+      <string/>
+     </property>
+     <layout class="QGridLayout" name="gridLayout_2">
+      <item row="0" column="0">
+       <widget class="QLabel" name="label_7">
+        <property name="text">
+         <string>若交割价等于股指现价，则剩下时间内，标的算术平均价格是</string>
+        </property>
+        <property name="wordWrap">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QLineEdit" name="remainavgline"/>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="label_8">
+        <property name="text">
+         <string>在以上假设下，若股价直线变化，收盘价格为</string>
+        </property>
+        <property name="wordWrap">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QLineEdit" name="predictcloseline"/>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item row="2" column="0">
     <widget class="QLabel" name="label">
      <property name="text">
       <string>当前状态</string>
      </property>
     </widget>
    </item>
-   <item row="1" column="1">
+   <item row="2" column="1">
     <widget class="QLineEdit" name="statusline"/>
    </item>
   </layout>

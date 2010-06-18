@@ -22,6 +22,9 @@ from deliverdlg import Ui_deliverdlg
 from easytrader_lib import calsicontracts
 from util import recv_n
 
+START = datetime.time(13, 00, 00)
+END = datetime.time(15, 00, 00)
+
 class deliverdlg(QDialog, Ui_deliverdlg):
     def __init__(self):
         QDialog.__init__(self)
@@ -129,9 +132,6 @@ class diffupdater(Thread):
         if not self.setup():
             return
 
-        START = datetime.time(13, 00, 00)
-        END = datetime.time(15, 00, 00)
-
         now = datetime.datetime.now().time()
 
         if now < START:
@@ -159,6 +159,10 @@ class diffupdater(Thread):
             a = self.dbsh[self.hs300index]["S8"]
             avg = avg * n / (n+1) + a / (n+1)
             n = n + 1
+            QMetaObject.invokeMethod(self.ui.hs300line,
+                    "setText",
+                    Qt.QueuedConnection,
+                    Q_ARG("QString", QString("%0.2f"%a)))
             QMetaObject.invokeMethod(self.ui.hs300avgline,
                     "setText",
                     Qt.QueuedConnection,
@@ -214,6 +218,43 @@ class diffupdater(Thread):
     def stopplay(self):
         self.m_media.pause()
 
+class Predictor(Thread):
+    def __init__(self, ui):
+        Thread.__init__(self)
+        self.ui = ui
+        self.runflag = True
+
+    def timediff(self, t1, t2):
+        return (t2.hour-t1.hour)*3600 + (t2.minute-t1.minute)*60 + t2.second-t1.second
+
+    def run(self):
+        while self.runflag:
+            time.sleep(1)
+
+            now = datetime.datetime.now().time()
+            pasttime = self.timediff(START, now)
+            remaintime = self.timediff(now, END)
+            try:
+                pastavg = float(self.ui.hs300avgline.text())
+                silatest = float(self.ui.sindexline.text())
+                hs300 = float(self.ui.hs300line.text())
+            except ValueError:
+                continue
+
+            remainavg = (silatest - (pastavg * pasttime)) / remaintime
+            predictclose = 2 * remainavg - hs300
+            QMetaObject.invokeMethod(self.ui.remainavgline,
+                    "setText",
+                    Qt.QueuedConnection,
+                    Q_ARG("QString", QString("%0.2f"%remainavg)))
+            QMetaObject.invokeMethod(self.ui.predictcloseline,
+                    "setText",
+                    Qt.QueuedConnection,
+                    Q_ARG("QString", QString("%0.2f"%predictclose)))
+
+    def stop(self):
+        self.runflag = False
+
 def main(args):
     app = QApplication(args)
     ddlg = deliverdlg()
@@ -236,8 +277,14 @@ def main(args):
     u = diffupdater(ddlg, config)
     u.start()
 
+    p = Predictor(ddlg)
+    p.start()
+
     ddlg.show()
     app.exec_()
+
+    p.stop()
+    p.join()
 
     u.stop()
     u.join()
