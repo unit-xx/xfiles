@@ -186,7 +186,7 @@ class diffupdater(Thread):
                     Qt.QueuedConnection,
                     Q_ARG("QString", QString("%0.2f %%"%diffper)))
             warnthreshold = self.ui.warnspin.value()
-            if diffper >= warnthreshold or -diffper <= warnthreshold:
+            if abs(diffper) >= warnthreshold:
                 self.play()
             else:
                 self.stopplay()
@@ -228,12 +228,10 @@ class Predictor(Thread):
         return (t2.hour-t1.hour)*3600 + (t2.minute-t1.minute)*60 + t2.second-t1.second
 
     def run(self):
+        totaltime = self.timediff(START, END)
         while self.runflag:
             time.sleep(1)
 
-            now = datetime.datetime.now().time()
-            pasttime = self.timediff(START, now)
-            remaintime = self.timediff(now, END)
             try:
                 pastavg = float(self.ui.hs300avgline.text())
                 silatest = float(self.ui.sindexline.text())
@@ -241,7 +239,11 @@ class Predictor(Thread):
             except ValueError:
                 continue
 
-            remainavg = (silatest - (pastavg * pasttime)) / remaintime
+            now = datetime.datetime.now().time()
+            pasttime = self.timediff(START, now)
+            remaintime = self.timediff(now, END)
+
+            remainavg = (silatest*totaltime - (pastavg * pasttime)) / remaintime
             predictclose = 2 * remainavg - hs300
             QMetaObject.invokeMethod(self.ui.remainavgline,
                     "setText",
