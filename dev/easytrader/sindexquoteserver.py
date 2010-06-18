@@ -37,7 +37,7 @@ class SIndexQuotePusher(QuotePusher):
         ret = []
         for i in range(qcount):
             qd = qdata[i]
-            if qd.exchCode == "G" and qd.varity_code == "IF":
+            if qd.varity_code == "IF":
                 ret.append(qd)
         return ret
 

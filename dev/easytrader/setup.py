@@ -42,7 +42,7 @@ def setupdb(dbpath, dbname, force=False):
 buildOptions = dict(
         build_exe = "build\\easytrader",
         icon = "ztzq.ico",
-        include_files = ["ztzq.ico", "hs300.txt", "easytrader.cfg", "easytrader-prod.cfg", "portfolio", "msvcr_redist", "jsdhqdll", "music", (backenddir(), "phonon_backend")],
+        include_files = ["ztzq.ico", "hs300.txt", "itrader.cfg", "itrader-gw.cfg", "easytrader.cfg", "easytrader-prod.cfg", "portfolio", "msvcr_redist", "jsdhqdll", "music", (backenddir(), "phonon_backend")],
         compressed = True,
         optimize = 2)
 
@@ -51,7 +51,7 @@ setup(
         version = "0.1",
         description = "The EasyTrader",
         options = dict(build_exe = buildOptions),
-        executables = [Executable("easytrader.py"), Executable("genstockindex.py")]
+        executables = [Executable("itrader.py"), Executable("easytrader.py"), Executable("genstockindex.py")]
         )
 
 setupdb(buildOptions["build_exe"], "tradeinfo.db")
