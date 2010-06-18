@@ -3,7 +3,8 @@
 from easytrader_lib import *
 
 PortfolioUpdater = PortfolioUpdater_dbf
-SIFPriceUpdater = SIFPriceUpdater_pushee
+#SIFPriceUpdater = SIFPriceUpdater_pushee
+SIFPriceUpdater = SIFPriceUpdater_net
 
 def main(args):
     #import psyco
@@ -38,6 +39,7 @@ def main(args):
     # read config
     JZSEC = "jz"
     JSDSEC = "jsd"
+    MYSEC = "easytrader"
 
     session_config = {}
 
@@ -160,8 +162,13 @@ def main(args):
     uic.setup()
 
     # start stock index price updater
-    sifupdter = SIFPriceUpdater(p, sindexmodel, jsd_sessioncfg, uic)
+    #sifupdter = SIFPriceUpdater(p, sindexmodel, jsd_sessioncfg, uic)
+    #sifupdter.start()
+    servhost = config.get(MYSEC, "sindexhqservhost")
+    servport = config.getint(MYSEC, "sindexhqservport")
+    sifupdter = SIFPriceUpdater(servhost, servport, p, sindexmodel, uic)
     sifupdter.start()
+
 
     # start SIFOrderPushee
     sifop = SIFOrderPushee(p, sindexmodel, jsd_sessioncfg)

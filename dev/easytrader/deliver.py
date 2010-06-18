@@ -5,8 +5,12 @@ import sys
 import time
 import random
 import datetime
+import socket
 from threading import Thread
 import ConfigParser
+import zlib
+import pickle
+from struct import unpack
 
 from dbfpy import dbf
 from PyQt4.QtGui import *
@@ -16,6 +20,7 @@ from PyQt4.phonon import *
 import jsd
 from deliverdlg import Ui_deliverdlg
 from easytrader_lib import calsicontracts
+from util import recv_n
 
 class deliverdlg(QDialog, Ui_deliverdlg):
     def __init__(self):
@@ -32,7 +37,40 @@ class deliverdlg(QDialog, Ui_deliverdlg):
     def fillcombo(self, item):
         self.sindexcmb.addItem(item)
 
-class updater(Thread):
+class sipriceupdater(Thread):
+    def __init__(self, host, port, ui):
+        Thread.__init__(self)
+        self.ui = ui
+        self.host = host
+        self.port = port
+        self.conn = None
+        self.runflag = True
+
+    def run(self):
+        self.conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+            self.conn.connect((self.host, self.port))
+        except socket.error:
+            print "cannot connect to sindex hq server."
+            return
+
+        while self.runflag:
+            (pktlen,) = unpack("!I", self.conn.recv(4))
+            received = recv_n(self.conn, pktlen)
+            assert len(received) == pktlen
+            price = pickle.loads(zlib.decompress(received))
+            sindex = ui.sindexcmb.currentText()
+            for qd in price:
+                if sindex == qd.varity_code+qd.deliv_date:
+                    print qd.exchCode, qd.varity_code, qd.deliv_date, qd.lastPrice, qd.bidPrice1, qd.askPrice1, qd.openPrice, qd.preClosePrice
+                    QMetaObject.invokeMethod(self.ui.sindexline, "setText", Qt.QueuedConnection,
+                            Q_ARG("QString", QString(str(qd.lastPrice))))
+        self.conn.close()
+
+    def stop(self):
+        self.runflag = False
+
+class diffupdater(Thread):
     def __init__(self, ui, config):
         Thread.__init__(self)
         self.ui = ui
@@ -41,7 +79,6 @@ class updater(Thread):
 
         self.hs300index = ""
         self.dbsh = None
-        self.jsdsession = None
 
         self.sindexlist = calsicontracts()
 
@@ -81,22 +118,6 @@ class updater(Thread):
 
         self.hs300index = hs300index
         self.dbsh = dbsh
-
-        JSDSEC = "jsd"
-        jsdcfg = {}
-        for k,v in self.config.items(JSDSEC):
-            jsdcfg[k] = v
-        try:
-            jsdcfg["jsdport"] = int(jsdcfg["jsdport"])
-        except KeyError:
-            pass
-        
-        s = jsd.session(jsdcfg)
-        if not s.setup():
-            self.setnotice(u"不能连接金士达")
-            s.close()
-            return False
-        self.jsdsession = s
 
         for sindex in self.sindexlist:
             QMetaObject.invokeMethod(self.ui, "fillcombo",
@@ -142,29 +163,20 @@ class updater(Thread):
             QMetaObject.invokeMethod(self.ui.hs300avgline,
                     "setText",
                     Qt.QueuedConnection,
-                    Q_ARG("QString", QString("%0.3f"%avg)))
+                    Q_ARG("QString", QString("%0.2f"%avg)))
 
             # stock index price
-            hqreq = jsd.QueryHQReq(self.jsdsession)
-            hqreq["exchcode"] = self.jsdsession["cffexcode"]
-            hqreq["code"] = self.sindexlist[self.ui.sindexcmb.currentIndex()]
-            hqreq.send()
-            hqresp = jsd.QueryHQResp(self.jsdsession)
-            hqresp.recv()
-            if hqresp.anwser == "N":
-                continue
-            silatest = float(hqresp.records[0][9])
-            QMetaObject.invokeMethod(self.ui.sindexline,
-                    "setText",
-                    Qt.QueuedConnection,
-                    Q_ARG("QString", QString("%0.3f"%silatest)))
+            try:
+                silatest = float(self.ui.sindexline.text())
+            except ValueError:
+                silatest = 0.0
 
             # the price diff
             diff = silatest - avg
             QMetaObject.invokeMethod(self.ui.diffline,
                     "setText",
                     Qt.QueuedConnection,
-                    Q_ARG("QString", QString("%0.3f"%diff)))
+                    Q_ARG("QString", QString("%0.2f"%diff)))
             diffper = diff / avg * 100
             QMetaObject.invokeMethod(self.ui.diffperline,
                     "setText",
@@ -217,7 +229,12 @@ def main(args):
     config = ConfigParser.RawConfigParser()
     config.read(cfgfn)
 
-    u = updater(ddlg, config)
+    host = config.get("deliver", "hqhost")
+    port = config.getint("deliver", "hqport")
+    su = sipriceupdater(host, port, ddlg)
+    su.start()
+
+    u = diffupdater(ddlg, config)
     u.start()
 
     ddlg.show()
@@ -225,6 +242,9 @@ def main(args):
 
     u.stop()
     u.join()
+
+    su.stop()
+    su.join()
 
 if __name__=="__main__":
     main(sys.argv)
