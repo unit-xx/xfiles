@@ -4,7 +4,7 @@ import zlib
 import pickle
 from struct import unpack
 
-HOST, PORT = "172.30.4.165", 22888
+HOST, PORT = "127.0.0.1", 22888
 
 # Create a socket (SOCK_STREAM means a TCP socket)
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

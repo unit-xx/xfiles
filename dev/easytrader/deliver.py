@@ -59,10 +59,9 @@ class sipriceupdater(Thread):
             received = recv_n(self.conn, pktlen)
             assert len(received) == pktlen
             price = pickle.loads(zlib.decompress(received))
-            sindex = ui.sindexcmb.currentText()
+            sindex = self.ui.sindexcmb.currentText()
             for qd in price:
                 if sindex == qd.varity_code+qd.deliv_date:
-                    print qd.exchCode, qd.varity_code, qd.deliv_date, qd.lastPrice, qd.bidPrice1, qd.askPrice1, qd.openPrice, qd.preClosePrice
                     QMetaObject.invokeMethod(self.ui.sindexline, "setText", Qt.QueuedConnection,
                             Q_ARG("QString", QString(str(qd.lastPrice))))
         self.conn.close()
