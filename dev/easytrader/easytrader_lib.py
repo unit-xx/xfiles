@@ -899,7 +899,11 @@ class Portfolio(object):
             allbought = True
             for scode in self.stocklist:
                 si = self.stockinfo[scode]
-                orec = si["pastbuy"][-1]
+                try:
+                    orec = si["pastbuy"][-1]
+                except IndexError:
+                    continue
+
                 assert si["pastsell"] == []
                 assert si["pastsellcount"] == 0
                 if orec["order_state"] == Portfolio.BUYSUCCESS:
@@ -937,7 +941,11 @@ class Portfolio(object):
                 if not self.isvalidsell(si, scode):
                     continue
 
-                orec = si["pastbuy"][-1]
+                try:
+                    orec = si["pastbuy"][-1]
+                except IndexError:
+                    continue
+
                 if orec["order_state"] == Portfolio.BUYSUCCESS:
                     # DO sell
                     self.bocount = self.bocount + 1
@@ -973,7 +981,12 @@ class Portfolio(object):
                 si = self.stockinfo[scode]
                 assert si["pastsell"] == []
                 assert si["pastsellcount"] == 0
-                orec = si["pastbuy"][-1]
+
+                try:
+                    orec = si["pastbuy"][-1]
+                except IndexError:
+                    continue
+
                 if orec["order_state"] == Portfolio.BUYSUCCESS:
                     assert orec["ordercount"] == orec["dealcount"]
                     # only update pastbuyxxx for BUYSECCESS stocks
@@ -996,7 +1009,11 @@ class Portfolio(object):
                 if not self.isvalidsell(si, scode):
                     continue
 
-                orec = si["pastbuy"][-1]
+                try:
+                    orec = si["pastbuy"][-1]
+                except IndexError:
+                    continue
+
                 if orec["order_state"] in (Portfolio.BUYSUCCESS, Portfolio.CANCELBUYSUCCESS):
                     # DO sell
                     self.bocount = self.bocount + 1
@@ -1156,6 +1173,7 @@ class Portfolio(object):
                     orec = si["pastsell"][-1]
                 except IndexError:
                     continue
+
                 if orec["order_state"] == Portfolio.SELLSUCCESS and int(orec["dealcount"]) < int(orec["ordercount"]):
                     self.bocount = self.bocount + 1
                     param = {}
