@@ -493,7 +493,7 @@ class Portfolio(object):
                 self.updateearning()
                 # TODO: update opencount, closecount, earning
                 # TODO: also save deals in savePortfolio
-            else:
+            else:# stock batch
                 scode = i[0].upper() + i[1]
                 self.stocklist.append(scode)
                 self.stockinfo.setdefault(scode, {})
@@ -795,10 +795,11 @@ class Portfolio(object):
             for scode in self.stocklist:
                 # only cancel (BUYSUCCESS and dealcount < ordercount) orders
                 si = self.stockinfo[scode]
-                if len(si["pastbuy"]) == 0:
+                try:
+                    orec = si["pastbuy"][-1]
+                except IndexError:
                     continue
 
-                orec = si["pastbuy"][-1]
                 if orec["order_state"] == Portfolio.BUYSUCCESS and int(orec["dealcount"]) < int(orec["ordercount"]):
                     self.bocount = self.bocount + 1
                     param = {}
@@ -2780,7 +2781,10 @@ class uicontrol(QMainWindow, Ui_MainWindow):
         pidlg.exec_()
 
     def showbostate(self):
-        QMetaObject.invokeMethod(self.statusbar, "showMessage", Qt.QueuedConnection, Q_ARG("QString", QString(u"组合状态: " + self.portfolio.bostate)))
+        QMetaObject.invokeMethod(self.bostatusline, "setText",
+                Qt.QueuedConnection,
+                Q_ARG("QString",
+                    QString(self.portfolio.bostate)))
 
 class basediffUpdater(Thread):
     def __init__(self, pupdter, jsdcfg, uic):
