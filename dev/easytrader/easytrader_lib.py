@@ -559,7 +559,7 @@ class Portfolio(object):
 
     def savePortfolio(self, ptfn=None):
         with self.bolock:
-            self.logger.info("saving portfolio")
+            #self.logger.info("saving portfolio")
             if ptfn == None:
                 f = open(self.ptfn, "wb")
             else:
@@ -583,7 +583,7 @@ class Portfolio(object):
             writer.writerow(["BO", self.bostate.encode("utf-8")])
             f.flush()
             f.close()
-            self.logger.info("saved")
+            #self.logger.info("saved")
 
     def isvalidbuy(self, si, scode):
         if si["stopped"]:
