@@ -19,12 +19,12 @@ if not s.setup():
 
 oreq = jsd.OrderReq(s)
 oreq["exchcode"] = s["cffexcode"]
-oreq["code"] = "IF1006"
+oreq["code"] = "IF1007"
 oreq["longshort"] = "0"
 oreq["openclose"] = "1"
 oreq["ifhedge"] = "0"
 oreq["count"] = "50"
-oreq["price"] = "2766.00"
+oreq["price"] = "2740.00"
 oreq["clientnum"] = s["clientnum"]
 oreq["seat"] = s["seat"]
 
