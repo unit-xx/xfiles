@@ -404,13 +404,16 @@ class QueryOrderResp(response):
         dealamount = 0.0
         dealprice = 0.0
         # calculate total deal count/amount
-        for r in self.records:
-            dealcount = dealcount + int(r[22])
-            dealamount = dealamount + float(r[24])
-        try:
-            dealprice = dealamount / dealcount
-        except ZeroDivisionError:
-            pass
+        if len(self.records) == 0:
+            dealcount, dealamount, dealprice = None, None, None
+        else:
+            for r in self.records:
+                dealcount = dealcount + int(r[22])
+                dealamount = dealamount + float(r[24])
+            try:
+                dealprice = dealamount / dealcount
+            except ZeroDivisionError:
+                pass
         return dealcount, dealamount, dealprice
 
 

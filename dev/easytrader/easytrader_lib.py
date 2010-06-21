@@ -559,6 +559,7 @@ class Portfolio(object):
 
     def savePortfolio(self, ptfn=None):
         with self.bolock:
+            self.logger.info("saving portfolio")
             if ptfn == None:
                 f = open(self.ptfn, "wb")
             else:
@@ -582,6 +583,7 @@ class Portfolio(object):
             writer.writerow(["BO", self.bostate.encode("utf-8")])
             f.flush()
             f.close()
+            self.logger.info("saved")
 
     def isvalidbuy(self, si, scode):
         if si["stopped"]:
@@ -657,6 +659,8 @@ class Portfolio(object):
             if self.bocount == 0:
                 self.logger.info("not stock to buy.")
                 self.bostate = Portfolio.BOUNORDERED
+            else:
+                self.logger.info("buy batch dispatched: %d" % self.bocount)
             #assert len(self.stockinfo) == self.bocount
             # assert not true on stopped stocks
 
@@ -701,6 +705,8 @@ class Portfolio(object):
             if self.bocount == 0:
                 self.logger.info("not stock to buy.")
                 self.bostate = Portfolio.BOBUYCANCELED
+            else:
+                self.logger.info("buy batch dispatched: %d" % self.bocount)
 
         elif self.bostate == Portfolio.BOBUYSUCCESS:
             self.bostate = Portfolio.BOBUYING
@@ -774,7 +780,7 @@ class Portfolio(object):
             self.bostate = Portfolio.BOBUYSUCCESS
             self.logger.info("batch buy-ed")
         self.bolock.release()
-        self.savePortfolio()
+        #self.savePortfolio()
 
     def cancelBuyBatchTop(self):
         self.bolock.acquire()
@@ -2482,7 +2488,7 @@ class asyncWorker(Thread):
                     try:
                         self.dotask(t)
                     except Exception:
-                        self.logger.exception("Exception while run some task, req (%s), param (%s)" % str(type(t[0])), str(t[2]))
+                        self.logger.exception("Exception while run some task, req (%s), param (%s)" % (str(type(t[0])), str(t[2])))
                     self.tqueue.task_done()
                 except Queue.Empty:
                     pass
