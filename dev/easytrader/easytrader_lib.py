@@ -873,6 +873,7 @@ class Portfolio(object):
             qoreq.send()
             qoresp = jz.QueryOrderResp(req.session)
             qoresp.recv()
+            req.session.storetrade(qoreq, qoresp)
             if qoresp.retcode == "0":
                 dealcount, dealamount, dealprice = qoresp.getTotal()
                 if dealcount != None:
@@ -1258,6 +1259,7 @@ class Portfolio(object):
             qoreq.send()
             qoresp = jz.QueryOrderResp(req.session)
             qoresp.recv()
+            req.session.storetrade(qoreq, qoresp)
             if qoresp.retcode == "0":
                 dealcount, dealamount, dealprice = qoresp.getTotal()
                 if dealcount != None:
