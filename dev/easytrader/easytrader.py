@@ -149,6 +149,11 @@ def main(args):
 
     # setup and run jzWorker threads
     jzWorkerNum = 10
+    try:
+        jzWorkerNum = config.getint(MYSEC, "jzworkernum")
+    except Exception:
+        pass
+
     workers = []
     for i in range(jzWorkerNum):
         w = jzWorker(session_config, tqueue)
