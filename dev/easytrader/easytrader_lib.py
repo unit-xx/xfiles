@@ -780,7 +780,8 @@ class Portfolio(object):
             self.bostate = Portfolio.BOBUYSUCCESS
             self.logger.info("batch buy-ed")
         self.bolock.release()
-        #self.savePortfolio()
+        if self.bocount == 0:
+            self.savePortfolio()
 
     def cancelBuyBatchTop(self):
         self.bolock.acquire()
@@ -853,32 +854,36 @@ class Portfolio(object):
         # time.sleep(5)
         # update stock info immediately, it's important to use req.session,
         # not self.session, to make sure sqlite db object is used by only one thread
-        qoreq = jz.QueryOrderReq(req.session)
-        qoreq["begin_date"] = orec["order_date"]
-        qoreq["end_date"] = orec["order_date"]
-        qoreq["get_orders_mode"] = "0" # all submissions
-        qoreq["user_code"] = req.session["user_code"]
-        # a bug in protocol/document results in next odd line
-        qoreq["biz_no"] = orec["order_id"]
-        qoreq.send()
-        qoresp = jz.QueryOrderResp(req.session)
-        qoresp.recv()
-        if qoresp.retcode == "0":
-            dealcount, dealamount, dealprice = qoresp.getTotal()
-            orec["dealcount"] = str(dealcount)
-            orec["dealamount"] = str(dealamount)
-            orec["dealprice"] = str(dealprice)
-            if orec["order_state"] == Portfolio.CANCELBUYFAILED:
-                if orec["dealcount"] == orec["ordercount"]:
-                    #assert int(si["count"]) == si["pastbuycount"] + int(orec["dealcount"])
-                    orec["order_state"] = Portfolio.BUYSUCCESS
-                else:
-                    # TODO: change state to ORDERSUCCESS in this case too? to enable next cancel?
-                    self.logger.error("Error: cancel failed while dealcount is smaller than count. (%s:%s)",
-                            scode, orec["order_id"])
+        needmore = True
+        while needmore:
+            qoreq = jz.QueryOrderReq(req.session)
+            qoreq["begin_date"] = orec["order_date"]
+            qoreq["end_date"] = orec["order_date"]
+            qoreq["get_orders_mode"] = "0" # all submissions
+            qoreq["user_code"] = req.session["user_code"]
+            # a bug in protocol/document results in next odd line
+            qoreq["biz_no"] = orec["order_id"]
+            qoreq.send()
+            qoresp = jz.QueryOrderResp(req.session)
+            qoresp.recv()
+            if qoresp.retcode == "0":
+                dealcount, dealamount, dealprice = qoresp.getTotal()
+                if dealcount != None:
+                    needmore = False
+                    orec["dealcount"] = str(dealcount)
+                    orec["dealamount"] = str(dealamount)
+                    orec["dealprice"] = str(dealprice)
+                    if orec["order_state"] == Portfolio.CANCELBUYFAILED:
+                        if orec["dealcount"] == orec["ordercount"]:
+                            #assert int(si["count"]) == si["pastbuycount"] + int(orec["dealcount"])
+                            orec["order_state"] = Portfolio.BUYSUCCESS
+                        else:
+                            # TODO: change state to ORDERSUCCESS in this case too? to enable next cancel?
+                            self.logger.error("Error: cancel failed while dealcount is smaller than count. (%s:%s)",
+                                    scode, orec["order_id"])
 
-        else:
-            self.logger.error("error when update order for %s (%s:%s)", orec["order_id"], qoresp.retcode, qoresp.retinfo)
+            else:
+                self.logger.error("error when update order for %s (%s:%s)", orec["order_id"], qoresp.retcode, qoresp.retinfo)
 
         # update pastbuyxxx
         if orec["order_state"] in (Portfolio.BUYSUCCESS, Portfolio.CANCELBUYSUCCESS):
@@ -895,7 +900,8 @@ class Portfolio(object):
             self.bostate = Portfolio.BOBUYCANCELED
             self.logger.info("batch buy canceled")
         self.bolock.release()
-        self.savePortfolio()
+        if self.bocount == 0:
+            self.savePortfolio()
 
     def sellBatchTop(self):
         self.bolock.acquire()
@@ -1157,7 +1163,8 @@ class Portfolio(object):
             self.bostate = Portfolio.BOSELLSUCCESS
             self.logger.info("batch selled")
         self.bolock.release()
-        self.savePortfolio()
+        if self.bocount == 0:
+            self.savePortfolio()
 
     def cancelSellBatchTop(self):
         self.bolock.acquire()
@@ -1226,31 +1233,34 @@ class Portfolio(object):
             orec["order_state"] = Portfolio.CANCELSELLFAILED
 
         # update stock info immediately
-        qoreq = jz.QueryOrderReq(req.session)
-        qoreq["begin_date"] = orec["order_date"]
-        qoreq["end_date"] = orec["order_date"]
-        qoreq["get_orders_mode"] = "0" # all submissions
-        qoreq["user_code"] = req.session["user_code"]
-        # a bug in protocol/document results in next odd line
-        qoreq["biz_no"] = orec["order_id"]
-        qoreq.send()
-        qoresp = jz.QueryOrderResp(req.session)
-        qoresp.recv()
-        if qoresp.retcode == "0":
-            dealcount, dealamount, dealprice = qoresp.getTotal()
-            orec["dealcount"] = str(dealcount)
-            orec["dealamount"] = str(dealamount)
-            orec["dealprice"] = str(dealprice)
-            if orec["order_state"] == Portfolio.CANCELSELLFAILED:
-                if orec["dealcount"] == orec["ordercount"]:
-                    #assert si["pastbuycount"] == si["pastsellcount"] + int(orec["dealcount"])
-                    orec["order_state"] = Portfolio.SELLSUCCESS
-                else:
-                    self.logger.error("Error: cancel failed while dealcount is smaller than count. (%s:%s)",
-                            scode, orec["order_id"])
-        else:
-            self.logger.error("error when update order for %s (%s:%s)",
-                    si["order_id"], qoresp.retcode, qoresp.retinfo)
+        needmore = True
+        while needmore:
+            qoreq = jz.QueryOrderReq(req.session)
+            qoreq["begin_date"] = orec["order_date"]
+            qoreq["end_date"] = orec["order_date"]
+            qoreq["get_orders_mode"] = "0" # all submissions
+            qoreq["user_code"] = req.session["user_code"]
+            # a bug in protocol/document results in next odd line
+            qoreq["biz_no"] = orec["order_id"]
+            qoreq.send()
+            qoresp = jz.QueryOrderResp(req.session)
+            qoresp.recv()
+            if qoresp.retcode == "0":
+                needmore = False
+                dealcount, dealamount, dealprice = qoresp.getTotal()
+                orec["dealcount"] = str(dealcount)
+                orec["dealamount"] = str(dealamount)
+                orec["dealprice"] = str(dealprice)
+                if orec["order_state"] == Portfolio.CANCELSELLFAILED:
+                    if orec["dealcount"] == orec["ordercount"]:
+                        #assert si["pastbuycount"] == si["pastsellcount"] + int(orec["dealcount"])
+                        orec["order_state"] = Portfolio.SELLSUCCESS
+                    else:
+                        self.logger.error("Error: cancel failed while dealcount is smaller than count. (%s:%s)",
+                                scode, orec["order_id"])
+            else:
+                self.logger.error("error when update order for %s (%s:%s)",
+                        si["order_id"], qoresp.retcode, qoresp.retinfo)
 
         # update pastsellxxx
         if orec["order_state"] in (Portfolio.SELLSUCCESS, Portfolio.CANCELSELLSUCCESS):
@@ -1266,7 +1276,8 @@ class Portfolio(object):
             self.bostate = Portfolio.BOSELLCANCELED
             self.logger.info("batch sell canceled")
         self.bolock.release()
-        self.savePortfolio()
+        if self.bocount == 0:
+            self.savePortfolio()
 
     def openshort(self):
         with self.sindexlock:
@@ -2661,10 +2672,10 @@ class uicontrol(QMainWindow, Ui_MainWindow):
 
     @pyqtSlot()
     def cancelBuyBatch(self):
-        ret = QMessageBox.warning(self.mainwindow,
-                u"", u"<H3>确认<FONT COLOR='#FF0000'>撤销买入</FONT>？</H3>",
-                QMessageBox.Ok|QMessageBox.Cancel)
-        if QMessageBox.Ok == ret:
+        #ret = QMessageBox.warning(self.mainwindow,
+        #        u"", u"<H3>确认<FONT COLOR='#FF0000'>撤销买入</FONT>？</H3>",
+        #        QMessageBox.Ok|QMessageBox.Cancel)
+        if True:#QMessageBox.Ok == ret:
             self.portfolio.cancelBuyBatch()
 
     @pyqtSlot()
@@ -2680,10 +2691,10 @@ class uicontrol(QMainWindow, Ui_MainWindow):
 
     @pyqtSlot()
     def cancelSellBatch(self):
-        ret = QMessageBox.warning(self.mainwindow,
-                u"", u"<H3>确认<FONT COLOR='#FF0000'>撤销卖出</FONT>？</H3>",
-                QMessageBox.Ok|QMessageBox.Cancel)
-        if QMessageBox.Ok == ret:
+        #ret = QMessageBox.warning(self.mainwindow,
+        #        u"", u"<H3>确认<FONT COLOR='#FF0000'>撤销卖出</FONT>？</H3>",
+        #        QMessageBox.Ok|QMessageBox.Cancel)
+        if True:#QMessageBox.Ok == ret:
             self.portfolio.cancelSellBatch()
 
     @pyqtSlot()
@@ -2701,10 +2712,10 @@ class uicontrol(QMainWindow, Ui_MainWindow):
 
     @pyqtSlot()
     def cancelopen(self):
-        ret = QMessageBox.warning(self.mainwindow,
-                u"", u"<H3>确认<FONT COLOR='#FF0000'>取消建仓</FONT>？</H3>",
-                QMessageBox.Ok|QMessageBox.Cancel)
-        if QMessageBox.Ok == ret:
+        #ret = QMessageBox.warning(self.mainwindow,
+        #        u"", u"<H3>确认<FONT COLOR='#FF0000'>取消建仓</FONT>？</H3>",
+        #        QMessageBox.Ok|QMessageBox.Cancel)
+        if True:#QMessageBox.Ok == ret:
             self.portfolio.cancelopenshort()
             QMetaObject.invokeMethod(self.sindexmodel, "updaterow", Qt.QueuedConnection)
             self.savePortfolio()
@@ -2724,10 +2735,10 @@ class uicontrol(QMainWindow, Ui_MainWindow):
 
     @pyqtSlot()
     def cancelclose(self):
-        ret = QMessageBox.warning(self.mainwindow,
-                u"", u"<H3>确认<FONT COLOR='#FF0000'>取消平仓</FONT>？</H3>",
-                QMessageBox.Ok|QMessageBox.Cancel)
-        if QMessageBox.Ok == ret:
+        #ret = QMessageBox.warning(self.mainwindow,
+        #        u"", u"<H3>确认<FONT COLOR='#FF0000'>取消平仓</FONT>？</H3>",
+        #        QMessageBox.Ok|QMessageBox.Cancel)
+        if True:#QMessageBox.Ok == ret:
             self.portfolio.cancelcloseshort()
             QMetaObject.invokeMethod(self.sindexmodel, "updaterow", Qt.QueuedConnection)
             self.savePortfolio()
