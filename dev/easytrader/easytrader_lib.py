@@ -588,7 +588,9 @@ class Portfolio(object):
     def isvalidbuy(self, si, scode):
         if si["stopped"]:
             return False
-        if int(si["count"]) < 100:
+        #if int(si["count"]) < 100:
+        #    return False
+        if int(si["count"]) - si["pastbuycount"] < 50:
             return False
         if si["tobuyprice"] > si["ceiling"] or si["tobuyprice"] < si["floor"]:
             return False
@@ -599,7 +601,9 @@ class Portfolio(object):
     def isvalidsell(self, si, scode):
         if si["stopped"]:
             return False
-        if si["pastbuycount"] <= 0:
+        #if si["pastbuycount"] <= 0:
+        #    return False
+        if si["pastbuycount"] - si["pastsellcount"] <= 0:
             return False
         if si["tosellprice"] > si["ceiling"] or si["tosellprice"] < si["floor"]:
             return False
@@ -855,7 +859,9 @@ class Portfolio(object):
         # update stock info immediately, it's important to use req.session,
         # not self.session, to make sure sqlite db object is used by only one thread
         needmore = True
-        while needmore:
+        trycount = 0
+        while needmore and trycount < 3:
+            trycount += 1
             qoreq = jz.QueryOrderReq(req.session)
             qoreq["begin_date"] = orec["order_date"]
             qoreq["end_date"] = orec["order_date"]
@@ -863,6 +869,7 @@ class Portfolio(object):
             qoreq["user_code"] = req.session["user_code"]
             # a bug in protocol/document results in next odd line
             qoreq["biz_no"] = orec["order_id"]
+            time.sleep(0.05)
             qoreq.send()
             qoresp = jz.QueryOrderResp(req.session)
             qoresp.recv()
@@ -884,6 +891,9 @@ class Portfolio(object):
 
             else:
                 self.logger.error("error when update order for %s (%s:%s)", orec["order_id"], qoresp.retcode, qoresp.retinfo)
+
+        if trycount >= 3:
+            self.logger.warning("tried more than 3 times.")
 
         # update pastbuyxxx
         if orec["order_state"] in (Portfolio.BUYSUCCESS, Portfolio.CANCELBUYSUCCESS):
@@ -1234,7 +1244,9 @@ class Portfolio(object):
 
         # update stock info immediately
         needmore = True
-        while needmore:
+        trycount = 0
+        while needmore and trycount < 3:
+            trycount += 1
             qoreq = jz.QueryOrderReq(req.session)
             qoreq["begin_date"] = orec["order_date"]
             qoreq["end_date"] = orec["order_date"]
@@ -1242,25 +1254,30 @@ class Portfolio(object):
             qoreq["user_code"] = req.session["user_code"]
             # a bug in protocol/document results in next odd line
             qoreq["biz_no"] = orec["order_id"]
+            time.sleep(0.05)
             qoreq.send()
             qoresp = jz.QueryOrderResp(req.session)
             qoresp.recv()
             if qoresp.retcode == "0":
-                needmore = False
                 dealcount, dealamount, dealprice = qoresp.getTotal()
-                orec["dealcount"] = str(dealcount)
-                orec["dealamount"] = str(dealamount)
-                orec["dealprice"] = str(dealprice)
-                if orec["order_state"] == Portfolio.CANCELSELLFAILED:
-                    if orec["dealcount"] == orec["ordercount"]:
-                        #assert si["pastbuycount"] == si["pastsellcount"] + int(orec["dealcount"])
-                        orec["order_state"] = Portfolio.SELLSUCCESS
-                    else:
-                        self.logger.error("Error: cancel failed while dealcount is smaller than count. (%s:%s)",
-                                scode, orec["order_id"])
+                if dealcount != None:
+                    needmore = False
+                    orec["dealcount"] = str(dealcount)
+                    orec["dealamount"] = str(dealamount)
+                    orec["dealprice"] = str(dealprice)
+                    if orec["order_state"] == Portfolio.CANCELSELLFAILED:
+                        if orec["dealcount"] == orec["ordercount"]:
+                            #assert si["pastbuycount"] == si["pastsellcount"] + int(orec["dealcount"])
+                            orec["order_state"] = Portfolio.SELLSUCCESS
+                        else:
+                            self.logger.error("Error: cancel failed while dealcount is smaller than count. (%s:%s)",
+                                    scode, orec["order_id"])
             else:
                 self.logger.error("error when update order for %s (%s:%s)",
                         si["order_id"], qoresp.retcode, qoresp.retinfo)
+
+        if trycount >= 3:
+            self.logger.warning("tried more than 3 times.")
 
         # update pastsellxxx
         if orec["order_state"] in (Portfolio.SELLSUCCESS, Portfolio.CANCELSELLSUCCESS):
