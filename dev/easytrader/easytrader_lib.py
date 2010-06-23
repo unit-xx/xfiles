@@ -871,7 +871,7 @@ class Portfolio(object):
             qoreq["user_code"] = req.session["user_code"]
             # a bug in protocol/document results in next odd line
             qoreq["biz_no"] = orec["order_id"]
-            time.sleep(0.05)
+            time.sleep(0.1)
             self.logger.info("try %d time query order @cancel" % trycount)
             qoreq.send()
             qoresp = jz.QueryOrderResp(req.session)
@@ -1260,7 +1260,7 @@ class Portfolio(object):
             qoreq["user_code"] = req.session["user_code"]
             # a bug in protocol/document results in next odd line
             qoreq["biz_no"] = orec["order_id"]
-            time.sleep(0.05)
+            time.sleep(0.1)
             self.logger.info("try %d time query order @cancel" % trycount)
             qoreq.send()
             qoresp = jz.QueryOrderResp(req.session)
