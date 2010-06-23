@@ -131,6 +131,8 @@ class stockquerydlg(QDialog, Ui_stockquery):
                 self.simodel.data.extend(newdata)
                 self.simodel.endInsertRows()
 
+            self.stockinfo.resizeColumnsToContents()
+
         else:
             QMessageBox.information(None, "", u"刷新错误: " + sresp.retinfo)
 

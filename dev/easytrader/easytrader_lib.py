@@ -872,7 +872,6 @@ class Portfolio(object):
             # a bug in protocol/document results in next odd line
             qoreq["biz_no"] = orec["order_id"]
             time.sleep(0.1)
-            self.logger.info("try %d time query order @cancel" % trycount)
             qoreq.send()
             qoresp = jz.QueryOrderResp(req.session)
             qoresp.recv()
@@ -896,6 +895,7 @@ class Portfolio(object):
             else:
                 self.logger.error("error when update order for %s (%s:%s)", orec["order_id"], qoresp.retcode, qoresp.retinfo)
 
+        self.logger.info("tried %d time query order @cancel" % trycount)
         if trycount >= maxtrycount:
             self.logger.warning("tried more than %d times.", maxtrycount)
 
@@ -1261,7 +1261,6 @@ class Portfolio(object):
             # a bug in protocol/document results in next odd line
             qoreq["biz_no"] = orec["order_id"]
             time.sleep(0.1)
-            self.logger.info("try %d time query order @cancel" % trycount)
             qoreq.send()
             qoresp = jz.QueryOrderResp(req.session)
             qoresp.recv()
@@ -1284,6 +1283,7 @@ class Portfolio(object):
                 self.logger.error("error when update order for %s (%s:%s)",
                         si["order_id"], qoresp.retcode, qoresp.retinfo)
 
+        self.logger.info("tried %d time query order @cancel" % trycount)
         if trycount >= maxtrycount:
             self.logger.warning("tried more than %d times.", maxtrycount)
 
