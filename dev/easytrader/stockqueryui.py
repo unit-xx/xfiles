@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'stockqueryui.ui'
 #
-# Created: Fri May 07 11:19:05 2010
+# Created: Wed Jun 23 14:12:32 2010
 #      by: PyQt4 UI code generator 4.7.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -12,7 +12,7 @@ from PyQt4 import QtCore, QtGui
 class Ui_stockquery(object):
     def setupUi(self, stockquery):
         stockquery.setObjectName("stockquery")
-        stockquery.resize(757, 486)
+        stockquery.resize(977, 486)
         stockquery.setSizeGripEnabled(False)
         self.gridLayout = QtGui.QGridLayout(stockquery)
         self.gridLayout.setObjectName("gridLayout")
@@ -46,6 +46,8 @@ class Ui_stockquery(object):
 
         self.retranslateUi(stockquery)
         QtCore.QMetaObject.connectSlotsByName(stockquery)
+        stockquery.setTabOrder(self.refresh, self.quit)
+        stockquery.setTabOrder(self.quit, self.stockinfo)
 
     def retranslateUi(self, stockquery):
         stockquery.setWindowTitle(QtGui.QApplication.translate("stockquery", "Dialog", None, QtGui.QApplication.UnicodeUTF8))
