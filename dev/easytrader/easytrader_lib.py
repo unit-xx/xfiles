@@ -860,7 +860,9 @@ class Portfolio(object):
         # not self.session, to make sure sqlite db object is used by only one thread
         needmore = True
         trycount = 0
-        while needmore and trycount < 3:
+        maxtrycount = 10
+        ordercount = int(orec["ordercount"])
+        while needmore and trycount < maxtrycount:
             trycount += 1
             qoreq = jz.QueryOrderReq(req.session)
             qoreq["begin_date"] = orec["order_date"]
@@ -870,13 +872,14 @@ class Portfolio(object):
             # a bug in protocol/document results in next odd line
             qoreq["biz_no"] = orec["order_id"]
             time.sleep(0.05)
+            self.logger.info("try %d time query order @cancel" % trycount)
             qoreq.send()
             qoresp = jz.QueryOrderResp(req.session)
             qoresp.recv()
             req.session.storetrade(qoreq, qoresp)
             if qoresp.retcode == "0":
-                dealcount, dealamount, dealprice = qoresp.getTotal()
-                if dealcount != None:
+                wdqty, dealcount, dealamount, dealprice = qoresp.getTotal()
+                if dealcount != None and (wdqty+dealcount==ordercount):
                     needmore = False
                     orec["dealcount"] = str(dealcount)
                     orec["dealamount"] = str(dealamount)
@@ -893,8 +896,8 @@ class Portfolio(object):
             else:
                 self.logger.error("error when update order for %s (%s:%s)", orec["order_id"], qoresp.retcode, qoresp.retinfo)
 
-        if trycount >= 3:
-            self.logger.warning("tried more than 3 times.")
+        if trycount >= maxtrycount:
+            self.logger.warning("tried more than %d times.", maxtrycount)
 
         # update pastbuyxxx
         if orec["order_state"] in (Portfolio.BUYSUCCESS, Portfolio.CANCELBUYSUCCESS):
@@ -1246,7 +1249,9 @@ class Portfolio(object):
         # update stock info immediately
         needmore = True
         trycount = 0
-        while needmore and trycount < 3:
+        maxtrycount = 10
+        ordercount = int(orec["ordercount"])
+        while needmore and trycount < maxtrycount:
             trycount += 1
             qoreq = jz.QueryOrderReq(req.session)
             qoreq["begin_date"] = orec["order_date"]
@@ -1256,13 +1261,14 @@ class Portfolio(object):
             # a bug in protocol/document results in next odd line
             qoreq["biz_no"] = orec["order_id"]
             time.sleep(0.05)
+            self.logger.info("try %d time query order @cancel" % trycount)
             qoreq.send()
             qoresp = jz.QueryOrderResp(req.session)
             qoresp.recv()
             req.session.storetrade(qoreq, qoresp)
             if qoresp.retcode == "0":
-                dealcount, dealamount, dealprice = qoresp.getTotal()
-                if dealcount != None:
+                wdqty, dealcount, dealamount, dealprice = qoresp.getTotal()
+                if dealcount != None and (wdqty+dealcount==ordercount):
                     needmore = False
                     orec["dealcount"] = str(dealcount)
                     orec["dealamount"] = str(dealamount)
@@ -1278,8 +1284,8 @@ class Portfolio(object):
                 self.logger.error("error when update order for %s (%s:%s)",
                         si["order_id"], qoresp.retcode, qoresp.retinfo)
 
-        if trycount >= 3:
-            self.logger.warning("tried more than 3 times.")
+        if trycount >= maxtrycount:
+            self.logger.warning("tried more than %d times.", maxtrycount)
 
         # update pastsellxxx
         if orec["order_state"] in (Portfolio.SELLSUCCESS, Portfolio.CANCELSELLSUCCESS):
@@ -2435,29 +2441,30 @@ class OrderUpdater(Thread):
                     qoresp.recv()
                     if qoresp.retcode == "0":
                         # TODO: don't know whether multi-line records case exists.
-                        dealcount, dealamount, dealprice = qoresp.getTotal()
-                        order["dealcount"] = str(dealcount)
-                        order["dealamount"] = str(dealamount)
-                        order["dealprice"] = str(dealprice)
-                        if int(order["dealcount"]) < int(order["ordercount"]):
-                            # update pastxxx and currentxxx
-                            if len(si["pastsell"]) != 0:
-                                si["currentsellcount"] = si["pastsellcount"] + int(order["dealcount"])
-                                si["currentsellgain"] = si["pastsellgain"] + float(order["dealamount"])
-                            elif len(si["pastbuy"]) != 0:
-                                si["currentbuycount"] = si["pastbuycount"] + int(order["dealcount"])
-                                si["currentbuycost"] = si["pastbuycost"] + float(order["dealamount"])
-                        else: # int(order["dealcount"]) == int(order["ordercount"])
-                            if len(si["pastsell"]) != 0:
-                                si["pastsellcount"] = si["pastsellcount"] + int(order["dealcount"])
-                                si["pastsellgain"] = si["pastsellgain"] + float(order["dealamount"])
-                                si["currentsellcount"] = si["pastsellcount"]
-                                si["currentsellgain"] = si["pastsellgain"]
-                            elif len(si["pastbuy"]) != 0:
-                                si["pastbuycount"] = si["pastbuycount"] + int(order["dealcount"])
-                                si["pastbuycost"] = si["pastbuycost"] + float(order["dealamount"])
-                                si["currentbuycount"] = si["pastbuycount"]
-                                si["currentbuycost"] = si["pastbuycost"]
+                        wdqty, dealcount, dealamount, dealprice = qoresp.getTotal()
+                        if dealcount != None:
+                            order["dealcount"] = str(dealcount)
+                            order["dealamount"] = str(dealamount)
+                            order["dealprice"] = str(dealprice)
+                            if int(order["dealcount"]) < int(order["ordercount"]):
+                                # update pastxxx and currentxxx
+                                if len(si["pastsell"]) != 0:
+                                    si["currentsellcount"] = si["pastsellcount"] + int(order["dealcount"])
+                                    si["currentsellgain"] = si["pastsellgain"] + float(order["dealamount"])
+                                elif len(si["pastbuy"]) != 0:
+                                    si["currentbuycount"] = si["pastbuycount"] + int(order["dealcount"])
+                                    si["currentbuycost"] = si["pastbuycost"] + float(order["dealamount"])
+                            else: # int(order["dealcount"]) == int(order["ordercount"])
+                                if len(si["pastsell"]) != 0:
+                                    si["pastsellcount"] = si["pastsellcount"] + int(order["dealcount"])
+                                    si["pastsellgain"] = si["pastsellgain"] + float(order["dealamount"])
+                                    si["currentsellcount"] = si["pastsellcount"]
+                                    si["currentsellgain"] = si["pastsellgain"]
+                                elif len(si["pastbuy"]) != 0:
+                                    si["pastbuycount"] = si["pastbuycount"] + int(order["dealcount"])
+                                    si["pastbuycost"] = si["pastbuycost"] + float(order["dealamount"])
+                                    si["currentbuycount"] = si["pastbuycount"]
+                                    si["currentbuycost"] = si["pastbuycost"]
                     else:
                         self.logger.warning("error when query order for %s: %s, %s"
                                 % (order["order_id"], qoresp.retcode, qoresp.retinfo))

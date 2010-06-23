@@ -400,21 +400,23 @@ class QueryOrderReq(request):
 
 class QueryOrderResp(response):
     def getTotal(self):
+        withdrawnqty = 0
         dealcount = 0
         dealamount = 0.0
         dealprice = 0.0
         # calculate total deal count/amount
         if len(self.records) == 0:
-            dealcount, dealamount, dealprice = None, None, None
+            withdrawnqty, dealcount, dealamount, dealprice = None, None, None, None
         else:
             for r in self.records:
+                withdrawnqty = withdrawnqty + int(r[31])
                 dealcount = dealcount + int(r[22])
                 dealamount = dealamount + float(r[24])
             try:
                 dealprice = dealamount / dealcount
             except ZeroDivisionError:
                 pass
-        return dealcount, dealamount, dealprice
+        return withdrawnqty, dealcount, dealamount, dealprice
 
 
 class DealReq(request):
