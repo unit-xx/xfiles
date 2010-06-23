@@ -1,6 +1,6 @@
 IF,IF1006,50,未持仓,[],[],{}
-SH,600009,100,"[{'cancel_time': '', 'order_time': '11:17:24.789000', 'order_id': '17079843', 'orderprice': '13.500', 'cancel_date': '', 'dealprice': '13.5', 'order_state': 'BUYSUCCESS', 'order_date': '2010-06-10', 'ordercount': '100', 'dealcount': '100', 'dealamount': '1350.0'}]",[]
-SH,600010,100,"[{'cancel_time': '', 'order_time': '11:17:24.804000', 'order_id': '17079842', 'orderprice': '3.340', 'cancel_date': '', 'dealprice': '3.34', 'order_state': 'BUYSUCCESS', 'order_date': '2010-06-10', 'ordercount': '100', 'dealcount': '100', 'dealamount': '334.0'}]",[]
-SH,600011,100,"[{'cancel_time': '', 'order_time': '11:17:24.804000', 'order_id': '17079841', 'orderprice': '5.980', 'cancel_date': '', 'dealprice': '5.98', 'order_state': 'BUYSUCCESS', 'order_date': '2010-06-10', 'ordercount': '100', 'dealcount': '100', 'dealamount': '598.0'}]",[]
-SH,601398,100,"[{'cancel_time': '12:25:46.164000', 'dealprice': '0.0', 'order_time': '12:25:38.867000', 'ordercount': '100', 'order_id': '17079852', 'orderprice': '4.160', 'dealcount': '0', 'cancel_date': '2010-06-10', 'dealamount': '0.0', 'order_date': '2010-06-10', 'order_state': 'CANCELBUYSUCCESS'}, {'cancel_time': '12:25:52.804000', 'dealprice': '0.0', 'order_time': '12:25:49.945000', 'ordercount': '100', 'order_id': '17079853', 'orderprice': '4.160', 'dealcount': '0', 'cancel_date': '2010-06-10', 'dealamount': '0.0', 'order_date': '2010-06-10', 'order_state': 'CANCELBUYSUCCESS'}]",[]
-BO,买入已撤单
+SH,600009,100
+SH,600010,100
+SH,600011,100
+SH,601398,100
+BO,未委托
