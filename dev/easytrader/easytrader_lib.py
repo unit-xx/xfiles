@@ -895,7 +895,7 @@ class Portfolio(object):
             else:
                 self.logger.error("error when update order for %s (%s:%s)", orec["order_id"], qoresp.retcode, qoresp.retinfo)
 
-        self.logger.info("tried %d time query order @cancel" % trycount)
+        #self.logger.info("tried %d time query order @cancel" % trycount)
         if trycount >= maxtrycount:
             self.logger.warning("tried more than %d times.", maxtrycount)
 
@@ -1283,7 +1283,7 @@ class Portfolio(object):
                 self.logger.error("error when update order for %s (%s:%s)",
                         si["order_id"], qoresp.retcode, qoresp.retinfo)
 
-        self.logger.info("tried %d time query order @cancel" % trycount)
+        #self.logger.info("tried %d time query order @cancel" % trycount)
         if trycount >= maxtrycount:
             self.logger.warning("tried more than %d times.", maxtrycount)
 
