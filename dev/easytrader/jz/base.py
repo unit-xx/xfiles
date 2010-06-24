@@ -55,7 +55,8 @@ class session:
         try:
             c = socket.socket()
             c.connect((self.sessioncfg["jzserver"], self.sessioncfg["jzport"]))
-            self.conn = c
+            self.sockconn = c
+            self.conn = c.makefile()
 
             self.tradedbconn = db.connect(self.sessioncfg["tradedbfn"], timeout=30)
         except socket.error:
@@ -126,6 +127,9 @@ class session:
         if self.conn:
             self.conn.close()
             self.conn = None
+        if self.sockconn:
+            self.sockconn.close()
+            self.sockconn = None
 
 class request:
     # request code
@@ -206,7 +210,7 @@ class request:
 
     def send(self):
         data = self.serialize()
-        self.session.conn.sendall(data)
+        self.session.conn.write(data)
 
 class response:
     def __init__(self, session):
@@ -238,19 +242,16 @@ class response:
         return header_len, header_left, payload
 
     def recv_single2(self):
-        tmp = self.recv_n(5+11)
-        print tmp
-        tmp = tmp.split("|")
-        assert tmp[2] == ""
-        header_len = int(tmp[0])
-        payload_len = int(tmp[1])
-
-        tmp = self.recv_n(header_len + payload_len - 16)
-        header_left = tmp[0:header_len-16]
-        payload = tmp[header_len-16:]
+        f = self.session.conn
+        header_len = int(f.read(5)[0:4])
+        #self.header_len = header_len
+        header_left = f.read(header_len - 5)
+        i = header_left.find("|")
+        payload_len = int(header_left[0:i])
+        payload = f.read(payload_len)
         return header_len, header_left, payload
 
-    recv_single = recv_single1
+    recv_single = recv_single2
 
     def recv_first(self):
         header_len, self.header_left, self.payload = self.recv_single()
