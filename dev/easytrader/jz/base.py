@@ -56,7 +56,7 @@ class session:
             c = socket.socket()
             c.connect((self.sessioncfg["jzserver"], self.sessioncfg["jzport"]))
             self.sockconn = c
-            self.conn = c.makefile()
+            self.conn = c.makefile("r+b")
 
             self.tradedbconn = db.connect(self.sessioncfg["tradedbfn"], timeout=30)
         except socket.error:
@@ -211,6 +211,7 @@ class request:
     def send(self):
         data = self.serialize()
         self.session.conn.write(data)
+        self.session.conn.flush()
 
 class response:
     def __init__(self, session):
@@ -226,7 +227,7 @@ class response:
         while 1:
             if left <= 0:
                 break
-            buf = self.session.conn.recv(left)
+            buf = self.session.conn.read(left)
             content.append(buf)
             left = left - len(buf)
 
