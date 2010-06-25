@@ -18,6 +18,7 @@ from datetime import datetime, date, timedelta
 import types
 from ctypes import *
 import logging, logging.config
+import sqlite3 as db
 
 import jz, jsd
 import jsdhq
@@ -2494,10 +2495,11 @@ class OrderUpdater(Thread):
             self.logger.exception("Oh!!!")
 
 class asyncWorker(Thread):
-    def __init__(self, session_cfg, tqueue):
+    def __init__(self, session_cfg, tqueue, dbqueue):
         Thread.__init__(self)
         self.session_cfg = session_cfg
         self.tqueue = tqueue
+        self.dbqueue = dbqueue
         self.runflag = True
         self.name = self.__class__.__name__
         self.logger = logging.getLogger()
@@ -2529,13 +2531,6 @@ class asyncWorker(Thread):
                     self.tqueue.task_done()
                 except Queue.Empty:
                     pass
-
-            #while self.runflag:
-            #    if self.tqueue:
-            #        t = self.tqueue.pop()
-            #        self.dotask(t)
-            #    else:
-            #        time.sleep(0.05)
 
             self.closesession()
         except Exception:
@@ -2569,15 +2564,16 @@ class asyncWorker(Thread):
         resp.recv()
         ifstoretrade = t[4]
         if ifstoretrade:
-            self.session.storetrade(req, resp)
+            #self.session.storetrade(req, resp)
+            self.dbqueue.put( (req, resp) )
         callback(req, resp, param)
 
     def stop(self):
         self.runflag = False
 
 class jzWorker(asyncWorker):
-    def __init__(self, session_cfg, tqueue):
-        asyncWorker.__init__(self, session_cfg, tqueue)
+    def __init__(self, session_cfg, tqueue, dbqueue):
+        asyncWorker.__init__(self, session_cfg, tqueue, dbqueue)
         self.runflag = True
         self.name = self.__class__.__name__
 
@@ -2588,8 +2584,8 @@ class jzWorker(asyncWorker):
         return True
 
 class jsdWorker(asyncWorker):
-    def __init__(self, session_cfg, tqueue):
-        asyncWorker.__init__(self, session_cfg, tqueue)
+    def __init__(self, session_cfg, tqueue, dbqueue):
+        asyncWorker.__init__(self, session_cfg, tqueue, dbqueue)
         self.runflag = True
         self.name = self.__class__.__name__
 
@@ -2598,6 +2594,66 @@ class jsdWorker(asyncWorker):
         if not self.session.setup():
             return False
         return True
+
+class dbserver(Thread):
+    def __init__(self, dbname, dbqueue):
+        Thread.__init__(self)
+        self.dbname = dbname
+        self.db = None
+        self.dbqueue = dbqueue
+        self.runflag = True
+        self.name = self.__class__.__name__
+        self.logger = logging.getLogger()
+
+    def setup(self):
+        self.db = db.connect(self.dbname, timeout=30)
+        return True
+
+    def close(self):
+        if self.db:
+            self.db.commit()
+            self.db.close()
+            self.db = None
+
+    def run(self):
+        try:
+            if not self.setup():
+                self.logger.warning("setup failed")
+                self.close()
+                return
+
+            self.logger.info("dbserver setup ok.")
+            while self.runflag:
+                try:
+                    t = self.dbqueue.get(True, 2)
+                    try:
+                        self.dotask(t)
+                    except Exception:
+                        self.logger.exception("dbserver dotask meets exception.")
+                    self.dbqueue.task_done()
+                except Queue.Empty:
+                    pass
+
+            self.close()
+
+        except Exception:
+            self.close()
+            self.logger.exception("dbserver exit exceptionally.")
+
+    def dotask(self, task):
+        t = datetime.now()
+        req = task[0]
+        resp = task[1]
+        self.db.execute('insert into rawtradeinfo values (?, ?, ?, ?)',
+                (str(t),
+                    req.payload.decode("GBK"),
+                    resp.payload.decode("GBK"),
+                    "%s:%s" % (resp.retcode, resp.retinfo)
+                    ))
+        self.db.commit()
+
+    def stop(self):
+        self.runflag = False
 
 class uicontrol(QMainWindow, Ui_MainWindow):
     def __init__(self, session_cfg, portfolio, pmodel, sindexmodel):

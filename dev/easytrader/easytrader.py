@@ -147,6 +147,12 @@ def main(args):
     orderupdater = OrderUpdater(p, pmodel, session_config, updtlock)
     orderupdater.start()
 
+    # setup dbqueue and dbserver
+    dbqueue = Queue.Queue()
+    dbname = config.get(MYSEC, "tradedb")
+    dbs = dbserver(dbname, dbqueue)
+    dbs.start()
+
     # setup and run jzWorker threads
     jzWorkerNum = 10
     try:
@@ -156,7 +162,7 @@ def main(args):
 
     workers = []
     for i in range(jzWorkerNum):
-        w = jzWorker(session_config, tqueue)
+        w = jzWorker(session_config, tqueue, dbqueue)
         workers.append(w)
 
     for i in range(jzWorkerNum):
@@ -219,6 +225,12 @@ def main(args):
     for i in range(jzWorkerNum):
         workers[i].join()
     logger.info("jzWorkers stopped")
+
+    logger.info("waiting dbserver to stop")
+    dbqueue.join()
+    dbs.stop()
+    dbs.join()
+
     logger.info("saving order info.")
     p.savePortfolio()
     p.close()

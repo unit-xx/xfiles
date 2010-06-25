@@ -26,7 +26,7 @@ class session:
             c.connect((self.sessioncfg["jsdserver"], self.sessioncfg["jsdport"]))
             self.conn = c
 
-            self.tradedbconn = db.connect(self.sessioncfg["tradedbfn"])
+            #self.tradedbconn = db.connect(self.sessioncfg["tradedbfn"])
         except socket.error:
             self.close()
             return False

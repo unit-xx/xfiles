@@ -58,7 +58,7 @@ class session:
             self.sockconn = c
             self.conn = c.makefile("r+b")
 
-            self.tradedbconn = db.connect(self.sessioncfg["tradedbfn"], timeout=30)
+            #self.tradedbconn = db.connect(self.sessioncfg["tradedbfn"], timeout=30)
         except socket.error:
             self.close()
             return False
@@ -110,6 +110,8 @@ class session:
         pass
 
     def storetrade(self, req, resp):
+        return
+
         t = datetime.now()
         self.tradedbconn.execute('insert into rawtradeinfo values (?, ?, ?, ?)',
                 (str(t),
