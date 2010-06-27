@@ -298,6 +298,7 @@ class Portfolio(object):
 
         # define stock data and buy/sell records attributes
         self.stocklist = []
+        self.orderlist = []
         self.stockset = set()
         self.stockattr = [
                 # common fields, read from storage, except name, of type str/unicode
@@ -625,7 +626,7 @@ class Portfolio(object):
             reqclass = jz.SubmitOrderReq
             respclass = jz.SubmitOrderResp
             trdcode = "0B"
-            for scode in self.stocklist:
+            for scode in self.orderlist:
                 si = self.stockinfo[scode]
                 if not self.isvalidbuy(si, scode):
                     continue
@@ -677,7 +678,7 @@ class Portfolio(object):
             reqclass = jz.SubmitOrderReq
             respclass = jz.SubmitOrderResp
             trdcode = "0B"
-            for scode in self.stocklist:
+            for scode in self.orderlist:
                 si = self.stockinfo[scode]
                 if not self.isvalidbuy(si, scode):
                     continue
@@ -720,7 +721,7 @@ class Portfolio(object):
             reqclass = jz.SubmitOrderReq
             respclass = jz.SubmitOrderResp
             trdcode = "0B"
-            for scode in self.stocklist:
+            for scode in self.orderlist:
                 si = self.stockinfo[scode]
                 if not self.isvalidbuy(si, scode):
                     continue
@@ -804,7 +805,7 @@ class Portfolio(object):
             # block update to ALL orders
             self.updtlock.acquire()
 
-            for scode in self.stocklist:
+            for scode in self.orderlist:
                 # only cancel (BUYSUCCESS and dealcount < ordercount) orders
                 si = self.stockinfo[scode]
                 try:
@@ -925,7 +926,7 @@ class Portfolio(object):
         if self.bostate == Portfolio.BOBUYSUCCESS:
             # only succeed when all buysuccess stocks are 100% buyed
             allbought = True
-            for scode in self.stocklist:
+            for scode in self.orderlist:
                 si = self.stockinfo[scode]
                 try:
                     orec = si["pastbuy"][-1]
@@ -964,7 +965,7 @@ class Portfolio(object):
             trdcode = "0S"
             self.bostate = Portfolio.BOSELLING
             self.bocount = 0
-            for scode in self.stocklist:
+            for scode in self.orderlist:
                 si = self.stockinfo[scode]
                 if not self.isvalidsell(si, scode):
                     continue
@@ -1005,7 +1006,7 @@ class Portfolio(object):
             # sell stocks in CANCELBUYSUCCESS state and (BUYSUCCESS and 100% buy) state.
             # At this point, stock in BUYSUCCESS state should be bought completely.
             # first is some sanity check, and updating pastbuyxxx for BUYSUCCESS stocks
-            for scode in self.stocklist:
+            for scode in self.orderlist:
                 si = self.stockinfo[scode]
                 assert si["pastsell"] == []
                 assert si["pastsellcount"] == 0
@@ -1032,7 +1033,7 @@ class Portfolio(object):
             trdcode = "0S"
             self.bostate = Portfolio.BOSELLING
             self.bocount = 0
-            for scode in self.stocklist:
+            for scode in self.orderlist:
                 si = self.stockinfo[scode]
                 if not self.isvalidsell(si, scode):
                     continue
@@ -1076,7 +1077,7 @@ class Portfolio(object):
             trdcode = "0S"
             self.bostate = Portfolio.BOSELLING
             self.bocount = 0
-            for scode in self.stocklist:
+            for scode in self.orderlist:
                 si = self.stockinfo[scode]
                 if not self.isvalidsell(si, scode):
                     continue
@@ -1115,7 +1116,7 @@ class Portfolio(object):
             trdcode = "0S"
             self.bostate = Portfolio.BOSELLING
             self.bocount = 0
-            for scode in self.stocklist:
+            for scode in self.orderlist:
                 si = self.stockinfo[scode]
                 if not self.isvalidsell(si, scode):
                     continue
@@ -1195,7 +1196,7 @@ class Portfolio(object):
             # block update to ALL orders
             self.updtlock.acquire()
 
-            for scode in self.stocklist:
+            for scode in self.orderlist:
                 # only cancel (SELLSUCCESS and dealcount < ordercount) orders
                 si = self.stockinfo[scode]
                 try:
@@ -1729,12 +1730,24 @@ class PortfolioUpdater_dbf(Thread):
 
         QMetaObject.invokeMethod(self.portmodel, "updateall", Qt.QueuedConnection)
 
+    def genorderlist(self):
+        mktvallist = []
+        for scode in self.portfolio.stocklist:
+            si = self.portfolio.stockinfo[scode]
+            mktvallist.append( (scode, si["close"]*int(si["count"])) )
+        mktvallist.sort(key=lambda x:x[1], reverse=True)
+        orderlist = [ x[0] for x in mktvallist ]
+        self.portfolio.orderlist = orderlist
+        self.logger.info("stock order sequence is: \n%s" %
+                str(self.portfolio.orderlist))
+
     def stop(self):
         self.runflag = False
 
     def run(self):
         try:
             self.update()
+            self.genorderlist()
             while self.runflag:
                 time.sleep(2)
                 self.update()

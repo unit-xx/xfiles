@@ -29,6 +29,7 @@ class session:
         self.sessioncfg = sessioncfg
         self.logger = logging.getLogger()
         self.tradedbconn = None
+        self.sockconn = None
         self.conn = None
 
     def __getitem__(self, key):
