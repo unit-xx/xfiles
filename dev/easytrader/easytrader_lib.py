@@ -862,7 +862,7 @@ class Portfolio(object):
         # not self.session, to make sure sqlite db object is used by only one thread
         needmore = True
         trycount = 0
-        maxtrycount = 10
+        maxtrycount = 3
         ordercount = int(orec["ordercount"])
         while needmore and trycount < maxtrycount:
             trycount += 1
@@ -890,9 +890,13 @@ class Portfolio(object):
                             #assert int(si["count"]) == si["pastbuycount"] + int(orec["dealcount"])
                             orec["order_state"] = Portfolio.BUYSUCCESS
                         else:
-                            # TODO: change state to ORDERSUCCESS in this case too? to enable next cancel?
                             self.logger.error("Error: cancel failed while dealcount is smaller than count. (%s:%s)",
                                     scode, orec["order_id"])
+                else:
+                    if trycount >= maxtrycount:
+                        orec["order_state"] = Portfolio.CANCELBUYFAILED
+                        self.logger.error("cancel failed: %s" %
+                                scode)
 
             else:
                 self.logger.error("error when update order for %s (%s:%s)", orec["order_id"], qoresp.retcode, qoresp.retinfo)
@@ -1251,7 +1255,7 @@ class Portfolio(object):
         # update stock info immediately
         needmore = True
         trycount = 0
-        maxtrycount = 10
+        maxtrycount = 3
         ordercount = int(orec["ordercount"])
         while needmore and trycount < maxtrycount:
             trycount += 1
@@ -1281,6 +1285,11 @@ class Portfolio(object):
                         else:
                             self.logger.error("Error: cancel failed while dealcount is smaller than count. (%s:%s)",
                                     scode, orec["order_id"])
+                else:
+                    if trycount >= maxtrycount:
+                        orec["order_state"] = Portfolio.CANCELSELLFAILED
+                        self.logger.error("cancel failed: %s" %
+                                scode)
             else:
                 self.logger.error("error when update order for %s (%s:%s)",
                         si["order_id"], qoresp.retcode, qoresp.retinfo)
