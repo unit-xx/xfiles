@@ -2542,6 +2542,7 @@ class CancelOrderUpdater(Thread):
                 qoreq.send()
                 qoresp = jz.QueryOrderResp(self.session)
                 qoresp.recv()
+                ordercount = int(order["ordercount"])
                 if qoresp.retcode == "0":
                     wdqty, dealcount, dealamount, dealprice = qoresp.getTotal()
                     if dealcount != None and (wdqty+dealcount==ordercount):
