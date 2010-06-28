@@ -230,11 +230,13 @@ class Portfolio(object):
     # assumption: only success order can be canceled
     CANCELBUYSUCCESS = "CANCELBUYSUCCESS"
     CANCELBUYFAILED = "CANCELBUYFAILED"
+    CANCELBUYWAIT = "CANCELBUYWAIT"
     # next comes sell states
     SELLSUCCESS = "SELLSUCCESS"
     SELLFAILED = "SELLFAILED"
     CANCELSELLSUCCESS = "CANCELSELLSUCCESS"
     CANCELSELLFAILED = "CANCELSELLFAILED"
+    CANCELSELLWAIT = "CANCELSELLWAIT"
 
     stockstatemap = {
             INVALID:u"非法",
@@ -245,11 +247,13 @@ class Portfolio(object):
             # assumption: only success order can be canceled,
             CANCELBUYSUCCESS:u"撤买成功",
             CANCELBUYFAILED:u"撤买失败",
+            CANCELBUYWAIT:u"撤买等成交",
             # next comes sell states,
             SELLSUCCESS:u"卖出成功",
             SELLFAILED:u"卖出失败",
             CANCELSELLSUCCESS:u"撤卖成功",
-            CANCELSELLFAILED:u"撤卖失败"
+            CANCELSELLFAILED:u"撤卖失败",
+            CANCELSELLWAIT:u"撤卖等成交"
             }
 
     # batch operation status
@@ -727,7 +731,7 @@ class Portfolio(object):
                     continue
 
                 # only buy fresh stocks, e.g. recovered from stop.
-                if len(si["pastbuy"]) == 0:
+                if len(si["pastbuy"]) == 0 or si["pastbuy"][-1]["order_state"] == Portfolio.CANCELBUYSUCCESS:
                     self.bocount = self.bocount + 1
 
                     orec = OrderRecord()
@@ -849,69 +853,60 @@ class Portfolio(object):
 
         si = self.stockinfo[scode]
         orec = si["pastbuy"][-1]
-        if resp.retcode == "0":
-            orec["cancel_date"] = today
-            orec["cancel_time"] = str(datetime.now().time())
+        orec["cancel_date"] = today
+        orec["cancel_time"] = str(datetime.now().time())
+        if resp.retcode in ("0", "409"):
             orec["order_state"] = Portfolio.CANCELBUYSUCCESS
         else:
             orec["order_state"] = Portfolio.CANCELBUYFAILED
 
-        # TODO: cancel may need time at exchange server
-        # time.sleep(5)
         # update stock info immediately, it's important to use req.session,
-        # not self.session, to make sure sqlite db object is used by only one thread
-        needmore = True
-        trycount = 0
-        maxtrycount = 3
-        ordercount = int(orec["ordercount"])
-        while needmore and trycount < maxtrycount:
-            trycount += 1
-            qoreq = jz.QueryOrderReq(req.session)
-            qoreq["begin_date"] = orec["order_date"]
-            qoreq["end_date"] = orec["order_date"]
-            qoreq["get_orders_mode"] = "0" # all submissions
-            qoreq["user_code"] = req.session["user_code"]
-            # a bug in protocol/document results in next odd line
-            qoreq["biz_no"] = orec["order_id"]
-            time.sleep(0.1)
-            qoreq.send()
-            qoresp = jz.QueryOrderResp(req.session)
-            qoresp.recv()
-            req.session.storetrade(qoreq, qoresp)
-            if qoresp.retcode == "0":
-                wdqty, dealcount, dealamount, dealprice = qoresp.getTotal()
-                if dealcount != None and (wdqty+dealcount==ordercount):
-                    needmore = False
-                    orec["dealcount"] = str(dealcount)
-                    orec["dealamount"] = str(dealamount)
-                    orec["dealprice"] = str(dealprice)
-                    if orec["order_state"] == Portfolio.CANCELBUYFAILED:
+        # not self.session, to make sure sqlite db object is used by
+        # only one thread
+        if orec["order_state"] == Portfolio.CANCELBUYSUCCESS:
+            needmore = True
+            trycount = 0
+            maxtrycount = 2
+            ordercount = int(orec["ordercount"])
+            while needmore and trycount < maxtrycount:
+                trycount += 1
+                qoreq = jz.QueryOrderReq(req.session)
+                qoreq["begin_date"] = orec["order_date"]
+                qoreq["end_date"] = orec["order_date"]
+                qoreq["get_orders_mode"] = "0" # all submissions
+                qoreq["user_code"] = req.session["user_code"]
+                # a bug in protocol/document results in next odd line
+                qoreq["biz_no"] = orec["order_id"]
+                time.sleep(0.1)
+                qoreq.send()
+                qoresp = jz.QueryOrderResp(req.session)
+                qoresp.recv()
+                if qoresp.retcode == "0":
+                    wdqty, dealcount, dealamount, dealprice = qoresp.getTotal()
+                    if dealcount != None and (wdqty+dealcount==ordercount):
+                        needmore = False
+                        orec["dealcount"] = str(dealcount)
+                        orec["dealamount"] = str(dealamount)
+                        orec["dealprice"] = str(dealprice)
                         if orec["dealcount"] == orec["ordercount"]:
-                            #assert int(si["count"]) == si["pastbuycount"] + int(orec["dealcount"])
                             orec["order_state"] = Portfolio.BUYSUCCESS
-                        else:
-                            self.logger.error("Error: cancel failed while dealcount is smaller than count. (%s:%s)",
-                                    scode, orec["order_id"])
+                    elif trycount >= maxtrycount:
+                            orec["order_state"] = Portfolio.CANCELBUYWAIT
+                            self.logger.error("cancel waiting: %s" % scode)
                 else:
-                    if trycount >= maxtrycount:
-                        orec["order_state"] = Portfolio.CANCELBUYFAILED
-                        self.logger.error("cancel failed: %s" %
-                                scode)
+                    self.logger.error("error when update order for %s (%s:%s)",
+                            orec["order_id"], qoresp.retcode, qoresp.retinfo)
 
-            else:
-                self.logger.error("error when update order for %s (%s:%s)", orec["order_id"], qoresp.retcode, qoresp.retinfo)
+            #self.logger.info("tried %d time query order @cancel" % trycount)
+            #if trycount >= maxtrycount:
+            #    self.logger.warning("tried more than %d times.", maxtrycount)
 
-        #self.logger.info("tried %d time query order @cancel" % trycount)
-        if trycount >= maxtrycount:
-            self.logger.warning("tried more than %d times.", maxtrycount)
-
-        # update pastbuyxxx
-        if orec["order_state"] in (Portfolio.BUYSUCCESS, Portfolio.CANCELBUYSUCCESS):
-            # stock in Portfolio.BUYSUCCESS here is the one that's CANCELBUYFAILED
-            si["pastbuycount"] = si["pastbuycount"] + int(orec["dealcount"])
-            si["pastbuycost"] = si["pastbuycost"] + float(orec["dealamount"])
-            si["currentbuycount"] = si["pastbuycount"]
-            si["currentbuycost"] = si["pastbuycost"]
+            # update pastbuyxxx
+            if orec["order_state"] in (Portfolio.BUYSUCCESS, Portfolio.CANCELBUYSUCCESS):
+                si["pastbuycount"] = si["pastbuycount"] + int(orec["dealcount"])
+                si["pastbuycost"] = si["pastbuycost"] + float(orec["dealamount"])
+                si["currentbuycount"] = si["pastbuycount"]
+                si["currentbuycost"] = si["pastbuycost"]
 
         self.bolock.acquire()
         self.bocount = self.bocount - 1
@@ -1125,7 +1120,7 @@ class Portfolio(object):
                 if not self.isvalidsell(si, scode):
                     continue
 
-                if len(si["pastsell"]) == 0:
+                if len(si["pastsell"]) == 0 or si["pastsell"][-1]["order_state"] == Portfolio.CANCELSELLSUCCESS:
                     # DO sell
                     self.bocount = self.bocount + 1
                     orec = OrderRecord()
@@ -1245,65 +1240,58 @@ class Portfolio(object):
 
         si = self.stockinfo[scode]
         orec = si["pastsell"][-1]
-        if resp.retcode == "0":
-            orec["cancel_date"] = today
-            orec["cancel_time"] = str(datetime.now().time())
+        orec["cancel_date"] = today
+        orec["cancel_time"] = str(datetime.now().time())
+        if resp.retcode in ("0", "409"):
             orec["order_state"] = Portfolio.CANCELSELLSUCCESS
         else:
             orec["order_state"] = Portfolio.CANCELSELLFAILED
 
         # update stock info immediately
-        needmore = True
-        trycount = 0
-        maxtrycount = 3
-        ordercount = int(orec["ordercount"])
-        while needmore and trycount < maxtrycount:
-            trycount += 1
-            qoreq = jz.QueryOrderReq(req.session)
-            qoreq["begin_date"] = orec["order_date"]
-            qoreq["end_date"] = orec["order_date"]
-            qoreq["get_orders_mode"] = "0" # all submissions
-            qoreq["user_code"] = req.session["user_code"]
-            # a bug in protocol/document results in next odd line
-            qoreq["biz_no"] = orec["order_id"]
-            time.sleep(0.1)
-            qoreq.send()
-            qoresp = jz.QueryOrderResp(req.session)
-            qoresp.recv()
-            req.session.storetrade(qoreq, qoresp)
-            if qoresp.retcode == "0":
-                wdqty, dealcount, dealamount, dealprice = qoresp.getTotal()
-                if dealcount != None and (wdqty+dealcount==ordercount):
-                    needmore = False
-                    orec["dealcount"] = str(dealcount)
-                    orec["dealamount"] = str(dealamount)
-                    orec["dealprice"] = str(dealprice)
-                    if orec["order_state"] == Portfolio.CANCELSELLFAILED:
+        if orec["order_state"] == Portfolio.CANCELSELLSUCCESS:
+            needmore = True
+            trycount = 0
+            maxtrycount = 2
+            ordercount = int(orec["ordercount"])
+            while needmore and trycount < maxtrycount:
+                trycount += 1
+                qoreq = jz.QueryOrderReq(req.session)
+                qoreq["begin_date"] = orec["order_date"]
+                qoreq["end_date"] = orec["order_date"]
+                qoreq["get_orders_mode"] = "0" # all submissions
+                qoreq["user_code"] = req.session["user_code"]
+                # a bug in protocol/document results in next odd line
+                qoreq["biz_no"] = orec["order_id"]
+                time.sleep(0.1)
+                qoreq.send()
+                qoresp = jz.QueryOrderResp(req.session)
+                qoresp.recv()
+                if qoresp.retcode == "0":
+                    wdqty, dealcount, dealamount, dealprice = qoresp.getTotal()
+                    if dealcount != None and (wdqty+dealcount==ordercount):
+                        needmore = False
+                        orec["dealcount"] = str(dealcount)
+                        orec["dealamount"] = str(dealamount)
+                        orec["dealprice"] = str(dealprice)
                         if orec["dealcount"] == orec["ordercount"]:
-                            #assert si["pastbuycount"] == si["pastsellcount"] + int(orec["dealcount"])
                             orec["order_state"] = Portfolio.SELLSUCCESS
-                        else:
-                            self.logger.error("Error: cancel failed while dealcount is smaller than count. (%s:%s)",
-                                    scode, orec["order_id"])
+                    elif trycount >= maxtrycount:
+                            orec["order_state"] = Portfolio.CANCELSELLWAIT
+                            self.logger.error("cancel waiting: %s" % scode)
                 else:
-                    if trycount >= maxtrycount:
-                        orec["order_state"] = Portfolio.CANCELSELLFAILED
-                        self.logger.error("cancel failed: %s" %
-                                scode)
-            else:
-                self.logger.error("error when update order for %s (%s:%s)",
-                        si["order_id"], qoresp.retcode, qoresp.retinfo)
+                    self.logger.error("error when update order for %s (%s:%s)",
+                            si["order_id"], qoresp.retcode, qoresp.retinfo)
 
-        #self.logger.info("tried %d time query order @cancel" % trycount)
-        if trycount >= maxtrycount:
-            self.logger.warning("tried more than %d times.", maxtrycount)
+            #self.logger.info("tried %d time query order @cancel" % trycount)
+            #if trycount >= maxtrycount:
+            #    self.logger.warning("tried more than %d times.", maxtrycount)
 
-        # update pastsellxxx
-        if orec["order_state"] in (Portfolio.SELLSUCCESS, Portfolio.CANCELSELLSUCCESS):
-            si["pastsellcount"] = si["pastsellcount"] + int(orec["dealcount"])
-            si["pastsellgain"] = si["pastsellgain"] + float(orec["dealamount"])
-            si["currentsellcount"] = si["pastsellcount"]
-            si["currentsellgain"] = si["pastsellgain"]
+            # update pastsellxxx
+            if orec["order_state"] in (Portfolio.SELLSUCCESS, Portfolio.CANCELSELLSUCCESS):
+                si["pastsellcount"] = si["pastsellcount"] + int(orec["dealcount"])
+                si["pastsellgain"] = si["pastsellgain"] + float(orec["dealamount"])
+                si["currentsellcount"] = si["pastsellcount"]
+                si["currentsellgain"] = si["pastsellgain"]
 
         self.bolock.acquire()
         self.bocount = self.bocount - 1
@@ -2463,7 +2451,6 @@ class OrderUpdater(Thread):
                     qoresp = jz.QueryOrderResp(self.session)
                     qoresp.recv()
                     if qoresp.retcode == "0":
-                        # TODO: don't know whether multi-line records case exists.
                         wdqty, dealcount, dealamount, dealprice = qoresp.getTotal()
                         if dealcount != None:
                             order["dealcount"] = str(dealcount)
@@ -2515,6 +2502,102 @@ class OrderUpdater(Thread):
             self.close()
         except Exception:
             self.logger.exception("Oh!!!")
+
+class CancelOrderUpdater(Thread):
+    def __init__(self, portfolio, portmodel, sessioncfg):
+        Thread.__init__(self)
+        self.portfolio = portfolio
+        self.portmodel = portmodel
+        self.sessioncfg = sessioncfg
+        self.runflag = True
+        self.session = None
+        self.name = self.__class__.__name__
+        self.logger = logging.getLogger()
+
+    def close(self):
+        if self.session:
+            self.session.close()
+            self.session = None
+
+    def update(self):
+        hasleft = False
+        for scode in self.portfolio.stocklist:
+            si = self.portfolio.stockinfo[scode]
+            # don't update buy if selled
+            if len(si["pastsell"]) != 0:
+                order = si["pastsell"][-1]
+            elif len(si["pastbuy"]) != 0:
+                order = si["pastbuy"][-1]
+            else:
+                continue
+
+            if order["order_id"] != "" and order["order_state"] in (Portfolio.CANCELBUYWAIT, Portfolio.CANCELSELLWAIT):
+                qoreq = jz.QueryOrderReq(self.session)
+                qoreq["begin_date"] = order["order_date"]
+                qoreq["end_date"] = order["order_date"]
+                qoreq["get_orders_mode"] = "0" # all submissions
+                qoreq["user_code"] = self.session["user_code"]
+                # a bug in protocol/document results in next odd line
+                qoreq["biz_no"] = order["order_id"]
+                qoreq.send()
+                qoresp = jz.QueryOrderResp(self.session)
+                qoresp.recv()
+                if qoresp.retcode == "0":
+                    wdqty, dealcount, dealamount, dealprice = qoresp.getTotal()
+                    if dealcount != None and (wdqty+dealcount==ordercount):
+                        order["dealcount"] = str(dealcount)
+                        order["dealamount"] = str(dealamount)
+                        order["dealprice"] = str(dealprice)
+                        if len(si["pastsell"]) != 0:
+                            si["pastsellcount"] = si["pastsellcount"] + int(order["dealcount"])
+                            si["pastsellgain"] = si["pastsellgain"] + float(order["dealamount"])
+                            si["currentsellcount"] = si["pastsellcount"]
+                            si["currentsellgain"] = si["pastsellgain"]
+                            if order["dealcount"] == order["ordercount"]:
+                                order["order_state"] = Portfolio.SELLSUCCESS
+                            else:
+                                order["order_state"] = Portfolio.CANCELSELLSUCCESS
+                        elif len(si["pastbuy"]) != 0:
+                            si["pastbuycount"] = si["pastbuycount"] + int(order["dealcount"])
+                            si["pastbuycost"] = si["pastbuycost"] + float(order["dealamount"])
+                            si["currentbuycount"] = si["pastbuycount"]
+                            si["currentbuycost"] = si["pastbuycost"]
+                            if order["dealcount"] == order["ordercount"]:
+                                order["order_state"] = Portfolio.BUYSUCCESS
+                            else:
+                                order["order_state"] = Portfolio.CANCELBUYSUCCESS
+                    else:
+                        hasleft = True
+                else:
+                    self.logger.warning("error when query order for %s: %s, %s"
+                            % (order["order_id"], qoresp.retcode, qoresp.retinfo))
+
+                # update a row
+                rowindex = self.portfolio.stocklist.index(scode)
+                QMetaObject.invokeMethod(self.portmodel, "updaterow", Qt.QueuedConnection,
+                        Q_ARG("int", rowindex))
+        return hasleft
+
+    def stop(self):
+        self.runflag = False
+
+    def run(self):
+        try:
+            self.session = jz.session(self.sessioncfg)
+            if not self.session.setup():
+                self.logger.warning("Session setup failed.")
+                self.close()
+                return
+
+            while self.runflag:
+                hasleft = self.update()
+                if not hasleft:
+                    time.sleep(1)
+
+        except Exception:
+            self.logger.exception("Oh!!!")
+        finally:
+            self.close()
 
 class asyncWorker(Thread):
     def __init__(self, session_cfg, tqueue, dbqueue):

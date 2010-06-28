@@ -147,6 +147,9 @@ def main(args):
     orderupdater = OrderUpdater(p, pmodel, session_config, updtlock)
     orderupdater.start()
 
+    coupdater = CancelOrderUpdater(p, pmodel, session_config)
+    coupdater.start()
+
     # setup dbqueue and dbserver
     dbqueue = Queue.Queue()
     dbname = config.get(MYSEC, "tradedb")
@@ -208,9 +211,11 @@ def main(args):
     logger.info("notify updater threads to stop.")
     pupdater.stop()
     orderupdater.stop()
+    coupdater.stop()
     logger.info("waiting updater threads to stop.")
     pupdater.join()
     orderupdater.join()
+    coupdater.join()
     logger.info("updater threads stopped.")
 
     logger.info("waiting SecuInfoUpdater to stop")

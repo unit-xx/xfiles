@@ -37,8 +37,11 @@ for i in reader:
     else:
         orec["order_state"] = Portfolio.CANCELBUYSUCCESS
         print >> sys.stderr, "miss match count for %s" % scode
-    orec["dealprice"] = i[3]
-    orec["dealamount"] = i[4]
+    try:
+        orec["dealprice"] = i[3]
+        orec["dealamount"] = i[4]
+    except IndexError:
+        pass
     si["pastbuy"].append(orec)
 
 writer = csv.writer(sys.stdout)
