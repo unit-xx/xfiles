@@ -7,4 +7,4 @@ SZ,002007,600,"[{'cancel_time': '', 'order_time': '', 'order_id': '', 'orderpric
 SH,600132,380,"[{'cancel_time': '', 'order_time': '', 'order_id': '', 'orderprice': '0.0', 'cancel_date': '', 'dealprice': '0.0', 'order_state': 'BUYSUCCESS', 'order_date': '', 'ordercount': '380', 'dealcount': '380', 'dealamount': '0.0'}]",[]
 SZ,002001,369,"[{'cancel_time': '', 'order_time': '', 'order_id': '', 'orderprice': '0.0', 'cancel_date': '', 'dealprice': '0.0', 'order_state': 'BUYSUCCESS', 'order_date': '', 'ordercount': '369', 'dealcount': '369', 'dealamount': '0.0'}]",[]
 SH,601099,300,"[{'cancel_time': '', 'order_time': '', 'order_id': '', 'orderprice': '0.0', 'cancel_date': '', 'dealprice': '0.0', 'order_state': 'BUYSUCCESS', 'order_date': '', 'ordercount': '300', 'dealcount': '300', 'dealamount': '0.0'}]",[]
-BO,未委托
+BO,买入成功
