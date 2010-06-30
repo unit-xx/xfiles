@@ -818,17 +818,19 @@ class Portfolio(object):
                     continue
 
                 if orec["order_state"] == Portfolio.BUYSUCCESS and int(orec["dealcount"]) < int(orec["ordercount"]):
-                    self.bocount = self.bocount + 1
-                    param = {}
-                    param["user_code"] = self.session["user_code"]
-                    if self.stockinfo[scode]["market"] == "SH":
-                        param["market"] = "10"
-                    elif self.stockinfo[scode]["market"] == "SZ":
-                        param["market"] = "00"
-                    param["order_id"] = orec["order_id"]
-                    # secu_code is needed at cancelBuyBatchBottom, not for CancelOrderReq
-                    param["secu_code"] = self.stockinfo[scode]["code"]
-                    self.tqueue.put( (reqclass, respclass, param, self.cancelBuyBatchBottom, True) )
+                    # cancel if latestprice is going up
+                    if float(orec["orderprice"]) < si["latestprice"]:
+                        self.bocount = self.bocount + 1
+                        param = {}
+                        param["user_code"] = self.session["user_code"]
+                        if self.stockinfo[scode]["market"] == "SH":
+                            param["market"] = "10"
+                        elif self.stockinfo[scode]["market"] == "SZ":
+                            param["market"] = "00"
+                        param["order_id"] = orec["order_id"]
+                        # secu_code is needed at cancelBuyBatchBottom, not for CancelOrderReq
+                        param["secu_code"] = self.stockinfo[scode]["code"]
+                        self.tqueue.put( (reqclass, respclass, param, self.cancelBuyBatchBottom, True) )
             if self.bocount == 0:
                 self.logger.info("no stock to cancel buy")
                 self.bostate = Portfolio.BOBUYSUCCESS
@@ -1204,17 +1206,19 @@ class Portfolio(object):
                     continue
 
                 if orec["order_state"] == Portfolio.SELLSUCCESS and int(orec["dealcount"]) < int(orec["ordercount"]):
-                    self.bocount = self.bocount + 1
-                    param = {}
-                    param["user_code"] = self.session["user_code"]
-                    if self.stockinfo[scode]["market"] == "SH":
-                        param["market"] = "10"
-                    elif self.stockinfo[scode]["market"] == "SZ":
-                        param["market"] = "00"
-                    param["order_id"] = orec["order_id"]
-                    # secu_code is needed at cancelSellBatchBottom, not for CancelOrderReq
-                    param["secu_code"] = self.stockinfo[scode]["code"]
-                    self.tqueue.put( (reqclass, respclass, param, self.cancelSellBatchBottom, True) )
+                    # cancel if latestprice is going down
+                    if float(orec["orderprice"]) > si["latestprice"]:
+                        self.bocount = self.bocount + 1
+                        param = {}
+                        param["user_code"] = self.session["user_code"]
+                        if self.stockinfo[scode]["market"] == "SH":
+                            param["market"] = "10"
+                        elif self.stockinfo[scode]["market"] == "SZ":
+                            param["market"] = "00"
+                        param["order_id"] = orec["order_id"]
+                        # secu_code is needed at cancelSellBatchBottom, not for CancelOrderReq
+                        param["secu_code"] = self.stockinfo[scode]["code"]
+                        self.tqueue.put( (reqclass, respclass, param, self.cancelSellBatchBottom, True) )
 
             if self.bocount == 0:
                 self.logger.info("no stock to cancel selling")

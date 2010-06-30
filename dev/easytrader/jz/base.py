@@ -112,15 +112,15 @@ class session:
 
     def storetrade(self, req, resp):
         return
-
-        t = datetime.now()
-        self.tradedbconn.execute('insert into rawtradeinfo values (?, ?, ?, ?)',
-                (str(t),
-                    req.payload.decode("GBK"),
-                    resp.payload.decode("GBK"),
-                    "%s:%s" % (resp.retcode, resp.retinfo)
-                    ))
-        self.tradedbconn.commit()
+        #t = datetime.now()
+        #self.tradedbconn.execute('insert into rawtradeinfo
+        #        values (?, ?, ?, ?)',
+        #        (str(t),
+        #            req.payload.decode("GBK"),
+        #            resp.payload.decode("GBK"),
+        #            "%s:%s" % (resp.retcode, resp.retinfo)
+        #            ))
+        #self.tradedbconn.commit()
 
     def close(self):
         if self.tradedbconn:
