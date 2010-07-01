@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'tradeui.ui'
 #
-# Created: Sun Jun 20 09:12:29 2010
+# Created: Thu Jul 01 09:42:32 2010
 #      by: PyQt4 UI code generator 4.7.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -12,7 +12,7 @@ from PyQt4 import QtCore, QtGui
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(1042, 615)
+        MainWindow.resize(1093, 615)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Maximum, QtGui.QSizePolicy.Maximum)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -65,10 +65,10 @@ class Ui_MainWindow(object):
         self.gridLayout_2.addWidget(self.cancelbuyorder, 0, 5, 1, 1)
         self.autosubmit_2 = QtGui.QPushButton(self.groupBox_2)
         self.autosubmit_2.setObjectName("autosubmit_2")
-        self.gridLayout_2.addWidget(self.autosubmit_2, 0, 6, 1, 1)
+        self.gridLayout_2.addWidget(self.autosubmit_2, 0, 7, 1, 1)
         self.saveorder_2 = QtGui.QPushButton(self.groupBox_2)
         self.saveorder_2.setObjectName("saveorder_2")
-        self.gridLayout_2.addWidget(self.saveorder_2, 0, 7, 1, 1)
+        self.gridLayout_2.addWidget(self.saveorder_2, 0, 8, 1, 1)
         self.buypricefixspin = QtGui.QDoubleSpinBox(self.groupBox_2)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
@@ -84,6 +84,9 @@ class Ui_MainWindow(object):
         self.buypricefixspin.setSingleStep(0.01)
         self.buypricefixspin.setObjectName("buypricefixspin")
         self.gridLayout_2.addWidget(self.buypricefixspin, 0, 3, 1, 1)
+        self.forcecancelbuychk = QtGui.QCheckBox(self.groupBox_2)
+        self.forcecancelbuychk.setObjectName("forcecancelbuychk")
+        self.gridLayout_2.addWidget(self.forcecancelbuychk, 0, 6, 1, 1)
         self.gridLayout_3.addWidget(self.groupBox_2, 0, 0, 1, 1)
         self.groupBox_5 = QtGui.QGroupBox(self.tab)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Preferred)
@@ -172,10 +175,10 @@ class Ui_MainWindow(object):
         self.gridLayout.addWidget(self.cancelsellorder, 0, 5, 1, 1)
         self.autosubmit = QtGui.QPushButton(self.groupBox)
         self.autosubmit.setObjectName("autosubmit")
-        self.gridLayout.addWidget(self.autosubmit, 0, 6, 1, 1)
+        self.gridLayout.addWidget(self.autosubmit, 0, 7, 1, 1)
         self.saveorder = QtGui.QPushButton(self.groupBox)
         self.saveorder.setObjectName("saveorder")
-        self.gridLayout.addWidget(self.saveorder, 0, 7, 1, 1)
+        self.gridLayout.addWidget(self.saveorder, 0, 8, 1, 1)
         self.sellpricefixspin = QtGui.QDoubleSpinBox(self.groupBox)
         self.sellpricefixspin.setMinimumSize(QtCore.QSize(80, 0))
         self.sellpricefixspin.setMaximumSize(QtCore.QSize(80, 16777215))
@@ -184,6 +187,9 @@ class Ui_MainWindow(object):
         self.sellpricefixspin.setSingleStep(0.01)
         self.sellpricefixspin.setObjectName("sellpricefixspin")
         self.gridLayout.addWidget(self.sellpricefixspin, 0, 3, 1, 1)
+        self.forcecancelsellchk = QtGui.QCheckBox(self.groupBox)
+        self.forcecancelsellchk.setObjectName("forcecancelsellchk")
+        self.gridLayout.addWidget(self.forcecancelsellchk, 0, 6, 1, 1)
         self.gridLayout_4.addWidget(self.groupBox, 0, 0, 1, 1)
         spacerItem1 = QtGui.QSpacerItem(0, 0, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
         self.gridLayout_4.addItem(spacerItem1, 0, 2, 1, 1)
@@ -394,7 +400,7 @@ class Ui_MainWindow(object):
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtGui.QMenuBar(MainWindow)
         self.menubar.setEnabled(True)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 1042, 18))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 1093, 22))
         self.menubar.setNativeMenuBar(True)
         self.menubar.setObjectName("menubar")
         self.menu = QtGui.QMenu(self.menubar)
@@ -416,7 +422,7 @@ class Ui_MainWindow(object):
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
-        MainWindow.setWindowTitle(QtGui.QApplication.translate("MainWindow", "EasyTrader $Rev: 382 $ $Date: 2010-06-06 20:06:17 +0800 (星期日, 06 六月 2010) $", None, QtGui.QApplication.UnicodeUTF8))
+        MainWindow.setWindowTitle(QtGui.QApplication.translate("MainWindow", "EasyTrader $Rev: 435 $ $Date: 2010-06-20 15:35:26 +0800 (周日, 2010-06-20) $", None, QtGui.QApplication.UnicodeUTF8))
         self.groupBox_2.setTitle(QtGui.QApplication.translate("MainWindow", "股票组合", None, QtGui.QApplication.UnicodeUTF8))
         self.label_3.setText(QtGui.QApplication.translate("MainWindow", "买入价格", None, QtGui.QApplication.UnicodeUTF8))
         self.label_4.setText(QtGui.QApplication.translate("MainWindow", "修正", None, QtGui.QApplication.UnicodeUTF8))
@@ -426,6 +432,7 @@ class Ui_MainWindow(object):
         self.saveorder_2.setText(QtGui.QApplication.translate("MainWindow", "保存组合", None, QtGui.QApplication.UnicodeUTF8))
         self.buypricefixspin.setPrefix(QtGui.QApplication.translate("MainWindow", "￥", None, QtGui.QApplication.UnicodeUTF8))
         self.buypricefixspin.setSuffix(QtGui.QApplication.translate("MainWindow", "元", None, QtGui.QApplication.UnicodeUTF8))
+        self.forcecancelbuychk.setText(QtGui.QApplication.translate("MainWindow", "强撤", None, QtGui.QApplication.UnicodeUTF8))
         self.groupBox_5.setTitle(QtGui.QApplication.translate("MainWindow", "股指期货", None, QtGui.QApplication.UnicodeUTF8))
         self.opensifbtn.setText(QtGui.QApplication.translate("MainWindow", "空开", None, QtGui.QApplication.UnicodeUTF8))
         self.cancelopensifbtn.setText(QtGui.QApplication.translate("MainWindow", "撤单", None, QtGui.QApplication.UnicodeUTF8))
@@ -442,6 +449,7 @@ class Ui_MainWindow(object):
         self.saveorder.setText(QtGui.QApplication.translate("MainWindow", "保存组合", None, QtGui.QApplication.UnicodeUTF8))
         self.sellpricefixspin.setPrefix(QtGui.QApplication.translate("MainWindow", "￥", None, QtGui.QApplication.UnicodeUTF8))
         self.sellpricefixspin.setSuffix(QtGui.QApplication.translate("MainWindow", "元", None, QtGui.QApplication.UnicodeUTF8))
+        self.forcecancelsellchk.setText(QtGui.QApplication.translate("MainWindow", "强撤", None, QtGui.QApplication.UnicodeUTF8))
         self.groupBox_4.setTitle(QtGui.QApplication.translate("MainWindow", "股指期货", None, QtGui.QApplication.UnicodeUTF8))
         self.closesifbtn.setText(QtGui.QApplication.translate("MainWindow", "空平", None, QtGui.QApplication.UnicodeUTF8))
         self.cancelclosesifbtn.setText(QtGui.QApplication.translate("MainWindow", "撤单", None, QtGui.QApplication.UnicodeUTF8))

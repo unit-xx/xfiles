@@ -300,6 +300,9 @@ class Portfolio(object):
 
         self.updtlock = updtlock
 
+        self.forcecancelbuy = False
+        self.forcecancelsell = False
+
         # define stock data and buy/sell records attributes
         self.stocklist = []
         self.orderlist = []
@@ -819,7 +822,7 @@ class Portfolio(object):
 
                 if orec["order_state"] == Portfolio.BUYSUCCESS and int(orec["dealcount"]) < int(orec["ordercount"]):
                     # cancel if latestprice is going up
-                    if float(orec["orderprice"]) < si["latestprice"]:
+                    if self.forcecancelbuy or float(orec["orderprice"]) < si["latestprice"]:
                         self.bocount = self.bocount + 1
                         param = {}
                         param["user_code"] = self.session["user_code"]
@@ -1207,7 +1210,7 @@ class Portfolio(object):
 
                 if orec["order_state"] == Portfolio.SELLSUCCESS and int(orec["dealcount"]) < int(orec["ordercount"]):
                     # cancel if latestprice is going down
-                    if float(orec["orderprice"]) > si["latestprice"]:
+                    if self.forcecancelsell or float(orec["orderprice"]) > si["latestprice"]:
                         self.bocount = self.bocount + 1
                         param = {}
                         param["user_code"] = self.session["user_code"]
@@ -2832,6 +2835,12 @@ class uicontrol(QMainWindow, Ui_MainWindow):
         self.mainwindow.connect(self.saveorder_2, SIGNAL("clicked()"), self.savePortfolio)
         self.mainwindow.connect(self.saveorder, SIGNAL("clicked()"), self.savePortfolio)
 
+        # setup force buy/sell checkbox
+        self.portfolio.forcecancelbuy = self.forcecancelbuychk.isChecked()
+        self.portfolio.forcecancelsell = self.forcecancelsellchk.isChecked()
+        self.mainwindow.connect(self.forcecancelbuychk, SIGNAL("stateChanged(int)"), self.setforcecancelbuy)
+        self.mainwindow.connect(self.forcecancelsellchk, SIGNAL("stateChanged(int)"), self.setforcecancelsell)
+
         # setup stock index button
         self.mainwindow.connect(self.opensifbtn, SIGNAL("clicked()"), self.openshort)
         self.mainwindow.connect(self.cancelopensifbtn, SIGNAL("clicked()"), self.cancelopen)
@@ -2970,6 +2979,14 @@ class uicontrol(QMainWindow, Ui_MainWindow):
     @pyqtSlot(float)
     def setclosepricefix(self, value):
         self.portfolio.closepricefix = value
+
+    @pyqtSlot(int)
+    def setforcecancelbuy(self, state):
+        self.portfolio.forcecancelbuy = self.forcecancelbuychk.isChecked()
+
+    @pyqtSlot(int)
+    def setforcecancelsell(self, state):
+        self.portfolio.forcecancelsell = self.forcecancelsellchk.isChecked()
 
     @pyqtSlot()
     def showstockinfo(self):
