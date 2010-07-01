@@ -38,8 +38,8 @@ for i in reader:
         orec["order_state"] = Portfolio.CANCELBUYSUCCESS
         print >> sys.stderr, "miss match count for %s" % scode
     try:
-        orec["dealprice"] = i[3]
-        orec["dealamount"] = i[4]
+        orec["dealprice"] = "0.0"
+        orec["dealamount"] = "0.0"
     except IndexError:
         pass
     si["pastbuy"].append(orec)
