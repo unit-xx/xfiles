@@ -58,9 +58,9 @@ class PortfolioModel(QAbstractTableModel):
         if not index.isValid():
             return QVariant()
 
+        rowkey = self.portfolio.stocklist[index.row()]
+        columnkey = self.portfolio.stockmodelattr[index.column()]
         if role == Qt.DisplayRole:
-            rowkey = self.portfolio.stocklist[index.row()]
-            columnkey = self.portfolio.stockmodelattr[index.column()]
             try:
                 rawdata = self.portfolio.stockinfo[rowkey][columnkey]
                 if not isinstance(rawdata, unicode):# expect rawdata as numbers here
@@ -82,13 +82,30 @@ class PortfolioModel(QAbstractTableModel):
                         rawdata = self.portfolio.stockstatemap[rawdata]
                     return QVariant(QString(rawdata))
         elif role == Qt.BackgroundRole:
-            rowkey = self.portfolio.stocklist[index.row()]
             si = self.portfolio.stockinfo[rowkey]
             try:
                 if si["stopped"] == True:
                     return QVariant(QColor(Qt.gray))
             except KeyError:
                 pass
+
+            if columnkey == "state":
+                orec = None
+                if len(si["pastsell"]) != 0:
+                    orec = si["pastsell"][-1]
+                elif len(si["pastbuy"]) != 0:
+                    orec = si["pastbuy"][-1]
+
+                if orec:
+                    if orec["order_state"] in (Portfolio.BUYFAILED, Portfolio.CANCELBUYFAILED,
+                            Portfolio.SELLFAILED, Portfolio.CANCELSELLFAILED):
+                        return QVariant(QColor(Qt.red))
+                    elif orec["order_state"] in (Portfolio.CANCELBUYWAIT,
+                            Portfolio.CANCELSELLWAIT):
+                        return QVariant(QColor(Qt.yellow))
+                    else:
+                        if orec["dealcount"] != orec["ordercount"]:
+                            return QVariant(QColor(Qt.green))
 
         return QVariant()
 
