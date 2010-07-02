@@ -871,7 +871,7 @@ class Portfolio(object):
         if orec["order_state"] == Portfolio.CANCELBUYSUCCESS:
             needmore = True
             trycount = 0
-            maxtrycount = 2
+            maxtrycount = 1
             ordercount = int(orec["ordercount"])
             while needmore and trycount < maxtrycount:
                 trycount += 1
@@ -897,7 +897,7 @@ class Portfolio(object):
                             orec["order_state"] = Portfolio.BUYSUCCESS
                     elif trycount >= maxtrycount:
                             orec["order_state"] = Portfolio.CANCELBUYWAIT
-                            self.logger.error("cancel waiting: %s" % scode)
+                            #self.logger.error("cancel waiting: %s" % scode)
                 else:
                     self.logger.error("error when update order for %s (%s:%s)",
                             orec["order_id"], qoresp.retcode, qoresp.retinfo)
@@ -1258,7 +1258,7 @@ class Portfolio(object):
         if orec["order_state"] == Portfolio.CANCELSELLSUCCESS:
             needmore = True
             trycount = 0
-            maxtrycount = 2
+            maxtrycount = 1
             ordercount = int(orec["ordercount"])
             while needmore and trycount < maxtrycount:
                 trycount += 1
@@ -1284,7 +1284,7 @@ class Portfolio(object):
                             orec["order_state"] = Portfolio.SELLSUCCESS
                     elif trycount >= maxtrycount:
                             orec["order_state"] = Portfolio.CANCELSELLWAIT
-                            self.logger.error("cancel waiting: %s" % scode)
+                            #self.logger.error("cancel waiting: %s" % scode)
                 else:
                     self.logger.error("error when update order for %s (%s:%s)",
                             si["order_id"], qoresp.retcode, qoresp.retinfo)
