@@ -817,7 +817,7 @@ class Portfolio(object):
         self.bolock.acquire()
         self.logger.info("batch buy canceling")
 
-        if self.bostate == Portfolio.BOBUYSUCCESS:
+        if self.bostate in (Portfolio.BOBUYSUCCESS, Portfolio.BOBUYCANCELED):
             # set Portfolio batch state
             self.bostate = Portfolio.BOBUYCANCELING
             self.bocount = 0
@@ -1207,7 +1207,7 @@ class Portfolio(object):
         self.bolock.acquire()
         self.logger.info("batch sell canceling")
 
-        if self.bostate == Portfolio.BOSELLSUCCESS:
+        if self.bostate in (Portfolio.BOSELLSUCCESS, Portfolio.BOSELLCANCELED):
             self.bostate = Portfolio.BOSELLCANCELING
             self.bocount = 0
 
