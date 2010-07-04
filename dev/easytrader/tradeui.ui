@@ -667,7 +667,7 @@
          </property>
         </widget>
        </item>
-       <item row="0" column="13">
+       <item row="0" column="15">
         <spacer name="horizontalSpacer_3">
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
@@ -730,7 +730,7 @@
           </sizepolicy>
          </property>
          <property name="text">
-          <string>建仓信号阈值</string>
+          <string>建仓信号</string>
          </property>
         </widget>
        </item>
@@ -799,13 +799,78 @@
          </property>
         </widget>
        </item>
-       <item row="0" column="12">
+       <item row="0" column="14">
         <widget class="QCheckBox" name="playsignalchk">
          <property name="text">
           <string>报警</string>
          </property>
          <property name="checked">
           <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="13">
+        <widget class="QDoubleSpinBox" name="closethresholdspin">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>80</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>80</width>
+           <height>16777215</height>
+          </size>
+         </property>
+         <property name="styleSheet">
+          <string notr="true"/>
+         </property>
+         <property name="frame">
+          <bool>true</bool>
+         </property>
+         <property name="buttonSymbols">
+          <enum>QAbstractSpinBox::UpDownArrows</enum>
+         </property>
+         <property name="prefix">
+          <string/>
+         </property>
+         <property name="suffix">
+          <string> %</string>
+         </property>
+         <property name="decimals">
+          <number>1</number>
+         </property>
+         <property name="minimum">
+          <double>0.000000000000000</double>
+         </property>
+         <property name="maximum">
+          <double>10000.000000000000000</double>
+         </property>
+         <property name="singleStep">
+          <double>0.100000000000000</double>
+         </property>
+         <property name="value">
+          <double>0.500000000000000</double>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="12">
+        <widget class="QLabel" name="label_16">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="text">
+          <string>平仓信号</string>
          </property>
         </widget>
        </item>
@@ -847,7 +912,7 @@
      <x>0</x>
      <y>0</y>
      <width>1093</width>
-     <height>22</height>
+     <height>23</height>
     </rect>
    </property>
    <property name="nativeMenuBar">
