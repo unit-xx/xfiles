@@ -94,7 +94,7 @@ class openptfdlg(QDialog, Ui_Dialog):
             fn = fn.decode("gbk")
             item = {}
             item["fn"] = fn
-            item["ptfname"] = os.path.basename(fn).split(".")[0]
+            item["ptfname"] = os.path.basename(fn)[0:-4]
             item["ctime"] = int(os.path.getctime(fn))
             item["datetext"] = str(datetime.fromtimestamp(item["ctime"]))
             data.append(item)
@@ -110,7 +110,7 @@ class openptfdlg(QDialog, Ui_Dialog):
             fn = fn.decode("gbk")
             item = {}
             item["fn"] = fn
-            item["ptfname"] = os.path.basename(fn).split(".")[0]
+            item["ptfname"] = os.path.basename(fn)[0:-4]
             item["ctime"] = int(os.path.getctime(fn))
             item["datetext"] = str(datetime.fromtimestamp(item["ctime"]))
             data.append(item)

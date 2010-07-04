@@ -3059,8 +3059,8 @@ class basediffUpdater(Thread):
         self.uic.mainwindow.connect(self.m_media, SIGNAL("aboutToFinish()"), self.addsong)
         self.uic.mainwindow.connect(self.m_media2, SIGNAL("aboutToFinish()"), self.addsong2)
 
-        self.opendir = u"musicopen"
-        self.closedir = u"musicclose"
+        self.opendir = u"openmusic"
+        self.closedir = u"closemusic"
         self.openmusic = os.listdir(self.opendir)
         self.closemusic = os.listdir(self.closedir)
         musicfn = random.choice(self.openmusic)
