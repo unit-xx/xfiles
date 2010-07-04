@@ -1,0 +1,90 @@
+# -*- coding: utf-8 -*-
+
+# Form implementation generated from reading ui file 'openptfui.ui'
+#
+# Created: Sun Jul 04 15:03:53 2010
+#      by: PyQt4 UI code generator 4.7.2
+#
+# WARNING! All changes made in this file will be lost!
+
+from PyQt4 import QtCore, QtGui
+
+class Ui_Dialog(object):
+    def setupUi(self, Dialog):
+        Dialog.setObjectName("Dialog")
+        Dialog.resize(547, 385)
+        self.gridLayout = QtGui.QGridLayout(Dialog)
+        self.gridLayout.setObjectName("gridLayout")
+        self.tabWidget = QtGui.QTabWidget(Dialog)
+        self.tabWidget.setObjectName("tabWidget")
+        self.tab = QtGui.QWidget()
+        self.tab.setObjectName("tab")
+        self.gridLayout_2 = QtGui.QGridLayout(self.tab)
+        self.gridLayout_2.setObjectName("gridLayout_2")
+        spacerItem = QtGui.QSpacerItem(40, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
+        self.gridLayout_2.addItem(spacerItem, 1, 0, 1, 2)
+        self.ptftable = QtGui.QTableView(self.tab)
+        self.ptftable.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
+        self.ptftable.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
+        self.ptftable.setObjectName("ptftable")
+        self.gridLayout_2.addWidget(self.ptftable, 0, 0, 1, 4)
+        self.ptfcancelbtn = QtGui.QPushButton(self.tab)
+        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.ptfcancelbtn.sizePolicy().hasHeightForWidth())
+        self.ptfcancelbtn.setSizePolicy(sizePolicy)
+        self.ptfcancelbtn.setObjectName("ptfcancelbtn")
+        self.gridLayout_2.addWidget(self.ptfcancelbtn, 1, 3, 1, 1)
+        self.ptfokbtn = QtGui.QPushButton(self.tab)
+        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.ptfokbtn.sizePolicy().hasHeightForWidth())
+        self.ptfokbtn.setSizePolicy(sizePolicy)
+        self.ptfokbtn.setObjectName("ptfokbtn")
+        self.gridLayout_2.addWidget(self.ptfokbtn, 1, 2, 1, 1)
+        self.tabWidget.addTab(self.tab, "")
+        self.tab_2 = QtGui.QWidget()
+        self.tab_2.setObjectName("tab_2")
+        self.gridLayout_3 = QtGui.QGridLayout(self.tab_2)
+        self.gridLayout_3.setObjectName("gridLayout_3")
+        self.postable = QtGui.QTableView(self.tab_2)
+        self.postable.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
+        self.postable.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
+        self.postable.setObjectName("postable")
+        self.gridLayout_3.addWidget(self.postable, 0, 0, 1, 4)
+        spacerItem1 = QtGui.QSpacerItem(340, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
+        self.gridLayout_3.addItem(spacerItem1, 1, 0, 1, 2)
+        self.posokbtn = QtGui.QPushButton(self.tab_2)
+        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.posokbtn.sizePolicy().hasHeightForWidth())
+        self.posokbtn.setSizePolicy(sizePolicy)
+        self.posokbtn.setObjectName("posokbtn")
+        self.gridLayout_3.addWidget(self.posokbtn, 1, 2, 1, 1)
+        self.poscancelbtn = QtGui.QPushButton(self.tab_2)
+        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.poscancelbtn.sizePolicy().hasHeightForWidth())
+        self.poscancelbtn.setSizePolicy(sizePolicy)
+        self.poscancelbtn.setObjectName("poscancelbtn")
+        self.gridLayout_3.addWidget(self.poscancelbtn, 1, 3, 1, 1)
+        self.tabWidget.addTab(self.tab_2, "")
+        self.gridLayout.addWidget(self.tabWidget, 0, 1, 1, 1)
+
+        self.retranslateUi(Dialog)
+        self.tabWidget.setCurrentIndex(0)
+        QtCore.QMetaObject.connectSlotsByName(Dialog)
+
+    def retranslateUi(self, Dialog):
+        Dialog.setWindowTitle(QtGui.QApplication.translate("Dialog", "Dialog", None, QtGui.QApplication.UnicodeUTF8))
+        self.ptfcancelbtn.setText(QtGui.QApplication.translate("Dialog", "Cancel", None, QtGui.QApplication.UnicodeUTF8))
+        self.ptfokbtn.setText(QtGui.QApplication.translate("Dialog", "Ok", None, QtGui.QApplication.UnicodeUTF8))
+        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab), QtGui.QApplication.translate("Dialog", "打开组合并建仓", None, QtGui.QApplication.UnicodeUTF8))
+        self.posokbtn.setText(QtGui.QApplication.translate("Dialog", "Ok", None, QtGui.QApplication.UnicodeUTF8))
+        self.poscancelbtn.setText(QtGui.QApplication.translate("Dialog", "Cancel", None, QtGui.QApplication.UnicodeUTF8))
+        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_2), QtGui.QApplication.translate("Dialog", "打开已有持仓", None, QtGui.QApplication.UnicodeUTF8))
+
