@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'tradeui.ui'
 #
-# Created: Sun Jul 04 15:56:07 2010
+# Created: Sun Jul 04 16:50:56 2010
 #      by: PyQt4 UI code generator 4.7.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -235,7 +235,7 @@ class Ui_MainWindow(object):
         self.gridLayout_8.addWidget(self.closepricefixspin, 0, 4, 1, 1)
         self.gridLayout_4.addWidget(self.groupBox_4, 0, 1, 1, 1)
         self.tabWidget.addTab(self.tab_2, "")
-        self.gridLayout_6.addWidget(self.tabWidget, 0, 0, 1, 2)
+        self.gridLayout_6.addWidget(self.tabWidget, 0, 0, 1, 4)
         self.stockindex = QtGui.QTableView(self.centralwidget)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
@@ -244,7 +244,7 @@ class Ui_MainWindow(object):
         self.stockindex.setSizePolicy(sizePolicy)
         self.stockindex.setMaximumSize(QtCore.QSize(16777215, 50))
         self.stockindex.setObjectName("stockindex")
-        self.gridLayout_6.addWidget(self.stockindex, 1, 0, 1, 2)
+        self.gridLayout_6.addWidget(self.stockindex, 1, 0, 1, 4)
         self.groupBox_3 = QtGui.QGroupBox(self.centralwidget)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
@@ -408,7 +408,7 @@ class Ui_MainWindow(object):
         self.label_16.setSizePolicy(sizePolicy)
         self.label_16.setObjectName("label_16")
         self.gridLayout_5.addWidget(self.label_16, 0, 12, 1, 1)
-        self.gridLayout_6.addWidget(self.groupBox_3, 2, 0, 1, 2)
+        self.gridLayout_6.addWidget(self.groupBox_3, 2, 0, 1, 4)
         self.label_15 = QtGui.QLabel(self.centralwidget)
         self.label_15.setObjectName("label_15")
         self.gridLayout_6.addWidget(self.label_15, 3, 0, 1, 1)
@@ -416,6 +416,19 @@ class Ui_MainWindow(object):
         self.bostatusline.setReadOnly(True)
         self.bostatusline.setObjectName("bostatusline")
         self.gridLayout_6.addWidget(self.bostatusline, 3, 1, 1, 1)
+        self.label_17 = QtGui.QLabel(self.centralwidget)
+        self.label_17.setObjectName("label_17")
+        self.gridLayout_6.addWidget(self.label_17, 3, 2, 1, 1)
+        self.posnameline = QtGui.QLineEdit(self.centralwidget)
+        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.posnameline.sizePolicy().hasHeightForWidth())
+        self.posnameline.setSizePolicy(sizePolicy)
+        self.posnameline.setMinimumSize(QtCore.QSize(386, 0))
+        self.posnameline.setReadOnly(True)
+        self.posnameline.setObjectName("posnameline")
+        self.gridLayout_6.addWidget(self.posnameline, 3, 3, 1, 1)
         self.stock = QtGui.QTableView(self.centralwidget)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
         sizePolicy.setHorizontalStretch(0)
@@ -423,7 +436,7 @@ class Ui_MainWindow(object):
         sizePolicy.setHeightForWidth(self.stock.sizePolicy().hasHeightForWidth())
         self.stock.setSizePolicy(sizePolicy)
         self.stock.setObjectName("stock")
-        self.gridLayout_6.addWidget(self.stock, 4, 0, 1, 2)
+        self.gridLayout_6.addWidget(self.stock, 4, 0, 1, 4)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtGui.QMenuBar(MainWindow)
         self.menubar.setEnabled(True)
@@ -449,7 +462,7 @@ class Ui_MainWindow(object):
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
-        MainWindow.setWindowTitle(QtGui.QApplication.translate("MainWindow", "EasyTrader $Rev: 468 $ $Date: 2010-07-01 13:23:12 +0800 (周四, 01 七月 2010) $", None, QtGui.QApplication.UnicodeUTF8))
+        MainWindow.setWindowTitle(QtGui.QApplication.translate("MainWindow", "EasyTrader", None, QtGui.QApplication.UnicodeUTF8))
         self.groupBox_2.setTitle(QtGui.QApplication.translate("MainWindow", "股票组合", None, QtGui.QApplication.UnicodeUTF8))
         self.label_3.setText(QtGui.QApplication.translate("MainWindow", "买入价格", None, QtGui.QApplication.UnicodeUTF8))
         self.label_4.setText(QtGui.QApplication.translate("MainWindow", "修正", None, QtGui.QApplication.UnicodeUTF8))
@@ -495,6 +508,7 @@ class Ui_MainWindow(object):
         self.closethresholdspin.setSuffix(QtGui.QApplication.translate("MainWindow", " %", None, QtGui.QApplication.UnicodeUTF8))
         self.label_16.setText(QtGui.QApplication.translate("MainWindow", "平仓信号", None, QtGui.QApplication.UnicodeUTF8))
         self.label_15.setText(QtGui.QApplication.translate("MainWindow", "组合操作状态", None, QtGui.QApplication.UnicodeUTF8))
+        self.label_17.setText(QtGui.QApplication.translate("MainWindow", "持仓名称", None, QtGui.QApplication.UnicodeUTF8))
         self.menu.setTitle(QtGui.QApplication.translate("MainWindow", "查看", None, QtGui.QApplication.UnicodeUTF8))
         self.stockinfoact.setText(QtGui.QApplication.translate("MainWindow", "股份查询", None, QtGui.QApplication.UnicodeUTF8))
         self.posstatact.setText(QtGui.QApplication.translate("MainWindow", "持仓统计", None, QtGui.QApplication.UnicodeUTF8))

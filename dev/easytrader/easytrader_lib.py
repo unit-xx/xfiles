@@ -2809,6 +2809,9 @@ class uicontrol(QMainWindow, Ui_MainWindow):
     def setup(self):
         self.setupUi(self.mainwindow)
 
+        # setup position name in operation
+        self.posnameline.setText(os.path.basename(self.portfolio.ptfn)[0:-4])
+
         # setup stock info model
         self.stock.setModel(self.pmodel)
         self.stock.resizeColumnsToContents()
@@ -3045,15 +3048,27 @@ class basediffUpdater(Thread):
         audioOutput = Phonon.AudioOutput(Phonon.MusicCategory,
                 self.uic.mainwindow)
         Phonon.createPath(self.m_media, audioOutput)
+
+        self.m_media2 = Phonon.MediaObject(self.uic.mainwindow)
+        audioOutput2 = Phonon.AudioOutput(Phonon.MusicCategory,
+                self.uic.mainwindow)
+        Phonon.createPath(self.m_media2, audioOutput2)
+
         self.playsignal = self.uic.playsignalchk.isChecked()
         self.uic.mainwindow.connect(self.uic.playsignalchk, SIGNAL("stateChanged(int)"), self.setplay)
         self.uic.mainwindow.connect(self.m_media, SIGNAL("aboutToFinish()"), self.addsong)
+        self.uic.mainwindow.connect(self.m_media2, SIGNAL("aboutToFinish()"), self.addsong2)
 
-        musicdir = u"music"
-        self.musicdir = musicdir
-        self.musicfn = random.choice(os.listdir(musicdir))
-        self.m_media.setCurrentSource(Phonon.MediaSource(os.path.join(musicdir,
-            self.musicfn)))
+        self.opendir = u"musicopen"
+        self.closedir = u"musicclose"
+        self.openmusic = os.listdir(self.opendir)
+        self.closemusic = os.listdir(self.closedir)
+        musicfn = random.choice(self.openmusic)
+        self.m_media.setCurrentSource(Phonon.MediaSource(os.path.join(self.opendir,
+            musicfn)))
+        musicfn = random.choice(self.closemusic)
+        self.m_media2.setCurrentSource(Phonon.MediaSource(os.path.join(self.closedir,
+            musicfn)))
 
         self.name = self.__class__.__name__
         self.logger = logging.getLogger()
@@ -3120,23 +3135,40 @@ class basediffUpdater(Thread):
                             Qt.QueuedConnection, Q_ARG("QString", QString(str("background-color: rgb(255, 255, 255);"))))
                     self.stopplay()
 
+                closethreshold = self.uic.closethresholdspin.value()
+                if basediffper <= closethreshold:
+                    QMetaObject.invokeMethod(self.uic.closethresholdspin, "setStyleSheet",
+                            Qt.QueuedConnection, Q_ARG("QString", QString(str("background-color: rgb(255, 0, 0);"))))
+                    self.play2()
+                else:
+                    QMetaObject.invokeMethod(self.uic.closethresholdspin, "setStyleSheet",
+                            Qt.QueuedConnection, Q_ARG("QString", QString(str("background-color: rgb(255, 255, 255);"))))
+                    self.stopplay2()
+
         except Exception:
             self.logger.exception("Oh!!!")
 
     def stop(self):
         self.runflag = False
         self.stopplay()
+        self.stopplay2()
 
     @pyqtSlot(int)
     def setplay(self, state):
         self.playsignal = self.uic.playsignalchk.isChecked()
         if not self.playsignal:
             self.stopplay()
+            self.stopplay2()
 
     @pyqtSlot()
     def addsong(self):
-        self.musicfn = random.choice(os.listdir(self.musicdir))
-        self.m_media.enqueue(Phonon.MediaSource(os.path.join(self.musicdir, self.musicfn)))
+        musicfn = random.choice(self.openmusic)
+        self.m_media.enqueue(Phonon.MediaSource(os.path.join(self.musicdir, musicfn)))
+
+    @pyqtSlot()
+    def addsong2(self):
+        musicfn = random.choice(self.closemusic)
+        self.m_media2.enqueue(Phonon.MediaSource(os.path.join(self.musicdir, musicfn)))
 
     @pyqtSlot()
     def play(self):
@@ -3144,8 +3176,17 @@ class basediffUpdater(Thread):
             self.m_media.play()
 
     @pyqtSlot()
+    def play2(self):
+        if self.playsignal:
+            self.m_media2.play()
+
+    @pyqtSlot()
     def stopplay(self):
         self.m_media.pause()
+
+    @pyqtSlot()
+    def stopplay2(self):
+        self.m_media2.pause()
 
 def testslot(t):
     print t
