@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from easytrader_lib import *
+import openptfdlg
 
 PortfolioUpdater = PortfolioUpdater_dbf
 #SIFPriceUpdater = SIFPriceUpdater_pushee
@@ -118,7 +119,15 @@ def main(args):
     #config.write(configfn)
 
     #load portfolio
-    portfoliofn = unicode(QFileDialog.getOpenFileName(None, u"选择投资组合", "./portfolio", "*.ptf"))
+    #portfoliofn = unicode(QFileDialog.getOpenFileName(None, u"选择投资组合", "./portfolio", "*.ptf"))
+    ptfdlg = openptfdlg.openptfdlg("portfolio")
+    if ptfdlg.setup():
+        ptfdlg.show()
+        ptfdlg.activateWindow()
+        app.exec_()
+
+    portfoliofn = ptfdlg.selectedfn
+
     if portfoliofn == u"":
         logger.info("No portfolio seleted.")
         sys.exit(1)

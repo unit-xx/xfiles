@@ -6,6 +6,7 @@ from PyQt4.QtCore import *
 import os
 import sys
 import glob
+import shutil
 from datetime import datetime
 
 class ptfModel(QAbstractTableModel):
@@ -65,7 +66,7 @@ class openptfdlg(QDialog, Ui_Dialog):
                 "ptfname":u"组合名称",
                 "datetext":u"建仓时间"
                 }
-        self.selecedfn = ""
+        self.selectedfn = ""
 
     def setup(self):
         self.setupUi(self)
@@ -140,8 +141,17 @@ class openptfdlg(QDialog, Ui_Dialog):
                     u"尚未选择组合。",
                     QMessageBox.Ok)
         else:
-            self.selecedfn = self.ptfdata[rows[0].row()]["fn"]
-            print self.selecedfn
+            ptfn = self.ptfdata[rows[0].row()]["fn"]
+            ptfna = ptfn[0:-4]
+            ptfnb = "pos"
+            n = 0
+            while 1:
+                n += 1
+                posfn = ".".join([ptfna, str(n), ptfnb])
+                if not os.path.exists(posfn):
+                    shutil.copy(ptfn, posfn)
+                    self.selectedfn = posfn
+                    break
             self.done(1)
 
     @pyqtSlot()
@@ -153,8 +163,7 @@ class openptfdlg(QDialog, Ui_Dialog):
                     u"尚未选择组合。",
                     QMessageBox.Ok)
         else:
-            self.selecedfn = self.posdata[rows[0].row()]["fn"]
-            print self.selecedfn
+            self.selectedfn = self.posdata[rows[0].row()]["fn"]
             self.done(1)
 
     @pyqtSlot()
