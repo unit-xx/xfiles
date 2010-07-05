@@ -53,13 +53,13 @@ def main():
     m_media = Phonon.MediaObject()
     audioOutput = Phonon.AudioOutput(Phonon.MusicCategory)
     Phonon.createPath(m_media, audioOutput)
-    m_media.setCurrentSource(Phonon.MediaSource("music\\I'll Be There.mp3"))
+    m_media.setCurrentSource(Phonon.MediaSource("closemusic\\I'll Be There.mp3"))
     m_media.play()
 
     m_media2 = Phonon.MediaObject()
     audioOutput2 = Phonon.AudioOutput(Phonon.MusicCategory)
     Phonon.createPath(m_media2, audioOutput2)
-    m_media2.setCurrentSource(Phonon.MediaSource("music\\Who's Lovin' You.mp3"))
+    m_media2.setCurrentSource(Phonon.MediaSource("closemusic\\Who's Lovin' You.mp3"))
     m_media2.play()
 
     sys.exit(app.exec_())

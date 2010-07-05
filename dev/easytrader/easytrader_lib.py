@@ -3,6 +3,7 @@
 import os, sys
 import csv
 import zlib
+import glob
 import random
 import socket
 import pickle
@@ -3061,14 +3062,12 @@ class basediffUpdater(Thread):
 
         self.opendir = u"openmusic"
         self.closedir = u"closemusic"
-        self.openmusic = os.listdir(self.opendir)
-        self.closemusic = os.listdir(self.closedir)
+        self.openmusic = glob.glob(os.path.join(self.opendir, "*.mp3"))
+        self.closemusic = glob.glob(os.path.join(self.closedir, "*.mp3"))
         musicfn = random.choice(self.openmusic)
-        self.m_media.setCurrentSource(Phonon.MediaSource(os.path.join(self.opendir,
-            musicfn)))
+        self.m_media.setCurrentSource(Phonon.MediaSource(musicfn))
         musicfn = random.choice(self.closemusic)
-        self.m_media2.setCurrentSource(Phonon.MediaSource(os.path.join(self.closedir,
-            musicfn)))
+        self.m_media2.setCurrentSource(Phonon.MediaSource(musicfn))
 
         self.name = self.__class__.__name__
         self.logger = logging.getLogger()
@@ -3163,12 +3162,12 @@ class basediffUpdater(Thread):
     @pyqtSlot()
     def addsong(self):
         musicfn = random.choice(self.openmusic)
-        self.m_media.enqueue(Phonon.MediaSource(os.path.join(self.musicdir, musicfn)))
+        self.m_media.enqueue(Phonon.MediaSource(musicfn))
 
     @pyqtSlot()
     def addsong2(self):
         musicfn = random.choice(self.closemusic)
-        self.m_media2.enqueue(Phonon.MediaSource(os.path.join(self.musicdir, musicfn)))
+        self.m_media2.enqueue(Phonon.MediaSource(musicfn))
 
     @pyqtSlot()
     def play(self):
