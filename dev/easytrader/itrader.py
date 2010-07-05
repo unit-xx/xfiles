@@ -16,6 +16,10 @@ def main(args):
     os.chdir(os.path.dirname(os.path.abspath(args[0])))
     # make log directory
     CONFIGFN = "itrader.cfg"
+    try:
+        CONFIGFN = sys.argv[1]
+    except IndexError:
+        pass
     LOGDIR = "log"
     if not os.path.isdir(LOGDIR):
         try:
@@ -96,7 +100,15 @@ def main(args):
         sys.exit(1)
 
     #load portfolio
-    portfoliofn = unicode(QFileDialog.getOpenFileName(None, u"选择投资组合", "./portfolio", "*.ptf"))
+    #portfoliofn = unicode(QFileDialog.getOpenFileName(None, u"选择投资组合", "./portfolio", "*.ptf"))
+    ptfdlg = openptfdlg.openptfdlg("portfolio")
+    if ptfdlg.setup():
+        ptfdlg.show()
+        ptfdlg.activateWindow()
+        app.exec_()
+
+    portfoliofn = ptfdlg.selectedfn
+
     if portfoliofn == u"":
         logger.info("No portfolio seleted.")
         sys.exit(1)
@@ -126,11 +138,25 @@ def main(args):
     orderupdater = OrderUpdater(p, pmodel, session_config, updtlock)
     orderupdater.start()
 
+    coupdater = CancelOrderUpdater(p, pmodel, session_config)
+    coupdater.start()
+
+    # setup dbqueue and dbserver
+    dbqueue = Queue.Queue()
+    dbname = config.get(MYSEC, "tradedb")
+    dbs = dbserver(dbname, dbqueue)
+    dbs.start()
+
     # setup and run jzWorker threads
     jzWorkerNum = 10
+    try:
+        jzWorkerNum = config.getint(MYSEC, "jzworkernum")
+    except Exception:
+        pass
+
     workers = []
     for i in range(jzWorkerNum):
-        w = jzWorker(session_config, tqueue)
+        w = jzWorker(session_config, tqueue, dbqueue)
         workers.append(w)
 
     for i in range(jzWorkerNum):
@@ -173,9 +199,11 @@ def main(args):
     logger.info("notify updater threads to stop.")
     pupdater.stop()
     orderupdater.stop()
+    coupdater.stop()
     logger.info("waiting updater threads to stop.")
     pupdater.join()
     orderupdater.join()
+    coupdater.join()
     logger.info("updater threads stopped.")
 
     logger.info("waiting SecuInfoUpdater to stop")
@@ -190,6 +218,12 @@ def main(args):
     for i in range(jzWorkerNum):
         workers[i].join()
     logger.info("jzWorkers stopped")
+
+    logger.info("waiting dbserver to stop")
+    dbqueue.join()
+    dbs.stop()
+    dbs.join()
+
     logger.info("saving order info.")
     p.savePortfolio()
     p.close()
