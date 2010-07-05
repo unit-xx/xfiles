@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from easytrader_lib import *
+import openptfdlg
 
 PortfolioUpdater = PortfolioUpdater_net
 SIFPriceUpdater = SIFPriceUpdater_net

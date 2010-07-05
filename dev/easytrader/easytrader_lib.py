@@ -688,7 +688,7 @@ class Portfolio(object):
                 self.tqueue.put( (reqclass, respclass, param, self.buyBatchBottom, True) )
 
             if self.bocount == 0:
-                self.logger.info("not stock to buy.")
+                self.logger.info("no stock to buy.")
                 self.bostate = Portfolio.BOUNORDERED
             else:
                 self.logger.info("buy batch dispatched: %d" % self.bocount)
@@ -1910,6 +1910,17 @@ class PortfolioUpdater_net(Thread):
     def stop(self):
         self.runflag = False
 
+    def genorderlist(self):
+        mktvallist = []
+        for scode in self.portfolio.stocklist:
+            si = self.portfolio.stockinfo[scode]
+            mktvallist.append( (scode, si["close"]*int(si["count"])) )
+        mktvallist.sort(key=lambda x:x[1], reverse=True)
+        orderlist = [ x[0] for x in mktvallist ]
+        self.portfolio.orderlist = orderlist
+        self.logger.info("stock order sequence is: \n%s" %
+                str(self.portfolio.orderlist))
+
     def run(self):
         try:
             self.conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -1919,6 +1930,8 @@ class PortfolioUpdater_net(Thread):
             return
 
         try:
+            self.update()
+            self.genorderlist()
             while self.runflag:
                 self.update()
         except Exception:
