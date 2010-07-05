@@ -42,10 +42,10 @@ def main(args):
     JSDSEC = "jsd"
     MYSEC = "easytrader"
 
-    session_config = {}
-
     config = ConfigParser.RawConfigParser()
     config.read(CONFIGFN)
+
+    session_config = {}
     for k,v in config.items(JZSEC):
         session_config[k] = v
     try:
