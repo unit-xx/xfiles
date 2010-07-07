@@ -2,6 +2,7 @@ import os
 import sys
 import ConfigParser
 from threading import Thread
+import getpass
 import time
 
 import jsd
@@ -43,6 +44,7 @@ def main():
         jsdcfg["jsdport"] = int(jsdcfg["jsdport"])
     except KeyError:
         jsdcfg["jsdport"] = 9100
+    jsdcfg["jsdpasswd"] = getpass.getpass("Password: ")
 
     jsd1 = jsd.session(jsdcfg)
     jsd2 = jsd.session(jsdcfg)
