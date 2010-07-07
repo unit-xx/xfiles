@@ -282,6 +282,50 @@ class OrderReq(request):
     code = "6021"
     paramlist = ["exchcode", "code", "longshort", "openclose", "ifhedge", "count", "price", "tradenum", "seat"]
 
+    def makeopenshort(self, code, price, share):
+        self["exchcode"] = self.session["cffexcode"]
+        self["code"] = code
+        self["longshort"] = "1"
+        self["openclose"] = "0"
+        self["ifhedge"] = "0"
+        self["count"] = share
+        self["price"] = price
+        self["clientnum"] = self.session["clientnum"]
+        self["seat"] = self.session["seat"]
+
+    def makecloseshort(self, code, price, share):
+        self["exchcode"] = self.session["cffexcode"]
+        self["code"] = code
+        self["longshort"] = "0"
+        self["openclose"] = "1"
+        self["ifhedge"] = "0"
+        self["count"] = share
+        self["price"] = price
+        self["clientnum"] = self.session["clientnum"]
+        self["seat"] = self.session["seat"]
+
+    def makeopenlong(self, code, price, share):
+        self["exchcode"] = self.session["cffexcode"]
+        self["code"] = code
+        self["longshort"] = "0"
+        self["openclose"] = "0"
+        self["ifhedge"] = "0"
+        self["count"] = share
+        self["price"] = price
+        self["clientnum"] = self.session["clientnum"]
+        self["seat"] = self.session["seat"]
+
+    def makecloselong(self, code, price, share):
+        self["exchcode"] = self.session["cffexcode"]
+        self["code"] = code
+        self["longshort"] = "1"
+        self["openclose"] = "1"
+        self["ifhedge"] = "0"
+        self["count"] = share
+        self["price"] = price
+        self["clientnum"] = self.session["clientnum"]
+        self["seat"] = self.session["seat"]
+
 class OrderResp(response):
     okfieldn = 31
     hasmore = 0
