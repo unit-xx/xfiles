@@ -56,14 +56,16 @@ class Portfolio:
         self.ptfn = ""
 
         self.autosubmit = False
+        self.openpoint = 0.0
+        self.closepoint = 0.0
+        self.opentotal = 0
+        self.trigger = 0
         self.wqueue = wqueue
 
     def load(self, config):
         MYSEC = "arbitrage"
         share = config.get(MYSEC, "share")
-        longcode = config.get(MYSEC, "long")
-        shortcode = config.get(MYSEC, "short")
-        
+
         self.data["long"] = {}
         self.data["long"]["direction"] = u"买入"
         self.data["long"]["code"] = config.get(MYSEC, "long")
@@ -77,6 +79,11 @@ class Portfolio:
         self.data["short"]["share"] = share
         self.data["short"]["pricepolicy"] = "current"
         self.data["short"]["current"] = "0.0"
+
+        self.openpoint = config.getfloat(MYSEC, "openpoint")
+        self.closepoint = config.getfloat(MYSEC, "closepoint")
+        self.opentotal = config.getint(MYSEC, "opentotal")
+        self.trigger = config.getint(MYSEC, "trigger")
 
     def doopen(self):
         self.wqueue.put((
@@ -165,7 +172,11 @@ class cparbigui(QMainWindow, Ui_MainWindow):
     def setup(self, model):
         self.setupUi(self)
         self.arbitbl.setModel(model)
-        self.portfolio.autosubmit = self.autochk.isChecked()
+        self.autochk.setChecked(self.portfolio.autosubmit)
+        self.openspin.setValue(self.portfolio.openpoint)
+        self.closespin.setValue(self.portfolio.closepoint)
+        self.opentimespin.setValue(self.portfolio.opentotal)
+        self.triggercountspin.setValue(self.portfolio.trigger)
 
     @pyqtSlot()
     def on_openbtn_clicked(self):
@@ -178,6 +189,20 @@ class cparbigui(QMainWindow, Ui_MainWindow):
     @pyqtSlot(int)
     def on_autochk_stateChanged(self, state):
         self.portfolio.autosubmit = self.autochk.isChecked()
+        if self.portfolio.autosubmit == True:
+            self.autogrp.setEnabled(False)
+            self.openbtn.setEnabled(False)
+            self.closebtn.setEnabled(False)
+
+            self.portfolio.openpoint = self.openspin.value()
+            self.portfolio.closepoint = self.closespin.value()
+            self.portfolio.opentotal = self.opentimespin.value()
+            self.portfolio.trigger = self.triggercountspin.value()
+
+        elif self.portfolio.autosubmit == False:
+            self.autogrp.setEnabled(True)
+            self.openbtn.setEnabled(True)
+            self.closebtn.setEnabled(True)
 
 class monitor(Thread):
     def __init__(self, ui, portfolio, model, hqserver):
@@ -189,6 +214,11 @@ class monitor(Thread):
         self.conn = None
         self.runflag = True
         self.logger = logging.getLogger()
+
+        self.opentriggercount = 0
+        self.closetriggercount = 0
+        self.opencount = 0
+        self.closecount = 0
 
     def stop(self):
         self.runflag = False
@@ -238,8 +268,24 @@ class monitor(Thread):
                 Q_ARG("QString",
                     QString("%0.1f"%pricediff)))
 
-        openpoint = self.ui.openspin.value()
-        closepoint = self.ui.closespin.value()
+        if self.portfolio.autosubmit:
+            if pricediff <= self.portfolio.openpoint:
+                self.opentriggercount += 1
+                if self.opentriggercount >= self.portfolio.trigger and self.opencount < self.portfolio.opentotal:
+                    self.portfolio.doopen()
+                    self.logger.info("open@%0.1f" % pricediff)
+                    self.opencount += 1
+            else:
+                self.opentriggercount = 0
+
+            if pricediff >= self.portfolio.closepoint:
+                self.closetriggercount += 1
+                if self.closetriggercount >= self.portfolio.trigger and self.closecount < self.opencount:
+                    self.portfolio.doclose()
+                    self.logger.info("close@%0.1f" % pricediff)
+                    self.closecount += 1
+            else:
+                self.closetriggercount = 0
 
     def run(self):
         try:
