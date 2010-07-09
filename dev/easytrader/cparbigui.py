@@ -235,8 +235,8 @@ class monitor(Thread):
 
             if item:
                 item["latest"] = "%0.1f" % qd.lastPrice
-                item["b1"] = "%0.1f" % qd.openPrice
-                item["s1"] = "%0.1f" % qd.preClosePrice
+                item["b1"] = "%0.1f" % qd.bidPrice1
+                item["s1"] = "%0.1f" % qd.askPrice1
                 QMetaObject.invokeMethod(self.model,
                         "updaterow", Qt.QueuedConnection)
 
