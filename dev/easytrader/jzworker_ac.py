@@ -26,6 +26,9 @@ class jzworker_ac(asynchat.async_chat):
         self.header_left = ""
         self.payload = ""
 
+        self.req = None
+        self.resp = None
+
     def allow_overlap(value):
         self.overlap = value
 
@@ -43,6 +46,8 @@ class jzworker_ac(asynchat.async_chat):
 
     def idle(self):
         self.state = self.IDLE
+        self.req = None
+        self.resp = None
 
     def collect_incoming_data(self, data):
         self.ibuffer.append(data)
@@ -61,29 +66,36 @@ class jzworker_ac(asynchat.async_chat):
             del self.ibuffer[:]
             i = header_left.find("|")
             payload_len = int(header_left[0:i])
-            self.wait_payload(payload_len)
+            if payload_len > 0:
+                self.wait_payload(payload_len)
+            else:
+                self.payload = ""
+                self.handleresp()
 
         elif self.state == self.WAIT_PAYLOAD:
 
             self.payload = "".join(self.ibuffer)
             del self.ibuffer[:]
-            self.resp.updatefrom(self.header_left, self.payload)
-            if self.resp.hasnext == "1":
-                nextreq = GetNextReq(self.session)
-                self.push(nextreq.serialize())
-                self.wait_head()
-            else:
-                t = self.task
-                param = t[2]
-                ifstoretrade = t[4]
-                if ifstoretrade:
-                    self.dbqueue.put( (req, resp) )
-                callback(req, resp, param)
-                self.idle()
+            self.handleresp()
+
+    def handleresp(self):
+        self.resp.updatefrom(self.header_left, self.payload)
+        if self.resp.hasnext == "1":
+            nextreq = jz.GetNextReq(self.session)
+            self.push(nextreq.serialize())
+            self.wait_head()
+        else:
+            t = self.task
+            param = t[2]
+            callback = t[3]
+            ifstoretrade = t[4]
+            if ifstoretrade:
+                self.dbqueue.put( (self.req, self.resp) )
+            callback(self.req, self.resp, param)
+            self.idle()
 
     def writable(self):
         if self.overlap or self.state == self.IDLE:
-            print "test write"
             if self.tqueue.qsize():
                 try:
                     t = self.tqueue.get_nowait()
@@ -91,12 +103,12 @@ class jzworker_ac(asynchat.async_chat):
                     self.task = t
 
                     req = t[0](self.session)
+                    self.req = req
                     param = t[2]
                     self.resp = t[1](self.session)
                     for k in param:
                         req[k] = param[k]
                     self.push(req.serialize())
-                    print "pushed"
                     self.wait_head()
                 except Queue.Empty:
                     pass
