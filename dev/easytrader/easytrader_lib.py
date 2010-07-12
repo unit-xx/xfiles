@@ -20,6 +20,7 @@ import types
 from ctypes import *
 import logging, logging.config
 import sqlite3 as db
+import asyncore
 
 import jz, jsd
 import jsdhq
@@ -31,6 +32,7 @@ from PyQt4.phonon import *
 from tradeui import Ui_MainWindow
 from stockquery import stockquerydlg
 from positioninfo import positioninfodlg
+from jzworker_ac import jzworker_ac
 
 class PortfolioModel(QAbstractTableModel):
     def __init__(self, portfolio, parent=None):
@@ -2637,6 +2639,26 @@ class CancelOrderUpdater(Thread):
             self.logger.exception("Oh!!!")
         finally:
             self.close()
+
+class jzHandler_ac(Thread):
+    def __init__(self, session_cfg, concount, tqueue, dbqueue):
+        Thread.__init__(self)
+        self.session_cfg = session_cfg
+        self.tqueue = tqueue
+        self.dbqueue = dbqueue
+        self.concount = concount
+        self.logger = logging.getLogger()
+
+    def run(self):
+        scount = 0
+        for i in range(self.concount):
+            s = jz.session(self.session_cfg)
+            if s.setup():
+                scount += 1
+                jzworker_ac(s, self.tqueue, self.dbqueue)
+        self.logger.info("%d of %d session started." %
+                (scount, self.concount))
+        asyncore.loop()
 
 class asyncWorker(Thread):
     def __init__(self, session_cfg, tqueue, dbqueue):

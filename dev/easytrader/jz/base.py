@@ -219,6 +219,7 @@ class request:
 class response:
     def __init__(self, session):
         self.session = session
+        self.records = []
 
     def checkcrc(self):
         # TODO: implement it
@@ -333,6 +334,14 @@ class response:
             start = start + self.sectionnumber
             end = end + self.sectionnumber
         return sections, records
+
+    def updatefrom(self, header_left, payload):
+        self.header_left = header_left
+        self.payload = payload
+        self.deserialize_headerleft()
+        sections, records = self.deserialize_payload()
+        self.records.extend(records)
+        self.sections = sections
 
 class CheckinReq(request):
     code = "100"
