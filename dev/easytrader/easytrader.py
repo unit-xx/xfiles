@@ -120,7 +120,26 @@ def main(args):
 
     #load portfolio
     #portfoliofn = unicode(QFileDialog.getOpenFileName(None, u"选择投资组合", "./portfolio", "*.ptf"))
-    ptfdlg = openptfdlg.openptfdlg("portfolio")
+    username = ""
+    testsession = jz.session(session_config)
+    if testsession.setup():
+        uireq = jz.UserInfoReq(testsession)
+        uireq["user_code"] = testsession["user_code"]
+        uireq.send()
+        uiresp = jz.UserInfoResp(testsession)
+        uiresp.recv()
+        if uiresp.retcode == "0":
+            username = uiresp.records[0][0].decode("GBK")
+        testsession.close()
+    if username == "":
+        QMessageBox.warning(None,
+                u"",
+                u"<H3><FONT COLOR='#FF0000'>不能取得用户资料！</FONT></H3>",
+                QMessageBox.Ok)
+        logger.warning("cannot get user name")
+        sys.exit(1)
+
+    ptfdlg = openptfdlg.openptfdlg("portfolio", username)
     if ptfdlg.setup():
         ptfdlg.show()
         ptfdlg.activateWindow()

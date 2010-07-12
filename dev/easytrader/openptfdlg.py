@@ -56,9 +56,10 @@ class ptfModel(QAbstractTableModel):
 
 
 class openptfdlg(QDialog, Ui_Dialog):
-    def __init__(self, ptfpath):
+    def __init__(self, ptfpath, username):
         QDialog.__init__(self)
         self.ptfpath = ptfpath
+        self.username = username
         self.ptfattr = ["fn", "ptfname", "datetext", "ctime"]
         self.ptfshowattr = ["ptfname"]
         self.posshowattr = ["ptfname", "datetext"]
@@ -147,7 +148,7 @@ class openptfdlg(QDialog, Ui_Dialog):
             n = 0
             while 1:
                 n += 1
-                posfn = ".".join([ptfna, str(n), ptfnb])
+                posfn = ".".join([ptfna, self.username, str(n), ptfnb])
                 if not os.path.exists(posfn):
                     shutil.copy(ptfn, posfn)
                     self.selectedfn = posfn

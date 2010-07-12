@@ -452,3 +452,10 @@ class SecuInfoReq(request):
 
 class SecuInfoResp(response):
     pass
+
+class UserInfoReq(request):
+    code = "302"
+    paramlist = ["user_code"]
+
+class UserInfoResp(response):
+    pass
