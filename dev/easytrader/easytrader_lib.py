@@ -2658,7 +2658,7 @@ class jzHandler_ac(Thread):
                 jzworker_ac(s, self.tqueue, self.dbqueue)
         self.logger.info("%d of %d session started." %
                 (scount, self.concount))
-        asyncore.loop(1)
+        asyncore.loop(0.1)
 
 class asyncWorker(Thread):
     def __init__(self, session_cfg, tqueue, dbqueue):
