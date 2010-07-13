@@ -881,17 +881,17 @@ class Portfolio(object):
         orec["cancel_date"] = today
         orec["cancel_time"] = str(datetime.now().time())
         if resp.retcode in ("0", "409"):
-            orec["order_state"] = Portfolio.CANCELBUYSUCCESS
+            orec["order_state"] = Portfolio.CANCELBUYWAIT
         else:
             orec["order_state"] = Portfolio.CANCELBUYFAILED
 
         # update stock info immediately, it's important to use req.session,
         # not self.session, to make sure sqlite db object is used by
         # only one thread
-        if orec["order_state"] == Portfolio.CANCELBUYSUCCESS:
+        if orec["order_state"] == Portfolio.CANCELBUYWAIT:
             needmore = True
             trycount = 0
-            maxtrycount = 1
+            maxtrycount = 0
             ordercount = int(orec["ordercount"])
             while needmore and trycount < maxtrycount:
                 trycount += 1
@@ -915,6 +915,8 @@ class Portfolio(object):
                         orec["dealprice"] = str(dealprice)
                         if orec["dealcount"] == orec["ordercount"]:
                             orec["order_state"] = Portfolio.BUYSUCCESS
+                        else:
+                            orec["order_state"] = Portfolio.CANCELBUYSUCCESS
                     elif trycount >= maxtrycount:
                             orec["order_state"] = Portfolio.CANCELBUYWAIT
                             #self.logger.error("cancel waiting: %s" % scode)
@@ -1270,15 +1272,15 @@ class Portfolio(object):
         orec["cancel_date"] = today
         orec["cancel_time"] = str(datetime.now().time())
         if resp.retcode in ("0", "409"):
-            orec["order_state"] = Portfolio.CANCELSELLSUCCESS
+            orec["order_state"] = Portfolio.CANCELSELLWAIT
         else:
             orec["order_state"] = Portfolio.CANCELSELLFAILED
 
         # update stock info immediately
-        if orec["order_state"] == Portfolio.CANCELSELLSUCCESS:
+        if orec["order_state"] == Portfolio.CANCELSELLWAIT:
             needmore = True
             trycount = 0
-            maxtrycount = 1
+            maxtrycount = 0
             ordercount = int(orec["ordercount"])
             while needmore and trycount < maxtrycount:
                 trycount += 1
@@ -1302,6 +1304,8 @@ class Portfolio(object):
                         orec["dealprice"] = str(dealprice)
                         if orec["dealcount"] == orec["ordercount"]:
                             orec["order_state"] = Portfolio.SELLSUCCESS
+                        else:
+                            orec["order_state"] = Portfolio.CANCELSELLSUCCESS
                     elif trycount >= maxtrycount:
                             orec["order_state"] = Portfolio.CANCELSELLWAIT
                             #self.logger.error("cancel waiting: %s" % scode)
