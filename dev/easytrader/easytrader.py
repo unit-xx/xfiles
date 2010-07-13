@@ -137,7 +137,8 @@ def main(args):
                 u"<H3><FONT COLOR='#FF0000'>不能取得用户资料！</FONT></H3>",
                 QMessageBox.Ok)
         logger.warning("cannot get user name")
-        sys.exit(1)
+        username = "anonymous"
+        #sys.exit(1)
 
     ptfdlg = openptfdlg.openptfdlg("portfolio", username)
     if ptfdlg.setup():
