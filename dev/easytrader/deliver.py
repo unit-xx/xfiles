@@ -92,7 +92,7 @@ class diffupdater(Thread):
         self.ui.connect(self.ui.playsignalchk, SIGNAL("stateChanged(int)"), self.setplay)
         self.ui.connect(self.m_media, SIGNAL("aboutToFinish()"), self.addsong)
 
-        musicdir = u"music"
+        musicdir = u"openmusic"
         self.musicdir = musicdir
         self.musicfn = random.choice(os.listdir(musicdir))
         self.m_media.setCurrentSource(Phonon.MediaSource(os.path.join(musicdir,
