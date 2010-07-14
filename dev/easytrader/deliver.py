@@ -254,6 +254,12 @@ class Predictor(Thread):
                     Qt.QueuedConnection,
                     Q_ARG("QString", QString("%0.2f"%predictclose)))
 
+            expavg = (pastavg * pasttime + hs300 * remaintime) / totaltime
+            QMetaObject.invokeMethod(self.ui.expectavgline,
+                    "setText",
+                    Qt.QueuedConnection,
+                    Q_ARG("QString", QString("%0.2f"%expavg)))
+
     def stop(self):
         self.runflag = False
 

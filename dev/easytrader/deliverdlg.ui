@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>318</width>
-    <height>341</height>
+    <height>371</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -118,20 +118,20 @@
       <string/>
      </property>
      <layout class="QGridLayout" name="gridLayout_2">
-      <item row="0" column="0">
+      <item row="2" column="0">
        <widget class="QLabel" name="label_7">
         <property name="text">
-         <string>若交割价等于股指现价，则剩下时间内，标的算术平均价格是</string>
+         <string>若交割价等于股指现价，则剩下时间内，沪深300算术平均价格是</string>
         </property>
         <property name="wordWrap">
          <bool>true</bool>
         </property>
        </widget>
       </item>
-      <item row="0" column="1">
+      <item row="2" column="1">
        <widget class="QLineEdit" name="remainavgline"/>
       </item>
-      <item row="1" column="0">
+      <item row="3" column="0">
        <widget class="QLabel" name="label_8">
         <property name="text">
          <string>在以上假设下，若股价直线变化，收盘价格为</string>
@@ -141,8 +141,21 @@
         </property>
        </widget>
       </item>
-      <item row="1" column="1">
+      <item row="3" column="1">
        <widget class="QLineEdit" name="predictcloseline"/>
+      </item>
+      <item row="0" column="0">
+       <widget class="QLabel" name="label_10">
+        <property name="text">
+         <string>沪深300维持现价，则预计交割价格为</string>
+        </property>
+        <property name="wordWrap">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QLineEdit" name="expectavgline"/>
       </item>
      </layout>
     </widget>

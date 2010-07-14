@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'deliverdlg.ui'
 #
-# Created: Fri Jun 18 11:26:43 2010
+# Created: Wed Jul 14 13:15:32 2010
 #      by: PyQt4 UI code generator 4.7.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -12,7 +12,7 @@ from PyQt4 import QtCore, QtGui
 class Ui_deliverdlg(object):
     def setupUi(self, deliverdlg):
         deliverdlg.setObjectName("deliverdlg")
-        deliverdlg.resize(318, 341)
+        deliverdlg.resize(318, 371)
         self.gridLayout_3 = QtGui.QGridLayout(deliverdlg)
         self.gridLayout_3.setObjectName("gridLayout_3")
         self.groupBox = QtGui.QGroupBox(deliverdlg)
@@ -79,17 +79,24 @@ class Ui_deliverdlg(object):
         self.label_7 = QtGui.QLabel(self.groupBox_2)
         self.label_7.setWordWrap(True)
         self.label_7.setObjectName("label_7")
-        self.gridLayout_2.addWidget(self.label_7, 0, 0, 1, 1)
+        self.gridLayout_2.addWidget(self.label_7, 2, 0, 1, 1)
         self.remainavgline = QtGui.QLineEdit(self.groupBox_2)
         self.remainavgline.setObjectName("remainavgline")
-        self.gridLayout_2.addWidget(self.remainavgline, 0, 1, 1, 1)
+        self.gridLayout_2.addWidget(self.remainavgline, 2, 1, 1, 1)
         self.label_8 = QtGui.QLabel(self.groupBox_2)
         self.label_8.setWordWrap(True)
         self.label_8.setObjectName("label_8")
-        self.gridLayout_2.addWidget(self.label_8, 1, 0, 1, 1)
+        self.gridLayout_2.addWidget(self.label_8, 3, 0, 1, 1)
         self.predictcloseline = QtGui.QLineEdit(self.groupBox_2)
         self.predictcloseline.setObjectName("predictcloseline")
-        self.gridLayout_2.addWidget(self.predictcloseline, 1, 1, 1, 1)
+        self.gridLayout_2.addWidget(self.predictcloseline, 3, 1, 1, 1)
+        self.label_10 = QtGui.QLabel(self.groupBox_2)
+        self.label_10.setWordWrap(True)
+        self.label_10.setObjectName("label_10")
+        self.gridLayout_2.addWidget(self.label_10, 0, 0, 1, 1)
+        self.expectavgline = QtGui.QLineEdit(self.groupBox_2)
+        self.expectavgline.setObjectName("expectavgline")
+        self.gridLayout_2.addWidget(self.expectavgline, 0, 1, 1, 1)
         self.gridLayout_3.addWidget(self.groupBox_2, 1, 0, 1, 2)
         self.label = QtGui.QLabel(deliverdlg)
         self.label.setObjectName("label")
@@ -111,7 +118,8 @@ class Ui_deliverdlg(object):
         self.label_5.setText(QtGui.QApplication.translate("deliverdlg", "报警阈值", None, QtGui.QApplication.UnicodeUTF8))
         self.warnspin.setSuffix(QtGui.QApplication.translate("deliverdlg", " %", None, QtGui.QApplication.UnicodeUTF8))
         self.playsignalchk.setText(QtGui.QApplication.translate("deliverdlg", "报警", None, QtGui.QApplication.UnicodeUTF8))
-        self.label_7.setText(QtGui.QApplication.translate("deliverdlg", "若交割价等于股指现价，则剩下时间内，标的算术平均价格是", None, QtGui.QApplication.UnicodeUTF8))
+        self.label_7.setText(QtGui.QApplication.translate("deliverdlg", "若交割价等于股指现价，则剩下时间内，沪深300算术平均价格是", None, QtGui.QApplication.UnicodeUTF8))
         self.label_8.setText(QtGui.QApplication.translate("deliverdlg", "在以上假设下，若股价直线变化，收盘价格为", None, QtGui.QApplication.UnicodeUTF8))
+        self.label_10.setText(QtGui.QApplication.translate("deliverdlg", "沪深300维持现价，则预计交割价格为", None, QtGui.QApplication.UnicodeUTF8))
         self.label.setText(QtGui.QApplication.translate("deliverdlg", "当前状态", None, QtGui.QApplication.UnicodeUTF8))
 
