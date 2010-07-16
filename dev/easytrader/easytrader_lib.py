@@ -2452,6 +2452,41 @@ class SIFOrderPushee(Thread):
         except Exception:
             self.logger.exception("Oh!!!")
 
+class StockStatUpdater(Thread):
+    def __init__(self, ui, portfolio):
+        Thread.__init__(self)
+        self.ui = ui
+        self.portfolio = portfolio
+        self.runflag = True
+        self.name = self.__class__.__name__
+        self.logger = logging.getLogger()
+
+    def stop(self):
+        self.runflag = False
+
+    def run(self):
+        while self.runflag:
+            buytotal = 0.0
+            selltotal = 0.0
+            for scode in self.portfolio.orderlist:
+                si = self.portfolio.stockinfo[scode]
+                buytotal = buytotal + si["currentbuycost"]
+                selltotal = selltotal + si["pastsellgain"]
+
+            buytotal = buytotal / 10000
+            selltotal = selltotal / 10000
+
+            QMetaObject.invokeMethod(self.ui.buytotalline, "setText",
+                    Qt.QueuedConnection,
+                    Q_ARG("QString",
+                        QString(u"%0.2f 万"%buytotal)))
+
+            QMetaObject.invokeMethod(self.ui.selltotalline, "setText",
+                    Qt.QueuedConnection,
+                    Q_ARG("QString",
+                        QString(u"%0.2f 万"%selltotal)))
+
+            time.sleep(5)
 
 class OrderUpdater(Thread):
     def __init__(self, portfolio, portmodel, sessioncfg, updtlock):
