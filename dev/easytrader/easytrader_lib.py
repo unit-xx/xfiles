@@ -399,7 +399,8 @@ class Portfolio(object):
                 "b2":u"买二",
                 "b3":u"买三",
                 "b4":u"买四",
-                "b5":u"买五"
+                "b5":u"买五",
+                "mktval":u"市价"
                 }
 
         self._bostate = Portfolio.BOUNORDERED
@@ -440,7 +441,7 @@ class Portfolio(object):
                 "state":u"状态"
                 }
         self.sindexinfo = {}
-        self.sindexpricepolicylist = ["latest", "s1", "b1"]
+        self.sindexpricepolicylist = ["mktval", "latest", "s1", "b1", ]
         self.openpolicy = "latest"
         self.closepolicy = "latest"
         self.openpricefix = 0.0
@@ -2102,8 +2103,14 @@ class SIFPriceUpdater_pushee(Thread):
                 si["close"] = qd.preClosePrice
                 si["ceiling"] = qd.upperLimitPrice
                 si["floor"] = qd.lowerLimitPrice
-                si["openposprice"] = self.getsindexprice(qd, self.portfolio.openpolicy) + self.portfolio.openpricefix
-                si["closeposprice"] = self.getsindexprice(qd, self.portfolio.closepolicy) + self.portfolio.closepricefix
+                if self.portfolio.openpolicy == "mktval":
+                    si["openposprice"] = 0.0
+                else:
+                    si["openposprice"] = self.getsindexprice(qd, self.portfolio.openpolicy) + self.portfolio.openpricefix
+                if self.portfolio.closepolicy == "mktval":
+                    si["closeposprice"] = 0.0
+                else:
+                    si["closeposprice"] = self.getsindexprice(qd, self.portfolio.closepolicy) + self.portfolio.closepricefix
                 self.portfolio.updateearning()
 
                 if not self.columnresized:
@@ -2194,8 +2201,14 @@ class SIFPriceUpdater_net(Thread):
                 si["close"] = qd.preClosePrice
                 si["ceiling"] = qd.upperLimitPrice
                 si["floor"] = qd.lowerLimitPrice
-                si["openposprice"] = self.getsindexprice(qd, self.portfolio.openpolicy) + self.portfolio.openpricefix
-                si["closeposprice"] = self.getsindexprice(qd, self.portfolio.closepolicy) + self.portfolio.closepricefix
+                if self.portfolio.openpolicy == "mktval":
+                    si["openposprice"] = 0.0
+                else:
+                    si["openposprice"] = self.getsindexprice(qd, self.portfolio.openpolicy) + self.portfolio.openpricefix
+                if self.portfolio.closepolicy == "mktval":
+                    si["closeposprice"] = 0.0
+                else:
+                    si["closeposprice"] = self.getsindexprice(qd, self.portfolio.closepolicy) + self.portfolio.closepricefix
                 self.portfolio.updateearning()
 
                 if not self.columnresized:
