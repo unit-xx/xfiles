@@ -71,6 +71,7 @@ class openptfdlg(QDialog, Ui_Dialog):
 
     def setup(self):
         self.setupUi(self)
+        self.setWindowTitle(self.windowTitle()+" - "+self.username)
 
         ptfdata = self.genptfdata()
         posdata = self.genposdata()
