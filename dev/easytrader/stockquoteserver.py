@@ -1,7 +1,8 @@
 import time
-import ConfigParser
 import pickle
 import zlib
+import datetime
+import ConfigParser
 
 from dbfpy import dbf
 from quoteserver import QuotePusher, startserver
@@ -9,21 +10,44 @@ from genstockindex import genindex
 
 class StockQuotePusher(QuotePusher):
     def setup(self, param):
-        shdbfn = param["shdbfn"]
-        szdbfn = param["szdbfn"]
+        self.shdbfn = param["shdbfn"]
+        self.szdbfn = param["szdbfn"]
 
-        self.dbsh = dbf.Dbf(shdbfn, ignoreErrors=True, readOnly=True)
-        self.dbsz = dbf.Dbf(szdbfn, ignoreErrors=True, readOnly=True)
+        self.dbsh = dbf.Dbf(self.shdbfn, ignoreErrors=True, readOnly=True)
+        self.dbsz = dbf.Dbf(self.szdbfn, ignoreErrors=True, readOnly=True)
 
         # genindex
-        self.shmap, self.szmap = genindex(param["indexstockset"],
-                shdbfn,
-                szdbfn)
+        self.indexstockset = param["indexstockset"]
+        self.shmap, self.szmap = genindex(self.indexstockset,
+                self.shdbfn,
+                self.szdbfn)
         if self.shmap is None or self.szmap is None:
             raise Exception("gen stock map failed.")
 
+        self.starttime = datetime.time(9, 15, 00)
+        self.endtime = datetime.time(15, 15, 00)
+        now = datetime.datetime.now().time()
+        if now > self.starttime and now < self.endtime:
+            self.state = 1 # 1 for open
+        else:
+            self.state = 0 # 0 for close
+
     def updatequote(self):
-        time.sleep(1)
+        time.sleep(2)
+
+        now = datetime.datetime.now().time()
+        if now > self.starttime and now < self.endtime:
+            if self.state == 0:
+                self.logger.info("generating index for a new day!")
+                self.shmap, self.szmap = genindex(self.indexstockset,
+                        self.shdbfn,
+                        self.szdbfn)
+                if self.shmap is None or self.szmap is None:
+                    raise Exception("gen stock map failed.")
+            self.state = 1 # 1 for open
+        else:
+            self.state = 0 # 0 for close
+
         shreclist = []
         for scode in self.shmap:
             rec = self.dbsh[self.shmap[scode]]
