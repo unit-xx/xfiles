@@ -21,14 +21,8 @@ Module Distribution
         End If
     End Function
 
-
     '// The normal distribution function
     Public Function ND(ByVal X As Double) As Double
-        Dim a, b, c, d As Double
-        a = Sqrt(2 * Pi)
-        b = Exp(-X ^ 2 / 2)
-        c = a * b
-        d = 1 / c
         ND = 1 / Sqrt(2 * Pi) * Exp(-X ^ 2 / 2)
     End Function
 
@@ -64,7 +58,7 @@ Module Distribution
 
         If a <= 0 And b <= 0 And rho <= 0 Then
             Sum = 0
-            For I = 0 To 0
+            For I = 0 To 4
                 For j = 0 To 4
                     Sum = Sum + X(I) * X(j) * Exp(a1 * (2 * y(I) - a1) _
                     + b1 * (2 * y(j) - b1) + 2 * rho * (y(I) - a1) * (y(j) - b1))
