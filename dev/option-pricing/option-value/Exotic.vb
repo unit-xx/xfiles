@@ -1,15 +1,12 @@
-﻿Module Exotic
-    Option Explicit     'Requires that all variables to be declared explicitly.
+﻿Option Explicit On     'Requires that all variables to be declared explicitly.
 Option Compare Text 'Uppercase letters to be equivalent to lowercase letters.
+Imports System.Math
 
-Option Base 1       'The "Option Base" statement allows to specify 0 or 1 as the
-    'default first index of arrays.
-
-
+Module Exotic
     '// Executive stock options
     Public Function Executive(ByVal CallPutFlag As String, ByVal S As Double, ByVal X As Double, ByVal T As Double, ByVal r As Double, ByVal b As Double, ByVal v As Double, ByVal lambda As Double) As Double
 
-        Executive = Exp(-lambda * T) * GBlackScholes(CallPutFlag, S, X, T, r, b, v)
+        Executive = Math.Exp(-lambda * T) * GBlackScholes(CallPutFlag, S, X, T, r, b, v)
 
     End Function
 
@@ -18,7 +15,7 @@ Option Base 1       'The "Option Base" statement allows to specify 0 or 1 as the
     Public Function ForwardStartOption(ByVal CallPutFlag As String, ByVal S As Double, ByVal alpha As Double, ByVal t1 As Double, _
                     ByVal T As Double, ByVal r As Double, ByVal b As Double, ByVal v As Double) As Double
 
-        ForwardStartOption = S * Exp((b - r) * t1) * GBlackScholes(CallPutFlag, 1, alpha, T - t1, r, b, v)
+        ForwardStartOption = S * Math.Exp((b - r) * t1) * GBlackScholes(CallPutFlag, 1, alpha, T - t1, r, b, v)
 
     End Function
 
@@ -37,10 +34,10 @@ Option Base 1       'The "Option Base" statement allows to specify 0 or 1 as the
             Z = -1
         End If
         For I = 1 To n
-            d = (Log(S / X) + (b - v ^ 2 / 2) * I * dt) / (v * Sqr(I * dt))
+            d = (Math.Log(S / X) + (b - v ^ 2 / 2) * I * dt) / (v * Math.Sqrt(I * dt))
             Sum = Sum + CND(Z * d) * dt
         Next
-        TimeSwitchOption = a * Exp(-r * T) * Sum + dt * a * Exp(-r * T) * m
+        TimeSwitchOption = a * Math.Exp(-r * T) * Sum + dt * a * Math.Exp(-r * T) * m
     End Function
 
 
@@ -50,11 +47,11 @@ Option Base 1       'The "Option Base" statement allows to specify 0 or 1 as the
 
         Dim d As Double, y As Double
 
-        d = (Log(S / X) + (b + v ^ 2 / 2) * T2) / (v * Sqr(T2))
-        y = (Log(S / X) + b * T2 + v ^ 2 * t1 / 2) / (v * Sqr(t1))
+        d = (Math.Log(S / X) + (b + v ^ 2 / 2) * T2) / (v * Math.Sqrt(T2))
+        y = (Math.Log(S / X) + b * T2 + v ^ 2 * t1 / 2) / (v * Math.Sqrt(t1))
 
-        SimpleChooser = S * Exp((b - r) * T2) * CND(d) - X * Exp(-r * T2) * CND(d - v * Sqr(T2)) _
-        - S * Exp((b - r) * T2) * CND(-y) + X * Exp(-r * T2) * CND(-y + v * Sqr(t1))
+        SimpleChooser = S * Math.Exp((b - r) * T2) * CND(d) - X * Math.Exp(-r * T2) * CND(d - v * Math.Sqrt(T2)) _
+        - S * Math.Exp((b - r) * T2) * CND(-y) + X * Math.Exp(-r * T2) * CND(-y + v * Math.Sqrt(t1))
     End Function
 
 
@@ -66,14 +63,14 @@ Option Base 1       'The "Option Base" statement allows to specify 0 or 1 as the
         Dim rho1 As Double, rho2 As Double, I As Double
 
         I = CriticalValueChooser(S, Xc, Xp, T, Tc, Tp, r, b, v)
-        d1 = (Log(S / I) + (b + v ^ 2 / 2) * T) / (v * Sqr(T))
-        d2 = d1 - v * Sqr(T)
-        y1 = (Log(S / Xc) + (b + v ^ 2 / 2) * Tc) / (v * Sqr(Tc))
-        y2 = (Log(S / Xp) + (b + v ^ 2 / 2) * Tp) / (v * Sqr(Tp))
-        rho1 = Sqr(T / Tc)
-        rho2 = Sqr(T / Tp)
+        d1 = (Math.Log(S / I) + (b + v ^ 2 / 2) * T) / (v * Math.Sqrt(T))
+        d2 = d1 - v * Math.Sqrt(T)
+        y1 = (Math.Log(S / Xc) + (b + v ^ 2 / 2) * Tc) / (v * Math.Sqrt(Tc))
+        y2 = (Math.Log(S / Xp) + (b + v ^ 2 / 2) * Tp) / (v * Math.Sqrt(Tp))
+        rho1 = Math.Sqrt(T / Tc)
+        rho2 = Math.Sqrt(T / Tp)
 
-        ComplexChooser = S * Exp((b - r) * Tc) * CBND(d1, y1, rho1) - Xc * Exp(-r * Tc) * CBND(d2, y1 - v * Sqr(Tc), rho1) - S * Exp((b - r) * Tp) * CBND(-d1, -y2, rho2) + Xp * Exp(-r * Tp) * CBND(-d2, -y2 + v * Sqr(Tp), rho2)
+        ComplexChooser = S * Math.Exp((b - r) * Tc) * CBND(d1, y1, rho1) - Xc * Math.Exp(-r * Tc) * CBND(d2, y1 - v * Math.Sqrt(Tc), rho1) - S * Exp((b - r) * Tp) * CBND(-d1, -y2, rho2) + Xp * Exp(-r * Tp) * CBND(-d2, -y2 + v * Sqrt(Tp), rho2)
     End Function
     '// Critical value complex chooser option
     Private Function CriticalValueChooser(ByVal S As Double, ByVal Xc As Double, ByVal Xp As Double, ByVal T As Double, _
@@ -120,11 +117,11 @@ Option Base 1       'The "Option Base" statement allows to specify 0 or 1 as the
 
         I = CriticalValueOptionsOnOptions(CallPutFlag, X1, X2, T2 - t1, r, b, v)
 
-        rho = Sqr(t1 / T2)
-        y1 = (Log(S / I) + (b + v ^ 2 / 2) * t1) / (v * Sqr(t1))
-        y2 = y1 - v * Sqr(t1)
-        z1 = (Log(S / X1) + (b + v ^ 2 / 2) * T2) / (v * Sqr(T2))
-        z2 = z1 - v * Sqr(T2)
+        rho = Sqrt(t1 / T2)
+        y1 = (Log(S / I) + (b + v ^ 2 / 2) * t1) / (v * Sqrt(t1))
+        y2 = y1 - v * Sqrt(t1)
+        z1 = (Log(S / X1) + (b + v ^ 2 / 2) * T2) / (v * Sqrt(T2))
+        z2 = z1 - v * Sqrt(T2)
 
         If TypeFlag = "cc" Then
             OptionsOnOptions = S * Exp((b - r) * T2) * CBND(z1, y1, rho) - X1 * Exp(-r * T2) * CBND(z2, y2, rho) - X2 * Exp(-r * t1) * CND(y2)
@@ -161,14 +158,14 @@ Option Base 1       'The "Option Base" statement allows to specify 0 or 1 as the
                     ByVal T2 As Double, ByVal r As Double, ByVal b As Double, ByVal v As Double) As Double
 
         Dim rho As Double, z1 As Double, z2 As Double
-        rho = Sqr(t1 / T2)
-        z1 = (Log(S / X2) + (b + v ^ 2 / 2) * T2) / (v * Sqr(T2))
-        z2 = (Log(S / X1) + (b + v ^ 2 / 2) * t1) / (v * Sqr(t1))
+        rho = Sqrt(t1 / T2)
+        z1 = (Log(S / X2) + (b + v ^ 2 / 2) * T2) / (v * Sqrt(T2))
+        z2 = (Log(S / X1) + (b + v ^ 2 / 2) * t1) / (v * Sqrt(t1))
 
         If CallPutFlag = "c" Then
-            ExtendibleWriter = GBlackScholes(CallPutFlag, S, X1, t1, r, b, v) + S * Exp((b - r) * T2) * CBND(z1, -z2, -rho) - X2 * Exp(-r * T2) * CBND(z1 - Sqr(v ^ 2 * T2), -z2 + Sqr(v ^ 2 * t1), -rho)
+            ExtendibleWriter = GBlackScholes(CallPutFlag, S, X1, t1, r, b, v) + S * Exp((b - r) * T2) * CBND(z1, -z2, -rho) - X2 * Exp(-r * T2) * CBND(z1 - Sqrt(v ^ 2 * T2), -z2 + Sqrt(v ^ 2 * t1), -rho)
         ElseIf CallPutFlag = "p" Then
-            ExtendibleWriter = GBlackScholes(CallPutFlag, S, X1, t1, r, b, v) + X2 * Exp(-r * T2) * CBND(-z1 + Sqr(v ^ 2 * T2), z2 - Sqr(v ^ 2 * t1), -rho) - S * Exp((b - r) * T2) * CBND(-z1, z2, -rho)
+            ExtendibleWriter = GBlackScholes(CallPutFlag, S, X1, t1, r, b, v) + X2 * Exp(-r * T2) * CBND(-z1 + Sqrt(v ^ 2 * T2), z2 - Sqrt(v ^ 2 * t1), -rho) - S * Exp((b - r) * T2) * CBND(-z1, z2, -rho)
         End If
     End Function
 
@@ -179,15 +176,15 @@ Option Base 1       'The "Option Base" statement allows to specify 0 or 1 as the
 
         Dim y1 As Double, y2 As Double
 
-        y1 = (Log(S1 / X1) + (b1 - v1 ^ 2 / 2) * T) / (v1 * Sqr(T))
-        y2 = (Log(S2 / X2) + (b2 - v2 ^ 2 / 2) * T) / (v2 * Sqr(T))
+        y1 = (Log(S1 / X1) + (b1 - v1 ^ 2 / 2) * T) / (v1 * Sqrt(T))
+        y2 = (Log(S2 / X2) + (b2 - v2 ^ 2 / 2) * T) / (v2 * Sqrt(T))
 
         If CallPutFlag = "c" Then
-            TwoAssetCorrelation = S2 * Exp((b2 - r) * T) * CBND(y2 + v2 * Sqr(T), y1 + rho * v2 * Sqr(T), rho) _
+            TwoAssetCorrelation = S2 * Exp((b2 - r) * T) * CBND(y2 + v2 * Sqrt(T), y1 + rho * v2 * Sqrt(T), rho) _
             - X2 * Exp(-r * T) * CBND(y2, y1, rho)
         ElseIf CallPutFlag = "p" Then
             TwoAssetCorrelation = X2 * Exp(-r * T) * CBND(-y2, -y1, rho) _
-            - S2 * Exp((b2 - r) * T) * CBND(-y2 - v2 * Sqr(T), -y1 - rho * v2 * Sqr(T), rho)
+            - S2 * Exp((b2 - r) * T) * CBND(-y2 - v2 * Sqrt(T), -y1 - rho * v2 * Sqrt(T), rho)
         End If
     End Function
 
@@ -198,9 +195,9 @@ Option Base 1       'The "Option Base" statement allows to specify 0 or 1 as the
 
         Dim v As Double, d1 As Double, d2 As Double
 
-        v = Sqr(v1 ^ 2 + v2 ^ 2 - 2 * rho * v1 * v2)
-        d1 = (Log(Q1 * S1 / (Q2 * S2)) + (b1 - b2 + v ^ 2 / 2) * T) / (v * Sqr(T))
-        d2 = d1 - v * Sqr(T)
+        v = Sqrt(v1 ^ 2 + v2 ^ 2 - 2 * rho * v1 * v2)
+        d1 = (Log(Q1 * S1 / (Q2 * S2)) + (b1 - b2 + v ^ 2 / 2) * T) / (v * Sqrt(T))
+        d2 = d1 - v * Sqrt(T)
 
         EuropeanExchangeOption = Q1 * S1 * Exp((b1 - r) * T) * CND(d1) - Q2 * S2 * Exp((b2 - r) * T) * CND(d2)
     End Function
@@ -210,7 +207,7 @@ Option Base 1       'The "Option Base" statement allows to specify 0 or 1 as the
     Public Function AmericanExchangeOption(ByVal S1 As Double, ByVal S2 As Double, ByVal Q1 As Double, ByVal Q2 As Double, ByVal T As Double, _
                 ByVal r As Double, ByVal b1 As Double, ByVal b2 As Double, ByVal v1 As Double, ByVal v2 As Double, ByVal rho As Double) As Double
         Dim v As Double
-        v = Sqr(v1 ^ 2 + v2 ^ 2 - 2 * rho * v1 * v2)
+        v = Sqrt(v1 ^ 2 + v2 ^ 2 - 2 * rho * v1 * v2)
         AmericanExchangeOption = BSAmericanApprox("c", Q1 * S1, Q2 * S2, T, r - b2, b1 - b2, v)
     End Function
 
@@ -225,7 +222,7 @@ Option Base 1       'The "Option Base" statement allows to specify 0 or 1 as the
         Dim y3 As Double, y4 As Double
         Dim v As Double, id As Integer
 
-        v = Sqr(v1 ^ 2 + v2 ^ 2 - 2 * rho * v1 * v2)
+        v = Sqrt(v1 ^ 2 + v2 ^ 2 - 2 * rho * v1 * v2)
         I1 = S1 * Exp((b1 - r) * (T2 - t1)) / (S2 * Exp((b2 - r) * (T2 - t1)))
 
         If TypeFlag = 1 Or TypeFlag = 2 Then
@@ -235,23 +232,23 @@ Option Base 1       'The "Option Base" statement allows to specify 0 or 1 as the
         End If
 
         I = CriticalPrice(id, I1, t1, T2, v, q)
-        d1 = (Log(S1 / (I * S2)) + (b1 - b2 + v ^ 2 / 2) * t1) / (v * Sqr(t1))
-        d2 = d1 - v * Sqr(t1)
-        d3 = (Log((I * S2) / S1) + (b2 - b1 + v ^ 2 / 2) * t1) / (v * Sqr(t1))
-        d4 = d3 - v * Sqr(t1)
-        y1 = (Log(S1 / S2) + (b1 - b2 + v ^ 2 / 2) * T2) / (v * Sqr(T2))
-        y2 = y1 - v * Sqr(T2)
-        y3 = (Log(S2 / S1) + (b2 - b1 + v ^ 2 / 2) * T2) / (v * Sqr(T2))
-        y4 = y3 - v * Sqr(T2)
+        d1 = (Log(S1 / (I * S2)) + (b1 - b2 + v ^ 2 / 2) * t1) / (v * Sqrt(t1))
+        d2 = d1 - v * Sqrt(t1)
+        d3 = (Log((I * S2) / S1) + (b2 - b1 + v ^ 2 / 2) * t1) / (v * Sqrt(t1))
+        d4 = d3 - v * Sqrt(t1)
+        y1 = (Log(S1 / S2) + (b1 - b2 + v ^ 2 / 2) * T2) / (v * Sqrt(T2))
+        y2 = y1 - v * Sqrt(T2)
+        y3 = (Log(S2 / S1) + (b2 - b1 + v ^ 2 / 2) * T2) / (v * Sqrt(T2))
+        y4 = y3 - v * Sqrt(T2)
 
         If TypeFlag = 1 Then
-            ExchangeExchangeOption = -S2 * Exp((b2 - r) * T2) * CBND(d2, y2, Sqr(t1 / T2)) + S1 * Exp((b1 - r) * T2) * CBND(d1, y1, Sqr(t1 / T2)) - q * S2 * Exp((b2 - r) * t1) * CND(d2)
+            ExchangeExchangeOption = -S2 * Exp((b2 - r) * T2) * CBND(d2, y2, Sqrt(t1 / T2)) + S1 * Exp((b1 - r) * T2) * CBND(d1, y1, Sqrt(t1 / T2)) - q * S2 * Exp((b2 - r) * t1) * CND(d2)
         ElseIf TypeFlag = 2 Then
-            ExchangeExchangeOption = S2 * Exp((b2 - r) * T2) * CBND(d3, y2, -Sqr(t1 / T2)) - S1 * Exp((b1 - r) * T2) * CBND(d4, y1, -Sqr(t1 / T2)) + q * S2 * Exp((b2 - r) * t1) * CND(d3)
+            ExchangeExchangeOption = S2 * Exp((b2 - r) * T2) * CBND(d3, y2, -Sqrt(t1 / T2)) - S1 * Exp((b1 - r) * T2) * CBND(d4, y1, -Sqrt(t1 / T2)) + q * S2 * Exp((b2 - r) * t1) * CND(d3)
         ElseIf TypeFlag = 3 Then
-            ExchangeExchangeOption = S2 * Exp((b2 - r) * T2) * CBND(d3, y3, Sqr(t1 / T2)) - S1 * Exp((b1 - r) * T2) * CBND(d4, y4, Sqr(t1 / T2)) - q * S2 * Exp((b2 - r) * t1) * CND(d3)
+            ExchangeExchangeOption = S2 * Exp((b2 - r) * T2) * CBND(d3, y3, Sqrt(t1 / T2)) - S1 * Exp((b1 - r) * T2) * CBND(d4, y4, Sqrt(t1 / T2)) - q * S2 * Exp((b2 - r) * t1) * CND(d3)
         ElseIf TypeFlag = 4 Then
-            ExchangeExchangeOption = -S2 * Exp((b2 - r) * T2) * CBND(d2, y3, -Sqr(t1 / T2)) + S1 * Exp((b1 - r) * T2) * CBND(d1, y4, -Sqr(t1 / T2)) + q * S2 * Exp((b2 - r) * t1) * CND(d2)
+            ExchangeExchangeOption = -S2 * Exp((b2 - r) * T2) * CBND(d2, y3, -Sqrt(t1 / T2)) + S1 * Exp((b1 - r) * T2) * CBND(d1, y4, -Sqrt(t1 / T2)) + q * S2 * Exp((b2 - r) * t1) * CND(d2)
         End If
     End Function
     '// Numerical search algorithm to find critical price I
@@ -273,22 +270,22 @@ Option Base 1       'The "Option Base" statement allows to specify 0 or 1 as the
     Private Function CriticalPart2(ByVal id As Integer, ByVal I As Double, ByVal t1 As Double, ByVal T2 As Double, ByVal v As Double) As Double
         Dim z1 As Double, z2 As Double
         If id = 1 Then
-            z1 = (Log(I) + v ^ 2 / 2 * (T2 - t1)) / (v * Sqr(T2 - t1))
+            z1 = (Log(I) + v ^ 2 / 2 * (T2 - t1)) / (v * Sqrt(T2 - t1))
             CriticalPart2 = CND(z1)
         ElseIf id = 2 Then
-            z2 = (-Log(I) - v ^ 2 / 2 * (T2 - t1)) / (v * Sqr(T2 - t1))
+            z2 = (-Log(I) - v ^ 2 / 2 * (T2 - t1)) / (v * Sqrt(T2 - t1))
             CriticalPart2 = -CND(z2)
         End If
     End Function
     Private Function CriticalPart3(ByVal id As Integer, ByVal I As Double, ByVal t1 As Double, ByVal T2 As Double, ByVal v As Double) As Double
         Dim z1 As Double, z2 As Double
         If id = 1 Then
-            z1 = (Log(I) + v ^ 2 / 2 * (T2 - t1)) / (v * Sqr(T2 - t1))
-            z2 = (Log(I) - v ^ 2 / 2 * (T2 - t1)) / (v * Sqr(T2 - t1))
+            z1 = (Log(I) + v ^ 2 / 2 * (T2 - t1)) / (v * Sqrt(T2 - t1))
+            z2 = (Log(I) - v ^ 2 / 2 * (T2 - t1)) / (v * Sqrt(T2 - t1))
             CriticalPart3 = I * CND(z1) - CND(z2)
         ElseIf id = 2 Then
-            z1 = (-Log(I) + v ^ 2 / 2 * (T2 - t1)) / (v * Sqr(T2 - t1))
-            z2 = (-Log(I) - v ^ 2 / 2 * (T2 - t1)) / (v * Sqr(T2 - t1))
+            z1 = (-Log(I) + v ^ 2 / 2 * (T2 - t1)) / (v * Sqrt(T2 - t1))
+            z2 = (-Log(I) - v ^ 2 / 2 * (T2 - t1)) / (v * Sqrt(T2 - t1))
             CriticalPart3 = CND(z1) - I * CND(z2)
         End If
     End Function
@@ -301,17 +298,17 @@ Option Base 1       'The "Option Base" statement allows to specify 0 or 1 as the
         Dim v As Double, rho1 As Double, rho2 As Double
         Dim d As Double, y1 As Double, y2 As Double
 
-        v = Sqr(v1 ^ 2 + v2 ^ 2 - 2 * rho * v1 * v2)
+        v = Sqrt(v1 ^ 2 + v2 ^ 2 - 2 * rho * v1 * v2)
         rho1 = (v1 - rho * v2) / v
         rho2 = (v2 - rho * v1) / v
-        d = (Log(S1 / S2) + (b1 - b2 + v ^ 2 / 2) * T) / (v * Sqr(T))
-        y1 = (Log(S1 / X) + (b1 + v1 ^ 2 / 2) * T) / (v1 * Sqr(T))
-        y2 = (Log(S2 / X) + (b2 + v2 ^ 2 / 2) * T) / (v2 * Sqr(T))
+        d = (Log(S1 / S2) + (b1 - b2 + v ^ 2 / 2) * T) / (v * Sqrt(T))
+        y1 = (Log(S1 / X) + (b1 + v1 ^ 2 / 2) * T) / (v1 * Sqrt(T))
+        y2 = (Log(S2 / X) + (b2 + v2 ^ 2 / 2) * T) / (v2 * Sqrt(T))
 
         If TypeFlag = "cmin" Then
-            OptionsOnTheMaxMin = S1 * Exp((b1 - r) * T) * CBND(y1, -d, -rho1) + S2 * Exp((b2 - r) * T) * CBND(y2, d - v * Sqr(T), -rho2) - X * Exp(-r * T) * CBND(y1 - v1 * Sqr(T), y2 - v2 * Sqr(T), rho)
+            OptionsOnTheMaxMin = S1 * Exp((b1 - r) * T) * CBND(y1, -d, -rho1) + S2 * Exp((b2 - r) * T) * CBND(y2, d - v * Sqrt(T), -rho2) - X * Exp(-r * T) * CBND(y1 - v1 * Sqrt(T), y2 - v2 * Sqrt(T), rho)
         ElseIf TypeFlag = "cmax" Then
-            OptionsOnTheMaxMin = S1 * Exp((b1 - r) * T) * CBND(y1, d, rho1) + S2 * Exp((b2 - r) * T) * CBND(y2, -d + v * Sqr(T), rho2) - X * Exp(-r * T) * (1 - CBND(-y1 + v1 * Sqr(T), -y2 + v2 * Sqr(T), rho))
+            OptionsOnTheMaxMin = S1 * Exp((b1 - r) * T) * CBND(y1, d, rho1) + S2 * Exp((b2 - r) * T) * CBND(y2, -d + v * Sqrt(T), rho2) - X * Exp(-r * T) * (1 - CBND(-y1 + v1 * Sqrt(T), -y2 + v2 * Sqrt(T), rho))
         ElseIf TypeFlag = "pmin" Then
             OptionsOnTheMaxMin = X * Exp(-r * T) - S1 * Exp((b1 - r) * T) + EuropeanExchangeOption(S1, S2, 1, 1, T, r, b1, b2, v1, v2, rho) + OptionsOnTheMaxMin("cmin", S1, S2, X, T, r, b1, b2, v1, v2, rho)
         ElseIf TypeFlag = "pmax" Then
@@ -327,7 +324,7 @@ Option Base 1       'The "Option Base" statement allows to specify 0 or 1 as the
         Dim v As Double, F As Double
         Dim d1 As Double, d2 As Double
 
-        v = Sqr(v1 ^ 2 + (v2 * f2 / (f2 + X)) ^ 2 - 2 * rho * v1 * v2 * f2 / (f2 + X))
+        v = Sqrt(v1 ^ 2 + (v2 * f2 / (f2 + X)) ^ 2 - 2 * rho * v1 * v2 * f2 / (f2 + X))
         F = f1 / (f2 + X)
 
         SpreadApproximation = GBlackScholes(CallPutFlag, F, 1, T, r, 0, v) * (f2 + X)
@@ -346,15 +343,15 @@ Option Base 1       'The "Option Base" statement allows to specify 0 or 1 as the
             m = SMax
         End If
 
-        a1 = (Log(S / m) + (b + v ^ 2 / 2) * T) / (v * Sqr(T))
-        a2 = a1 - v * Sqr(T)
+        a1 = (Log(S / m) + (b + v ^ 2 / 2) * T) / (v * Sqrt(T))
+        a2 = a1 - v * Sqrt(T)
 
         If CallPutFlag = "c" Then
             FloatingStrikeLookback = S * Exp((b - r) * T) * CND(a1) - m * Exp(-r * T) * CND(a2) + _
-            Exp(-r * T) * v ^ 2 / (2 * b) * S * ((S / m) ^ (-2 * b / v ^ 2) * CND(-a1 + 2 * b / v * Sqr(T)) - Exp(b * T) * CND(-a1))
+            Exp(-r * T) * v ^ 2 / (2 * b) * S * ((S / m) ^ (-2 * b / v ^ 2) * CND(-a1 + 2 * b / v * Sqrt(T)) - Exp(b * T) * CND(-a1))
         ElseIf CallPutFlag = "p" Then
             FloatingStrikeLookback = m * Exp(-r * T) * CND(-a2) - S * Exp((b - r) * T) * CND(-a1) + _
-            Exp(-r * T) * v ^ 2 / (2 * b) * S * (-(S / m) ^ (-2 * b / v ^ 2) * CND(a1 - 2 * b / v * Sqr(T)) + Exp(b * T) * CND(a1))
+            Exp(-r * T) * v ^ 2 / (2 * b) * S * (-(S / m) ^ (-2 * b / v ^ 2) * CND(a1 - 2 * b / v * Sqrt(T)) + Exp(b * T) * CND(a1))
         End If
     End Function
 
@@ -372,23 +369,23 @@ Option Base 1       'The "Option Base" statement allows to specify 0 or 1 as the
             m = SMin
         End If
 
-        d1 = (Log(S / X) + (b + v ^ 2 / 2) * T) / (v * Sqr(T))
-        d2 = d1 - v * Sqr(T)
-        e1 = (Log(S / m) + (b + v ^ 2 / 2) * T) / (v * Sqr(T))
-        e2 = e1 - v * Sqr(T)
+        d1 = (Log(S / X) + (b + v ^ 2 / 2) * T) / (v * Sqrt(T))
+        d2 = d1 - v * Sqrt(T)
+        e1 = (Log(S / m) + (b + v ^ 2 / 2) * T) / (v * Sqrt(T))
+        e2 = e1 - v * Sqrt(T)
 
         If CallPutFlag = "c" And X > m Then
             FixedStrikeLookback = S * Exp((b - r) * T) * CND(d1) - X * Exp(-r * T) * CND(d2) _
-            + S * Exp(-r * T) * v ^ 2 / (2 * b) * (-(S / X) ^ (-2 * b / v ^ 2) * CND(d1 - 2 * b / v * Sqr(T)) + Exp(b * T) * CND(d1))
+            + S * Exp(-r * T) * v ^ 2 / (2 * b) * (-(S / X) ^ (-2 * b / v ^ 2) * CND(d1 - 2 * b / v * Sqrt(T)) + Exp(b * T) * CND(d1))
         ElseIf CallPutFlag = "c" And X <= m Then
             FixedStrikeLookback = Exp(-r * T) * (m - X) + S * Exp((b - r) * T) * CND(e1) - Exp(-r * T) * m * CND(e2) _
-            + S * Exp(-r * T) * v ^ 2 / (2 * b) * (-(S / m) ^ (-2 * b / v ^ 2) * CND(e1 - 2 * b / v * Sqr(T)) + Exp(b * T) * CND(e1))
+            + S * Exp(-r * T) * v ^ 2 / (2 * b) * (-(S / m) ^ (-2 * b / v ^ 2) * CND(e1 - 2 * b / v * Sqrt(T)) + Exp(b * T) * CND(e1))
         ElseIf CallPutFlag = "p" And X < m Then
-            FixedStrikeLookback = -S * Exp((b - r) * T) * CND(-d1) + X * Exp(-r * T) * CND(-d1 + v * Sqr(T)) _
-            + S * Exp(-r * T) * v ^ 2 / (2 * b) * ((S / X) ^ (-2 * b / v ^ 2) * CND(-d1 + 2 * b / v * Sqr(T)) - Exp(b * T) * CND(-d1))
+            FixedStrikeLookback = -S * Exp((b - r) * T) * CND(-d1) + X * Exp(-r * T) * CND(-d1 + v * Sqrt(T)) _
+            + S * Exp(-r * T) * v ^ 2 / (2 * b) * ((S / X) ^ (-2 * b / v ^ 2) * CND(-d1 + 2 * b / v * Sqrt(T)) - Exp(b * T) * CND(-d1))
         ElseIf CallPutFlag = "p" And X >= m Then
-            FixedStrikeLookback = Exp(-r * T) * (X - m) - S * Exp((b - r) * T) * CND(-e1) + Exp(-r * T) * m * CND(-e1 + v * Sqr(T)) _
-            + Exp(-r * T) * v ^ 2 / (2 * b) * S * ((S / m) ^ (-2 * b / v ^ 2) * CND(-e1 + 2 * b / v * Sqr(T)) - Exp(b * T) * CND(-e1))
+            FixedStrikeLookback = Exp(-r * T) * (X - m) - S * Exp((b - r) * T) * CND(-e1) + Exp(-r * T) * m * CND(-e1 + v * Sqrt(T)) _
+            + Exp(-r * T) * v ^ 2 / (2 * b) * S * ((S / m) ^ (-2 * b / v ^ 2) * CND(-e1 + 2 * b / v * Sqrt(T)) - Exp(b * T) * CND(-e1))
         End If
     End Function
 
@@ -409,29 +406,29 @@ Option Base 1       'The "Option Base" statement allows to specify 0 or 1 as the
             m = SMax
         End If
 
-        d1 = (Log(S / m) + (b + v ^ 2 / 2) * T2) / (v * Sqr(T2))
-        d2 = d1 - v * Sqr(T2)
-        e1 = (b + v ^ 2 / 2) * (T2 - t1) / (v * Sqr(T2 - t1))
-        e2 = e1 - v * Sqr(T2 - t1)
-        f1 = (Log(S / m) + (b + v ^ 2 / 2) * t1) / (v * Sqr(t1))
-        f2 = f1 - v * Sqr(t1)
-        g1 = Log(lambda) / (v * Sqr(T2))
-        g2 = Log(lambda) / (v * Sqr(T2 - t1))
+        d1 = (Log(S / m) + (b + v ^ 2 / 2) * T2) / (v * Sqrt(T2))
+        d2 = d1 - v * Sqrt(T2)
+        e1 = (b + v ^ 2 / 2) * (T2 - t1) / (v * Sqrt(T2 - t1))
+        e2 = e1 - v * Sqrt(T2 - t1)
+        f1 = (Log(S / m) + (b + v ^ 2 / 2) * t1) / (v * Sqrt(t1))
+        f2 = f1 - v * Sqrt(t1)
+        g1 = Log(lambda) / (v * Sqrt(T2))
+        g2 = Log(lambda) / (v * Sqrt(T2 - t1))
 
         If CallPutFlag = "c" Then
             part1 = S * Exp((b - r) * T2) * CND(d1 - g1) - lambda * m * Exp(-r * T2) * CND(d2 - g1)
-            part2 = Exp(-r * T2) * v ^ 2 / (2 * b) * lambda * S * ((S / m) ^ (-2 * b / v ^ 2) * CBND(-f1 + 2 * b * Sqr(t1) / v, -d1 + 2 * b * Sqr(T2) / v - g1, Sqr(t1 / T2)) _
-            - Exp(b * T2) * lambda ^ (2 * b / v ^ 2) * CBND(-d1 - g1, e1 + g2, -Sqr(1 - t1 / T2))) _
-            + S * Exp((b - r) * T2) * CBND(-d1 + g1, e1 - g2, -Sqr(1 - t1 / T2))
-            part3 = Exp(-r * T2) * lambda * m * CBND(-f2, d2 - g1, -Sqr(t1 / T2)) _
+            part2 = Exp(-r * T2) * v ^ 2 / (2 * b) * lambda * S * ((S / m) ^ (-2 * b / v ^ 2) * CBND(-f1 + 2 * b * Sqrt(t1) / v, -d1 + 2 * b * Sqrt(T2) / v - g1, Sqrt(t1 / T2)) _
+            - Exp(b * T2) * lambda ^ (2 * b / v ^ 2) * CBND(-d1 - g1, e1 + g2, -Sqrt(1 - t1 / T2))) _
+            + S * Exp((b - r) * T2) * CBND(-d1 + g1, e1 - g2, -Sqrt(1 - t1 / T2))
+            part3 = Exp(-r * T2) * lambda * m * CBND(-f2, d2 - g1, -Sqrt(t1 / T2)) _
             - Exp(-b * (T2 - t1)) * Exp((b - r) * T2) * (1 + v ^ 2 / (2 * b)) * lambda * S * CND(e2 - g2) * CND(-f1)
 
         ElseIf CallPutFlag = "p" Then
             part1 = lambda * m * Exp(-r * T2) * CND(-d2 + g1) - S * Exp((b - r) * T2) * CND(-d1 + g1)
-            part2 = -Exp(-r * T2) * v ^ 2 / (2 * b) * lambda * S * ((S / m) ^ (-2 * b / v ^ 2) * CBND(f1 - 2 * b * Sqr(t1) / v, d1 - 2 * b * Sqr(T2) / v + g1, Sqr(t1 / T2)) _
-            - Exp(b * T2) * lambda ^ (2 * b / v ^ 2) * CBND(d1 + g1, -e1 - g2, -Sqr(1 - t1 / T2))) _
-            - S * Exp((b - r) * T2) * CBND(d1 - g1, -e1 + g2, -Sqr(1 - t1 / T2))
-            part3 = -Exp(-r * T2) * lambda * m * CBND(f2, -d2 + g1, -Sqr(t1 / T2)) _
+            part2 = -Exp(-r * T2) * v ^ 2 / (2 * b) * lambda * S * ((S / m) ^ (-2 * b / v ^ 2) * CBND(f1 - 2 * b * Sqrt(t1) / v, d1 - 2 * b * Sqrt(T2) / v + g1, Sqrt(t1 / T2)) _
+            - Exp(b * T2) * lambda ^ (2 * b / v ^ 2) * CBND(d1 + g1, -e1 - g2, -Sqrt(1 - t1 / T2))) _
+            - S * Exp((b - r) * T2) * CBND(d1 - g1, -e1 + g2, -Sqrt(1 - t1 / T2))
+            part3 = -Exp(-r * T2) * lambda * m * CBND(f2, -d2 + g1, -Sqrt(t1 / T2)) _
             + Exp(-b * (T2 - t1)) * Exp((b - r) * T2) * (1 + v ^ 2 / (2 * b)) * lambda * S * CND(-e2 + g2) * CND(f1)
         End If
         PartialFloatLB = part1 + part2 + part3
@@ -446,16 +443,16 @@ Option Base 1       'The "Option Base" statement allows to specify 0 or 1 as the
         Dim e1 As Double, e2 As Double
         Dim f1 As Double, f2 As Double
 
-        d1 = (Log(S / X) + (b + v ^ 2 / 2) * T2) / (v * Sqr(T2))
-        d2 = d1 - v * Sqr(T2)
-        e1 = ((b + v ^ 2 / 2) * (T2 - t1)) / (v * Sqr(T2 - t1))
-        e2 = e1 - v * Sqr(T2 - t1)
-        f1 = (Log(S / X) + (b + v ^ 2 / 2) * t1) / (v * Sqr(t1))
-        f2 = f1 - v * Sqr(t1)
+        d1 = (Log(S / X) + (b + v ^ 2 / 2) * T2) / (v * Sqrt(T2))
+        d2 = d1 - v * Sqrt(T2)
+        e1 = ((b + v ^ 2 / 2) * (T2 - t1)) / (v * Sqrt(T2 - t1))
+        e2 = e1 - v * Sqrt(T2 - t1)
+        f1 = (Log(S / X) + (b + v ^ 2 / 2) * t1) / (v * Sqrt(t1))
+        f2 = f1 - v * Sqrt(t1)
         If CallPutFlag = "c" Then
-            PartialFixedLB = S * Exp((b - r) * T2) * CND(d1) - Exp(-r * T2) * X * CND(d2) + S * Exp(-r * T2) * v ^ 2 / (2 * b) * (-(S / X) ^ (-2 * b / v ^ 2) * CBND(d1 - 2 * b * Sqr(T2) / v, -f1 + 2 * b * Sqr(t1) / v, -Sqr(t1 / T2)) + Exp(b * T2) * CBND(e1, d1, Sqr(1 - t1 / T2))) - S * Exp((b - r) * T2) * CBND(-e1, d1, -Sqr(1 - t1 / T2)) - X * Exp(-r * T2) * CBND(f2, -d2, -Sqr(t1 / T2)) + Exp(-b * (T2 - t1)) * (1 - v ^ 2 / (2 * b)) * S * Exp((b - r) * T2) * CND(f1) * CND(-e2)
+            PartialFixedLB = S * Exp((b - r) * T2) * CND(d1) - Exp(-r * T2) * X * CND(d2) + S * Exp(-r * T2) * v ^ 2 / (2 * b) * (-(S / X) ^ (-2 * b / v ^ 2) * CBND(d1 - 2 * b * Sqrt(T2) / v, -f1 + 2 * b * Sqrt(t1) / v, -Sqrt(t1 / T2)) + Exp(b * T2) * CBND(e1, d1, Sqrt(1 - t1 / T2))) - S * Exp((b - r) * T2) * CBND(-e1, d1, -Sqrt(1 - t1 / T2)) - X * Exp(-r * T2) * CBND(f2, -d2, -Sqrt(t1 / T2)) + Exp(-b * (T2 - t1)) * (1 - v ^ 2 / (2 * b)) * S * Exp((b - r) * T2) * CND(f1) * CND(-e2)
         ElseIf CallPutFlag = "p" Then
-            PartialFixedLB = X * Exp(-r * T2) * CND(-d2) - S * Exp((b - r) * T2) * CND(-d1) + S * Exp(-r * T2) * v ^ 2 / (2 * b) * ((S / X) ^ (-2 * b / v ^ 2) * CBND(-d1 + 2 * b * Sqr(T2) / v, f1 - 2 * b * Sqr(t1) / v, -Sqr(t1 / T2)) - Exp(b * T2) * CBND(-e1, -d1, Sqr(1 - t1 / T2))) + S * Exp((b - r) * T2) * CBND(e1, -d1, -Sqr(1 - t1 / T2)) + X * Exp(-r * T2) * CBND(-f2, d2, -Sqr(t1 / T2)) - Exp(-b * (T2 - t1)) * (1 - v ^ 2 / (2 * b)) * S * Exp((b - r) * T2) * CND(-f1) * CND(e2)
+            PartialFixedLB = X * Exp(-r * T2) * CND(-d2) - S * Exp((b - r) * T2) * CND(-d1) + S * Exp(-r * T2) * v ^ 2 / (2 * b) * ((S / X) ^ (-2 * b / v ^ 2) * CBND(-d1 + 2 * b * Sqrt(T2) / v, f1 - 2 * b * Sqrt(t1) / v, -Sqrt(t1 / T2)) - Exp(b * T2) * CBND(-e1, -d1, Sqrt(1 - t1 / T2))) + S * Exp((b - r) * T2) * CBND(e1, -d1, -Sqrt(1 - t1 / T2)) + X * Exp(-r * T2) * CBND(-f2, d2, -Sqrt(t1 / T2)) - Exp(-b * (T2 - t1)) * (1 - v ^ 2 / (2 * b)) * S * Exp((b - r) * T2) * CND(-f1) * CND(e2)
         End If
     End Function
 
@@ -488,13 +485,13 @@ Option Base 1       'The "Option Base" statement allows to specify 0 or 1 as the
         mu = mu1 + v ^ 2
         m = Log(Mo / S)
         If kappa = 1 Then '// Extreme Spread Option
-            ExtremeSpreadOption = eta * (S * Exp((b - r) * T) * (1 + v ^ 2 / (2 * b)) * CND(eta * (-m + mu * T) / (v * Sqr(T))) - Exp(-r * (T - t1)) * S * Exp((b - r) * T) * (1 + v ^ 2 / (2 * b)) * CND(eta * (-m + mu * t1) / (v * Sqr(t1))) _
-            + Exp(-r * T) * Mo * CND(eta * (m - mu1 * T) / (v * Sqr(T))) - Exp(-r * T) * Mo * v ^ 2 / (2 * b) * Exp(2 * mu1 * m / v ^ 2) * CND(eta * (-m - mu1 * T) / (v * Sqr(T))) _
-            - Exp(-r * T) * Mo * CND(eta * (m - mu1 * t1) / (v * Sqr(t1))) + Exp(-r * T) * Mo * v ^ 2 / (2 * b) * Exp(2 * mu1 * m / v ^ 2) * CND(eta * (-m - mu1 * t1) / (v * Sqr(t1))))
+            ExtremeSpreadOption = eta * (S * Exp((b - r) * T) * (1 + v ^ 2 / (2 * b)) * CND(eta * (-m + mu * T) / (v * Sqrt(T))) - Exp(-r * (T - t1)) * S * Exp((b - r) * T) * (1 + v ^ 2 / (2 * b)) * CND(eta * (-m + mu * t1) / (v * Sqrt(t1))) _
+            + Exp(-r * T) * Mo * CND(eta * (m - mu1 * T) / (v * Sqrt(T))) - Exp(-r * T) * Mo * v ^ 2 / (2 * b) * Exp(2 * mu1 * m / v ^ 2) * CND(eta * (-m - mu1 * T) / (v * Sqrt(T))) _
+            - Exp(-r * T) * Mo * CND(eta * (m - mu1 * t1) / (v * Sqrt(t1))) + Exp(-r * T) * Mo * v ^ 2 / (2 * b) * Exp(2 * mu1 * m / v ^ 2) * CND(eta * (-m - mu1 * t1) / (v * Sqrt(t1))))
         ElseIf kappa = -1 Then  '// Reverse Extreme Spread Option
-            ExtremeSpreadOption = -eta * (S * Exp((b - r) * T) * (1 + v ^ 2 / (2 * b)) * CND(eta * (m - mu * T) / (v * Sqr(T))) + Exp(-r * T) * Mo * CND(eta * (-m + mu1 * T) / (v * Sqr(T))) _
-            - Exp(-r * T) * Mo * v ^ 2 / (2 * b) * Exp(2 * mu1 * m / v ^ 2) * CND(eta * (m + mu1 * T) / (v * Sqr(T))) - S * Exp((b - r) * T) * (1 + v ^ 2 / (2 * b)) * CND(eta * (-mu * (T - t1)) / (v * Sqr(T - t1))) _
-            - Exp(-r * (T - t1)) * S * Exp((b - r) * T) * (1 - v ^ 2 / (2 * b)) * CND(eta * (mu1 * (T - t1)) / (v * Sqr(T - t1))))
+            ExtremeSpreadOption = -eta * (S * Exp((b - r) * T) * (1 + v ^ 2 / (2 * b)) * CND(eta * (m - mu * T) / (v * Sqrt(T))) + Exp(-r * T) * Mo * CND(eta * (-m + mu1 * T) / (v * Sqrt(T))) _
+            - Exp(-r * T) * Mo * v ^ 2 / (2 * b) * Exp(2 * mu1 * m / v ^ 2) * CND(eta * (m + mu1 * T) / (v * Sqrt(T))) - S * Exp((b - r) * T) * (1 + v ^ 2 / (2 * b)) * CND(eta * (-mu * (T - t1)) / (v * Sqrt(T - t1))) _
+            - Exp(-r * (T - t1)) * S * Exp((b - r) * T) * (1 - v ^ 2 / (2 * b)) * CND(eta * (mu1 * (T - t1)) / (v * Sqrt(T - t1))))
         End If
     End Function
 
@@ -520,12 +517,12 @@ Option Base 1       'The "Option Base" statement allows to specify 0 or 1 as the
         Dim f6 As Double    'Equal to formula "F" in the book
 
         mu = (b - v ^ 2 / 2) / v ^ 2
-        lambda = Sqr(mu ^ 2 + 2 * r / v ^ 2)
-        X1 = Log(S / X) / (v * Sqr(T)) + (1 + mu) * v * Sqr(T)
-        X2 = Log(S / H) / (v * Sqr(T)) + (1 + mu) * v * Sqr(T)
-        y1 = Log(H ^ 2 / (S * X)) / (v * Sqr(T)) + (1 + mu) * v * Sqr(T)
-        y2 = Log(H / S) / (v * Sqr(T)) + (1 + mu) * v * Sqr(T)
-        Z = Log(H / S) / (v * Sqr(T)) + lambda * v * Sqr(T)
+        lambda = Sqrt(mu ^ 2 + 2 * r / v ^ 2)
+        X1 = Log(S / X) / (v * Sqrt(T)) + (1 + mu) * v * Sqrt(T)
+        X2 = Log(S / H) / (v * Sqrt(T)) + (1 + mu) * v * Sqrt(T)
+        y1 = Log(H ^ 2 / (S * X)) / (v * Sqrt(T)) + (1 + mu) * v * Sqrt(T)
+        y2 = Log(H / S) / (v * Sqrt(T)) + (1 + mu) * v * Sqrt(T)
+        Z = Log(H / S) / (v * Sqrt(T)) + lambda * v * Sqrt(T)
 
         If TypeFlag = "cdi" Or TypeFlag = "cdo" Then
             eta = 1
@@ -541,12 +538,12 @@ Option Base 1       'The "Option Base" statement allows to specify 0 or 1 as the
             phi = -1
         End If
 
-        f1 = phi * S * Exp((b - r) * T) * CND(phi * X1) - phi * X * Exp(-r * T) * CND(phi * X1 - phi * v * Sqr(T))
-        f2 = phi * S * Exp((b - r) * T) * CND(phi * X2) - phi * X * Exp(-r * T) * CND(phi * X2 - phi * v * Sqr(T))
-        f3 = phi * S * Exp((b - r) * T) * (H / S) ^ (2 * (mu + 1)) * CND(eta * y1) - phi * X * Exp(-r * T) * (H / S) ^ (2 * mu) * CND(eta * y1 - eta * v * Sqr(T))
-        f4 = phi * S * Exp((b - r) * T) * (H / S) ^ (2 * (mu + 1)) * CND(eta * y2) - phi * X * Exp(-r * T) * (H / S) ^ (2 * mu) * CND(eta * y2 - eta * v * Sqr(T))
-        f5 = K * Exp(-r * T) * (CND(eta * X2 - eta * v * Sqr(T)) - (H / S) ^ (2 * mu) * CND(eta * y2 - eta * v * Sqr(T)))
-        f6 = K * ((H / S) ^ (mu + lambda) * CND(eta * Z) + (H / S) ^ (mu - lambda) * CND(eta * Z - 2 * eta * lambda * v * Sqr(T)))
+        f1 = phi * S * Exp((b - r) * T) * CND(phi * X1) - phi * X * Exp(-r * T) * CND(phi * X1 - phi * v * Sqrt(T))
+        f2 = phi * S * Exp((b - r) * T) * CND(phi * X2) - phi * X * Exp(-r * T) * CND(phi * X2 - phi * v * Sqrt(T))
+        f3 = phi * S * Exp((b - r) * T) * (H / S) ^ (2 * (mu + 1)) * CND(eta * y1) - phi * X * Exp(-r * T) * (H / S) ^ (2 * mu) * CND(eta * y1 - eta * v * Sqrt(T))
+        f4 = phi * S * Exp((b - r) * T) * (H / S) ^ (2 * (mu + 1)) * CND(eta * y2) - phi * X * Exp(-r * T) * (H / S) ^ (2 * mu) * CND(eta * y2 - eta * v * Sqrt(T))
+        f5 = K * Exp(-r * T) * (CND(eta * X2 - eta * v * Sqrt(T)) - (H / S) ^ (2 * mu) * CND(eta * y2 - eta * v * Sqrt(T)))
+        f6 = K * ((H / S) ^ (mu + lambda) * CND(eta * Z) + (H / S) ^ (mu - lambda) * CND(eta * Z - 2 * eta * lambda * v * Sqrt(T)))
 
 
         If X > H Then
@@ -608,28 +605,28 @@ Option Base 1       'The "Option Base" statement allows to specify 0 or 1 as the
         Sum2 = 0
         If TypeFlag = "co" Or TypeFlag = "ci" Then
             For n = -5 To 5
-                d1 = (Log(S * U ^ (2 * n) / (X * L ^ (2 * n))) + (b + v ^ 2 / 2) * T) / (v * Sqr(T))
-                d2 = (Log(S * U ^ (2 * n) / (F * L ^ (2 * n))) + (b + v ^ 2 / 2) * T) / (v * Sqr(T))
-                d3 = (Log(L ^ (2 * n + 2) / (X * S * U ^ (2 * n))) + (b + v ^ 2 / 2) * T) / (v * Sqr(T))
-                d4 = (Log(L ^ (2 * n + 2) / (F * S * U ^ (2 * n))) + (b + v ^ 2 / 2) * T) / (v * Sqr(T))
+                d1 = (Log(S * U ^ (2 * n) / (X * L ^ (2 * n))) + (b + v ^ 2 / 2) * T) / (v * Sqrt(T))
+                d2 = (Log(S * U ^ (2 * n) / (F * L ^ (2 * n))) + (b + v ^ 2 / 2) * T) / (v * Sqrt(T))
+                d3 = (Log(L ^ (2 * n + 2) / (X * S * U ^ (2 * n))) + (b + v ^ 2 / 2) * T) / (v * Sqrt(T))
+                d4 = (Log(L ^ (2 * n + 2) / (F * S * U ^ (2 * n))) + (b + v ^ 2 / 2) * T) / (v * Sqrt(T))
                 mu1 = 2 * (b - delta2 - n * (delta1 - delta2)) / v ^ 2 + 1
                 mu2 = 2 * n * (delta1 - delta2) / v ^ 2
                 mu3 = 2 * (b - delta2 + n * (delta1 - delta2)) / v ^ 2 + 1
                 Sum1 = Sum1 + (U ^ n / L ^ n) ^ mu1 * (L / S) ^ mu2 * (CND(d1) - CND(d2)) - (L ^ (n + 1) / (U ^ n * S)) ^ mu3 * (CND(d3) - CND(d4))
-                Sum2 = Sum2 + (U ^ n / L ^ n) ^ (mu1 - 2) * (L / S) ^ mu2 * (CND(d1 - v * Sqr(T)) - CND(d2 - v * Sqr(T))) - (L ^ (n + 1) / (U ^ n * S)) ^ (mu3 - 2) * (CND(d3 - v * Sqr(T)) - CND(d4 - v * Sqr(T)))
+                Sum2 = Sum2 + (U ^ n / L ^ n) ^ (mu1 - 2) * (L / S) ^ mu2 * (CND(d1 - v * Sqrt(T)) - CND(d2 - v * Sqrt(T))) - (L ^ (n + 1) / (U ^ n * S)) ^ (mu3 - 2) * (CND(d3 - v * Sqrt(T)) - CND(d4 - v * Sqrt(T)))
             Next
             OutValue = S * Exp((b - r) * T) * Sum1 - X * Exp(-r * T) * Sum2
         ElseIf TypeFlag = "po" Or TypeFlag = "pi" Then
             For n = -5 To 5
-                d1 = (Log(S * U ^ (2 * n) / (E * L ^ (2 * n))) + (b + v ^ 2 / 2) * T) / (v * Sqr(T))
-                d2 = (Log(S * U ^ (2 * n) / (X * L ^ (2 * n))) + (b + v ^ 2 / 2) * T) / (v * Sqr(T))
-                d3 = (Log(L ^ (2 * n + 2) / (E * S * U ^ (2 * n))) + (b + v ^ 2 / 2) * T) / (v * Sqr(T))
-                d4 = (Log(L ^ (2 * n + 2) / (X * S * U ^ (2 * n))) + (b + v ^ 2 / 2) * T) / (v * Sqr(T))
+                d1 = (Log(S * U ^ (2 * n) / (E * L ^ (2 * n))) + (b + v ^ 2 / 2) * T) / (v * Sqrt(T))
+                d2 = (Log(S * U ^ (2 * n) / (X * L ^ (2 * n))) + (b + v ^ 2 / 2) * T) / (v * Sqrt(T))
+                d3 = (Log(L ^ (2 * n + 2) / (E * S * U ^ (2 * n))) + (b + v ^ 2 / 2) * T) / (v * Sqrt(T))
+                d4 = (Log(L ^ (2 * n + 2) / (X * S * U ^ (2 * n))) + (b + v ^ 2 / 2) * T) / (v * Sqrt(T))
                 mu1 = 2 * (b - delta2 - n * (delta1 - delta2)) / v ^ 2 + 1
                 mu2 = 2 * n * (delta1 - delta2) / v ^ 2
                 mu3 = 2 * (b - delta2 + n * (delta1 - delta2)) / v ^ 2 + 1
                 Sum1 = Sum1 + (U ^ n / L ^ n) ^ mu1 * (L / S) ^ mu2 * (CND(d1) - CND(d2)) - (L ^ (n + 1) / (U ^ n * S)) ^ mu3 * (CND(d3) - CND(d4))
-                Sum2 = Sum2 + (U ^ n / L ^ n) ^ (mu1 - 2) * (L / S) ^ mu2 * (CND(d1 - v * Sqr(T)) - CND(d2 - v * Sqr(T))) - (L ^ (n + 1) / (U ^ n * S)) ^ (mu3 - 2) * (CND(d3 - v * Sqr(T)) - CND(d4 - v * Sqr(T)))
+                Sum2 = Sum2 + (U ^ n / L ^ n) ^ (mu1 - 2) * (L / S) ^ mu2 * (CND(d1 - v * Sqrt(T)) - CND(d2 - v * Sqrt(T))) - (L ^ (n + 1) / (U ^ n * S)) ^ (mu3 - 2) * (CND(d3 - v * Sqrt(T)) - CND(d4 - v * Sqrt(T)))
             Next
             OutValue = X * Exp(-r * T) * Sum2 - S * Exp((b - r) * T) * Sum1
         End If
@@ -664,20 +661,20 @@ Option Base 1       'The "Option Base" statement allows to specify 0 or 1 as the
             eta = -1
         End If
 
-        d1 = (Log(S / X) + (b + v ^ 2 / 2) * T2) / (v * Sqr(T2))
-        d2 = d1 - v * Sqr(T2)
-        f1 = (Log(S / X) + 2 * Log(H / S) + (b + v ^ 2 / 2) * T2) / (v * Sqr(T2))
-        f2 = f1 - v * Sqr(T2)
-        e1 = (Log(S / H) + (b + v ^ 2 / 2) * t1) / (v * Sqr(t1))
-        e2 = e1 - v * Sqr(t1)
-        e3 = e1 + 2 * Log(H / S) / (v * Sqr(t1))
-        e4 = e3 - v * Sqr(t1)
+        d1 = (Log(S / X) + (b + v ^ 2 / 2) * T2) / (v * Sqrt(T2))
+        d2 = d1 - v * Sqrt(T2)
+        f1 = (Log(S / X) + 2 * Log(H / S) + (b + v ^ 2 / 2) * T2) / (v * Sqrt(T2))
+        f2 = f1 - v * Sqrt(T2)
+        e1 = (Log(S / H) + (b + v ^ 2 / 2) * t1) / (v * Sqrt(t1))
+        e2 = e1 - v * Sqrt(t1)
+        e3 = e1 + 2 * Log(H / S) / (v * Sqrt(t1))
+        e4 = e3 - v * Sqrt(t1)
         mu = (b - v ^ 2 / 2) / v ^ 2
-        rho = Sqr(t1 / T2)
-        g1 = (Log(S / H) + (b + v ^ 2 / 2) * T2) / (v * Sqr(T2))
-        g2 = g1 - v * Sqr(T2)
-        g3 = g1 + 2 * Log(H / S) / (v * Sqr(T2))
-        g4 = g3 - v * Sqr(T2)
+        rho = Sqrt(t1 / T2)
+        g1 = (Log(S / H) + (b + v ^ 2 / 2) * T2) / (v * Sqrt(T2))
+        g2 = g1 - v * Sqrt(T2)
+        g3 = g1 + 2 * Log(H / S) / (v * Sqrt(T2))
+        g4 = g3 - v * Sqrt(T2)
 
         z1 = CND(e2) - (H / S) ^ (2 * mu) * CND(e4)
         z2 = CND(-e2) - (H / S) ^ (2 * mu) * CND(-e4)
@@ -739,14 +736,14 @@ Option Base 1       'The "Option Base" statement allows to specify 0 or 1 as the
         mu1 = b1 - v1 ^ 2 / 2
         mu2 = b2 - v2 ^ 2 / 2
 
-        d1 = (Log(S1 / X) + (mu1 + v1 ^ 2 / 2) * T) / (v1 * Sqr(T))
-        d2 = d1 - v1 * Sqr(T)
-        d3 = d1 + 2 * rho * Log(H / S2) / (v2 * Sqr(T))
-        d4 = d2 + 2 * rho * Log(H / S2) / (v2 * Sqr(T))
-        e1 = (Log(H / S2) - (mu2 + rho * v1 * v2) * T) / (v2 * Sqr(T))
-        e2 = e1 + rho * v1 * Sqr(T)
-        e3 = e1 - 2 * Log(H / S2) / (v2 * Sqr(T))
-        e4 = e2 - 2 * Log(H / S2) / (v2 * Sqr(T))
+        d1 = (Log(S1 / X) + (mu1 + v1 ^ 2 / 2) * T) / (v1 * Sqrt(T))
+        d2 = d1 - v1 * Sqrt(T)
+        d3 = d1 + 2 * rho * Log(H / S2) / (v2 * Sqrt(T))
+        d4 = d2 + 2 * rho * Log(H / S2) / (v2 * Sqrt(T))
+        e1 = (Log(H / S2) - (mu2 + rho * v1 * v2) * T) / (v2 * Sqrt(T))
+        e2 = e1 + rho * v1 * Sqrt(T)
+        e3 = e1 - 2 * Log(H / S2) / (v2 * Sqrt(T))
+        e4 = e2 - 2 * Log(H / S2) / (v2 * Sqrt(T))
 
         If TypeFlag = "cuo" Or TypeFlag = "cui" Then
             eta = 1 : phi = 1
@@ -798,19 +795,19 @@ Option Base 1       'The "Option Base" statement allows to specify 0 or 1 as the
         End If
         mu1 = b1 - v1 ^ 2 / 2
         mu2 = b2 - v2 ^ 2 / 2
-        d1 = (Log(S1 / X) + (mu1 + v1 ^ 2) * T2) / (v1 * Sqr(T2))
-        d2 = d1 - v1 * Sqr(T2)
-        d3 = d1 + 2 * rho * Log(H / S2) / (v2 * Sqr(T2))
-        d4 = d2 + 2 * rho * Log(H / S2) / (v2 * Sqr(T2))
-        e1 = (Log(H / S2) - (mu2 + rho * v1 * v2) * t1) / (v2 * Sqr(t1))
-        e2 = e1 + rho * v1 * Sqr(t1)
-        e3 = e1 - 2 * Log(H / S2) / (v2 * Sqr(t1))
-        e4 = e2 - 2 * Log(H / S2) / (v2 * Sqr(t1))
+        d1 = (Log(S1 / X) + (mu1 + v1 ^ 2) * T2) / (v1 * Sqrt(T2))
+        d2 = d1 - v1 * Sqrt(T2)
+        d3 = d1 + 2 * rho * Log(H / S2) / (v2 * Sqrt(T2))
+        d4 = d2 + 2 * rho * Log(H / S2) / (v2 * Sqrt(T2))
+        e1 = (Log(H / S2) - (mu2 + rho * v1 * v2) * t1) / (v2 * Sqrt(t1))
+        e2 = e1 + rho * v1 * Sqrt(t1)
+        e3 = e1 - 2 * Log(H / S2) / (v2 * Sqrt(t1))
+        e4 = e2 - 2 * Log(H / S2) / (v2 * Sqrt(t1))
 
-        OutBarrierValue = eta * S1 * Exp((b1 - r) * T2) * (CBND(eta * d1, phi * e1, -eta * phi * rho * Sqr(t1 / T2)) - Exp(2 * Log(H / S2) * (mu2 + rho * v1 * v2) / (v2 ^ 2)) _
-        * CBND(eta * d3, phi * e3, -eta * phi * rho * Sqr(t1 / T2))) _
-        - eta * Exp(-r * T2) * X * (CBND(eta * d2, phi * e2, -eta * phi * rho * Sqr(t1 / T2)) - Exp(2 * Log(H / S2) * mu2 / (v2 ^ 2)) _
-        * CBND(eta * d4, phi * e4, -eta * phi * rho * Sqr(t1 / T2)))
+        OutBarrierValue = eta * S1 * Exp((b1 - r) * T2) * (CBND(eta * d1, phi * e1, -eta * phi * rho * Sqrt(t1 / T2)) - Exp(2 * Log(H / S2) * (mu2 + rho * v1 * v2) / (v2 ^ 2)) _
+        * CBND(eta * d3, phi * e3, -eta * phi * rho * Sqrt(t1 / T2))) _
+        - eta * Exp(-r * T2) * X * (CBND(eta * d2, phi * e2, -eta * phi * rho * Sqrt(t1 / T2)) - Exp(2 * Log(H / S2) * mu2 / (v2 ^ 2)) _
+        * CBND(eta * d4, phi * e4, -eta * phi * rho * Sqrt(t1 / T2)))
 
         If TypeFlag = "cdo" Or TypeFlag = "cuo" Or TypeFlag = "pdo" Or TypeFlag = "puo" Then
             PartialTimeTwoAssetBarrier = OutBarrierValue
@@ -836,7 +833,7 @@ Option Base 1       'The "Option Base" statement allows to specify 0 or 1 as the
         K = Log(X / S)
         mu1 = b - v ^ 2 / 2
         mu2 = b + v ^ 2 / 2
-        rho = Sqr(t1 / T2)
+        rho = Sqrt(t1 / T2)
 
         If TypeFlag = "cuo" Or TypeFlag = "cui" Then
             eta = 1
@@ -846,19 +843,19 @@ Option Base 1       'The "Option Base" statement allows to specify 0 or 1 as the
             m = Max(hh, K)
         End If
 
-        g1 = (CND(eta * (hh - mu2 * t1) / (v * Sqr(t1))) - Exp(2 * mu2 * hh / v ^ 2) * CND(eta * (-hh - mu2 * t1) / (v * Sqr(t1)))) _
-            - (CND(eta * (m - mu2 * t1) / (v * Sqr(t1))) - Exp(2 * mu2 * hh / v ^ 2) * CND(eta * (m - 2 * hh - mu2 * t1) / (v * Sqr(t1))))
-        g2 = (CND(eta * (hh - mu1 * t1) / (v * Sqr(t1))) - Exp(2 * mu1 * hh / v ^ 2) * CND(eta * (-hh - mu1 * t1) / (v * Sqr(t1)))) _
-            - (CND(eta * (m - mu1 * t1) / (v * Sqr(t1))) - Exp(2 * mu1 * hh / v ^ 2) * CND(eta * (m - 2 * hh - mu1 * t1) / (v * Sqr(t1))))
+        g1 = (CND(eta * (hh - mu2 * t1) / (v * Sqrt(t1))) - Exp(2 * mu2 * hh / v ^ 2) * CND(eta * (-hh - mu2 * t1) / (v * Sqrt(t1)))) _
+            - (CND(eta * (m - mu2 * t1) / (v * Sqrt(t1))) - Exp(2 * mu2 * hh / v ^ 2) * CND(eta * (m - 2 * hh - mu2 * t1) / (v * Sqrt(t1))))
+        g2 = (CND(eta * (hh - mu1 * t1) / (v * Sqrt(t1))) - Exp(2 * mu1 * hh / v ^ 2) * CND(eta * (-hh - mu1 * t1) / (v * Sqrt(t1)))) _
+            - (CND(eta * (m - mu1 * t1) / (v * Sqrt(t1))) - Exp(2 * mu1 * hh / v ^ 2) * CND(eta * (m - 2 * hh - mu1 * t1) / (v * Sqrt(t1))))
 
-        part1 = S * Exp((b - r) * T2) * (1 + v ^ 2 / (2 * b)) * (CBND(eta * (m - mu2 * t1) / (v * Sqr(t1)), eta * (-K + mu2 * T2) / (v * Sqr(T2)), -rho) - Exp(2 * mu2 * hh / v ^ 2) _
-            * CBND(eta * (m - 2 * hh - mu2 * t1) / (v * Sqr(t1)), eta * (2 * hh - K + mu2 * T2) / (v * Sqr(T2)), -rho))
-        part2 = -Exp(-r * T2) * X * (CBND(eta * (m - mu1 * t1) / (v * Sqr(t1)), eta * (-K + mu1 * T2) / (v * Sqr(T2)), -rho) _
-            - Exp(2 * mu1 * hh / v ^ 2) * CBND(eta * (m - 2 * hh - mu1 * t1) / (v * Sqr(t1)), eta * (2 * hh - K + mu1 * T2) / (v * Sqr(T2)), -rho))
-        part3 = -Exp(-r * T2) * v ^ 2 / (2 * b) * (S * (S / X) ^ (-2 * b / v ^ 2) * CBND(eta * (m + mu1 * t1) / (v * Sqr(t1)), eta * (-K - mu1 * T2) / (v * Sqr(T2)), -rho) _
-            - H * (H / X) ^ (-2 * b / v ^ 2) * CBND(eta * (m - 2 * hh + mu1 * t1) / (v * Sqr(t1)), eta * (2 * hh - K - mu1 * T2) / (v * Sqr(T2)), -rho))
-        part4 = S * Exp((b - r) * T2) * ((1 + v ^ 2 / (2 * b)) * CND(eta * mu2 * (T2 - t1) / (v * Sqr(T2 - t1))) + Exp(-b * (T2 - t1)) * (1 - v ^ 2 / (2 * b)) _
-            * CND(eta * (-mu1 * (T2 - t1)) / (v * Sqr(T2 - t1)))) * g1 - Exp(-r * T2) * X * g2
+        part1 = S * Exp((b - r) * T2) * (1 + v ^ 2 / (2 * b)) * (CBND(eta * (m - mu2 * t1) / (v * Sqrt(t1)), eta * (-K + mu2 * T2) / (v * Sqrt(T2)), -rho) - Exp(2 * mu2 * hh / v ^ 2) _
+            * CBND(eta * (m - 2 * hh - mu2 * t1) / (v * Sqrt(t1)), eta * (2 * hh - K + mu2 * T2) / (v * Sqrt(T2)), -rho))
+        part2 = -Exp(-r * T2) * X * (CBND(eta * (m - mu1 * t1) / (v * Sqrt(t1)), eta * (-K + mu1 * T2) / (v * Sqrt(T2)), -rho) _
+            - Exp(2 * mu1 * hh / v ^ 2) * CBND(eta * (m - 2 * hh - mu1 * t1) / (v * Sqrt(t1)), eta * (2 * hh - K + mu1 * T2) / (v * Sqrt(T2)), -rho))
+        part3 = -Exp(-r * T2) * v ^ 2 / (2 * b) * (S * (S / X) ^ (-2 * b / v ^ 2) * CBND(eta * (m + mu1 * t1) / (v * Sqrt(t1)), eta * (-K - mu1 * T2) / (v * Sqrt(T2)), -rho) _
+            - H * (H / X) ^ (-2 * b / v ^ 2) * CBND(eta * (m - 2 * hh + mu1 * t1) / (v * Sqrt(t1)), eta * (2 * hh - K - mu1 * T2) / (v * Sqrt(T2)), -rho))
+        part4 = S * Exp((b - r) * T2) * ((1 + v ^ 2 / (2 * b)) * CND(eta * mu2 * (T2 - t1) / (v * Sqrt(T2 - t1))) + Exp(-b * (T2 - t1)) * (1 - v ^ 2 / (2 * b)) _
+            * CND(eta * (-mu1 * (T2 - t1)) / (v * Sqrt(T2 - t1)))) * g1 - Exp(-r * T2) * X * g2
         OutValue = eta * (part1 + part2 + part3 + part4)
 
         If TypeFlag = "cuo" Or TypeFlag = "pdo" Then
@@ -875,9 +872,9 @@ Option Base 1       'The "Option Base" statement allows to specify 0 or 1 as the
     Public Function DiscreteAdjustedBarrier(ByVal S As Double, ByVal H As Double, ByVal v As Double, ByVal dt As Double) As Double
 
         If H > S Then
-            DiscreteAdjustedBarrier = H * Exp(0.5826 * v * Sqr(dt))
+            DiscreteAdjustedBarrier = H * Exp(0.5826 * v * Sqrt(dt))
         ElseIf H < S Then
-            DiscreteAdjustedBarrier = H * Exp(-0.5826 * v * Sqr(dt))
+            DiscreteAdjustedBarrier = H * Exp(-0.5826 * v * Sqrt(dt))
         End If
     End Function
 
@@ -903,14 +900,14 @@ Option Base 1       'The "Option Base" statement allows to specify 0 or 1 as the
         mu = (b + v ^ 2 / 2) / v ^ 2
         lambda1 = Exp(-1 / 2 * v ^ 2 * T * (mu + 0.5) * (mu - 0.5))
         lambda2 = Exp(-1 / 2 * v ^ 2 * T * (mu - 0.5) * (mu - 1.5))
-        d1 = Log(U ^ 2 / (S * X)) / (v * Sqr(T)) + mu * v * Sqr(T)
-        d2 = d1 - (mu + 0.5) * v * Sqr(T)
-        d3 = Log(U ^ 2 / (S * X)) / (v * Sqr(T)) + (mu - 1) * v * Sqr(T)
-        d4 = d3 - (mu - 0.5) * v * Sqr(T)
-        e1 = Log(L ^ 2 / (S * X)) / (v * Sqr(T)) + mu * v * Sqr(T)
-        e2 = e1 - (mu + 0.5) * v * Sqr(T)
-        e3 = Log(L ^ 2 / (S * X)) / (v * Sqr(T)) + (mu - 1) * v * Sqr(T)
-        e4 = e3 - (mu - 0.5) * v * Sqr(T)
+        d1 = Log(U ^ 2 / (S * X)) / (v * Sqrt(T)) + mu * v * Sqrt(T)
+        d2 = d1 - (mu + 0.5) * v * Sqrt(T)
+        d3 = Log(U ^ 2 / (S * X)) / (v * Sqrt(T)) + (mu - 1) * v * Sqrt(T)
+        d4 = d3 - (mu - 0.5) * v * Sqrt(T)
+        e1 = Log(L ^ 2 / (S * X)) / (v * Sqrt(T)) + mu * v * Sqrt(T)
+        e2 = e1 - (mu + 0.5) * v * Sqrt(T)
+        e3 = Log(L ^ 2 / (S * X)) / (v * Sqrt(T)) + (mu - 1) * v * Sqrt(T)
+        e4 = e3 - (mu - 0.5) * v * Sqrt(T)
 
         Value = eta * 1 / (U - L) * (S * Exp((b - r) * T) * S ^ (-2 * mu) _
         * (S * X) ^ (mu + 0.5) / (2 * (mu + 0.5)) _
@@ -937,8 +934,8 @@ Option Base 1       'The "Option Base" statement allows to specify 0 or 1 as the
 
         Dim d1 As Double, d2 As Double
 
-        d1 = (Log(S / X1) + (b + v ^ 2 / 2) * T) / (v * Sqr(T))
-        d2 = d1 - v * Sqr(T)
+        d1 = (Log(S / X1) + (b + v ^ 2 / 2) * T) / (v * Sqrt(T))
+        d2 = d1 - v * Sqrt(T)
 
         If CallPutFlag = "c" Then
             GapOption = S * Exp((b - r) * T) * CND(d1) - X2 * Exp(-r * T) * CND(d2)
@@ -954,7 +951,7 @@ Option Base 1       'The "Option Base" statement allows to specify 0 or 1 as the
 
         Dim d As Double
 
-        d = (Log(S / X) + (b - v ^ 2 / 2) * T) / (v * Sqr(T))
+        d = (Log(S / X) + (b - v ^ 2 / 2) * T) / (v * Sqrt(T))
 
         If CallPutFlag = "c" Then
             CashOrNothing = K * Exp(-r * T) * CND(d)
@@ -970,8 +967,8 @@ Option Base 1       'The "Option Base" statement allows to specify 0 or 1 as the
 
         Dim d1 As Double, d2 As Double
 
-        d1 = (Log(S1 / X1) + (b1 - v1 ^ 2 / 2) * T) / (v1 * Sqr(T))
-        d2 = (Log(S2 / X2) + (b2 - v2 ^ 2 / 2) * T) / (v2 * Sqr(T))
+        d1 = (Log(S1 / X1) + (b1 - v1 ^ 2 / 2) * T) / (v1 * Sqrt(T))
+        d2 = (Log(S2 / X2) + (b2 - v2 ^ 2 / 2) * T) / (v2 * Sqrt(T))
 
         If TypeFlag = 1 Then
             TwoAssetCashOrNothing = K * Exp(-r * T) * CBND(d1, d2, rho)
@@ -991,7 +988,7 @@ Option Base 1       'The "Option Base" statement allows to specify 0 or 1 as the
 
         Dim d As Double
 
-        d = (Log(S / X) + (b + v ^ 2 / 2) * T) / (v * Sqr(T))
+        d = (Log(S / X) + (b + v ^ 2 / 2) * T) / (v * Sqrt(T))
 
         If CallPutFlag = "c" Then
             AssetOrNothing = S * Exp((b - r) * T) * CND(d)
@@ -1007,8 +1004,8 @@ Option Base 1       'The "Option Base" statement allows to specify 0 or 1 as the
 
         Dim d1 As Double, d2 As Double
 
-        d1 = (Log(S / XL) + (b + v ^ 2 / 2) * T) / (v * Sqr(T))
-        d2 = (Log(S / XH) + (b + v ^ 2 / 2) * T) / (v * Sqr(T))
+        d1 = (Log(S / XL) + (b + v ^ 2 / 2) * T) / (v * Sqrt(T))
+        d2 = (Log(S / XH) + (b + v ^ 2 / 2) * T) / (v * Sqrt(T))
 
         SuperShare = S * Exp((b - r) * T) / XL * (CND(d1) - CND(d2))
     End Function
@@ -1028,22 +1025,22 @@ Option Base 1       'The "Option Base" statement allows to specify 0 or 1 as the
         Dim b1 As Double, b2 As Double, b3 As Double, b4 As Double
 
         mu = (b - v ^ 2 / 2) / v ^ 2
-        lambda = Sqr(mu ^ 2 + 2 * r / v ^ 2)
-        X1 = Log(S / X) / (v * Sqr(T)) + (mu + 1) * v * Sqr(T)
-        X2 = Log(S / H) / (v * Sqr(T)) + (mu + 1) * v * Sqr(T)
-        y1 = Log(H ^ 2 / (S * X)) / (v * Sqr(T)) + (mu + 1) * v * Sqr(T)
-        y2 = Log(H / S) / (v * Sqr(T)) + (mu + 1) * v * Sqr(T)
-        Z = Log(H / S) / (v * Sqr(T)) + lambda * v * Sqr(T)
+        lambda = Sqrt(mu ^ 2 + 2 * r / v ^ 2)
+        X1 = Log(S / X) / (v * Sqrt(T)) + (mu + 1) * v * Sqrt(T)
+        X2 = Log(S / H) / (v * Sqrt(T)) + (mu + 1) * v * Sqrt(T)
+        y1 = Log(H ^ 2 / (S * X)) / (v * Sqrt(T)) + (mu + 1) * v * Sqrt(T)
+        y2 = Log(H / S) / (v * Sqrt(T)) + (mu + 1) * v * Sqrt(T)
+        Z = Log(H / S) / (v * Sqrt(T)) + lambda * v * Sqrt(T)
 
         a1 = S * Exp((b - r) * T) * CND(phi * X1)
-        b1 = K * Exp(-r * T) * CND(phi * X1 - phi * v * Sqr(T))
+        b1 = K * Exp(-r * T) * CND(phi * X1 - phi * v * Sqrt(T))
         a2 = S * Exp((b - r) * T) * CND(phi * X2)
-        b2 = K * Exp(-r * T) * CND(phi * X2 - phi * v * Sqr(T))
+        b2 = K * Exp(-r * T) * CND(phi * X2 - phi * v * Sqrt(T))
         a3 = S * Exp((b - r) * T) * (H / S) ^ (2 * (mu + 1)) * CND(eta * y1)
-        b3 = K * Exp(-r * T) * (H / S) ^ (2 * mu) * CND(eta * y1 - eta * v * Sqr(T))
+        b3 = K * Exp(-r * T) * (H / S) ^ (2 * mu) * CND(eta * y1 - eta * v * Sqrt(T))
         a4 = S * Exp((b - r) * T) * (H / S) ^ (2 * (mu + 1)) * CND(eta * y2)
-        b4 = K * Exp(-r * T) * (H / S) ^ (2 * mu) * CND(eta * y2 - eta * v * Sqr(T))
-        a5 = K * ((H / S) ^ (mu + lambda) * CND(eta * Z) + (H / S) ^ (mu - lambda) * CND(eta * Z - 2 * eta * lambda * v * Sqr(T)))
+        b4 = K * Exp(-r * T) * (H / S) ^ (2 * mu) * CND(eta * y2 - eta * v * Sqrt(T))
+        a5 = K * ((H / S) ^ (mu + lambda) * CND(eta * Z) + (H / S) ^ (mu - lambda) * CND(eta * Z - 2 * eta * lambda * v * Sqrt(T)))
 
         If X > H Then
             Select Case TypeFlag
@@ -1148,7 +1145,7 @@ Option Base 1       'The "Option Base" statement allows to specify 0 or 1 as the
         Dim bA As Double, vA As Double
 
         bA = 1 / 2 * (b - v ^ 2 / 6)
-        vA = v / Sqr(3)
+        vA = v / Sqrt(3)
 
         t1 = T - T2
 
@@ -1174,7 +1171,7 @@ Option Base 1       'The "Option Base" statement allows to specify 0 or 1 as the
         + 2 * Exp((2 * b + v ^ 2) * tau) / (b * (T - tau) ^ 2) * (1 / (2 * b + v ^ 2) - Exp(b * (T - tau)) / (b + v ^ 2))
 
         bA = Log(m1) / T
-        vA = Sqr(Log(m2) / T - 2 * bA)
+        vA = Sqrt(Log(m2) / T - 2 * bA)
         t1 = T - T2
 
         If t1 > 0 Then
@@ -1200,8 +1197,8 @@ Option Base 1       'The "Option Base" statement allows to specify 0 or 1 as the
         d = m / (T ^ 2)
         Sv = Log(d) - 2 * (r * T2 + Log(SE))
         XStar = X - (T - T2) / T * SA
-        d1 = 1 / Sqr(Sv) * (Log(d) / 2 - Log(XStar))
-        d2 = d1 - Sqr(Sv)
+        d1 = 1 / Sqrt(Sv) * (Log(d) / 2 - Log(XStar))
+        d2 = d1 - Sqrt(Sv)
 
         If CallPutFlag = "c" Then
             LevyAsian = SE * CND(d1) - XStar * Exp(-r * T2) * CND(d2)
@@ -1217,9 +1214,9 @@ Option Base 1       'The "Option Base" statement allows to specify 0 or 1 as the
 
         Dim v As Double, d1 As Double, d2 As Double
 
-        v = Sqr(vE ^ 2 + vS ^ 2 + 2 * rho * vE * vS)
-        d1 = (Log(E * S / X) + (r - q + v ^ 2 / 2) * T) / (v * Sqr(T))
-        d2 = d1 - v * Sqr(T)
+        v = Sqrt(vE ^ 2 + vS ^ 2 + 2 * rho * vE * vS)
+        d1 = (Log(E * S / X) + (r - q + v ^ 2 / 2) * T) / (v * Sqrt(T))
+        d2 = d1 - v * Sqrt(T)
 
         If CallPutFlag = "c" Then
             ForEquOptInDomCur = E * S * Exp(-q * T) * CND(d1) - X * Exp(-r * T) * CND(d2)
@@ -1235,8 +1232,8 @@ Option Base 1       'The "Option Base" statement allows to specify 0 or 1 as the
 
         Dim d1 As Double, d2 As Double
 
-        d1 = (Log(S / X) + (rf - q - rho * vS * vE + vS ^ 2 / 2) * T) / (vS * Sqr(T))
-        d2 = d1 - vS * Sqr(T)
+        d1 = (Log(S / X) + (rf - q - rho * vS * vE + vS ^ 2 / 2) * T) / (vS * Sqrt(T))
+        d2 = d1 - vS * Sqrt(T)
 
         If CallPutFlag = "c" Then
             Quanto = Ep * (S * Exp((rf - r - q - rho * vS * vE) * T) * CND(d1) - X * Exp(-r * T) * CND(d2))
@@ -1252,8 +1249,8 @@ Option Base 1       'The "Option Base" statement allows to specify 0 or 1 as the
 
         Dim d1 As Double, d2 As Double
 
-        d1 = (Log(E / X) + (r - rf + rho * vS * vE + vE ^ 2 / 2) * T) / (vE * Sqr(T))
-        d2 = d1 - vE * Sqr(T)
+        d1 = (Log(E / X) + (r - rf + rho * vS * vE + vE ^ 2 / 2) * T) / (vE * Sqrt(T))
+        d2 = d1 - vE * Sqrt(T)
 
         If CallPutFlag = "c" Then
             EquityLinkedFXO = E * S * Exp(-q * T) * CND(d1) - X * S * Exp((rf - r - q - rho * vS * vE) * T) * CND(d2)
@@ -1268,10 +1265,10 @@ Option Base 1       'The "Option Base" statement allows to specify 0 or 1 as the
 
         Dim a1 As Double, a2 As Double
 
-        a1 = (Log(v / b) + (rf - rho * vE * vV - vV ^ 2 / 2) * T) / (vV * Sqr(T))
-        a2 = (Log(E / X) + (r - rf - vE ^ 2 / 2) * T) / (vE * Sqr(T))
+        a1 = (Log(v / b) + (rf - rho * vE * vV - vV ^ 2 / 2) * T) / (vV * Sqrt(T))
+        a2 = (Log(E / X) + (r - rf - vE ^ 2 / 2) * T) / (vE * Sqrt(T))
 
-        TakeoverFXoption = b * (E * Exp(-rf * T) * CBND(a2 + vE * Sqr(T), -a1 - rho * vE * Sqr(T), -rho) _
+        TakeoverFXoption = b * (E * Exp(-rf * T) * CBND(a2 + vE * Sqrt(T), -a1 - rho * vE * Sqrt(T), -rho) _
         - X * Exp(-r * T) * CBND(-a1, a2, -rho))
 
     End Function

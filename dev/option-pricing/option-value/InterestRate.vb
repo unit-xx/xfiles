@@ -1,10 +1,8 @@
-﻿Module InterestRate
-    Option Explicit     'Requires that all variables to be declared explicitly.
+﻿Option Explicit On     'Requires that all variables to be declared explicitly.
 Option Compare Text 'Uppercase letters to be equivalent to lowercase letters.
+Imports System.Math
 
-Option Base 1       'The "Option Base" statement allows to specify 0 or 1 as the
-    'default first index of arrays.
-
+Module InterestRate
 
     '//  Black-76 European swaption
     Public Function Swaption(ByVal CallPutFlag As String, ByVal t1 As Double, ByVal m As Double, ByVal F As Double, ByVal X As Double, ByVal T As Double, _
@@ -12,8 +10,8 @@ Option Base 1       'The "Option Base" statement allows to specify 0 or 1 as the
 
         Dim d1 As Double, d2 As Double
 
-        d1 = (Log(F / X) + v ^ 2 / 2 * T) / (v * Sqr(T))
-        d2 = d1 - v * Sqr(T)
+        d1 = (Log(F / X) + v ^ 2 / 2 * T) / (v * Sqrt(T))
+        d2 = d1 - v * Sqrt(T)
 
         If CallPutFlag = "c" Then 'Payer swaption
             Swaption = ((1 - 1 / (1 + F / m) ^ (t1 * m)) / F) * Exp(-r * T) * (F * CND(d1) - X * CND(d2))
@@ -35,7 +33,7 @@ Option Base 1       'The "Option Base" statement allows to specify 0 or 1 as the
         X = X / F
         PtT = VasicekBondPrice(0, T, r, theta, kappa, v)
         Pt_tau = VasicekBondPrice(0, tau, r, theta, kappa, v)
-        vp = Sqr(v ^ 2 * (1 - Exp(-2 * kappa * T)) / (2 * kappa)) * (1 - Exp(-kappa * (tau - T))) / kappa
+        vp = Sqrt(v ^ 2 * (1 - Exp(-2 * kappa * T)) / (2 * kappa)) * (1 - Exp(-kappa * (tau - T))) / kappa
 
         H = 1 / vp * Log(Pt_tau / (PtT * X)) + vp / 2
 

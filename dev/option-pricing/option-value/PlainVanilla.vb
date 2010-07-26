@@ -1,9 +1,8 @@
-﻿Module PlainVanilla
-    Option Explicit     'Requires that all variables to be declared explicitly.
+﻿Option Explicit On     'Requires that all variables to be declared explicitly.
 Option Compare Text 'Uppercase letters to be equivalent to lowercase letters.
+Imports System.Math
 
-Option Base 1       'The "Option Base" statement allows to specify 0 or 1 as the
-    'default first index of arrays.
+Module PlainVanilla
 
 
     '// * European options *
@@ -14,8 +13,8 @@ Option Base 1       'The "Option Base" statement allows to specify 0 or 1 as the
 
         Dim d1 As Double, d2 As Double
 
-        d1 = (Log(S / X) + (r + v ^ 2 / 2) * T) / (v * Sqr(T))
-        d2 = d1 - v * Sqr(T)
+        d1 = (Log(S / X) + (r + v ^ 2 / 2) * T) / (v * Sqrt(T))
+        d2 = d1 - v * Sqrt(T)
         If CallPutFlag = "c" Then
             BlackScholes = S * CND(d1) - X * Exp(-r * T) * CND(d2)
         ElseIf CallPutFlag = "p" Then
@@ -30,8 +29,8 @@ Option Base 1       'The "Option Base" statement allows to specify 0 or 1 as the
 
         Dim d1 As Double, d2 As Double
 
-        d1 = (Log(S / X) + (r - q + v ^ 2 / 2) * T) / (v * Sqr(T))
-        d2 = d1 - v * Sqr(T)
+        d1 = (Log(S / X) + (r - q + v ^ 2 / 2) * T) / (v * Sqrt(T))
+        d2 = d1 - v * Sqrt(T)
         If CallPutFlag = "c" Then
             Merton73 = S * Exp(-q * T) * CND(d1) - X * Exp(-r * T) * CND(d2)
         ElseIf CallPutFlag = "p" Then
@@ -46,8 +45,8 @@ Option Base 1       'The "Option Base" statement allows to specify 0 or 1 as the
 
         Dim d1 As Double, d2 As Double
 
-        d1 = (Log(F / X) + (v ^ 2 / 2) * T) / (v * Sqr(T))
-        d2 = d1 - v * Sqr(T)
+        d1 = (Log(F / X) + (v ^ 2 / 2) * T) / (v * Sqrt(T))
+        d2 = d1 - v * Sqrt(T)
         If CallPutFlag = "c" Then
             Black76 = Exp(-r * T) * (F * CND(d1) - X * CND(d2))
         ElseIf CallPutFlag = "p" Then
@@ -62,8 +61,8 @@ Option Base 1       'The "Option Base" statement allows to specify 0 or 1 as the
 
         Dim d1 As Double, d2 As Double
 
-        d1 = (Log(S / X) + (r - rf + v ^ 2 / 2) * T) / (v * Sqr(T))
-        d2 = d1 - v * Sqr(T)
+        d1 = (Log(S / X) + (r - rf + v ^ 2 / 2) * T) / (v * Sqrt(T))
+        d2 = d1 - v * Sqrt(T)
         If CallPutFlag = "c" Then
             GarmanKolhagen = S * Exp(-rf * T) * CND(d1) - X * Exp(-r * T) * CND(d2)
         ElseIf CallPutFlag = "p" Then
@@ -78,8 +77,8 @@ Option Base 1       'The "Option Base" statement allows to specify 0 or 1 as the
 
         Dim d1 As Double, d2 As Double
 
-        d1 = (Log(S / X) + (b + v ^ 2 / 2) * T) / (v * Sqr(T))
-        d2 = d1 - v * Sqr(T)
+        d1 = (Log(S / X) + (b + v ^ 2 / 2) * T) / (v * Sqrt(T))
+        d2 = d1 - v * Sqrt(T)
 
         If CallPutFlag = "c" Then
             GBlackScholes = S * Exp((b - r) * T) * CND(d1) - X * Exp(-r * T) * CND(d2)
@@ -95,7 +94,7 @@ Option Base 1       'The "Option Base" statement allows to specify 0 or 1 as the
 
         Dim d1 As Double
 
-        d1 = (Log(S / X) + (b + v ^ 2 / 2) * T) / (v * Sqr(T))
+        d1 = (Log(S / X) + (b + v ^ 2 / 2) * T) / (v * Sqrt(T))
 
         If CallPutFlag = "c" Then
             GDelta = Exp((b - r) * T) * CND(d1)
@@ -110,8 +109,8 @@ Option Base 1       'The "Option Base" statement allows to specify 0 or 1 as the
 
         Dim d1 As Double
 
-        d1 = (Log(S / X) + (b + v ^ 2 / 2) * T) / (v * Sqr(T))
-        GGamma = Exp((b - r) * T) * ND(d1) / (S * v * Sqr(T))
+        d1 = (Log(S / X) + (b + v ^ 2 / 2) * T) / (v * Sqrt(T))
+        GGamma = Exp((b - r) * T) * ND(d1) / (S * v * Sqrt(T))
     End Function
 
 
@@ -120,13 +119,13 @@ Option Base 1       'The "Option Base" statement allows to specify 0 or 1 as the
 
         Dim d1 As Double, d2 As Double
 
-        d1 = (Log(S / X) + (b + v ^ 2 / 2) * T) / (v * Sqr(T))
-        d2 = d1 - v * Sqr(T)
+        d1 = (Log(S / X) + (b + v ^ 2 / 2) * T) / (v * Sqrt(T))
+        d2 = d1 - v * Sqrt(T)
 
         If CallPutFlag = "c" Then
-            GTheta = -S * Exp((b - r) * T) * ND(d1) * v / (2 * Sqr(T)) - (b - r) * S * Exp((b - r) * T) * CND(d1) - r * X * Exp(-r * T) * CND(d2)
+            GTheta = -S * Exp((b - r) * T) * ND(d1) * v / (2 * Sqrt(T)) - (b - r) * S * Exp((b - r) * T) * CND(d1) - r * X * Exp(-r * T) * CND(d2)
         ElseIf CallPutFlag = "p" Then
-            GTheta = -S * Exp((b - r) * T) * ND(d1) * v / (2 * Sqr(T)) + (b - r) * S * Exp((b - r) * T) * CND(-d1) + r * X * Exp(-r * T) * CND(-d2)
+            GTheta = -S * Exp((b - r) * T) * ND(d1) * v / (2 * Sqrt(T)) + (b - r) * S * Exp((b - r) * T) * CND(-d1) + r * X * Exp(-r * T) * CND(-d2)
         End If
     End Function
 
@@ -136,8 +135,8 @@ Option Base 1       'The "Option Base" statement allows to specify 0 or 1 as the
 
         Dim d1 As Double
 
-        d1 = (Log(S / X) + (b + v ^ 2 / 2) * T) / (v * Sqr(T))
-        GVega = S * Exp((b - r) * T) * ND(d1) * Sqr(T)
+        d1 = (Log(S / X) + (b + v ^ 2 / 2) * T) / (v * Sqrt(T))
+        GVega = S * Exp((b - r) * T) * ND(d1) * Sqrt(T)
     End Function
 
 
@@ -146,8 +145,8 @@ Option Base 1       'The "Option Base" statement allows to specify 0 or 1 as the
 
         Dim d1 As Double, d2 As Double
 
-        d1 = (Log(S / X) + (b + v ^ 2 / 2) * T) / (v * Sqr(T))
-        d2 = d1 - v * Sqr(T)
+        d1 = (Log(S / X) + (b + v ^ 2 / 2) * T) / (v * Sqrt(T))
+        d2 = d1 - v * Sqrt(T)
         If CallPutFlag = "c" Then
             If b <> 0 Then
                 GRho = T * X * Exp(-r * T) * CND(d2)
@@ -168,7 +167,7 @@ Option Base 1       'The "Option Base" statement allows to specify 0 or 1 as the
 
         Dim d1 As Double
 
-        d1 = (Log(S / X) + (b + v ^ 2 / 2) * T) / (v * Sqr(T))
+        d1 = (Log(S / X) + (b + v ^ 2 / 2) * T) / (v * Sqrt(T))
         If CallPutFlag = "c" Then
             GCarry = T * S * Exp((b - r) * T) * CND(d1)
         ElseIf CallPutFlag = "p" Then
@@ -183,8 +182,8 @@ Option Base 1       'The "Option Base" statement allows to specify 0 or 1 as the
 
         Dim d1 As Double, d2 As Double
 
-        d1 = (Log(S / X) + b * T + v ^ 2 / 2 * t1) / (v * Sqr(t1))
-        d2 = d1 - v * Sqr(t1)
+        d1 = (Log(S / X) + b * T + v ^ 2 / 2 * t1) / (v * Sqrt(t1))
+        d2 = d1 - v * Sqrt(t1)
 
         If CallPutFlag = "c" Then
             French = S * Exp((b - r) * T) * CND(d1) - X * Exp(-r * T) * CND(d2)
@@ -202,12 +201,12 @@ Option Base 1       'The "Option Base" statement allows to specify 0 or 1 as the
         Dim Z As Double, vi As Double
         Dim I As Integer
 
-        delta = Sqr(gamma * v ^ 2 / lambda)
-        Z = Sqr(v ^ 2 - lambda * delta ^ 2)
+        delta = Sqrt(gamma * v ^ 2 / lambda)
+        Z = Sqrt(v ^ 2 - lambda * delta ^ 2)
         Sum = 0
         For I = 0 To 10
-            vi = Sqr(Z ^ 2 + delta ^ 2 * (I / T))
-            Sum = Sum + Exp(-lambda * T) * (lambda * T) ^ I / Application.Fact(I) * _
+            vi = Sqrt(Z ^ 2 + delta ^ 2 * (I / T))
+            Sum = Sum + Exp(-lambda * T) * (lambda * T) ^ I / factorial(I) * _
             GBlackScholes(CallPutFlag, S, X, T, r, r, vi)
         Next
         JumpDiffusion = Sum
@@ -235,7 +234,7 @@ Option Base 1       'The "Option Base" statement allows to specify 0 or 1 as the
             - vE * rhoef * 1 / Kappae * (t1 - 1 / Kappae * Exp(-Kappae * T2) * (Exp(Kappae * t1) - 1) - 1 / Kappaf * (1 - Exp(-Kappaf * t1)) _
             + 1 / (Kappae + Kappaf) * Exp(-Kappae * T2) * (Exp(Kappae * t1) - Exp(-Kappaf * t1))))
 
-        vz = Sqr(vz)
+        vz = Sqrt(vz)
 
         d1 = (Log(FT / X) - vxz + vz ^ 2 / 2) / vz
         d2 = (Log(FT / X) - vxz - vz ^ 2 / 2) / vz
@@ -294,12 +293,12 @@ Option Base 1       'The "Option Base" statement allows to specify 0 or 1 as the
             I = (HighS + LowS) / 2
             ci = BlackScholes("c", I, X, T2 - t1, r, v)
         End While
-        a1 = (Log(Sx / X) + (r + v ^ 2 / 2) * T2) / (v * Sqr(T2))
-        a2 = a1 - v * Sqr(T2)
-        b1 = (Log(Sx / I) + (r + v ^ 2 / 2) * t1) / (v * Sqr(t1))
-        b2 = b1 - v * Sqr(t1)
+        a1 = (Log(Sx / X) + (r + v ^ 2 / 2) * T2) / (v * Sqrt(T2))
+        a2 = a1 - v * Sqrt(T2)
+        b1 = (Log(Sx / I) + (r + v ^ 2 / 2) * t1) / (v * Sqrt(t1))
+        b2 = b1 - v * Sqrt(t1)
 
-        RollGeskeWhaley = Sx * CND(b1) + Sx * CBND(a1, -b1, -Sqr(t1 / T2)) - X * Exp(-r * T2) * CBND(a2, -b2, -Sqr(t1 / T2)) - (X - d) * Exp(-r * t1) * CND(b2)
+        RollGeskeWhaley = Sx * CND(b1) + Sx * CBND(a1, -b1, -Sqrt(t1 / T2)) - X * Exp(-r * T2) * CBND(a2, -b2, -Sqrt(t1 / T2)) - (X - d) * Exp(-r * t1) * CND(b2)
     End Function
 
 
@@ -324,8 +323,8 @@ Option Base 1       'The "Option Base" statement allows to specify 0 or 1 as the
             Sk = Kc(X, T, r, b, v)
             n = 2 * b / v ^ 2                                           '
             K = 2 * r / (v ^ 2 * (1 - Exp(-r * T)))
-            d1 = (Log(Sk / X) + (b + v ^ 2 / 2) * T) / (v * Sqr(T))
-            Q2 = (-(n - 1) + Sqr((n - 1) ^ 2 + 4 * K)) / 2
+            d1 = (Log(Sk / X) + (b + v ^ 2 / 2) * T) / (v * Sqrt(T))
+            Q2 = (-(n - 1) + Sqrt((n - 1) ^ 2 + 4 * K)) / 2
             a2 = (Sk / Q2) * (1 - Exp((b - r) * T) * CND(d1))
             If S < Sk Then
                 BAWAmericanCallApprox = GBlackScholes("c", S, X, T, r, b, v) + a2 * (S / Sk) ^ Q2
@@ -348,25 +347,25 @@ Option Base 1       'The "Option Base" statement allows to specify 0 or 1 as the
         '// Calculation of seed value, Si
         n = 2 * b / v ^ 2
         m = 2 * r / v ^ 2
-        q2u = (-(n - 1) + Sqr((n - 1) ^ 2 + 4 * m)) / 2
+        q2u = (-(n - 1) + Sqrt((n - 1) ^ 2 + 4 * m)) / 2
         Su = X / (1 - 1 / q2u)
-        h2 = -(b * T + 2 * v * Sqr(T)) * X / (Su - X)
+        h2 = -(b * T + 2 * v * Sqrt(T)) * X / (Su - X)
         Si = X + (Su - X) * (1 - Exp(h2))
 
         K = 2 * r / (v ^ 2 * (1 - Exp(-r * T)))
-        d1 = (Log(Si / X) + (b + v ^ 2 / 2) * T) / (v * Sqr(T))
-        Q2 = (-(n - 1) + Sqr((n - 1) ^ 2 + 4 * K)) / 2
+        d1 = (Log(Si / X) + (b + v ^ 2 / 2) * T) / (v * Sqrt(T))
+        Q2 = (-(n - 1) + Sqrt((n - 1) ^ 2 + 4 * K)) / 2
         LHS = Si - X
         RHS = GBlackScholes("c", Si, X, T, r, b, v) + (1 - Exp((b - r) * T) * CND(d1)) * Si / Q2
-        bi = Exp((b - r) * T) * CND(d1) * (1 - 1 / Q2) + (1 - Exp((b - r) * T) * CND(d1) / (v * Sqr(T))) / Q2
+        bi = Exp((b - r) * T) * CND(d1) * (1 - 1 / Q2) + (1 - Exp((b - r) * T) * CND(d1) / (v * Sqrt(T))) / Q2
         E = 0.000001
         '// Newton Raphson algorithm for finding critical price Si
         While Abs(LHS - RHS) / X > E
             Si = (X + RHS - bi * Si) / (1 - bi)
-            d1 = (Log(Si / X) + (b + v ^ 2 / 2) * T) / (v * Sqr(T))
+            d1 = (Log(Si / X) + (b + v ^ 2 / 2) * T) / (v * Sqrt(T))
             LHS = Si - X
             RHS = GBlackScholes("c", Si, X, T, r, b, v) + (1 - Exp((b - r) * T) * CND(d1)) * Si / Q2
-            bi = Exp((b - r) * T) * CND(d1) * (1 - 1 / Q2) + (1 - Exp((b - r) * T) * ND(d1) / (v * Sqr(T))) / Q2
+            bi = Exp((b - r) * T) * CND(d1) * (1 - 1 / Q2) + (1 - Exp((b - r) * T) * ND(d1) / (v * Sqrt(T))) / Q2
         End While
         Kc = Si
     End Function
@@ -379,8 +378,8 @@ Option Base 1       'The "Option Base" statement allows to specify 0 or 1 as the
         Sk = Kp(X, T, r, b, v)
         n = 2 * b / v ^ 2
         K = 2 * r / (v ^ 2 * (1 - Exp(-r * T)))
-        d1 = (Log(Sk / X) + (b + v ^ 2 / 2) * T) / (v * Sqr(T))
-        Q1 = (-(n - 1) - Sqr((n - 1) ^ 2 + 4 * K)) / 2
+        d1 = (Log(Sk / X) + (b + v ^ 2 / 2) * T) / (v * Sqrt(T))
+        Q1 = (-(n - 1) - Sqrt((n - 1) ^ 2 + 4 * K)) / 2
         a1 = -(Sk / Q1) * (1 - Exp((b - r) * T) * CND(-d1))
 
         If S > Sk Then
@@ -404,26 +403,26 @@ Option Base 1       'The "Option Base" statement allows to specify 0 or 1 as the
         '// Calculation of seed value, Si
         n = 2 * b / v ^ 2
         m = 2 * r / v ^ 2
-        q1u = (-(n - 1) - Sqr((n - 1) ^ 2 + 4 * m)) / 2
+        q1u = (-(n - 1) - Sqrt((n - 1) ^ 2 + 4 * m)) / 2
         Su = X / (1 - 1 / q1u)
-        h1 = (b * T - 2 * v * Sqr(T)) * X / (X - Su)
+        h1 = (b * T - 2 * v * Sqrt(T)) * X / (X - Su)
         Si = Su + (X - Su) * Exp(h1)
 
 
         K = 2 * r / (v ^ 2 * (1 - Exp(-r * T)))
-        d1 = (Log(Si / X) + (b + v ^ 2 / 2) * T) / (v * Sqr(T))
-        Q1 = (-(n - 1) - Sqr((n - 1) ^ 2 + 4 * K)) / 2
+        d1 = (Log(Si / X) + (b + v ^ 2 / 2) * T) / (v * Sqrt(T))
+        Q1 = (-(n - 1) - Sqrt((n - 1) ^ 2 + 4 * K)) / 2
         LHS = X - Si
         RHS = GBlackScholes("p", Si, X, T, r, b, v) - (1 - Exp((b - r) * T) * CND(-d1)) * Si / Q1
-        bi = -Exp((b - r) * T) * CND(-d1) * (1 - 1 / Q1) - (1 + Exp((b - r) * T) * ND(-d1) / (v * Sqr(T))) / Q1
+        bi = -Exp((b - r) * T) * CND(-d1) * (1 - 1 / Q1) - (1 + Exp((b - r) * T) * ND(-d1) / (v * Sqrt(T))) / Q1
         E = 0.000001
         '// Newton Raphson algorithm for finding critical price Si
         While Abs(LHS - RHS) / X > E
             Si = (X - RHS + bi * Si) / (1 + bi)
-            d1 = (Log(Si / X) + (b + v ^ 2 / 2) * T) / (v * Sqr(T))
+            d1 = (Log(Si / X) + (b + v ^ 2 / 2) * T) / (v * Sqrt(T))
             LHS = X - Si
             RHS = GBlackScholes("p", Si, X, T, r, b, v) - (1 - Exp((b - r) * T) * CND(-d1)) * Si / Q1
-            bi = -Exp((b - r) * T) * CND(-d1) * (1 - 1 / Q1) - (1 + Exp((b - r) * T) * CND(-d1) / (v * Sqr(T))) / Q1
+            bi = -Exp((b - r) * T) * CND(-d1) * (1 - 1 / Q1) - (1 + Exp((b - r) * T) * CND(-d1) / (v * Sqrt(T))) / Q1
         End While
         Kp = Si
     End Function
@@ -447,10 +446,10 @@ Option Base 1       'The "Option Base" statement allows to specify 0 or 1 as the
         If b >= r Then '// Never optimal to exersice before maturity
             BSAmericanCallApprox = GBlackScholes("c", S, X, T, r, b, v)
         Else
-            Beta = (1 / 2 - b / v ^ 2) + Sqr((b / v ^ 2 - 1 / 2) ^ 2 + 2 * r / v ^ 2)
+            Beta = (1 / 2 - b / v ^ 2) + Sqrt((b / v ^ 2 - 1 / 2) ^ 2 + 2 * r / v ^ 2)
             BInfinity = Beta / (Beta - 1) * X
             B0 = Max(X, r / (r - b) * X)
-            ht = -(b * T + 2 * v * Sqr(T)) * B0 / (BInfinity - B0)
+            ht = -(b * T + 2 * v * Sqrt(T)) * B0 / (BInfinity - B0)
             I = B0 + (BInfinity - B0) * (1 - Exp(ht))
             alpha = (I - X) * I ^ (-Beta)
             If S >= I Then
@@ -468,8 +467,8 @@ Option Base 1       'The "Option Base" statement allows to specify 0 or 1 as the
         Dim d As Double
 
         lambda = (-r + gamma * b + 0.5 * gamma * (gamma - 1) * v ^ 2) * T
-        d = -(Log(S / H) + (b + (gamma - 0.5) * v ^ 2) * T) / (v * Sqr(T))
+        d = -(Log(S / H) + (b + (gamma - 0.5) * v ^ 2) * T) / (v * Sqrt(T))
         kappa = 2 * b / (v ^ 2) + (2 * gamma - 1)
-        phi = Exp(lambda) * S ^ gamma * (CND(d) - (I / S) ^ kappa * CND(d - 2 * Log(I / S) / (v * Sqr(T))))
+        phi = Exp(lambda) * S ^ gamma * (CND(d) - (I / S) ^ kappa * CND(d - 2 * Log(I / S) / (v * Sqrt(T))))
     End Function
 End Module
