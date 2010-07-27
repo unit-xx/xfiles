@@ -201,8 +201,14 @@ def main(args):
     bdiffupdter = basediffUpdater(pupdater, jsd_sessioncfg, uic)
     bdiffupdter.start()
 
+    ssu = StockStatUpdater(uic, p)
+    ssu.start()
+
     uic.show()
     app.exec_()
+
+    ssu.stop()
+    ssu.join()
 
     # exit process
     logger.info("waiting basediffUpdater to stop")
