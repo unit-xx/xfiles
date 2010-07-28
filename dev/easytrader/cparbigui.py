@@ -256,33 +256,41 @@ class monitor(Thread):
 
         self.updateprice(data)
 
-        pricediff = 0.0
+        openpricediff = 0.0
+        closepricediff = 0.0
         try:
-            pricediff = (float(self.portfolio.data["long"]["latest"]) 
+            openpricediff = (float(self.portfolio.data["long"]["s1"]) 
+                            - float(self.portfolio.data["short"]["latest"]))
+            closepricediff = (float(self.portfolio.data["long"]["b1"]) 
                             - float(self.portfolio.data["short"]["latest"]))
         except KeyError:
             pass
 
-        QMetaObject.invokeMethod(self.ui.basediffline,
+        QMetaObject.invokeMethod(self.ui.openbasediffline,
                 "setText",
                 Q_ARG("QString",
-                    QString("%0.1f"%pricediff)))
+                    QString("%0.1f"%openpricediff)))
+
+        QMetaObject.invokeMethod(self.ui.closebasediffline,
+                "setText",
+                Q_ARG("QString",
+                    QString("%0.1f"%closepricediff)))
 
         if self.portfolio.autosubmit:
-            if pricediff <= self.portfolio.openpoint:
+            if openpricediff <= self.portfolio.openpoint:
                 self.opentriggercount += 1
                 if self.opentriggercount >= self.portfolio.trigger and self.opencount < self.portfolio.opentotal:
                     self.portfolio.doopen()
-                    self.logger.info("open@%0.1f" % pricediff)
+                    self.logger.info("open@%0.1f" % openpricediff)
                     self.opencount += 1
             else:
                 self.opentriggercount = 0
 
-            if pricediff >= self.portfolio.closepoint:
+            if closepricediff >= self.portfolio.closepoint:
                 self.closetriggercount += 1
                 if self.closetriggercount >= self.portfolio.trigger and self.closecount < self.opencount:
                     self.portfolio.doclose()
-                    self.logger.info("close@%0.1f" % pricediff)
+                    self.logger.info("close@%0.1f" % closepricediff)
                     self.closecount += 1
             else:
                 self.closetriggercount = 0
