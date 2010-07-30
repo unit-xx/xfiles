@@ -44,7 +44,7 @@ buildOptions = dict(
         icon = "ztzq.ico",
         include_files = ["ztzq.ico", "hs300.txt", "itrader.cfg", "itrader-gw.cfg", "easytrader.cfg", "easytrader-prod.cfg", "easytrader-jhj.cfg", "msvcr_redist", "jsdhqdll", "openmusic", "closemusic", (backenddir(), "phonon_backend")],
         compressed = True,
-        optimize = 2)
+        optimize = 0)
 
 setup(
         name = "easytrader",
