@@ -1,0 +1,17 @@
+function h = histplot(datafile)
+
+fid = fopen(datafile);
+data = textscan(fid, '%s %s %f %d', 'Delimiter', ',');
+fclose(fid);
+h = data;
+
+t = datenum(h{1}, 'mm/dd/yyyy HH:MM:SS');
+p = h{3};
+v = h{4};
+
+figure;
+subplot(2,1,1);
+plot(t,p);
+subplot(2,1,2);
+plot(t,v);
+get(gcf, 'XLim', [t])
