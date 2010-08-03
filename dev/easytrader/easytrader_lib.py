@@ -2489,6 +2489,12 @@ class StockStatUpdater(Thread):
             buyfail = 0
             cancelbuyfail = 0
 
+            sellable = 0
+            sellcomplete = 0
+            sellwait = 0
+            sellfail = 0
+            cancelsellfail = 0
+
             for scode in self.portfolio.orderlist:
                 si = self.portfolio.stockinfo[scode]
                 buytotal = buytotal + si["currentbuycost"]
@@ -2509,6 +2515,19 @@ class StockStatUpdater(Thread):
                             buyfail = buyfail + 1
                         elif ob["order_state"] == Portfolio.CANCELBUYFAILED:
                             cancelbuyfail = cancelbuyfail + 1
+
+                    if self.portfolio.isvalidsell(si, scode):
+                        sellable = sellable + 1
+                    if si["pastsell"]:
+                        ob = si["pastsell"][-1]
+                        if ob["dealcount"] == ob["ordercount"]:
+                            sellcomplete = sellcomplete + 1
+                        if ob["order_state"] == Portfolio.CANCELSELLWAIT:
+                            sellwait = sellwait + 1
+                        elif ob["order_state"] == Portfolio.SELLFAILED:
+                            sellfail = sellfail + 1
+                        elif ob["order_state"] == Portfolio.CANCELSELLFAILED:
+                            cancelsellfail = cancelsellfail + 1
                 except KeyError:
                     pass
 
@@ -2516,7 +2535,12 @@ class StockStatUpdater(Thread):
                     Qt.QueuedConnection,
                     Q_ARG("QString",
                         QString(u"%d"%stopped)))
+            QMetaObject.invokeMethod(self.ui.stoppedline_2, "setText",
+                    Qt.QueuedConnection,
+                    Q_ARG("QString",
+                        QString(u"%d"%stopped)))
 
+            # buy stats
             QMetaObject.invokeMethod(self.ui.buyableline, "setText",
                     Qt.QueuedConnection,
                     Q_ARG("QString",
@@ -2541,6 +2565,32 @@ class StockStatUpdater(Thread):
                     Qt.QueuedConnection,
                     Q_ARG("QString",
                         QString(u"%d"%cancelbuyfail)))
+
+            # sell stats
+            QMetaObject.invokeMethod(self.ui.sellableline, "setText",
+                    Qt.QueuedConnection,
+                    Q_ARG("QString",
+                        QString(u"%d"%sellable)))
+
+            QMetaObject.invokeMethod(self.ui.selledline, "setText",
+                    Qt.QueuedConnection,
+                    Q_ARG("QString",
+                        QString(u"%d"%sellcomplete)))
+
+            QMetaObject.invokeMethod(self.ui.sellwaitline, "setText",
+                    Qt.QueuedConnection,
+                    Q_ARG("QString",
+                        QString(u"%d"%sellwait)))
+
+            QMetaObject.invokeMethod(self.ui.sellfailline, "setText",
+                    Qt.QueuedConnection,
+                    Q_ARG("QString",
+                        QString(u"%d"%sellfail)))
+
+            QMetaObject.invokeMethod(self.ui.cancelsellfailline, "setText",
+                    Qt.QueuedConnection,
+                    Q_ARG("QString",
+                        QString(u"%d"%cancelsellfail)))
 
             buytotal = buytotal / 10000
             selltotal = selltotal / 10000
