@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import sys
 import csv
 
@@ -51,3 +53,4 @@ for scode in stocklist:
                     si["count"],
                     repr(si["pastbuy"]),
                     repr(si["pastsell"])])
+writer.writerow(["BO",u"买入成功".encode("utf8")])
