@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'tradeui.ui'
 #
-# Created: Tue Aug 03 09:16:53 2010
+# Created: Thu Aug 05 13:11:57 2010
 #      by: PyQt4 UI code generator 4.7.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -394,7 +394,7 @@ class Ui_MainWindow(object):
         self.closethresholdspin.setButtonSymbols(QtGui.QAbstractSpinBox.UpDownArrows)
         self.closethresholdspin.setPrefix("")
         self.closethresholdspin.setDecimals(1)
-        self.closethresholdspin.setMinimum(0.0)
+        self.closethresholdspin.setMinimum(-10000.0)
         self.closethresholdspin.setMaximum(10000.0)
         self.closethresholdspin.setSingleStep(0.1)
         self.closethresholdspin.setProperty("value", 0.5)

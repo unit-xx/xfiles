@@ -2837,6 +2837,9 @@ class asyncWorker(Thread):
             self.session.close()
             self.session = None
 
+    def doping(self):
+        pass
+
     def myrun(self):
         try:
             # TODO: what if easytrader is closed while tqueue is not empty
@@ -2845,16 +2848,23 @@ class asyncWorker(Thread):
                 self.closesession()
                 return
 
+            idlecount = 0
+            waitint = 2
+            maxwait = 200
             while self.runflag:
                 try:
-                    t = self.tqueue.get(True, 2)
+                    t = self.tqueue.get(True, waitint)
                     try:
                         self.dotask(t)
                     except Exception:
                         self.logger.exception("Exception while run some task, req (%s), param (%s)" % (str(type(t[0])), str(t[2])))
                     self.tqueue.task_done()
                 except Queue.Empty:
-                    pass
+                    idlecount = idlecount + 1
+                    if idlecount*waitint > maxwait:
+                        idlecount = 0
+                        # do ping
+                        self.doping()
 
             self.closesession()
         except Exception:
@@ -2906,6 +2916,13 @@ class jzWorker(asyncWorker):
         if not self.session.setup():
             return False
         return True
+
+    def doping(self):
+        mktinforeq = jz.MarketinfoReq(self.session)
+        mktinforeq.send()
+        mktinforesp = jz.MarketinfoResp(self.session)
+        mktinforesp.recv()
+        #print "ping-pong"
 
 class jsdWorker(asyncWorker):
     def __init__(self, session_cfg, tqueue, dbqueue):
