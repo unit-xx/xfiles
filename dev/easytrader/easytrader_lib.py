@@ -1345,45 +1345,45 @@ class Portfolio(object):
                 oreq["openclose"] = "0"
                 oreq["ifhedge"] = "0"
                 opencount = int(self.sindexinfo["count"]) - self.sindexinfo["opencount"]
-                assert opencount > 0
-                oreq["count"] = str(opencount)
-                oreq["price"] = "%0.1f" % self.sindexinfo["openposprice"]
-                oreq["clientnum"] = self.jsdsession["clientnum"]
-                oreq["seat"] = self.jsdsession["seat"]
-                oreq.send()
-                sirec = SIndexRecord()
-                self.sindexinfo["pastopen"].append(sirec)
-                oresp = jsd.OrderResp(self.jsdsession)
-                oresp.recv()
-                resp = oresp.records[0]
-                print "orderresp", resp
-                if oresp.anwser == "Y":
-                    # NOTE: order state may change after ordering
-                    sirec["order_id"] = resp[1]
-                    sirec["order_date"] = str(datetime.today().date())
-                    sirec["order_time"] = str(datetime.now().time())
-                    sirec["ordercount"] = resp[14]
-                    sirec["orderprice"] = resp[15]
-                    sirec["longshort"] = oreq["longshort"]
-                    sirec["openclose"] = oreq["openclose"]
-                    sirec["ifhedge"] = oreq["ifhedge"]
-                    sirec["orderseat"] = resp[30]
-                    sirec["syscenter"] = resp[19]
-                    self.sindexinfo["state"] = Portfolio.IFOPENSHORTOK
-                    # TODO: test storetrade ok
-                elif oresp.anwser == "N":
+                if opencount > 0:
+                    oreq["count"] = str(opencount)
+                    oreq["price"] = "%0.1f" % self.sindexinfo["openposprice"]
+                    oreq["clientnum"] = self.jsdsession["clientnum"]
+                    oreq["seat"] = self.jsdsession["seat"]
+                    oreq.send()
+                    sirec = SIndexRecord()
+                    self.sindexinfo["pastopen"].append(sirec)
+                    oresp = jsd.OrderResp(self.jsdsession)
+                    oresp.recv()
                     resp = oresp.records[0]
-                    sirec["order_date"] = str(datetime.today().date())
-                    sirec["order_time"] = str(datetime.now().time())
-                    sirec["ordercount"] = oreq["count"]
-                    sirec["orderprice"] = oreq["price"]
-                    sirec["longshort"] = oreq["longshort"]
-                    sirec["openclose"] = oreq["openclose"]
-                    sirec["ifhedge"] = oreq["ifhedge"]
-                    self.sindexinfo["state"] = Portfolio.IFOPENSHORTFAILED
-                    # TODO: test storetrade ok
-                else:
-                    self.logger.warning("unknow order response: %s" % str(oresp.records))
+                    print "orderresp", resp
+                    if oresp.anwser == "Y":
+                        # NOTE: order state may change after ordering
+                        sirec["order_id"] = resp[1]
+                        sirec["order_date"] = str(datetime.today().date())
+                        sirec["order_time"] = str(datetime.now().time())
+                        sirec["ordercount"] = resp[14]
+                        sirec["orderprice"] = resp[15]
+                        sirec["longshort"] = oreq["longshort"]
+                        sirec["openclose"] = oreq["openclose"]
+                        sirec["ifhedge"] = oreq["ifhedge"]
+                        sirec["orderseat"] = resp[30]
+                        sirec["syscenter"] = resp[19]
+                        self.sindexinfo["state"] = Portfolio.IFOPENSHORTOK
+                        # TODO: test storetrade ok
+                    elif oresp.anwser == "N":
+                        resp = oresp.records[0]
+                        sirec["order_date"] = str(datetime.today().date())
+                        sirec["order_time"] = str(datetime.now().time())
+                        sirec["ordercount"] = oreq["count"]
+                        sirec["orderprice"] = oreq["price"]
+                        sirec["longshort"] = oreq["longshort"]
+                        sirec["openclose"] = oreq["openclose"]
+                        sirec["ifhedge"] = oreq["ifhedge"]
+                        self.sindexinfo["state"] = Portfolio.IFOPENSHORTFAILED
+                        # TODO: test storetrade ok
+                    else:
+                        self.logger.warning("unknow order response: %s" % str(oresp.records))
 
             else:
                 self.logger.info("not in open-able state")
@@ -1395,11 +1395,13 @@ class Portfolio(object):
                 if self.sindexinfo["opencount"] < int(self.sindexinfo["count"]):
                     si = self.sindexinfo
                     orec = None
-                    if len(si["pastclose"]) != 0:
-                        orec = si["pastclose"][-1]
-                    elif len(si["pastopen"]) != 0:
+                    #if len(si["pastclose"]) != 0:
+                    #    orec = si["pastclose"][-1]
+                    if len(si["pastopen"]) != 0:
                         orec = si["pastopen"][-1]
-                    assert orec is not None
+                    if orec == None:
+                        self.logger.warning("cancel without a previous open.")
+                        return
 
                     coreq = jsd.CancelOrderReq(self.jsdsession)
                     coreq["exchcode"] = self.jsdsession["cffexcode"]
@@ -1461,12 +1463,14 @@ class Portfolio(object):
                 elif self.sindexinfo["state"] == Portfolio.IFCANCELOPENSHORTOK:
                     # close count = opened count
                     closecount = self.sindexinfo["opencount"]
-                    assert self.sindexinfo["opencount"] < int(self.sindexinfo["count"])
+                    #assert self.sindexinfo["opencount"] < int(self.sindexinfo["count"])
                 elif self.sindexinfo["state"] == Portfolio.IFCANCELCLOSESHORTOK:
                     # close count = opened count - closed count
                     closecount = self.sindexinfo["opencount"] - self.sindexinfo["closecount"]
                     # assert close count > 0 here
-                    assert closecount > 0
+
+                if closecount <= 0:
+                    candoclose = False
 
                 if candoclose:
                     oreq = jsd.OrderReq(self.jsdsession)
@@ -1526,9 +1530,11 @@ class Portfolio(object):
                     orec = None
                     if len(si["pastclose"]) != 0:
                         orec = si["pastclose"][-1]
-                    elif len(si["pastopen"]) != 0:
-                        orec = si["pastopen"][-1]
-                    assert orec is not None
+                    #elif len(si["pastopen"]) != 0:
+                    #    orec = si["pastopen"][-1]
+                    if orec == None:
+                        self.logger.warning("cancel without a previous close.")
+                        return
 
                     coreq = jsd.CancelOrderReq(self.jsdsession)
                     coreq["exchcode"] = self.jsdsession["cffexcode"]
