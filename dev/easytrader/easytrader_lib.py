@@ -442,8 +442,8 @@ class Portfolio(object):
                 }
         self.sindexinfo = {}
         self.sindexpricepolicylist = ["mktval", "latest", "s1", "b1", ]
-        self.openpolicy = "latest"
-        self.closepolicy = "latest"
+        self.openpolicy = "mktval"
+        self.closepolicy = "mktval"
         self.openpricefix = 0.0
         self.closepricefix = 0.0
         self.jsdcfg = jsdcfg
@@ -2691,6 +2691,12 @@ class OrderUpdater(Thread):
     def stop(self):
         self.runflag = False
 
+    def doping(self):
+        mktinforeq = jz.MarketinfoReq(self.session)
+        mktinforeq.send()
+        mktinforesp = jz.MarketinfoResp(self.session)
+        mktinforesp.recv()
+
     def run(self):
         try:
             self.session = jz.session(self.sessioncfg)
@@ -2699,9 +2705,17 @@ class OrderUpdater(Thread):
                 self.close()
                 return
 
+            idlecount = 0
+            waitint = 2
+            maxwait = 200
             while self.runflag:
                 self.update()
-                time.sleep(2)
+                time.sleep(waitint)
+                idlecount = idlecount + 1
+                if idlecount*waitint > maxwait:
+                    idlecount = 0
+                    # do ping
+                    self.doping()
 
             self.close()
         except Exception:
@@ -2786,6 +2800,12 @@ class CancelOrderUpdater(Thread):
     def stop(self):
         self.runflag = False
 
+    def doping(self):
+        mktinforeq = jz.MarketinfoReq(self.session)
+        mktinforeq.send()
+        mktinforesp = jz.MarketinfoResp(self.session)
+        mktinforesp.recv()
+
     def run(self):
         try:
             self.session = jz.session(self.sessioncfg)
@@ -2794,10 +2814,18 @@ class CancelOrderUpdater(Thread):
                 self.close()
                 return
 
+            idlecount = 0
+            waitint = 1
+            maxwait = 200
             while self.runflag:
                 hasleft = self.update()
                 if not hasleft:
-                    time.sleep(1)
+                    time.sleep(waitint)
+                    idlecount = idlecount + 1
+                    if idlecount*waitint > maxwait:
+                        idlecount = 0
+                        # do ping
+                        self.doping()
 
         except Exception:
             self.logger.exception("Oh!!!")
