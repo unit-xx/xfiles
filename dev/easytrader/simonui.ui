@@ -6,26 +6,49 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>588</width>
-    <height>381</height>
+    <width>596</width>
+    <height>396</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>基差监控</string>
   </property>
-  <layout class="QGridLayout" name="gridLayout">
+  <layout class="QGridLayout" name="gridLayout_3">
    <item row="0" column="0">
-    <widget class="QLabel" name="label">
-     <property name="text">
+    <widget class="QGroupBox" name="groupBox">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>16777215</width>
+       <height>100</height>
+      </size>
+     </property>
+     <property name="title">
       <string>沪深300</string>
      </property>
+     <layout class="QGridLayout" name="gridLayout">
+      <item row="0" column="0">
+       <widget class="QTableView" name="hs300tbl"/>
+      </item>
+     </layout>
     </widget>
    </item>
-   <item row="0" column="1">
-    <widget class="QLineEdit" name="hs300line"/>
-   </item>
-   <item row="1" column="0" colspan="2">
-    <widget class="QTableView" name="basetbl"/>
+   <item row="1" column="0">
+    <widget class="QGroupBox" name="groupBox_2">
+     <property name="title">
+      <string>股指期货</string>
+     </property>
+     <layout class="QGridLayout" name="gridLayout_2">
+      <item row="0" column="0">
+       <widget class="QTableView" name="sitbl"/>
+      </item>
+     </layout>
+    </widget>
    </item>
   </layout>
  </widget>
