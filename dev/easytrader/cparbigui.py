@@ -260,9 +260,9 @@ class monitor(Thread):
         closepricediff = 0.0
         try:
             openpricediff = (float(self.portfolio.data["long"]["s1"]) 
-                            - float(self.portfolio.data["short"]["latest"]))
+                            - float(self.portfolio.data["short"]["b1"]))
             closepricediff = (float(self.portfolio.data["long"]["b1"]) 
-                            - float(self.portfolio.data["short"]["latest"]))
+                            - float(self.portfolio.data["short"]["s1"]))
         except KeyError:
             pass
 
@@ -359,8 +359,8 @@ class worker(Thread):
 
                     req.send()
                     resp.recv()
-                    print resp.records
-                    print
+                    #print resp.records
+                    #print
                 except Queue.Empty:
                     pass
 
