@@ -359,8 +359,8 @@ class worker(Thread):
 
                     req.send()
                     resp.recv()
-                    #print resp.records
-                    #print
+                    print resp.records
+                    print
                 except Queue.Empty:
                     pass
 
