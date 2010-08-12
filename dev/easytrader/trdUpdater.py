@@ -73,3 +73,5 @@ class SIFQuoteUpdater_net(metaUpdater):
     def on_quoteupdate(data):
         pass
 
+class StockQuoteUpdater(metaUpdater):
+    pass

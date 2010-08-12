@@ -1579,6 +1579,20 @@ class Portfolio(object):
             else:
                 self.logger.info("not in cancelclose-able state")
 
+    def openshort2(self, code, price, share):
+        req = jsd.OrderReq(self.jsdsession)
+        resp = jsd.OrderResp(self.jsdsession)
+        req.makeopenshort(code, price, share)
+        req.send()
+        resp.recv()
+
+    def closeshort2(self, code, price, share):
+        req = jsd.OrderReq(self.jsdsession)
+        resp = jsd.OrderResp(self.jsdsession)
+        req.makecloseshort(code, price, share)
+        req.send()
+        resp.recv()
+
     def updateopencount(self):
         # used in SIFOrderPushee, with sindexlock already acquired
         oc = 0
@@ -3112,6 +3126,9 @@ class uicontrol(QMainWindow, Ui_MainWindow):
         self.mainwindow.connect(self.closesifbtn, SIGNAL("clicked()"), self.closeshort)
         self.mainwindow.connect(self.cancelclosesifbtn, SIGNAL("clicked()"), self.cancelclose)
 
+        self.mainwindow.connect(self.sopenbtn, SIGNAL("clicked()"), self.openshort2)
+        self.mainwindow.connect(self.sclosebtn, SIGNAL("clicked()"), self.closeshort2)
+
         # setup menu
         self.mainwindow.connect(self.stockinfoact, SIGNAL("triggered()"), self.showstockinfo)
         self.mainwindow.connect(self.posstatact, SIGNAL("triggered()"), self.showposstat)
@@ -3208,6 +3225,32 @@ class uicontrol(QMainWindow, Ui_MainWindow):
             self.portfolio.cancelcloseshort()
             QMetaObject.invokeMethod(self.sindexmodel, "updaterow", Qt.QueuedConnection)
             self.savePortfolio()
+
+    @pyqtSlot()
+    def openshort2(self):
+        code = self.portfolio.sindexinfo["code"]
+        price = "%0.1f" % self.portfolio.sindexinfo["openposprice"]
+        share = str(self.sopenspin.value())
+        ret = QMessageBox.warning(self.mainwindow,
+                u"",
+                u"<H3>确认单笔空开？\n代码：%s\n价格：%s\n数量：%s</H3>"
+                % (code, price, share),
+                QMessageBox.Ok|QMessageBox.Cancel)
+        if QMessageBox.Ok == ret:
+            self.portfolio.openshort2(code, price, share)
+
+    @pyqtSlot()
+    def closeshort2(self):
+        code = self.portfolio.sindexinfo["code"]
+        price = "%0.1f" % self.portfolio.sindexinfo["closeposprice"]
+        share = str(self.sclosespin.value())
+        ret = QMessageBox.warning(self.mainwindow,
+                u"",
+                u"<H3>确认单笔空平？\r代码：%s\r价格：%s\r数量：%s</H3>"
+                % (code, price, share),
+                QMessageBox.Ok|QMessageBox.Cancel)
+        if QMessageBox.Ok == ret:
+            self.portfolio.closeshort2(code, price, share)
 
     @pyqtSlot()
     def savePortfolio(self):

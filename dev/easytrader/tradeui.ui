@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1093</width>
+    <width>1275</width>
     <height>615</height>
    </rect>
   </property>
@@ -265,7 +265,7 @@
           </layout>
          </widget>
         </item>
-        <item row="0" column="2">
+        <item row="0" column="3">
          <spacer name="horizontalSpacer">
           <property name="orientation">
            <enum>Qt::Horizontal</enum>
@@ -280,6 +280,25 @@
            </size>
           </property>
          </spacer>
+        </item>
+        <item row="0" column="2">
+         <widget class="QGroupBox" name="groupBox_6">
+          <property name="title">
+           <string>单笔空开</string>
+          </property>
+          <layout class="QGridLayout" name="gridLayout_9">
+           <item row="0" column="0">
+            <widget class="QSpinBox" name="sopenspin"/>
+           </item>
+           <item row="0" column="1">
+            <widget class="QPushButton" name="sopenbtn">
+             <property name="text">
+              <string>开</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
         </item>
        </layout>
       </widget>
@@ -399,7 +418,7 @@
           </layout>
          </widget>
         </item>
-        <item row="0" column="2">
+        <item row="0" column="3">
          <spacer name="horizontalSpacer_2">
           <property name="orientation">
            <enum>Qt::Horizontal</enum>
@@ -418,7 +437,7 @@
         <item row="0" column="1">
          <widget class="QGroupBox" name="groupBox_4">
           <property name="sizePolicy">
-           <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
             <horstretch>0</horstretch>
             <verstretch>0</verstretch>
            </sizepolicy>
@@ -502,6 +521,31 @@
              </property>
              <property name="singleStep">
               <double>0.200000000000000</double>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item row="0" column="2">
+         <widget class="QGroupBox" name="groupBox_7">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Minimum">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="title">
+           <string>单笔空平</string>
+          </property>
+          <layout class="QGridLayout" name="gridLayout_10">
+           <item row="0" column="0">
+            <widget class="QSpinBox" name="sclosespin"/>
+           </item>
+           <item row="0" column="1">
+            <widget class="QPushButton" name="sclosebtn">
+             <property name="text">
+              <string>平</string>
              </property>
             </widget>
            </item>
@@ -981,6 +1025,12 @@
     </item>
     <item row="4" column="8">
      <widget class="QTabWidget" name="tabstat">
+      <property name="maximumSize">
+       <size>
+        <width>300</width>
+        <height>16777215</height>
+       </size>
+      </property>
       <property name="currentIndex">
        <number>0</number>
       </property>
@@ -1181,8 +1231,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1093</width>
-     <height>22</height>
+     <width>1275</width>
+     <height>23</height>
     </rect>
    </property>
    <property name="nativeMenuBar">
