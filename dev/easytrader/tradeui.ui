@@ -284,7 +284,7 @@
         <item row="0" column="2">
          <widget class="QGroupBox" name="groupBox_6">
           <property name="title">
-           <string>单笔空开</string>
+           <string>单笔开仓</string>
           </property>
           <layout class="QGridLayout" name="gridLayout_9">
            <item row="0" column="0">
@@ -292,8 +292,33 @@
            </item>
            <item row="0" column="1">
             <widget class="QPushButton" name="sopenbtn">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>40</width>
+               <height>16777215</height>
+              </size>
+             </property>
              <property name="text">
-              <string>开</string>
+              <string>空开</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="2">
+            <widget class="QPushButton" name="lopenbtn">
+             <property name="maximumSize">
+              <size>
+               <width>40</width>
+               <height>16777215</height>
+              </size>
+             </property>
+             <property name="text">
+              <string>多开</string>
              </property>
             </widget>
            </item>
@@ -536,7 +561,7 @@
            </sizepolicy>
           </property>
           <property name="title">
-           <string>单笔空平</string>
+           <string>单笔平仓</string>
           </property>
           <layout class="QGridLayout" name="gridLayout_10">
            <item row="0" column="0">
@@ -544,8 +569,27 @@
            </item>
            <item row="0" column="1">
             <widget class="QPushButton" name="sclosebtn">
+             <property name="maximumSize">
+              <size>
+               <width>40</width>
+               <height>16777215</height>
+              </size>
+             </property>
              <property name="text">
-              <string>平</string>
+              <string>空平</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="2">
+            <widget class="QPushButton" name="lclosebtn">
+             <property name="maximumSize">
+              <size>
+               <width>40</width>
+               <height>16777215</height>
+              </size>
+             </property>
+             <property name="text">
+              <string>多平</string>
              </property>
             </widget>
            </item>

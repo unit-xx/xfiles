@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'tradeui.ui'
 #
-# Created: Thu Aug 12 14:10:19 2010
+# Created: Thu Aug 12 15:57:39 2010
 #      by: PyQt4 UI code generator 4.7.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -146,8 +146,18 @@ class Ui_MainWindow(object):
         self.sopenspin.setObjectName("sopenspin")
         self.gridLayout_9.addWidget(self.sopenspin, 0, 0, 1, 1)
         self.sopenbtn = QtGui.QPushButton(self.groupBox_6)
+        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.sopenbtn.sizePolicy().hasHeightForWidth())
+        self.sopenbtn.setSizePolicy(sizePolicy)
+        self.sopenbtn.setMaximumSize(QtCore.QSize(40, 16777215))
         self.sopenbtn.setObjectName("sopenbtn")
         self.gridLayout_9.addWidget(self.sopenbtn, 0, 1, 1, 1)
+        self.lopenbtn = QtGui.QPushButton(self.groupBox_6)
+        self.lopenbtn.setMaximumSize(QtCore.QSize(40, 16777215))
+        self.lopenbtn.setObjectName("lopenbtn")
+        self.gridLayout_9.addWidget(self.lopenbtn, 0, 2, 1, 1)
         self.gridLayout_3.addWidget(self.groupBox_6, 0, 2, 1, 1)
         self.tabWidget.addTab(self.tab, "")
         self.tab_2 = QtGui.QWidget()
@@ -258,8 +268,13 @@ class Ui_MainWindow(object):
         self.sclosespin.setObjectName("sclosespin")
         self.gridLayout_10.addWidget(self.sclosespin, 0, 0, 1, 1)
         self.sclosebtn = QtGui.QPushButton(self.groupBox_7)
+        self.sclosebtn.setMaximumSize(QtCore.QSize(40, 16777215))
         self.sclosebtn.setObjectName("sclosebtn")
         self.gridLayout_10.addWidget(self.sclosebtn, 0, 1, 1, 1)
+        self.lclosebtn = QtGui.QPushButton(self.groupBox_7)
+        self.lclosebtn.setMaximumSize(QtCore.QSize(40, 16777215))
+        self.lclosebtn.setObjectName("lclosebtn")
+        self.gridLayout_10.addWidget(self.lclosebtn, 0, 2, 1, 1)
         self.gridLayout_4.addWidget(self.groupBox_7, 0, 2, 1, 1)
         self.tabWidget.addTab(self.tab_2, "")
         self.gridLayout_6.addWidget(self.tabWidget, 0, 0, 1, 9)
@@ -633,8 +648,9 @@ class Ui_MainWindow(object):
         self.label_9.setText(QtGui.QApplication.translate("MainWindow", "修正", None, QtGui.QApplication.UnicodeUTF8))
         self.label_8.setText(QtGui.QApplication.translate("MainWindow", "开仓价格", None, QtGui.QApplication.UnicodeUTF8))
         self.openpricefixspin.setSuffix(QtGui.QApplication.translate("MainWindow", "点", None, QtGui.QApplication.UnicodeUTF8))
-        self.groupBox_6.setTitle(QtGui.QApplication.translate("MainWindow", "单笔空开", None, QtGui.QApplication.UnicodeUTF8))
-        self.sopenbtn.setText(QtGui.QApplication.translate("MainWindow", "开", None, QtGui.QApplication.UnicodeUTF8))
+        self.groupBox_6.setTitle(QtGui.QApplication.translate("MainWindow", "单笔开仓", None, QtGui.QApplication.UnicodeUTF8))
+        self.sopenbtn.setText(QtGui.QApplication.translate("MainWindow", "空开", None, QtGui.QApplication.UnicodeUTF8))
+        self.lopenbtn.setText(QtGui.QApplication.translate("MainWindow", "多开", None, QtGui.QApplication.UnicodeUTF8))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab), QtGui.QApplication.translate("MainWindow", "建仓", None, QtGui.QApplication.UnicodeUTF8))
         self.groupBox.setTitle(QtGui.QApplication.translate("MainWindow", "股票组合", None, QtGui.QApplication.UnicodeUTF8))
         self.label.setText(QtGui.QApplication.translate("MainWindow", "卖出价格", None, QtGui.QApplication.UnicodeUTF8))
@@ -652,8 +668,9 @@ class Ui_MainWindow(object):
         self.label_10.setText(QtGui.QApplication.translate("MainWindow", "平仓价格", None, QtGui.QApplication.UnicodeUTF8))
         self.label_11.setText(QtGui.QApplication.translate("MainWindow", "修正", None, QtGui.QApplication.UnicodeUTF8))
         self.closepricefixspin.setSuffix(QtGui.QApplication.translate("MainWindow", "点", None, QtGui.QApplication.UnicodeUTF8))
-        self.groupBox_7.setTitle(QtGui.QApplication.translate("MainWindow", "单笔空平", None, QtGui.QApplication.UnicodeUTF8))
-        self.sclosebtn.setText(QtGui.QApplication.translate("MainWindow", "平", None, QtGui.QApplication.UnicodeUTF8))
+        self.groupBox_7.setTitle(QtGui.QApplication.translate("MainWindow", "单笔平仓", None, QtGui.QApplication.UnicodeUTF8))
+        self.sclosebtn.setText(QtGui.QApplication.translate("MainWindow", "空平", None, QtGui.QApplication.UnicodeUTF8))
+        self.lclosebtn.setText(QtGui.QApplication.translate("MainWindow", "多平", None, QtGui.QApplication.UnicodeUTF8))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_2), QtGui.QApplication.translate("MainWindow", "平仓", None, QtGui.QApplication.UnicodeUTF8))
         self.label_5.setText(QtGui.QApplication.translate("MainWindow", "沪深300：", None, QtGui.QApplication.UnicodeUTF8))
         self.label_6.setText(QtGui.QApplication.translate("MainWindow", "股指期货：", None, QtGui.QApplication.UnicodeUTF8))
