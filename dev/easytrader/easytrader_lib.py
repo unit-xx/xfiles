@@ -3081,6 +3081,10 @@ class uicontrol(QMainWindow, Ui_MainWindow):
 
     def setup(self):
         self.setupUi(self.mainwindow)
+        self.setWindowTitle(self.windowTitle() + " - " + self.portfolio.ptfn)
+        #icon = QIcon()
+        #icon.addPixmap(QPixmap("ztzq.ico"), QIcon.Normal, QIcon.On)
+        #self.mainwindow.setWindowIcon(icon)
 
         # setup position name in operation
         self.posnameline.setText(os.path.basename(self.portfolio.ptfn)[0:-4])
@@ -3149,13 +3153,13 @@ class uicontrol(QMainWindow, Ui_MainWindow):
         self.mainwindow.connect(self.stockinfoact, SIGNAL("triggered()"), self.showstockinfo)
         self.mainwindow.connect(self.posstatact, SIGNAL("triggered()"), self.showposstat)
 
-        # update statusbar
+        # update status lineedit
         self.showbostate()
 
-        #icon = QIcon()
-        #icon.addPixmap(QPixmap("ztzq.ico"), QIcon.Normal, QIcon.Off)
-        #print os.getcwd()
-        #self.mainwindow.setWindowIcon(icon)
+        # setup console output from stdout
+        self.logtext.write = lambda txt: self.logtext.appendPlainText(str(txt))
+        #sys.stdout = self.logtext
+        sys.stderr = self.logtext
 
     @pyqtSlot()
     def buyBatch(self):

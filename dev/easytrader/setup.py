@@ -46,12 +46,18 @@ buildOptions = dict(
         compressed = True,
         optimize = 0)
 
+base = None
+if sys.platform == "win32":
+    base = "Win32GUI"
+
 setup(
         name = "easytrader",
         version = "0.1",
         description = "The EasyTrader",
         options = dict(build_exe = buildOptions),
-        executables = [Executable("itrader.py"), Executable("easytrader.py"), Executable("genstockindex.py")]
+        executables = [Executable("itrader.py", base = base), 
+            Executable("easytrader.py", base = base), 
+            Executable("genstockindex.py", base = base)]
         )
 
 setupdb(buildOptions["build_exe"], "tradeinfo.db")

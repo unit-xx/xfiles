@@ -31,12 +31,6 @@ def main(args):
             QMessageBox.information(None, "", u"不能创建log目录: %d, %s" % (e.errno, e.strerror))
             sys.exit(1)
 
-    logging.config.fileConfig(CONFIGFN)
-    logger = logging.getLogger()
-    msg = "i'm started"
-    logger.info("========================")
-    logger.info(msg)
-
     # read config
     JZSEC = "jz"
     JSDSEC = "jsd"
@@ -69,7 +63,7 @@ def main(args):
     d.activateWindow()
     d.exec_()
     if d.status == False:
-        logger.info("User cancel login")
+        #logger.info("User cancel login")
         sys.exit(1)
 
     session_config.update(d.jzconfig)
@@ -79,7 +73,7 @@ def main(args):
     loginok = True
     if not testsession.setup():
         loginok = False
-        logger.warning("Cannot login jz.")
+        #logger.warning("Cannot login jz.")
         QMessageBox.warning(None,
                 u"",
                 u"<H3><FONT COLOR='#FF0000'>金证系统不能登录！</FONT></H3>",
@@ -92,7 +86,7 @@ def main(args):
     loginok = True
     if not testsession.setup():
         loginok = False
-        logger.warning("Cannot login jsd.")
+        #logger.warning("Cannot login jsd.")
         QMessageBox.warning(None,
                 u"",
                 u"<H3><FONT COLOR='#FF0000'>金士达系统不能登录！</FONT></H3>",
@@ -107,10 +101,10 @@ def main(args):
     shmapfn = "shmap.pkl"
     szmapfn = "szmap.pkl"
     if not verifymap(shdbfn, shmapfn, "S1"):
-        logger.warning("SH stock map file error.")
+        #logger.warning("SH stock map file error.")
         sys.exit(1)
     if not verifymap(szdbfn, szmapfn, "HQZQDM"):
-        logger.warning("SZ stock map file error.")
+        #logger.warning("SZ stock map file error.")
         sys.exit(1)
 
     # save config
@@ -136,7 +130,7 @@ def main(args):
                 u"",
                 u"<H3><FONT COLOR='#FF0000'>不能取得用户资料！</FONT></H3>",
                 QMessageBox.Ok)
-        logger.warning("cannot get user name")
+        #logger.warning("cannot get user name")
         username = "anonymous"
         #sys.exit(1)
 
@@ -149,7 +143,7 @@ def main(args):
     portfoliofn = ptfdlg.selectedfn
 
     if portfoliofn == u"":
-        logger.info("No portfolio seleted.")
+        #logger.info("No portfolio seleted.")
         sys.exit(1)
 
     # TODO: lock portfolio file to be used by one instance of easytrader
@@ -162,6 +156,17 @@ def main(args):
     # setup portfolio model for showing in table
     pmodel = PortfolioModel(p)
     sindexmodel = StockIndexModel(p)
+
+    # main window
+    uic = uicontrol(session_config, p, pmodel, sindexmodel)
+    uic.setup()
+
+    # setup logging
+    logging.config.fileConfig(CONFIGFN)
+    logger = logging.getLogger()
+    msg = "i'm started"
+    logger.info("========================")
+    logger.info(msg)
 
     # run the portfolio updater
     pupdater = PortfolioUpdater(shdbfn, shmapfn, szdbfn, szmapfn, p, pmodel)
@@ -199,10 +204,6 @@ def main(args):
 
     for i in range(jzWorkerNum):
         workers[i].start()
-
-    # main window
-    uic = uicontrol(session_config, p, pmodel, sindexmodel)
-    uic.setup()
 
     # start stock index price updater
     #sifupdter = SIFPriceUpdater(p, sindexmodel, jsd_sessioncfg, uic)

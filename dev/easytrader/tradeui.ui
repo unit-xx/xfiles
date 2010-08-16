@@ -20,8 +20,8 @@
    <string>EasyTrader</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <layout class="QGridLayout" name="gridLayout_6">
-    <item row="0" column="0" colspan="9">
+   <layout class="QGridLayout" name="gridLayout_11">
+    <item row="0" column="0" colspan="8">
      <widget class="QTabWidget" name="tabWidget">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
@@ -600,7 +600,7 @@
       </widget>
      </widget>
     </item>
-    <item row="1" column="0" colspan="9">
+    <item row="1" column="0" colspan="8">
      <widget class="QTableView" name="stockindex">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
@@ -616,7 +616,7 @@
       </property>
      </widget>
     </item>
-    <item row="2" column="0" colspan="9">
+    <item row="2" column="0" colspan="8">
      <widget class="QGroupBox" name="groupBox_3">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
@@ -1038,7 +1038,7 @@
       </property>
      </widget>
     </item>
-    <item row="3" column="7" colspan="2">
+    <item row="3" column="7">
      <widget class="QLineEdit" name="posnameline">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -1057,17 +1057,48 @@
       </property>
      </widget>
     </item>
-    <item row="4" column="0" colspan="8">
-     <widget class="QTableView" name="stock">
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-        <horstretch>0</horstretch>
-        <verstretch>0</verstretch>
-       </sizepolicy>
+    <item row="4" column="0" colspan="7">
+     <widget class="QTabWidget" name="tabWidget_2">
+      <property name="currentIndex">
+       <number>0</number>
       </property>
+      <widget class="QWidget" name="tab_5">
+       <attribute name="title">
+        <string>组合详情</string>
+       </attribute>
+       <layout class="QGridLayout" name="gridLayout_6">
+        <item row="0" column="0">
+         <widget class="QTableView" name="stock">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="tab_6">
+       <attribute name="title">
+        <string>操作日志</string>
+       </attribute>
+       <layout class="QGridLayout" name="gridLayout_12">
+        <item row="0" column="0">
+         <widget class="QPlainTextEdit" name="logtext">
+          <property name="lineWrapMode">
+           <enum>QPlainTextEdit::NoWrap</enum>
+          </property>
+          <property name="readOnly">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
      </widget>
     </item>
-    <item row="4" column="8">
+    <item row="4" column="7">
      <widget class="QTabWidget" name="tabstat">
       <property name="maximumSize">
        <size>
