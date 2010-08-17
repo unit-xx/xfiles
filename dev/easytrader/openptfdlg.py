@@ -68,6 +68,7 @@ class openptfdlg(QDialog, Ui_Dialog):
                 "datetext":u"建仓时间"
                 }
         self.selectedfn = ""
+        self.opennew = True
 
     def setup(self):
         self.setupUi(self)
@@ -154,6 +155,7 @@ class openptfdlg(QDialog, Ui_Dialog):
                     shutil.copy(ptfn, posfn)
                     self.selectedfn = posfn
                     break
+            self.opennew = True
             self.done(1)
 
     @pyqtSlot()
@@ -166,6 +168,7 @@ class openptfdlg(QDialog, Ui_Dialog):
                     QMessageBox.Ok)
         else:
             self.selectedfn = self.posdata[rows[0].row()]["fn"]
+            self.opennew = False
             self.done(1)
 
     @pyqtSlot()

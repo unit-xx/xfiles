@@ -29,7 +29,7 @@ from PyQt4 import Qt
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 from PyQt4.phonon import *
-from tradeui import Ui_MainWindow
+import tradeui
 from stockquery import stockquerydlg
 from positioninfo import positioninfodlg
 from jzworker_ac import jzworker_ac
@@ -3058,8 +3058,8 @@ class dbserver(Thread):
     def stop(self):
         self.runflag = False
 
-class uicontrol(QMainWindow, Ui_MainWindow):
-    def __init__(self, session_cfg, portfolio, pmodel, sindexmodel):
+class uicontrol(QMainWindow, tradeui.Ui_MainWindow):
+    def __init__(self, session_cfg, portfolio, pmodel, sindexmodel, opennew):
         QMainWindow.__init__(self)
         self.mainwindow = self#for backward code compatibility
         self.session_cfg = session_cfg
@@ -3067,6 +3067,7 @@ class uicontrol(QMainWindow, Ui_MainWindow):
         self.pmodel = pmodel
         self.sindexmodel = sindexmodel
         self.portfolio.uic = self
+        self.opennew = opennew
         self.logger = logging.getLogger()
 
     def closeEvent(self, evt):
@@ -3085,6 +3086,11 @@ class uicontrol(QMainWindow, Ui_MainWindow):
         #icon = QIcon()
         #icon.addPixmap(QPixmap("ztzq.ico"), QIcon.Normal, QIcon.On)
         #self.mainwindow.setWindowIcon(icon)
+
+        if self.opennew:
+            self.optab.setCurrentIndex(0)
+        else:
+            self.optab.setCurrentIndex(1)
 
         # setup position name in operation
         self.posnameline.setText(os.path.basename(self.portfolio.ptfn)[0:-4])
@@ -3157,7 +3163,7 @@ class uicontrol(QMainWindow, Ui_MainWindow):
         self.showbostate()
 
         # setup console output from stdout
-        self.logtext.write = lambda txt: self.logtext.appendPlainText(str(txt))
+        self.logtext.write = lambda txt: self.logtext.appendPlainText(QString(txt))
         #sys.stdout = self.logtext
         sys.stderr = self.logtext
 

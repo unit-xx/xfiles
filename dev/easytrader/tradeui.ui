@@ -19,10 +19,14 @@
   <property name="windowTitle">
    <string>EasyTrader</string>
   </property>
+  <property name="windowIcon">
+   <iconset resource="et.qrc">
+    <normaloff>:/img/ztzq.ico</normaloff>:/img/ztzq.ico</iconset>
+  </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout_11">
     <item row="0" column="0" colspan="8">
-     <widget class="QTabWidget" name="tabWidget">
+     <widget class="QTabWidget" name="optab">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
         <horstretch>0</horstretch>
@@ -33,6 +37,12 @@
        <number>0</number>
       </property>
       <widget class="QWidget" name="tab">
+       <attribute name="icon">
+        <iconset>
+         <activeoff>:/img/grdot.jpg</activeoff>
+         <activeon>:/img/rdot.jpg</activeon>
+        </iconset>
+       </attribute>
        <attribute name="title">
         <string>建仓</string>
        </attribute>
@@ -328,6 +338,12 @@
        </layout>
       </widget>
       <widget class="QWidget" name="tab_2">
+       <attribute name="icon">
+        <iconset>
+         <activeoff>:/img/grdot.jpg</activeoff>
+         <activeon>:/img/gdot.jpg</activeon>
+        </iconset>
+       </attribute>
        <attribute name="title">
         <string>平仓</string>
        </attribute>
@@ -1087,7 +1103,7 @@
         <item row="0" column="0">
          <widget class="QPlainTextEdit" name="logtext">
           <property name="lineWrapMode">
-           <enum>QPlainTextEdit::NoWrap</enum>
+           <enum>QPlainTextEdit::WidgetWidth</enum>
           </property>
           <property name="readOnly">
            <bool>true</bool>
@@ -1334,10 +1350,12 @@
    </property>
   </action>
  </widget>
- <resources/>
+ <resources>
+  <include location="et.qrc"/>
+ </resources>
  <connections>
   <connection>
-   <sender>tabWidget</sender>
+   <sender>optab</sender>
    <signal>currentChanged(int)</signal>
    <receiver>tabstat</receiver>
    <slot>setCurrentIndex(int)</slot>

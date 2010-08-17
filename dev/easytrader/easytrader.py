@@ -141,6 +141,7 @@ def main(args):
         app.exec_()
 
     portfoliofn = ptfdlg.selectedfn
+    opennew = ptfdlg.opennew
 
     if portfoliofn == u"":
         #logger.info("No portfolio seleted.")
@@ -158,7 +159,7 @@ def main(args):
     sindexmodel = StockIndexModel(p)
 
     # main window
-    uic = uicontrol(session_config, p, pmodel, sindexmodel)
+    uic = uicontrol(session_config, p, pmodel, sindexmodel, opennew)
     uic.setup()
 
     # setup logging

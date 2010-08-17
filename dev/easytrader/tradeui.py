@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'tradeui.ui'
 #
-# Created: Mon Aug 16 13:10:28 2010
+# Created: Tue Aug 17 15:01:28 2010
 #      by: PyQt4 UI code generator 4.7.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -18,17 +18,20 @@ class Ui_MainWindow(object):
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(MainWindow.sizePolicy().hasHeightForWidth())
         MainWindow.setSizePolicy(sizePolicy)
+        icon = QtGui.QIcon()
+        icon.addPixmap(QtGui.QPixmap(":/img/ztzq.ico"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        MainWindow.setWindowIcon(icon)
         self.centralwidget = QtGui.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.gridLayout_11 = QtGui.QGridLayout(self.centralwidget)
         self.gridLayout_11.setObjectName("gridLayout_11")
-        self.tabWidget = QtGui.QTabWidget(self.centralwidget)
+        self.optab = QtGui.QTabWidget(self.centralwidget)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.tabWidget.sizePolicy().hasHeightForWidth())
-        self.tabWidget.setSizePolicy(sizePolicy)
-        self.tabWidget.setObjectName("tabWidget")
+        sizePolicy.setHeightForWidth(self.optab.sizePolicy().hasHeightForWidth())
+        self.optab.setSizePolicy(sizePolicy)
+        self.optab.setObjectName("optab")
         self.tab = QtGui.QWidget()
         self.tab.setObjectName("tab")
         self.gridLayout_3 = QtGui.QGridLayout(self.tab)
@@ -159,7 +162,10 @@ class Ui_MainWindow(object):
         self.lopenbtn.setObjectName("lopenbtn")
         self.gridLayout_9.addWidget(self.lopenbtn, 0, 2, 1, 1)
         self.gridLayout_3.addWidget(self.groupBox_6, 0, 2, 1, 1)
-        self.tabWidget.addTab(self.tab, "")
+        icon1 = QtGui.QIcon()
+        icon1.addPixmap(QtGui.QPixmap(":/img/rdot.jpg"), QtGui.QIcon.Active, QtGui.QIcon.On)
+        icon1.addPixmap(QtGui.QPixmap(":/img/grdot.jpg"), QtGui.QIcon.Active, QtGui.QIcon.Off)
+        self.optab.addTab(self.tab, icon1, "")
         self.tab_2 = QtGui.QWidget()
         self.tab_2.setObjectName("tab_2")
         self.gridLayout_4 = QtGui.QGridLayout(self.tab_2)
@@ -276,8 +282,11 @@ class Ui_MainWindow(object):
         self.lclosebtn.setObjectName("lclosebtn")
         self.gridLayout_10.addWidget(self.lclosebtn, 0, 2, 1, 1)
         self.gridLayout_4.addWidget(self.groupBox_7, 0, 2, 1, 1)
-        self.tabWidget.addTab(self.tab_2, "")
-        self.gridLayout_11.addWidget(self.tabWidget, 0, 0, 1, 8)
+        icon2 = QtGui.QIcon()
+        icon2.addPixmap(QtGui.QPixmap(":/img/gdot.jpg"), QtGui.QIcon.Active, QtGui.QIcon.On)
+        icon2.addPixmap(QtGui.QPixmap(":/img/grdot.jpg"), QtGui.QIcon.Active, QtGui.QIcon.Off)
+        self.optab.addTab(self.tab_2, icon2, "")
+        self.gridLayout_11.addWidget(self.optab, 0, 0, 1, 8)
         self.stockindex = QtGui.QTableView(self.centralwidget)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
@@ -517,7 +526,7 @@ class Ui_MainWindow(object):
         self.gridLayout_12 = QtGui.QGridLayout(self.tab_6)
         self.gridLayout_12.setObjectName("gridLayout_12")
         self.logtext = QtGui.QPlainTextEdit(self.tab_6)
-        self.logtext.setLineWrapMode(QtGui.QPlainTextEdit.NoWrap)
+        self.logtext.setLineWrapMode(QtGui.QPlainTextEdit.WidgetWidth)
         self.logtext.setReadOnly(True)
         self.logtext.setObjectName("logtext")
         self.gridLayout_12.addWidget(self.logtext, 0, 0, 1, 1)
@@ -643,10 +652,10 @@ class Ui_MainWindow(object):
         self.menubar.addAction(self.menu.menuAction())
 
         self.retranslateUi(MainWindow)
-        self.tabWidget.setCurrentIndex(0)
+        self.optab.setCurrentIndex(0)
         self.tabWidget_2.setCurrentIndex(0)
         self.tabstat.setCurrentIndex(0)
-        QtCore.QObject.connect(self.tabWidget, QtCore.SIGNAL("currentChanged(int)"), self.tabstat.setCurrentIndex)
+        QtCore.QObject.connect(self.optab, QtCore.SIGNAL("currentChanged(int)"), self.tabstat.setCurrentIndex)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
@@ -670,7 +679,7 @@ class Ui_MainWindow(object):
         self.groupBox_6.setTitle(QtGui.QApplication.translate("MainWindow", "单笔开仓", None, QtGui.QApplication.UnicodeUTF8))
         self.sopenbtn.setText(QtGui.QApplication.translate("MainWindow", "空开", None, QtGui.QApplication.UnicodeUTF8))
         self.lopenbtn.setText(QtGui.QApplication.translate("MainWindow", "多开", None, QtGui.QApplication.UnicodeUTF8))
-        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab), QtGui.QApplication.translate("MainWindow", "建仓", None, QtGui.QApplication.UnicodeUTF8))
+        self.optab.setTabText(self.optab.indexOf(self.tab), QtGui.QApplication.translate("MainWindow", "建仓", None, QtGui.QApplication.UnicodeUTF8))
         self.groupBox.setTitle(QtGui.QApplication.translate("MainWindow", "股票组合", None, QtGui.QApplication.UnicodeUTF8))
         self.label.setText(QtGui.QApplication.translate("MainWindow", "卖出价格", None, QtGui.QApplication.UnicodeUTF8))
         self.label_2.setText(QtGui.QApplication.translate("MainWindow", "修正", None, QtGui.QApplication.UnicodeUTF8))
@@ -690,7 +699,7 @@ class Ui_MainWindow(object):
         self.groupBox_7.setTitle(QtGui.QApplication.translate("MainWindow", "单笔平仓", None, QtGui.QApplication.UnicodeUTF8))
         self.sclosebtn.setText(QtGui.QApplication.translate("MainWindow", "空平", None, QtGui.QApplication.UnicodeUTF8))
         self.lclosebtn.setText(QtGui.QApplication.translate("MainWindow", "多平", None, QtGui.QApplication.UnicodeUTF8))
-        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_2), QtGui.QApplication.translate("MainWindow", "平仓", None, QtGui.QApplication.UnicodeUTF8))
+        self.optab.setTabText(self.optab.indexOf(self.tab_2), QtGui.QApplication.translate("MainWindow", "平仓", None, QtGui.QApplication.UnicodeUTF8))
         self.label_5.setText(QtGui.QApplication.translate("MainWindow", "沪深300：", None, QtGui.QApplication.UnicodeUTF8))
         self.label_6.setText(QtGui.QApplication.translate("MainWindow", "股指期货：", None, QtGui.QApplication.UnicodeUTF8))
         self.label_7.setText(QtGui.QApplication.translate("MainWindow", "基差绝对值：", None, QtGui.QApplication.UnicodeUTF8))
@@ -725,3 +734,4 @@ class Ui_MainWindow(object):
         self.stockinfoact.setText(QtGui.QApplication.translate("MainWindow", "股份查询", None, QtGui.QApplication.UnicodeUTF8))
         self.posstatact.setText(QtGui.QApplication.translate("MainWindow", "持仓统计", None, QtGui.QApplication.UnicodeUTF8))
 
+import et_rc

@@ -57,7 +57,7 @@ setup(
         options = dict(build_exe = buildOptions),
         executables = [Executable("itrader.py", base = base), 
             Executable("easytrader.py", base = base), 
-            Executable("genstockindex.py", base = base)]
+            Executable("genstockindex.py")]
         )
 
 setupdb(buildOptions["build_exe"], "tradeinfo.db")
