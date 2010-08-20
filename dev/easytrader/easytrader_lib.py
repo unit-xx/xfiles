@@ -2626,18 +2626,38 @@ class StockStatUpdater(Thread):
                     Q_ARG("QString",
                         QString(u"%d"%cancelsellfail)))
 
-            buytotal = buytotal / 10000
-            selltotal = selltotal / 10000
+            buytotalw = buytotal / 10000
+            selltotalw = selltotal / 10000
+
+            buypoint = 0.0
+            sellpoint = 0.0
+            try:
+                count = int(self.portfolio.sindexinfo["count"])
+                stockcount = len(self.portfolio.stocklist)
+                buypoint = buytotal / count / stockcount
+                sellpoint = selltotal / count / stockcount
+            except Exception:
+                pass
 
             QMetaObject.invokeMethod(self.ui.buytotalline, "setText",
                     Qt.QueuedConnection,
                     Q_ARG("QString",
-                        QString(u"%0.2f 万"%buytotal)))
+                        QString(u"%0.2f 万"%buytotalw)))
 
             QMetaObject.invokeMethod(self.ui.selltotalline, "setText",
                     Qt.QueuedConnection,
                     Q_ARG("QString",
-                        QString(u"%0.2f 万"%selltotal)))
+                        QString(u"%0.2f 万"%selltotalw)))
+
+            QMetaObject.invokeMethod(self.ui.buypointline, "setText",
+                    Qt.QueuedConnection,
+                    Q_ARG("QString",
+                        QString(u"%0.2f"%buypoint)))
+
+            QMetaObject.invokeMethod(self.ui.sellpointline, "setText",
+                    Qt.QueuedConnection,
+                    Q_ARG("QString",
+                        QString(u"%0.2f"%sellpoint)))
 
             time.sleep(2)
 
