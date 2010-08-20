@@ -3189,8 +3189,8 @@ class uicontrol(QMainWindow, tradeui.Ui_MainWindow):
 
         # setup console output from stdout
         self.logtext.write = lambda txt: self.logtext.appendPlainText(QString(txt))
-        sys.stdout = self.logtext
-        sys.stderr = self.logtext
+        #sys.stdout = self.logtext
+        #sys.stderr = self.logtext
 
     @pyqtSlot()
     def buyBatch(self):
