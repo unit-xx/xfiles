@@ -3083,6 +3083,11 @@ class uicontrol(QMainWindow, tradeui.Ui_MainWindow):
     def setup(self):
         self.setupUi(self.mainwindow)
         self.setWindowTitle(self.windowTitle() + " - " + self.portfolio.ptfn)
+
+        icon = QIcon()
+        icon.addPixmap(QBitmap(":/img/gdot.jpg"), QIcon.Normal, QIcon.On)
+        self.setWindowIcon(icon)
+
         #icon = QIcon()
         #icon.addPixmap(QPixmap("ztzq.ico"), QIcon.Normal, QIcon.On)
         #self.mainwindow.setWindowIcon(icon)
@@ -3164,7 +3169,7 @@ class uicontrol(QMainWindow, tradeui.Ui_MainWindow):
 
         # setup console output from stdout
         self.logtext.write = lambda txt: self.logtext.appendPlainText(QString(txt))
-        #sys.stdout = self.logtext
+        sys.stdout = self.logtext
         sys.stderr = self.logtext
 
     @pyqtSlot()

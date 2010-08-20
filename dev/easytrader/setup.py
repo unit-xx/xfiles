@@ -41,7 +41,6 @@ def setupdb(dbpath, dbname, force=False):
 
 buildOptions = dict(
         build_exe = "build\\easytrader",
-        icon = "ztzq.ico",
         include_files = ["ztzq.ico", "hs300.txt", "itrader.cfg", "itrader-gw.cfg", "itrader-jhj.cfg", "easytrader.cfg", "easytrader-prod.cfg", "easytrader-jhj.cfg", "msvcr_redist", "jsdhqdll", "openmusic", "closemusic", (backenddir(), "phonon_backend")],
         compressed = True,
         optimize = 0)
@@ -49,6 +48,7 @@ buildOptions = dict(
 base = None
 if sys.platform == "win32":
     base = "Win32GUI"
+    #base = "Console"
 
 setup(
         name = "easytrader",
