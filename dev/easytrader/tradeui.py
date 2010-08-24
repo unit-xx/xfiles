@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'tradeui.ui'
 #
-# Created: Fri Aug 20 11:02:04 2010
+# Created: Tue Aug 24 13:03:26 2010
 #      by: PyQt4 UI code generator 4.7.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -489,7 +489,7 @@ class Ui_MainWindow(object):
         sizePolicy.setHeightForWidth(self.buytotalline.sizePolicy().hasHeightForWidth())
         self.buytotalline.setSizePolicy(sizePolicy)
         self.buytotalline.setMinimumSize(QtCore.QSize(0, 0))
-        self.buytotalline.setMaximumSize(QtCore.QSize(60, 16777215))
+        self.buytotalline.setMaximumSize(QtCore.QSize(80, 16777215))
         self.buytotalline.setReadOnly(True)
         self.buytotalline.setObjectName("buytotalline")
         self.gridLayout_11.addWidget(self.buytotalline, 3, 3, 1, 1)
@@ -503,7 +503,7 @@ class Ui_MainWindow(object):
         sizePolicy.setHeightForWidth(self.selltotalline.sizePolicy().hasHeightForWidth())
         self.selltotalline.setSizePolicy(sizePolicy)
         self.selltotalline.setMinimumSize(QtCore.QSize(0, 0))
-        self.selltotalline.setMaximumSize(QtCore.QSize(60, 16777215))
+        self.selltotalline.setMaximumSize(QtCore.QSize(80, 16777215))
         self.selltotalline.setReadOnly(True)
         self.selltotalline.setObjectName("selltotalline")
         self.gridLayout_11.addWidget(self.selltotalline, 3, 7, 1, 1)
@@ -658,7 +658,7 @@ class Ui_MainWindow(object):
         sizePolicy.setHeightForWidth(self.buypointline.sizePolicy().hasHeightForWidth())
         self.buypointline.setSizePolicy(sizePolicy)
         self.buypointline.setMinimumSize(QtCore.QSize(0, 0))
-        self.buypointline.setMaximumSize(QtCore.QSize(60, 16777215))
+        self.buypointline.setMaximumSize(QtCore.QSize(80, 16777215))
         self.buypointline.setReadOnly(True)
         self.buypointline.setObjectName("buypointline")
         self.gridLayout_11.addWidget(self.buypointline, 3, 5, 1, 1)
@@ -669,7 +669,7 @@ class Ui_MainWindow(object):
         sizePolicy.setHeightForWidth(self.sellpointline.sizePolicy().hasHeightForWidth())
         self.sellpointline.setSizePolicy(sizePolicy)
         self.sellpointline.setMinimumSize(QtCore.QSize(0, 0))
-        self.sellpointline.setMaximumSize(QtCore.QSize(60, 16777215))
+        self.sellpointline.setMaximumSize(QtCore.QSize(80, 16777215))
         self.sellpointline.setReadOnly(True)
         self.sellpointline.setObjectName("sellpointline")
         self.gridLayout_11.addWidget(self.sellpointline, 3, 9, 1, 1)

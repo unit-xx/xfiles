@@ -1052,7 +1052,7 @@ background-color: rgb(85, 255, 0);</string>
       </property>
       <property name="maximumSize">
        <size>
-        <width>60</width>
+        <width>80</width>
         <height>16777215</height>
        </size>
       </property>
@@ -1084,7 +1084,7 @@ background-color: rgb(85, 255, 0);</string>
       </property>
       <property name="maximumSize">
        <size>
-        <width>60</width>
+        <width>80</width>
         <height>16777215</height>
        </size>
       </property>
@@ -1388,7 +1388,7 @@ background-color: rgb(85, 255, 0);</string>
       </property>
       <property name="maximumSize">
        <size>
-        <width>60</width>
+        <width>80</width>
         <height>16777215</height>
        </size>
       </property>
@@ -1413,7 +1413,7 @@ background-color: rgb(85, 255, 0);</string>
       </property>
       <property name="maximumSize">
        <size>
-        <width>60</width>
+        <width>80</width>
         <height>16777215</height>
        </size>
       </property>
