@@ -2529,6 +2529,8 @@ class StockStatUpdater(Thread):
             sellfail = 0
             cancelsellfail = 0
 
+            stoppedmktval = 0.0
+
             for scode in self.portfolio.orderlist:
                 si = self.portfolio.stockinfo[scode]
                 buytotal = buytotal + si["currentbuycost"]
@@ -2537,6 +2539,7 @@ class StockStatUpdater(Thread):
                 try:
                     if si["stopped"]:
                         stopped = stopped + 1
+                        stoppedmktval = stoppedmktval + si["currentbuycost"]
                     if self.portfolio.isvalidbuy(si, scode):
                         buyable = buyable + 1
                     if si["pastbuy"]:
@@ -2635,7 +2638,7 @@ class StockStatUpdater(Thread):
                 count = int(self.portfolio.sindexinfo["count"])
                 stockcount = len(self.portfolio.stocklist)
                 buypoint = buytotal / count / stockcount
-                sellpoint = selltotal / count / stockcount
+                sellpoint = (selltotal + stoppedmktval) / count / stockcount
             except Exception:
                 pass
 
