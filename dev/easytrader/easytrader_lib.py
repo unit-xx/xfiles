@@ -155,7 +155,9 @@ class StockIndexModel(QAbstractTableModel):
         columnkey = self.portfolio.sindexmodelattr[index.column()]
         try:
             rawdata = self.portfolio.sindexinfo[columnkey]
-            if not isinstance(rawdata, unicode):# expect rawdata as numbers here
+            if isinstance(rawdata, float):
+                rawdata = "%0.2f" % rawdata
+            elif not isinstance(rawdata, unicode):# expect rawdata as numbers here
                 rawdata = str(rawdata)
             celldata = QString(rawdata)
             return QVariant(celldata)
@@ -414,6 +416,7 @@ class Portfolio(object):
                 "pastopen", "pastclose",
                 # of type float
                 "opencount", "closecount", "earning",
+                "openavg", "closeavg",
                 # of dict order_id -> (dealcount, dealprice)
                 "deals",
                 "stopped", "state"]
@@ -421,6 +424,7 @@ class Portfolio(object):
                 "latestprice", "close", "open", "ceiling", "floor",
                 "openposprice", "closeposprice",
                 "opencount", "closecount", "earning",
+                "openavg", "closeavg",
                 "state"]
         # need state? or just a replication of order_state of last order
         assert set(self.sindexmodelattr) <= set(self.sindexattr)
@@ -432,8 +436,10 @@ class Portfolio(object):
                 "open":u"今开",
                 "ceiling":u"涨停",
                 "floor":u"跌停",
-                "openposprice":u"开仓价",
-                "closeposprice":u"平仓价",
+                "openavg":u"开仓均价",
+                "closeavg":u"平仓均价",
+                "openposprice":u"欲开仓价",
+                "closeposprice":u"欲平仓价",
                 "stopped":u"停牌",
                 "opencount":u"建仓量",
                 "closecount":u"平仓量",
@@ -1630,6 +1636,7 @@ class Portfolio(object):
     def updateearning(self):
         gain = 0.0
         paid = 0.0
+
         for o in self.sindexinfo["pastopen"]:
             oid = o["order_id"]
             if oid != "" and oid in self.sindexinfo["deals"]:
@@ -1641,9 +1648,15 @@ class Portfolio(object):
                 for d in self.sindexinfo["deals"][oid]:
                     paid = paid + d[0] * d[1]
         self.sindexinfo["earning"] = 0.0
+        self.sindexinfo["openavg"] = 0.0
+        self.sindexinfo["closeavg"] = 0.0
         try:
             self.sindexinfo["earning"] = gain - paid - self.sindexinfo["latestprice"] * (self.sindexinfo["opencount"] - self.sindexinfo["closecount"])
+            self.sindexinfo["openavg"] = gain / self.sindexinfo["opencount"]
+            self.sindexinfo["closeavg"] = paid / self.sindexinfo["closecount"]
         except KeyError:#latestprice is not updated
+            pass
+        except ZeroDivisionError:
             pass
 
 
@@ -3291,6 +3304,7 @@ class uicontrol(QMainWindow, tradeui.Ui_MainWindow):
                 % (code, price, share),
                 QMessageBox.Ok|QMessageBox.Cancel)
         if QMessageBox.Ok == ret:
+            price = "%0.1f" % self.portfolio.sindexinfo["openposprice"]
             self.portfolio.openshort2(code, price, share)
 
     @pyqtSlot()
@@ -3304,6 +3318,7 @@ class uicontrol(QMainWindow, tradeui.Ui_MainWindow):
                 % (code, price, share),
                 QMessageBox.Ok|QMessageBox.Cancel)
         if QMessageBox.Ok == ret:
+            price = "%0.1f" % self.portfolio.sindexinfo["closeposprice"]
             self.portfolio.closeshort2(code, price, share)
 
     @pyqtSlot()
@@ -3317,6 +3332,7 @@ class uicontrol(QMainWindow, tradeui.Ui_MainWindow):
                 % (code, price, share),
                 QMessageBox.Ok|QMessageBox.Cancel)
         if QMessageBox.Ok == ret:
+            price = "%0.1f" % self.portfolio.sindexinfo["openposprice"]
             self.portfolio.openlong2(code, price, share)
 
     @pyqtSlot()
@@ -3330,6 +3346,7 @@ class uicontrol(QMainWindow, tradeui.Ui_MainWindow):
                 % (code, price, share),
                 QMessageBox.Ok|QMessageBox.Cancel)
         if QMessageBox.Ok == ret:
+            price = "%0.1f" % self.portfolio.sindexinfo["closeposprice"]
             self.portfolio.closelong2(code, price, share)
 
     @pyqtSlot()
