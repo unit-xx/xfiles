@@ -2526,173 +2526,176 @@ class StockStatUpdater(Thread):
 
     def run(self):
         while self.runflag:
-            buytotal = 0.0
-            selltotal = 0.0
-
-            stopped = 0
-            buyable = 0
-            buycomplete = 0
-            buywait = 0
-            buyfail = 0
-            cancelbuyfail = 0
-
-            sellable = 0
-            sellcomplete = 0
-            sellwait = 0
-            sellfail = 0
-            cancelsellfail = 0
-
-            for scode in self.portfolio.orderlist:
-                si = self.portfolio.stockinfo[scode]
-                buytotal = buytotal + si["currentbuycost"]
-                selltotal = selltotal + si["pastsellgain"]
-
-                try:
-                    if si["stopped"]:
-                        stopped = stopped + 1
-                        stoppedmktval = stoppedmktval + si["currentbuycost"]
-                    if self.portfolio.isvalidbuy(si, scode):
-                        buyable = buyable + 1
-                    if si["pastbuy"]:
-                        ob = si["pastbuy"][-1]
-                        if ob["dealcount"] == ob["ordercount"]:
-                            buycomplete = buycomplete + 1
-                        if ob["order_state"] == Portfolio.CANCELBUYWAIT:
-                            buywait = buywait + 1
-                        elif ob["order_state"] == Portfolio.BUYFAILED:
-                            buyfail = buyfail + 1
-                        elif ob["order_state"] == Portfolio.CANCELBUYFAILED:
-                            cancelbuyfail = cancelbuyfail + 1
-
-                    if self.portfolio.isvalidsell(si, scode):
-                        sellable = sellable + 1
-                    if si["pastsell"]:
-                        ob = si["pastsell"][-1]
-                        if ob["dealcount"] == ob["ordercount"]:
-                            sellcomplete = sellcomplete + 1
-                        if ob["order_state"] == Portfolio.CANCELSELLWAIT:
-                            sellwait = sellwait + 1
-                        elif ob["order_state"] == Portfolio.SELLFAILED:
-                            sellfail = sellfail + 1
-                        elif ob["order_state"] == Portfolio.CANCELSELLFAILED:
-                            cancelsellfail = cancelsellfail + 1
-                except KeyError:
-                    pass
-
-            QMetaObject.invokeMethod(self.ui.stoppedline, "setText",
-                    Qt.QueuedConnection,
-                    Q_ARG("QString",
-                        QString(u"%d"%stopped)))
-            QMetaObject.invokeMethod(self.ui.stoppedline_2, "setText",
-                    Qt.QueuedConnection,
-                    Q_ARG("QString",
-                        QString(u"%d"%stopped)))
-
-            # buy stats
-            QMetaObject.invokeMethod(self.ui.buyableline, "setText",
-                    Qt.QueuedConnection,
-                    Q_ARG("QString",
-                        QString(u"%d"%buyable)))
-
-            QMetaObject.invokeMethod(self.ui.buyedline, "setText",
-                    Qt.QueuedConnection,
-                    Q_ARG("QString",
-                        QString(u"%d"%buycomplete)))
-
-            QMetaObject.invokeMethod(self.ui.buywaitline, "setText",
-                    Qt.QueuedConnection,
-                    Q_ARG("QString",
-                        QString(u"%d"%buywait)))
-
-            QMetaObject.invokeMethod(self.ui.buyfailline, "setText",
-                    Qt.QueuedConnection,
-                    Q_ARG("QString",
-                        QString(u"%d"%buyfail)))
-
-            QMetaObject.invokeMethod(self.ui.cancelbuyfailline, "setText",
-                    Qt.QueuedConnection,
-                    Q_ARG("QString",
-                        QString(u"%d"%cancelbuyfail)))
-
-            # sell stats
-            QMetaObject.invokeMethod(self.ui.sellableline, "setText",
-                    Qt.QueuedConnection,
-                    Q_ARG("QString",
-                        QString(u"%d"%sellable)))
-
-            QMetaObject.invokeMethod(self.ui.selledline, "setText",
-                    Qt.QueuedConnection,
-                    Q_ARG("QString",
-                        QString(u"%d"%sellcomplete)))
-
-            QMetaObject.invokeMethod(self.ui.sellwaitline, "setText",
-                    Qt.QueuedConnection,
-                    Q_ARG("QString",
-                        QString(u"%d"%sellwait)))
-
-            QMetaObject.invokeMethod(self.ui.sellfailline, "setText",
-                    Qt.QueuedConnection,
-                    Q_ARG("QString",
-                        QString(u"%d"%sellfail)))
-
-            QMetaObject.invokeMethod(self.ui.cancelsellfailline, "setText",
-                    Qt.QueuedConnection,
-                    Q_ARG("QString",
-                        QString(u"%d"%cancelsellfail)))
-
-            buytotalw = buytotal / 10000
-            selltotalw = selltotal / 10000
-
-            buypoint = 0.0
-            sellpoint = 0.0
-            unbuymktval = 0.0
-            unsellmktval = 0.0
-
-            for scode in self.portfolio.orderlist:
-                si = self.portfolio.stockinfo[scode]
-                try:
-                    closemktval = float(si["count"])*si["close"]
-
-                    if si["currentbuycost"] == 0.0:
-                        unbuymktval = unbuymktval + closemktval
-
-                    if si["currentsellgain"] == 0.0:
-                        if si["currentbuycost"] == 0.0:
-                            unsellmktval = unsellmktval + closemktval
-                        else:
-                            unsellmktval = unsellmktval + si["currentbuycost"]
-                except KeyError:
-                    pass
-
             try:
-                count = int(self.portfolio.sindexinfo["count"])
-                stockcount = len(self.portfolio.stocklist)
-                buypoint = (buytotal + unbuymktval) / count / stockcount
-                sellpoint = (selltotal + unsellmktval) / count / stockcount
+                buytotal = 0.0
+                selltotal = 0.0
+
+                stopped = 0
+                buyable = 0
+                buycomplete = 0
+                buywait = 0
+                buyfail = 0
+                cancelbuyfail = 0
+
+                sellable = 0
+                sellcomplete = 0
+                sellwait = 0
+                sellfail = 0
+                cancelsellfail = 0
+
+                for scode in self.portfolio.orderlist:
+                    si = self.portfolio.stockinfo[scode]
+                    buytotal = buytotal + si["currentbuycost"]
+                    selltotal = selltotal + si["pastsellgain"]
+
+                    try:
+                        if si["stopped"]:
+                            stopped = stopped + 1
+                        if self.portfolio.isvalidbuy(si, scode):
+                            buyable = buyable + 1
+                        if si["pastbuy"]:
+                            ob = si["pastbuy"][-1]
+                            if ob["dealcount"] == ob["ordercount"]:
+                                buycomplete = buycomplete + 1
+                            if ob["order_state"] == Portfolio.CANCELBUYWAIT:
+                                buywait = buywait + 1
+                            elif ob["order_state"] == Portfolio.BUYFAILED:
+                                buyfail = buyfail + 1
+                            elif ob["order_state"] == Portfolio.CANCELBUYFAILED:
+                                cancelbuyfail = cancelbuyfail + 1
+
+                        if self.portfolio.isvalidsell(si, scode):
+                            sellable = sellable + 1
+                        if si["pastsell"]:
+                            ob = si["pastsell"][-1]
+                            if ob["dealcount"] == ob["ordercount"]:
+                                sellcomplete = sellcomplete + 1
+                            if ob["order_state"] == Portfolio.CANCELSELLWAIT:
+                                sellwait = sellwait + 1
+                            elif ob["order_state"] == Portfolio.SELLFAILED:
+                                sellfail = sellfail + 1
+                            elif ob["order_state"] == Portfolio.CANCELSELLFAILED:
+                                cancelsellfail = cancelsellfail + 1
+                    except KeyError:
+                        pass
+
+                QMetaObject.invokeMethod(self.ui.stoppedline, "setText",
+                        Qt.QueuedConnection,
+                        Q_ARG("QString",
+                            QString(u"%d"%stopped)))
+                QMetaObject.invokeMethod(self.ui.stoppedline_2, "setText",
+                        Qt.QueuedConnection,
+                        Q_ARG("QString",
+                            QString(u"%d"%stopped)))
+
+                # buy stats
+                QMetaObject.invokeMethod(self.ui.buyableline, "setText",
+                        Qt.QueuedConnection,
+                        Q_ARG("QString",
+                            QString(u"%d"%buyable)))
+
+                QMetaObject.invokeMethod(self.ui.buyedline, "setText",
+                        Qt.QueuedConnection,
+                        Q_ARG("QString",
+                            QString(u"%d"%buycomplete)))
+
+                QMetaObject.invokeMethod(self.ui.buywaitline, "setText",
+                        Qt.QueuedConnection,
+                        Q_ARG("QString",
+                            QString(u"%d"%buywait)))
+
+                QMetaObject.invokeMethod(self.ui.buyfailline, "setText",
+                        Qt.QueuedConnection,
+                        Q_ARG("QString",
+                            QString(u"%d"%buyfail)))
+
+                QMetaObject.invokeMethod(self.ui.cancelbuyfailline, "setText",
+                        Qt.QueuedConnection,
+                        Q_ARG("QString",
+                            QString(u"%d"%cancelbuyfail)))
+
+                # sell stats
+                QMetaObject.invokeMethod(self.ui.sellableline, "setText",
+                        Qt.QueuedConnection,
+                        Q_ARG("QString",
+                            QString(u"%d"%sellable)))
+
+                QMetaObject.invokeMethod(self.ui.selledline, "setText",
+                        Qt.QueuedConnection,
+                        Q_ARG("QString",
+                            QString(u"%d"%sellcomplete)))
+
+                QMetaObject.invokeMethod(self.ui.sellwaitline, "setText",
+                        Qt.QueuedConnection,
+                        Q_ARG("QString",
+                            QString(u"%d"%sellwait)))
+
+                QMetaObject.invokeMethod(self.ui.sellfailline, "setText",
+                        Qt.QueuedConnection,
+                        Q_ARG("QString",
+                            QString(u"%d"%sellfail)))
+
+                QMetaObject.invokeMethod(self.ui.cancelsellfailline, "setText",
+                        Qt.QueuedConnection,
+                        Q_ARG("QString",
+                            QString(u"%d"%cancelsellfail)))
+
+                buytotalw = buytotal / 10000
+                selltotalw = selltotal / 10000
+
+                buypoint = 0.0
+                sellpoint = 0.0
+                unbuymktval = 0.0
+                unsellmktval = 0.0
+
+                for scode in self.portfolio.orderlist:
+                    si = self.portfolio.stockinfo[scode]
+                    try:
+                        closemktval = float(si["count"])*si["close"]
+
+                        if si["currentbuycost"] == 0.0:
+                            unbuymktval = unbuymktval + closemktval
+
+                        if si["currentsellgain"] == 0.0:
+                            if si["currentbuycost"] == 0.0:
+                                unsellmktval = unsellmktval + closemktval
+                            else:
+                                unsellmktval = unsellmktval + si["currentbuycost"]
+                    except KeyError:
+                        pass
+
+                try:
+                    count = int(self.portfolio.sindexinfo["count"])
+                    stockcount = len(self.portfolio.stocklist)
+                    buypoint = (buytotal + unbuymktval) / count / stockcount
+                    sellpoint = (selltotal + unsellmktval) / count / stockcount
+                except Exception:
+                    pass
+
+                QMetaObject.invokeMethod(self.ui.buytotalline, "setText",
+                        Qt.QueuedConnection,
+                        Q_ARG("QString",
+                            QString(u"%0.2f 万"%buytotalw)))
+
+                QMetaObject.invokeMethod(self.ui.selltotalline, "setText",
+                        Qt.QueuedConnection,
+                        Q_ARG("QString",
+                            QString(u"%0.2f 万"%selltotalw)))
+
+                QMetaObject.invokeMethod(self.ui.buypointline, "setText",
+                        Qt.QueuedConnection,
+                        Q_ARG("QString",
+                            QString(u"%0.2f"%buypoint)))
+
+                QMetaObject.invokeMethod(self.ui.sellpointline, "setText",
+                        Qt.QueuedConnection,
+                        Q_ARG("QString",
+                            QString(u"%0.2f"%sellpoint)))
+
+                time.sleep(2)
             except Exception:
-                pass
-
-            QMetaObject.invokeMethod(self.ui.buytotalline, "setText",
-                    Qt.QueuedConnection,
-                    Q_ARG("QString",
-                        QString(u"%0.2f 万"%buytotalw)))
-
-            QMetaObject.invokeMethod(self.ui.selltotalline, "setText",
-                    Qt.QueuedConnection,
-                    Q_ARG("QString",
-                        QString(u"%0.2f 万"%selltotalw)))
-
-            QMetaObject.invokeMethod(self.ui.buypointline, "setText",
-                    Qt.QueuedConnection,
-                    Q_ARG("QString",
-                        QString(u"%0.2f"%buypoint)))
-
-            QMetaObject.invokeMethod(self.ui.sellpointline, "setText",
-                    Qt.QueuedConnection,
-                    Q_ARG("QString",
-                        QString(u"%0.2f"%sellpoint)))
-
-            time.sleep(2)
+                    self.logger.exception("stats-er exit anormally.")
+                    self.runflag = False
 
 class OrderUpdater(Thread):
     def __init__(self, portfolio, portmodel, sessioncfg, updtlock):
