@@ -2542,8 +2542,6 @@ class StockStatUpdater(Thread):
             sellfail = 0
             cancelsellfail = 0
 
-            stoppedmktval = 0.0
-
             for scode in self.portfolio.orderlist:
                 si = self.portfolio.stockinfo[scode]
                 buytotal = buytotal + si["currentbuycost"]
@@ -2647,11 +2645,30 @@ class StockStatUpdater(Thread):
 
             buypoint = 0.0
             sellpoint = 0.0
+            unbuymktval = 0.0
+            unsellmktval = 0.0
+
+            for scode in self.portfolio.orderlist:
+                si = self.portfolio.stockinfo[scode]
+                try:
+                    closemktval = float(si["count"])*si["close"]
+
+                    if si["currentbuycost"] == 0.0:
+                        unbuymktval = unbuymktval + closemktval
+
+                    if si["currentsellgain"] == 0.0:
+                        if si["currentbuycost"] == 0.0:
+                            unsellmktval = unsellmktval + closemktval
+                        else:
+                            unsellmktval = unsellmktval + si["currentbuycost"]
+                except KeyError:
+                    pass
+
             try:
                 count = int(self.portfolio.sindexinfo["count"])
                 stockcount = len(self.portfolio.stocklist)
-                buypoint = buytotal / count / stockcount
-                sellpoint = (selltotal + stoppedmktval) / count / stockcount
+                buypoint = (buytotal + unbuymktval) / count / stockcount
+                sellpoint = (selltotal + unsellmktval) / count / stockcount
             except Exception:
                 pass
 
