@@ -16,7 +16,7 @@
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout_8">
     <item row="0" column="1">
-     <widget class="QCheckBox" name="checkBox">
+     <widget class="QCheckBox" name="ontopchk">
       <property name="text">
        <string>在最顶端</string>
       </property>
@@ -67,7 +67,7 @@
           </property>
           <layout class="QGridLayout" name="gridLayout">
            <item row="0" column="0">
-            <widget class="QPushButton" name="pushButton">
+            <widget class="QPushButton" name="buybtn">
              <property name="text">
               <string>买入</string>
              </property>
@@ -231,7 +231,7 @@
      </widget>
     </item>
     <item row="0" column="2">
-     <widget class="QCheckBox" name="checkBox_2">
+     <widget class="QCheckBox" name="confirmchk">
       <property name="text">
        <string>操作需确认</string>
       </property>
@@ -241,7 +241,7 @@
      </widget>
     </item>
     <item row="0" column="3">
-     <widget class="QCheckBox" name="checkBox_3">
+     <widget class="QCheckBox" name="lockchk">
       <property name="text">
        <string>锁定操作</string>
       </property>
