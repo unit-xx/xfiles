@@ -1,19 +1,18 @@
 #from PyQt4.QtGui import *
 from PyQt4.QtCore import *
-
-class dictdict(dict):
-    def __getitem__(self, key):
-        if not key in self:
-            self.setdefault(key, dict())
-        return dict.__getitem__(self, key)
+from util import dictdict
 
 class trdData:
     def __init__(self):
         self.data = dictdict()
         self.bgcolor = dictdict()
         self.colname = []
-        self.colnamemap = dictdict()
+        self.colnamemap = dict()
         self.rowname = []
+
+    def addrow(self, row):
+        tmp = self.data[row]
+        self.rowname.append(row)
 
 class TradeTableModel_dd(QAbstractTableModel):
     """
@@ -67,15 +66,15 @@ class TradeTableModel_dd(QAbstractTableModel):
                 if not isinstance(rawdata, unicode):# expect rawdata as numbers here
                     rawdata = str(rawdata)
                 celldata = QString(rawdata)
-            except:
+            except KeyError:
                 return QVariant()
             return QVariant(celldata)
         elif role == Qt.BackgroundRole:
             try:
                 c = self.bgcolor[rowkey][columnkey]
+                return QVariant(c)
             except KeyError:
-                pass
-            return QVariant(c)
+                return QVariant()
 
         return QVariant()
 

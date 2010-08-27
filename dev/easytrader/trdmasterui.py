@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'trdmasterui.ui'
 #
-# Created: Mon Aug 23 15:06:41 2010
+# Created: Fri Aug 27 14:44:55 2010
 #      by: PyQt4 UI code generator 4.7.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -112,6 +112,8 @@ class Ui_MainWindow(object):
         self.gridLayout_2 = QtGui.QGridLayout(self.tab)
         self.gridLayout_2.setObjectName("gridLayout_2")
         self.tableView = QtGui.QTableView(self.tab)
+        self.tableView.setSelectionMode(QtGui.QAbstractItemView.MultiSelection)
+        self.tableView.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
         self.tableView.setObjectName("tableView")
         self.gridLayout_2.addWidget(self.tableView, 0, 0, 1, 1)
         self.tabWidget.addTab(self.tab, "")

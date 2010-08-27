@@ -1,3 +1,22 @@
+class dictdict(dict):
+    def __getitem__(self, key):
+        if not key in self:
+            self.setdefault(key, dict())
+        return dict.__getitem__(self, key)
+
+class command:
+    def __init__(self):
+        self.cmdname = ""
+        self.args = []
+        self.kwargs = {}
+
+    def __str__(self):
+        return "cmdname: %s, args: %s, kwargs: %s" % (
+                self.cmdname,
+                self.args,
+                self.kwargs,
+                )
+
 def recv_n(conn, n):
     left = n
     content = []
