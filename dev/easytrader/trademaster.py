@@ -27,6 +27,17 @@ class uicontrol(QMainWindow, Ui_MainWindow):
         self.setupUi(self)
         self.tableView.setModel(self.ptfmodel)
 
+        self.on_ontopchk_stateChanged(self.ontopchk.checkState())
+
+    @pyqtSlot(int)
+    def on_ontopchk_stateChanged(self, state):
+        flags = self.windowFlags()
+        if self.ontopchk.isChecked():
+            self.setWindowFlags(flags|Qt.WindowStaysOnTopHint)
+        else:
+            self.setWindowFlags(flags^(Qt.WindowStaysOnTopHint));
+        self.show()
+
 class masterHandler(SocketServer.StreamRequestHandler):
     def handle(self):
         (msglen,) = unpack("!I", self.rfile.read(4))

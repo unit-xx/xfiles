@@ -22,6 +22,7 @@ import logging, logging.config
 import sqlite3 as db
 import asyncore
 
+import util
 import jz, jsd
 import jsdhq
 from dbfpy import dbf
@@ -240,6 +241,123 @@ class SIndexRecord:
 
     def __repr__(self):
         return repr(self.data)
+
+class PortfolioStat:
+    def __init__(self):
+        self.data = {}
+
+    def __getitem__(self, key):
+        return self.data[key]
+
+    def __setitem__(self, key, value):
+        self.data[key] = value
+
+class PtfStatReporter(Thread):
+    """
+    report portfolio stats to a remote controller.
+    """
+    def __init__(self, conn, pstat):
+        Thread.__init__(self)
+        self.conn = conn
+        self.pstat = pstat
+        self.runflag = True
+        self.logger = logging.getLogger()
+        self.name = self.__class__.__name__
+
+    def stop(self):
+        self.runflag = False
+
+    def run(self):
+        while self.runflag:
+            c = util.command
+            c.cmdname = "pstatreport"
+            c.kwargs = pstat.data
+            self.conn.sendall(c.pack())
+
+            time.sleep(2)
+
+class CmdWorker(Thread):
+    """
+    receive commands from remote and execute them
+    """
+    def __init__(self, fconn):
+        Thread.__init__(self)
+        self.fconn = fconn
+        self.runflag = True
+        self.logger = logging.getLogger()
+        self.name = self.__class__.__name__
+
+    def stop(self):
+        self.runflag = False
+
+    def run(self):
+        while self.runflag:
+            try:
+                data = self.fconn.read(4)
+                (msglen,) = unpack("!H", data)
+                cmd = pickle.loads(self.fconn.read(msglen))
+                try:
+                    handler = getattr(self, cmd.cmdname+"Handler")
+                    handler(*cmd.args, **cmd.kwargs)
+                except AttributeError:
+                    #print("unknown cmd: <%s>" % str(cmd))
+                    self.logger.exception("unknown cmd: <%s>", str(cmd))
+
+            except socket.timeout:
+                pass
+
+    def testHandler(self, *args, **kwargs):
+        self.logger.info("cmd: <%s>", str(cmd))
+
+class trdClient(Thread):
+    """
+    the trade client that report portfolio stats to the
+    controller, and execute command from controller.
+
+    depends on PtfStatReporter and CmdWorker to work.
+    """
+    def __init__(self, caddr, cport, pstat):
+        Thread.__init__(self)
+        self.caddr = caddr
+        self.cport = cport
+        self.pstat = pstat
+        self.runflag = True
+        self.logger = logging.getLogger()
+        self.name = self.__class__.__name__
+
+    def stop(self):
+        self.runflag = False
+
+    def run(self):
+        conn = socket.socket()
+        try:
+            conn.connect((self.caddr, self.cport))
+            conn.settimeout(5)
+        except socket.error:
+            self.logger.warning("cannot connect controller.")
+            return
+
+        self.conn = conn
+        self.fconn = conn.makefile("r+b")
+
+        # TODO: register
+
+        psrpter = PtfStatReporter(self.conn, self.pstat)
+        cwrker = CmdWorker(self.fconn)
+
+        psrpter.start()
+        cwrker.start()
+
+        while self.runflag:
+            time.sleep(3)
+
+        psrpter.stop()
+        cwrker.stop()
+
+        psrpter.join()
+        cwrker.join()
+
+        # TODO: unregister
 
 class Portfolio(object):
 

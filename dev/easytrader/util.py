@@ -17,6 +17,11 @@ class command:
                 self.kwargs,
                 )
 
+    def pack(self):
+        msg = pickle.dumps(self, -1)
+        msglen = len(msg)
+        return pack("!I", msglen) + msg
+
 def recv_n(conn, n):
     left = n
     content = []

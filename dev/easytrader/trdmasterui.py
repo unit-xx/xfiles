@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'trdmasterui.ui'
 #
-# Created: Fri Aug 27 14:44:55 2010
+# Created: Mon Aug 30 10:20:10 2010
 #      by: PyQt4 UI code generator 4.7.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -17,10 +17,10 @@ class Ui_MainWindow(object):
         self.centralwidget.setObjectName("centralwidget")
         self.gridLayout_8 = QtGui.QGridLayout(self.centralwidget)
         self.gridLayout_8.setObjectName("gridLayout_8")
-        self.checkBox = QtGui.QCheckBox(self.centralwidget)
-        self.checkBox.setChecked(True)
-        self.checkBox.setObjectName("checkBox")
-        self.gridLayout_8.addWidget(self.checkBox, 0, 1, 1, 1)
+        self.ontopchk = QtGui.QCheckBox(self.centralwidget)
+        self.ontopchk.setChecked(True)
+        self.ontopchk.setObjectName("ontopchk")
+        self.gridLayout_8.addWidget(self.ontopchk, 0, 1, 1, 1)
         spacerItem = QtGui.QSpacerItem(530, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
         self.gridLayout_8.addItem(spacerItem, 0, 4, 1, 1)
         self.tabWidget_2 = QtGui.QTabWidget(self.centralwidget)
@@ -43,9 +43,9 @@ class Ui_MainWindow(object):
         self.groupBox.setObjectName("groupBox")
         self.gridLayout = QtGui.QGridLayout(self.groupBox)
         self.gridLayout.setObjectName("gridLayout")
-        self.pushButton = QtGui.QPushButton(self.groupBox)
-        self.pushButton.setObjectName("pushButton")
-        self.gridLayout.addWidget(self.pushButton, 0, 0, 1, 1)
+        self.buybtn = QtGui.QPushButton(self.groupBox)
+        self.buybtn.setObjectName("buybtn")
+        self.gridLayout.addWidget(self.buybtn, 0, 0, 1, 1)
         self.pushButton_5 = QtGui.QPushButton(self.groupBox)
         self.pushButton_5.setObjectName("pushButton_5")
         self.gridLayout.addWidget(self.pushButton_5, 0, 1, 1, 1)
@@ -118,13 +118,13 @@ class Ui_MainWindow(object):
         self.gridLayout_2.addWidget(self.tableView, 0, 0, 1, 1)
         self.tabWidget.addTab(self.tab, "")
         self.gridLayout_8.addWidget(self.tabWidget, 2, 0, 1, 5)
-        self.checkBox_2 = QtGui.QCheckBox(self.centralwidget)
-        self.checkBox_2.setChecked(True)
-        self.checkBox_2.setObjectName("checkBox_2")
-        self.gridLayout_8.addWidget(self.checkBox_2, 0, 2, 1, 1)
-        self.checkBox_3 = QtGui.QCheckBox(self.centralwidget)
-        self.checkBox_3.setObjectName("checkBox_3")
-        self.gridLayout_8.addWidget(self.checkBox_3, 0, 3, 1, 1)
+        self.confirmchk = QtGui.QCheckBox(self.centralwidget)
+        self.confirmchk.setChecked(True)
+        self.confirmchk.setObjectName("confirmchk")
+        self.gridLayout_8.addWidget(self.confirmchk, 0, 2, 1, 1)
+        self.lockchk = QtGui.QCheckBox(self.centralwidget)
+        self.lockchk.setObjectName("lockchk")
+        self.gridLayout_8.addWidget(self.lockchk, 0, 3, 1, 1)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtGui.QMenuBar(MainWindow)
         self.menubar.setGeometry(QtCore.QRect(0, 0, 800, 23))
@@ -140,9 +140,9 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         MainWindow.setWindowTitle(QtGui.QApplication.translate("MainWindow", "TradeMaster", None, QtGui.QApplication.UnicodeUTF8))
-        self.checkBox.setText(QtGui.QApplication.translate("MainWindow", "在最顶端", None, QtGui.QApplication.UnicodeUTF8))
+        self.ontopchk.setText(QtGui.QApplication.translate("MainWindow", "在最顶端", None, QtGui.QApplication.UnicodeUTF8))
         self.groupBox.setTitle(QtGui.QApplication.translate("MainWindow", "股票买入", None, QtGui.QApplication.UnicodeUTF8))
-        self.pushButton.setText(QtGui.QApplication.translate("MainWindow", "买入", None, QtGui.QApplication.UnicodeUTF8))
+        self.buybtn.setText(QtGui.QApplication.translate("MainWindow", "买入", None, QtGui.QApplication.UnicodeUTF8))
         self.pushButton_5.setText(QtGui.QApplication.translate("MainWindow", "撤买", None, QtGui.QApplication.UnicodeUTF8))
         self.pushButton_6.setText(QtGui.QApplication.translate("MainWindow", "强制撤买", None, QtGui.QApplication.UnicodeUTF8))
         self.groupBox_2.setTitle(QtGui.QApplication.translate("MainWindow", "期货建仓", None, QtGui.QApplication.UnicodeUTF8))
@@ -158,6 +158,6 @@ class Ui_MainWindow(object):
         self.pushButton_10.setText(QtGui.QApplication.translate("MainWindow", "撤单", None, QtGui.QApplication.UnicodeUTF8))
         self.tabWidget_2.setTabText(self.tabWidget_2.indexOf(self.tab_3), QtGui.QApplication.translate("MainWindow", "平仓", None, QtGui.QApplication.UnicodeUTF8))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab), QtGui.QApplication.translate("MainWindow", "页", None, QtGui.QApplication.UnicodeUTF8))
-        self.checkBox_2.setText(QtGui.QApplication.translate("MainWindow", "操作需确认", None, QtGui.QApplication.UnicodeUTF8))
-        self.checkBox_3.setText(QtGui.QApplication.translate("MainWindow", "锁定操作", None, QtGui.QApplication.UnicodeUTF8))
+        self.confirmchk.setText(QtGui.QApplication.translate("MainWindow", "操作需确认", None, QtGui.QApplication.UnicodeUTF8))
+        self.lockchk.setText(QtGui.QApplication.translate("MainWindow", "锁定操作", None, QtGui.QApplication.UnicodeUTF8))
 
