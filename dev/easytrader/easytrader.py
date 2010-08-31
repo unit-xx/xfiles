@@ -158,6 +158,10 @@ def main(args):
     pmodel = PortfolioModel(p)
     sindexmodel = StockIndexModel(p)
 
+    pstat = PortfolioStat()
+    pstat.ptfname = os.path.basename(portfoliofn)[0:-4]
+    pstat.username = username
+
     # main window
     uic = uicontrol(session_config, p, pmodel, sindexmodel, opennew)
     uic.setup()
@@ -223,11 +227,20 @@ def main(args):
     bdiffupdter = basediffUpdater(pupdater, jsd_sessioncfg, uic)
     bdiffupdter.start()
 
-    ssu = StockStatUpdater(uic, p)
+    ssu = StockStatUpdater(uic, p, pstat)
     ssu.start()
+
+    caddr = config.get(MYSEC, "controlleraddr")
+    cport = config.getint(MYSEC, "controllerport")
+    client = trdClient(caddr, cport, pstat)
+
+    client.start()
 
     uic.show()
     app.exec_()
+
+    client.stop()
+    client.join()
 
     # exit process
     ssu.stop()

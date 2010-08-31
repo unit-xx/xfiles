@@ -1,3 +1,6 @@
+import pickle
+import struct
+
 class dictdict(dict):
     def __getitem__(self, key):
         if not key in self:
@@ -20,7 +23,7 @@ class command:
     def pack(self):
         msg = pickle.dumps(self, -1)
         msglen = len(msg)
-        return pack("!I", msglen) + msg
+        return struct.pack("!I", msglen) + msg
 
 def recv_n(conn, n):
     left = n

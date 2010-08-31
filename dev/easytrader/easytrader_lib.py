@@ -245,6 +245,8 @@ class SIndexRecord:
 class PortfolioStat:
     def __init__(self):
         self.data = {}
+        self.username = ""
+        self.ptfname = ""
 
     def __getitem__(self, key):
         return self.data[key]
@@ -268,10 +270,13 @@ class PtfStatReporter(Thread):
         self.runflag = False
 
     def run(self):
+        self.logger.info("start running")
         while self.runflag:
-            c = util.command
+
+            c = util.command()
             c.cmdname = "pstatreport"
-            c.kwargs = pstat.data
+            c.args.append(self.pstat.ptfname)
+            c.kwargs = self.pstat.data
             self.conn.sendall(c.pack())
 
             time.sleep(2)
@@ -291,6 +296,7 @@ class CmdWorker(Thread):
         self.runflag = False
 
     def run(self):
+        self.logger.info("start running")
         while self.runflag:
             try:
                 data = self.fconn.read(4)
@@ -337,10 +343,14 @@ class trdClient(Thread):
             self.logger.warning("cannot connect controller.")
             return
 
+        self.logger.info("connected to controller.")
         self.conn = conn
         self.fconn = conn.makefile("r+b")
 
-        # TODO: register
+        regcmd = util.command()
+        regcmd.cmdname = "register"
+        regcmd.args = [self.pstat.username, self.pstat.ptfname]
+        self.conn.sendall(regcmd.pack())
 
         psrpter = PtfStatReporter(self.conn, self.pstat)
         cwrker = CmdWorker(self.fconn)
@@ -357,7 +367,12 @@ class trdClient(Thread):
         psrpter.join()
         cwrker.join()
 
-        # TODO: unregister
+        regcmd = util.command()
+        regcmd.cmdname = "unregister"
+        regcmd.args = [self.pstat.username, self.pstat.ptfname]
+        self.conn.sendall(regcmd.pack())
+
+        self.conn.close()
 
 class Portfolio(object):
 
@@ -2631,10 +2646,11 @@ class SIFOrderPushee(Thread):
             self.logger.exception("Oh!!!")
 
 class StockStatUpdater(Thread):
-    def __init__(self, ui, portfolio):
+    def __init__(self, ui, portfolio, pstat):
         Thread.__init__(self)
         self.ui = ui
         self.portfolio = portfolio
+        self.pstat = pstat
         self.runflag = True
         self.name = self.__class__.__name__
         self.logger = logging.getLogger()
@@ -2809,6 +2825,25 @@ class StockStatUpdater(Thread):
                         Qt.QueuedConnection,
                         Q_ARG("QString",
                             QString(u"%0.2f"%sellpoint)))
+
+                self.pstat["buytotalw"] = buytotalw
+                self.pstat["selltotalw"] = selltotalw
+
+                self.pstat["stopped"] = stopped
+                self.pstat["buyable"] = buyable
+                self.pstat["buycomplete"] = buycomplete
+                self.pstat["buywait"] = buywait
+                self.pstat["buyfail"] = buyfail
+                self.pstat["cancelbuyfail"] = cancelbuyfail
+
+                self.pstat["sellable"] = sellable
+                self.pstat["sellcomplete"] = sellcomplete
+                self.pstat["sellwait"] = sellwait
+                self.pstat["sellfail"] = sellfail
+                self.pstat["cancelsellfail"] = cancelsellfail
+
+                self.pstat["buypoint"] = buypoint
+                self.pstat["sellpoint"] = sellpoint
 
                 time.sleep(2)
             except Exception:

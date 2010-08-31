@@ -8,7 +8,7 @@ import pickle
 import SocketServer
 import ConfigParser
 
-from threading import Thread
+from threading import Thread, Lock
 from struct import unpack
 
 import trdTablemodel
@@ -40,19 +40,32 @@ class uicontrol(QMainWindow, Ui_MainWindow):
 
 class masterHandler(SocketServer.StreamRequestHandler):
     def handle(self):
-        (msglen,) = unpack("!I", self.rfile.read(4))
-        cmd = pickle.loads(self.rfile.read(msglen))
-        try:
-            handler = getattr(self, cmd.cmdname+"Handler")
-            return handler(*cmd.args, **cmd.kwargs)
-        except AttributeError:
-            #print("unknown cmd: <%s>" % str(cmd))
-            self.server.logger.exception("unknown cmd: <%s>", str(cmd))
+        while 1:
+            try:
+                (msglen,) = unpack("!I", self.rfile.read(4))
+                cmd = pickle.loads(self.rfile.read(msglen))
+            except socket.error:
+                break
+
+            handler = None
+            try:
+                handler = getattr(self, cmd.cmdname+"Handler")
+            except AttributeError:
+                #print("unknown cmd: <%s>" % str(cmd))
+                self.server.logger.exception("unknown cmd: <%s>", str(cmd))
+
+            try:
+                if handler:
+                    self.server.logger.info("caling handler: %s",
+                            cmd.cmdname+"Handler")
+                    handler(*cmd.args, **cmd.kwargs)
+            except:
+                self.server.logger.exception("handler meets exception.")
 
     def registerHandler(self, *args, **kwargs):
         """
         register
-        [username, ptfname, ip, port]
+        [username, ptfname]
         {}
         """
         try:
@@ -63,12 +76,23 @@ class masterHandler(SocketServer.StreamRequestHandler):
             self.logger.exception("cannot connect back to client.")
             #print("cannot connect back to client.")
 
-        self.server.csockmap[args[0]][args[1]] = self.request
-        self.server.ptfmodel.beginInsertRows(QModelIndex(), 0, 0)
-        self.server.ptfdata.addrow(args[1])
-        self.server.ptfmodel.endInsertRows()
-        self.server.ptfdata.data[args[1]]["username"] = args[0]
-        self.server.ptfdata.data[args[1]]["ptfname"] = args[1]
+        with self.server.lock:
+            self.server.csockmap[args[0]][args[1]] = self.request
+            self.server.ptfmodel.beginInsertRows(QModelIndex(), 0, 0)
+            self.server.ptfdata.addrow(args[1])
+            self.server.ptfmodel.endInsertRows()
+            self.server.ptfdata.data[args[1]]["username"] = args[0]
+            self.server.ptfdata.data[args[1]]["ptfname"] = args[1]
+
+    def pstatreportHandler(self, *args, **kwargs):
+        if args[0] in self.server.ptfdata.data:
+            self.server.ptfdata.data[args[0]].update(kwargs)
+            QMetaObject.invokeMethod(self.server.ptfmodel, "updaterow",
+                    Qt.QueuedConnection,
+                    Q_ARG("int",
+                        self.server.ptfmodel.rownum(args[0])))
+        else:
+            self.logger.info("pstat from unknown source: %s", args[0])
 
 class masterServer(SocketServer.ThreadingTCPServer):
     def __init__(self, server_addr, RequestHandlerClass,
@@ -85,6 +109,7 @@ class masterServer(SocketServer.ThreadingTCPServer):
         self.csockmap = csockmap
         self.ptfmodel = ptfmodel
         self.ptfdata = ptfdata
+        self.lock = Lock()
         self.logger = logging.getLogger()
 
 def main(args):
@@ -123,7 +148,7 @@ def main(args):
     # init datas
     csockmap = util.dictdict()
     ptfdata = trdTablemodel.trdData()
-    ptfdata.colname = ["username", "ptfname"]
+    ptfdata.colname = ["username", "ptfname", "buytotalw", "stopped"]
     ptfmodel = trdTablemodel.TradeTableModel_dd(ptfdata)
 
     # setup ui

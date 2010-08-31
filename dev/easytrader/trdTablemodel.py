@@ -42,6 +42,9 @@ class TradeTableModel_dd(QAbstractTableModel):
     def columnCount(self, parent):
         return len(self.colname)
 
+    def rownum(self, key):
+        return self.rowname.index(key)
+
     def headerData(self, section, orientation, role):
         if orientation == Qt.Horizontal and role == Qt.DisplayRole:
             hname = self.colname[section]
