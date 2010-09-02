@@ -367,10 +367,10 @@ class trdClient(Thread):
         psrpter.join()
         cwrker.join()
 
-        regcmd = util.command()
-        regcmd.cmdname = "unregister"
-        regcmd.args = [self.pstat.username, self.pstat.ptfname]
-        self.conn.sendall(regcmd.pack())
+        unregcmd = util.command()
+        unregcmd.cmdname = "unregister"
+        unregcmd.args = [self.pstat.username, self.pstat.ptfname]
+        self.conn.sendall(unregcmd.pack())
 
         self.conn.close()
 
@@ -2844,6 +2844,8 @@ class StockStatUpdater(Thread):
 
                 self.pstat["buypoint"] = buypoint
                 self.pstat["sellpoint"] = sellpoint
+
+                self.pstat["state"] = self.portfolio.bostate
 
                 time.sleep(2)
             except Exception:

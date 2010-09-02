@@ -58,7 +58,9 @@ class masterHandler(SocketServer.StreamRequestHandler):
                 if handler:
                     self.server.logger.info("caling handler: %s",
                             cmd.cmdname+"Handler")
-                    handler(*cmd.args, **cmd.kwargs)
+                    shouldexit = handler(*cmd.args, **cmd.kwargs)
+                    if shouldexit == True:
+                        break
             except:
                 self.server.logger.exception("handler meets exception.")
 
@@ -68,23 +70,40 @@ class masterHandler(SocketServer.StreamRequestHandler):
         [username, ptfname]
         {}
         """
-        try:
-            pass
-            #s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            #s.connect( (args[2],args[3]) )
-        except socket.error:
-            self.logger.exception("cannot connect back to client.")
-            #print("cannot connect back to client.")
-
         with self.server.lock:
-            self.server.csockmap[args[0]][args[1]] = self.request
-            self.server.ptfmodel.beginInsertRows(QModelIndex(), 0, 0)
-            self.server.ptfdata.addrow(args[1])
-            self.server.ptfmodel.endInsertRows()
-            self.server.ptfdata.data[args[1]]["username"] = args[0]
-            self.server.ptfdata.data[args[1]]["ptfname"] = args[1]
+            if args[1] not in self.server.ptfdata:
+                self.server.csockmap[args[0]][args[1]] = self.request
+                self.server.ptfmodel.beginInsertRows(QModelIndex(), 0, 0)
+                self.server.ptfdata.addrow(args[1])
+                self.server.ptfmodel.endInsertRows()
+                self.server.ptfdata.data[args[1]]["username"] = args[0]
+                self.server.ptfdata.data[args[1]]["ptfname"] = args[1]
+            else:
+                self.server.logger.warning("duplicated register")
+                return True
+        return False
+
+    def unregisterHandler(self, *args, **kwargs):
+        """
+        unregister
+        [username, ptfname]
+        {}
+        """
+        with self.server.lock:
+            if args[1] in self.server.ptfdata:
+                self.server.csockmap[args[0]][args[1]] = None
+                r = self.server.ptfmodel.rownum(args[1])
+                self.server.ptfmodel.beginRemoveRows(QModelIndex(), r, r)
+                self.server.ptfdata.delrow(r)
+                self.server.ptfmodel.endRemoveRows()
+        return True
 
     def pstatreportHandler(self, *args, **kwargs):
+        """
+        pstatreport
+        [ptfname]
+        {<data>}
+        """
         if args[0] in self.server.ptfdata.data:
             self.server.ptfdata.data[args[0]].update(kwargs)
             QMetaObject.invokeMethod(self.server.ptfmodel, "updaterow",
@@ -93,6 +112,7 @@ class masterHandler(SocketServer.StreamRequestHandler):
                         self.server.ptfmodel.rownum(args[0])))
         else:
             self.logger.info("pstat from unknown source: %s", args[0])
+        return False
 
 class masterServer(SocketServer.ThreadingTCPServer):
     def __init__(self, server_addr, RequestHandlerClass,
@@ -148,7 +168,8 @@ def main(args):
     # init datas
     csockmap = util.dictdict()
     ptfdata = trdTablemodel.trdData()
-    ptfdata.colname = ["username", "ptfname", "buytotalw", "stopped"]
+    ptfdata.colname = ["username", "ptfname", "state", 
+            "buytotalw", "stopped"]
     ptfmodel = trdTablemodel.TradeTableModel_dd(ptfdata)
 
     # setup ui

@@ -12,7 +12,17 @@ class trdData:
 
     def addrow(self, row):
         tmp = self.data[row]
+        tmp = self.bgcolor[row]
         self.rowname.append(row)
+
+    def delrow(self, row):
+        r = self.rowname[row]
+        del self.rowname[row]
+        del self.data[r]
+        del self.bgcolor[r]
+
+    def __contains__(self, key):
+        return key in self.data
 
 class TradeTableModel_dd(QAbstractTableModel):
     """
@@ -42,8 +52,8 @@ class TradeTableModel_dd(QAbstractTableModel):
     def columnCount(self, parent):
         return len(self.colname)
 
-    def rownum(self, key):
-        return self.rowname.index(key)
+    def rownum(self, row):
+        return self.rowname.index(row)
 
     def headerData(self, section, orientation, role):
         if orientation == Qt.Horizontal and role == Qt.DisplayRole:
