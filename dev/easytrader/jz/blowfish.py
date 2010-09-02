@@ -46,11 +46,6 @@ The author of CTR changes is:
 """
 
 import struct, types
-try:
-    import psyco
-    #psyco.full()
-except ImportError:
-    print "psyco not available."
 
 __author__ = "Michael Gilfix <mgilfix@eecs.tufts.edu>"
 
@@ -553,8 +548,12 @@ class Blowfish:
 ##############################################################
 # Module testing
 
-if psyco:
+try:
+    import psyco
+    #psyco.full()
     psyco.bind(Blowfish)
+except ImportError:
+    print "psyco not available."
 
 if __name__ == '__main__':
     key = 'This is a test key'
