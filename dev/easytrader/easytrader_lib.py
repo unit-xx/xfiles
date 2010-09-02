@@ -285,12 +285,16 @@ class CmdWorker(Thread):
     """
     receive commands from remote and execute them
     """
-    def __init__(self, fconn):
+    def __init__(self, fconn, uic):
         Thread.__init__(self)
         self.fconn = fconn
+        self.uic = uic
         self.runflag = True
         self.logger = logging.getLogger()
         self.name = self.__class__.__name__
+        self.btnslotmap = {
+                "buyorder":"buyBatch_r"
+                }
 
     def stop(self):
         self.runflag = False
@@ -300,10 +304,11 @@ class CmdWorker(Thread):
         while self.runflag:
             try:
                 data = self.fconn.read(4)
-                (msglen,) = unpack("!H", data)
+                (msglen,) = unpack("!I", data)
                 cmd = pickle.loads(self.fconn.read(msglen))
                 try:
                     handler = getattr(self, cmd.cmdname+"Handler")
+                    self.logger.info("cmd: <%s>", str(cmd))
                     handler(*cmd.args, **cmd.kwargs)
                 except AttributeError:
                     #print("unknown cmd: <%s>" % str(cmd))
@@ -312,8 +317,29 @@ class CmdWorker(Thread):
             except socket.timeout:
                 pass
 
-    def testHandler(self, *args, **kwargs):
-        self.logger.info("cmd: <%s>", str(cmd))
+    def buttonHandler(self, *args, **kwargs):
+        # args = buttonname
+        slotn = self.btnslotmap[args[0]]
+        slot = getattr(self.uic, slotn)
+        print slot
+        #slot()
+
+    def checkboxHandler(self, *args, **kwargs):
+        # args = checkboxname, bool state
+        chk = getattr(self.uic, args[0])
+        QMetaObject.invokeMethod(chk, "setChecked",
+                Qt.QueuedConnection,
+                Q_ARG("bool", args[1]))
+
+    def doublespinHandler(self, *args, **kwargs):
+        # args = spinname, value
+        spin = getattr(self.uic, args[0])
+        spin.setValue(args[1])
+
+    def comboHandler(self, *args, **kwargs):
+        combo = getattr(self.uic, args[0])
+        combo.setCurrentIndex(args[1])
+
 
 class trdClient(Thread):
     """
@@ -322,11 +348,12 @@ class trdClient(Thread):
 
     depends on PtfStatReporter and CmdWorker to work.
     """
-    def __init__(self, caddr, cport, pstat):
+    def __init__(self, caddr, cport, pstat, uic):
         Thread.__init__(self)
         self.caddr = caddr
         self.cport = cport
         self.pstat = pstat
+        self.uic = uic
         self.runflag = True
         self.logger = logging.getLogger()
         self.name = self.__class__.__name__
@@ -353,7 +380,7 @@ class trdClient(Thread):
         self.conn.sendall(regcmd.pack())
 
         psrpter = PtfStatReporter(self.conn, self.pstat)
-        cwrker = CmdWorker(self.fconn)
+        cwrker = CmdWorker(self.fconn, self.uic)
 
         psrpter.start()
         cwrker.start()
@@ -3396,6 +3423,11 @@ class uicontrol(QMainWindow, tradeui.Ui_MainWindow):
             self.portfolio.buyBatch()
 
     @pyqtSlot()
+    def buyBatch_r(self):
+        # _r for remote call from controller
+        self.portfolio.buyBatch()
+
+    @pyqtSlot()
     def cancelBuyBatch(self):
         #ret = QMessageBox.warning(self.mainwindow,
         #        u"", u"<H3>确认<FONT COLOR='#FF0000'>撤销买入</FONT>？</H3>",
@@ -3413,6 +3445,10 @@ class uicontrol(QMainWindow, tradeui.Ui_MainWindow):
                 QMessageBox.Ok|QMessageBox.Cancel)
         if QMessageBox.Ok == ret:
             self.portfolio.sellBatch()
+
+    @pyqtSlot()
+    def sellBatch_r(self):
+        self.portfolio.sellBatch()
 
     @pyqtSlot()
     def cancelSellBatch(self):
@@ -3436,6 +3472,12 @@ class uicontrol(QMainWindow, tradeui.Ui_MainWindow):
             self.savePortfolio()
 
     @pyqtSlot()
+    def openshort_r(self):
+        self.portfolio.openshort()
+        QMetaObject.invokeMethod(self.sindexmodel, "updaterow", Qt.QueuedConnection)
+        self.savePortfolio()
+
+    @pyqtSlot()
     def cancelopen(self):
         #ret = QMessageBox.warning(self.mainwindow,
         #        u"", u"<H3>确认<FONT COLOR='#FF0000'>取消建仓</FONT>？</H3>",
@@ -3457,6 +3499,12 @@ class uicontrol(QMainWindow, tradeui.Ui_MainWindow):
             self.portfolio.closeshort()
             QMetaObject.invokeMethod(self.sindexmodel, "updaterow", Qt.QueuedConnection)
             self.savePortfolio()
+
+    @pyqtSlot()
+    def closeshort_r(self):
+        self.portfolio.closeshort()
+        QMetaObject.invokeMethod(self.sindexmodel, "updaterow", Qt.QueuedConnection)
+        self.savePortfolio()
 
     @pyqtSlot()
     def cancelclose(self):

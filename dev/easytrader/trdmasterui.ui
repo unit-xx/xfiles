@@ -7,15 +7,15 @@
     <x>0</x>
     <y>0</y>
     <width>800</width>
-    <height>600</height>
+    <height>585</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>TradeMaster</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <layout class="QGridLayout" name="gridLayout_8">
-    <item row="0" column="1">
+   <layout class="QGridLayout" name="gridLayout_9">
+    <item row="0" column="0">
      <widget class="QCheckBox" name="ontopchk">
       <property name="text">
        <string>在最顶端</string>
@@ -25,7 +25,24 @@
       </property>
      </widget>
     </item>
-    <item row="0" column="4">
+    <item row="0" column="1">
+     <widget class="QCheckBox" name="confirmchk">
+      <property name="text">
+       <string>操作需确认</string>
+      </property>
+      <property name="checked">
+       <bool>true</bool>
+      </property>
+     </widget>
+    </item>
+    <item row="0" column="2">
+     <widget class="QCheckBox" name="lockchk">
+      <property name="text">
+       <string>锁定操作</string>
+      </property>
+     </widget>
+    </item>
+    <item row="0" column="3">
      <spacer name="horizontalSpacer_3">
       <property name="orientation">
        <enum>Qt::Horizontal</enum>
@@ -38,7 +55,7 @@
       </property>
      </spacer>
     </item>
-    <item row="1" column="0" colspan="5">
+    <item row="1" column="0" colspan="4">
      <widget class="QTabWidget" name="tabWidget_2">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
@@ -66,24 +83,58 @@
            <string>股票买入</string>
           </property>
           <layout class="QGridLayout" name="gridLayout">
-           <item row="0" column="0">
-            <widget class="QPushButton" name="buybtn">
+           <item row="0" column="4">
+            <widget class="QPushButton" name="buyorder">
              <property name="text">
               <string>买入</string>
              </property>
             </widget>
            </item>
-           <item row="0" column="1">
-            <widget class="QPushButton" name="pushButton_5">
+           <item row="0" column="5">
+            <widget class="QPushButton" name="cancelbuyorder">
              <property name="text">
               <string>撤买</string>
              </property>
             </widget>
            </item>
-           <item row="0" column="2">
-            <widget class="QPushButton" name="pushButton_6">
+           <item row="0" column="0">
+            <widget class="QLabel" name="label">
              <property name="text">
-              <string>强制撤买</string>
+              <string>买入价格</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QComboBox" name="pricepolicybuy"/>
+           </item>
+           <item row="0" column="2">
+            <widget class="QLabel" name="label_2">
+             <property name="text">
+              <string>修正</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="3">
+            <widget class="QDoubleSpinBox" name="buypricefixspin">
+             <property name="minimum">
+              <double>-99.000000000000000</double>
+             </property>
+             <property name="singleStep">
+              <double>0.010000000000000</double>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="6">
+            <widget class="QCheckBox" name="forcecancelbuychk">
+             <property name="text">
+              <string>强撤</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="7">
+            <widget class="QPushButton" name="saveorder_2">
+             <property name="text">
+              <string>保存组合</string>
              </property>
             </widget>
            </item>
@@ -209,8 +260,59 @@
       </widget>
      </widget>
     </item>
-    <item row="2" column="0" colspan="5">
+    <item row="2" column="0" colspan="4">
+     <widget class="QGroupBox" name="groupBox_5">
+      <property name="title">
+       <string/>
+      </property>
+      <layout class="QGridLayout" name="gridLayout_8">
+       <item row="0" column="0">
+        <widget class="QPushButton" name="buybtn_2">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="text">
+          <string>全选</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="1">
+        <widget class="QPushButton" name="buybtn_3">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="text">
+          <string>全不选</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="2">
+        <spacer name="horizontalSpacer_4">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>40</width>
+           <height>20</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item row="3" column="0" colspan="4">
      <widget class="QTabWidget" name="tabWidget">
+      <property name="tabPosition">
+       <enum>QTabWidget::South</enum>
+      </property>
       <widget class="QWidget" name="tab">
        <attribute name="title">
         <string>页</string>
@@ -228,23 +330,6 @@
         </item>
        </layout>
       </widget>
-     </widget>
-    </item>
-    <item row="0" column="2">
-     <widget class="QCheckBox" name="confirmchk">
-      <property name="text">
-       <string>操作需确认</string>
-      </property>
-      <property name="checked">
-       <bool>true</bool>
-      </property>
-     </widget>
-    </item>
-    <item row="0" column="3">
-     <widget class="QCheckBox" name="lockchk">
-      <property name="text">
-       <string>锁定操作</string>
-      </property>
      </widget>
     </item>
    </layout>

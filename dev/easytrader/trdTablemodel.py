@@ -10,6 +10,9 @@ class trdData:
         self.colnamemap = dict()
         self.rowname = []
 
+    def getrow(self, i):
+        return self.rowname[i]
+
     def addrow(self, row):
         tmp = self.data[row]
         tmp = self.bgcolor[row]

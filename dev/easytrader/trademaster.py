@@ -19,15 +19,45 @@ from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 
 class uicontrol(QMainWindow, Ui_MainWindow):
-    def __init__(self, ptfmodel):
+    def __init__(self, ptfmodel, mserver):
         QMainWindow.__init__(self)
         self.ptfmodel = ptfmodel
+        self.mserver = mserver
 
     def setup(self):
         self.setupUi(self)
         self.tableView.setModel(self.ptfmodel)
 
         self.on_ontopchk_stateChanged(self.ontopchk.checkState())
+
+        self.pricepolicylist = ["latest", "s5", "s4", "s3", "s2", "s1", "b1", "b2", "b3", "b4", "b5"]
+        self.buypolicy = "latest"
+        self.sellpolicy = "latest"
+        self.pricepolicynamemap = {"latest":u"最新价",
+                "s5":u"卖五",
+                "s4":u"卖四",
+                "s3":u"卖三",
+                "s2":u"卖二",
+                "s1":u"卖一",
+                "b1":u"买一",
+                "b2":u"买二",
+                "b3":u"买三",
+                "b4":u"买四",
+                "b5":u"买五",
+                "mktval":u"市价"
+                }
+
+        for price in self.pricepolicylist:
+            self.pricepolicybuy.addItem(self.pricepolicynamemap[price])
+        self.pricepolicybuy.setCurrentIndex(self.pricepolicylist.index(self.buypolicy))
+
+
+    def getselected(self):
+        ptfindex = []
+        sel = self.tableView.selectionModel().selectedRows()
+        for s in sel:
+            ptfindex.append(self.mserver.ptfdata.getrow(s.row()))
+        return ptfindex
 
     @pyqtSlot(int)
     def on_ontopchk_stateChanged(self, state):
@@ -37,6 +67,66 @@ class uicontrol(QMainWindow, Ui_MainWindow):
         else:
             self.setWindowFlags(flags^(Qt.WindowStaysOnTopHint));
         self.show()
+
+    def sendbutton(self):
+        ptfs = self.getselected()
+        for p in ptfs:
+            s = self.mserver.csockmap[p]
+            btnname = str(self.sender().objectName())
+            cmd = util.command()
+            cmd.cmdname = "button"
+            cmd.args.append(btnname)
+            s.sendall(cmd.pack())
+
+    def sendcheckbox(self):
+        ptfs = self.getselected()
+        for p in ptfs:
+            s = self.mserver.csockmap[p]
+            chkname = str(self.sender().objectName())
+            cmd = util.command()
+            cmd.cmdname = "checkbox"
+            cmd.args.append(chkname)
+            cmd.args.append(self.sender().isChecked())
+            s.sendall(cmd.pack())
+
+    def senddoublespin(self, value):
+        ptfs = self.getselected()
+        for p in ptfs:
+            s = self.mserver.csockmap[p]
+            spinname = str(self.sender().objectName())
+            cmd = util.command()
+            cmd.cmdname = "doublespin"
+            cmd.args.append(spinname)
+            cmd.args.append(value)
+            s.sendall(cmd.pack())
+
+    def sendcombo(self, index):
+        ptfs = self.getselected()
+        for p in ptfs:
+            s = self.mserver.csockmap[p]
+            comboname = str(self.sender().objectName())
+            cmd = util.command()
+            cmd.cmdname = "combo"
+            cmd.args.append(comboname)
+            cmd.args.append(index)
+            s.sendall(cmd.pack())
+
+    @pyqtSlot()
+    def on_buyorder_clicked(self):
+        self.sendbutton()
+
+    @pyqtSlot(int)
+    def on_forcecancelbuychk_stateChanged(self, state):
+        self.sendcheckbox()
+
+    @pyqtSlot(float)
+    def on_buypricefixspin_valueChanged(self, value):
+        self.senddoublespin(value)
+
+    @pyqtSlot(int)
+    def on_pricepolicybuy_currentIndexChanged(self, index):
+        self.sendcombo(index)
+
 
 class masterHandler(SocketServer.StreamRequestHandler):
     def handle(self):
@@ -72,7 +162,7 @@ class masterHandler(SocketServer.StreamRequestHandler):
         """
         with self.server.lock:
             if args[1] not in self.server.ptfdata:
-                self.server.csockmap[args[0]][args[1]] = self.request
+                self.server.csockmap[args[1]] = self.request
                 self.server.ptfmodel.beginInsertRows(QModelIndex(), 0, 0)
                 self.server.ptfdata.addrow(args[1])
                 self.server.ptfmodel.endInsertRows()
@@ -91,7 +181,7 @@ class masterHandler(SocketServer.StreamRequestHandler):
         """
         with self.server.lock:
             if args[1] in self.server.ptfdata:
-                self.server.csockmap[args[0]][args[1]] = None
+                self.server.csockmap[args[1]] = None
                 r = self.server.ptfmodel.rownum(args[1])
                 self.server.ptfmodel.beginRemoveRows(QModelIndex(), r, r)
                 self.server.ptfdata.delrow(r)
@@ -166,15 +256,11 @@ def main(args):
     logger.info(msg)
 
     # init datas
-    csockmap = util.dictdict()
+    csockmap = dict()
     ptfdata = trdTablemodel.trdData()
     ptfdata.colname = ["username", "ptfname", "state", 
             "buytotalw", "stopped"]
     ptfmodel = trdTablemodel.TradeTableModel_dd(ptfdata)
-
-    # setup ui
-    uic = uicontrol(ptfmodel)
-    uic.setup()
 
     # start master socket server
     mserver = masterServer( ("127.0.0.1", config.getint(MYSEC, "port")),
@@ -182,6 +268,10 @@ def main(args):
             csockmap, ptfmodel, ptfdata)
     t = Thread(target=mserver.serve_forever)
     t.start()
+
+    # setup ui
+    uic = uicontrol(ptfmodel, mserver)
+    uic.setup()
 
     uic.show()
     app.exec_()

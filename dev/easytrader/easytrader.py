@@ -232,7 +232,7 @@ def main(args):
 
     caddr = config.get(MYSEC, "controlleraddr")
     cport = config.getint(MYSEC, "controllerport")
-    client = trdClient(caddr, cport, pstat)
+    client = trdClient(caddr, cport, pstat, uic)
 
     client.start()
 
