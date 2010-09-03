@@ -342,8 +342,7 @@ class CmdWorker(Thread):
         # args = buttonname
         slotn = self.btnslotmap[args[0]]
         slot = getattr(self.uic, slotn)
-        print slot
-        #slot()
+        slot()
 
     def checkboxHandler(self, *args, **kwargs):
         # args = checkboxname, bool state
