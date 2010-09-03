@@ -27,6 +27,7 @@ class uicontrol(QMainWindow, Ui_MainWindow):
     def setup(self):
         self.setupUi(self)
         self.tableView.setModel(self.ptfmodel)
+        self.ptfmodel.table = self.tableView
 
         self.on_ontopchk_stateChanged(self.ontopchk.checkState())
         self.on_lockchk_stateChanged(self.lockchk.checkState())
@@ -270,6 +271,8 @@ class masterHandler(SocketServer.StreamRequestHandler):
                 self.server.ptfmodel.endInsertRows()
                 self.server.ptfdata.data[args[1]]["username"] = args[0]
                 self.server.ptfdata.data[args[1]]["ptfname"] = args[1]
+                if len(self.server.ptfdata) == 1:
+                    self.server.ptfmodel.table.resizeColumnsToContents()
             else:
                 self.server.logger.warning("duplicated register")
                 return True
@@ -360,8 +363,26 @@ def main(args):
     # init datas
     csockmap = dict()
     ptfdata = trdTablemodel.trdData()
-    ptfdata.colname = ["username", "ptfname", "state", 
-            "buytotalw", "stopped"]
+    ptfdata.colname = ["username", "ptfname", 
+            "shares", "state",
+            "buytotalw", "buypoint", "selltotalw", "sellpoint",
+            "stopped",
+            "buyable", "buycomplete", "sellable", "sellcomplete"]
+    ptfdata.colnamemap = {
+            "username":u"用户",
+            "ptfname":u"组合", 
+            "shares":u"手数",
+            "state":u"状态",
+            "buytotalw":u"买入（万）",
+            "buypoint":u"买入点",
+            "selltotalw":u"卖出（万）",
+            "sellpoint":u"卖出点",
+            "stopped":u"停牌",
+            "buyable":u"可买",
+            "buycomplete":u"已买入",
+            "sellable":u"可卖",
+            "sellcomplete":u"已卖出",
+            }
     ptfmodel = trdTablemodel.TradeTableModel_dd(ptfdata)
 
     # start master socket server

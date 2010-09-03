@@ -27,6 +27,9 @@ class trdData:
     def __contains__(self, key):
         return key in self.data
 
+    def __len__(self):
+        return len(self.data)
+
 class TradeTableModel_dd(QAbstractTableModel):
     """
     dd for dict of dict
@@ -48,6 +51,7 @@ class TradeTableModel_dd(QAbstractTableModel):
         self.colname = modeldata.colname
         self.colnamemap = modeldata.colnamemap
         self.rowname = modeldata.rowname
+        self.table = None
 
     def rowCount(self, parent):
         return len(self.rowname)
@@ -79,7 +83,9 @@ class TradeTableModel_dd(QAbstractTableModel):
         if role == Qt.DisplayRole:
             try:
                 rawdata = self.data[rowkey][columnkey]
-                if not isinstance(rawdata, unicode):# expect rawdata as numbers here
+                if isinstance(rawdata, float):
+                    rawdata = "%0.2f" % rawdata
+                elif not isinstance(rawdata, unicode):# expect rawdata as numbers here
                     rawdata = str(rawdata)
                 celldata = QString(rawdata)
             except KeyError:

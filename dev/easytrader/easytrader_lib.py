@@ -2897,6 +2897,7 @@ class StockStatUpdater(Thread):
                 self.pstat["sellpoint"] = sellpoint
 
                 self.pstat["state"] = self.portfolio.bostate
+                self.pstat["shares"] = self.portfolio.sindexinfo["count"]
 
                 time.sleep(2)
             except Exception:
