@@ -361,6 +361,9 @@ class CmdWorker(Thread):
         combo = getattr(self.uic, args[0])
         combo.setCurrentIndex(args[1])
 
+    def raiseHandler(self, *args, **kwargs):
+        self.uic.show()
+        self.uic.raise_()
 
 class trdClient(Thread):
     """

@@ -29,6 +29,7 @@ class uicontrol(QMainWindow, Ui_MainWindow):
         self.tableView.setModel(self.ptfmodel)
 
         self.on_ontopchk_stateChanged(self.ontopchk.checkState())
+        self.on_lockchk_stateChanged(self.lockchk.checkState())
 
         # fill stock price combos
         self.pricepolicylist = ["latest", "s5", "s4", "s3", "s2", "s1", "b1", "b2", "b3", "b4", "b5"]
@@ -78,6 +79,19 @@ class uicontrol(QMainWindow, Ui_MainWindow):
         else:
             self.setWindowFlags(flags^(Qt.WindowStaysOnTopHint));
         self.show()
+
+    @pyqtSlot()
+    def on_raisebtn_clicked(self):
+        self.sendraise()
+
+    def sendraise(self):
+        ptfs = self.getselected()
+        for p in ptfs:
+            s = self.mserver.csockmap[p]
+            cmd = util.command()
+            cmd.cmdname = "raise"
+            s.sendall(cmd.pack())
+
 
     def sendbutton(self):
         ptfs = self.getselected()
@@ -129,6 +143,10 @@ class uicontrol(QMainWindow, Ui_MainWindow):
     @pyqtSlot()
     def on_deselall_clicked(self):
         self.tableView.clearSelection()
+
+    @pyqtSlot(int)
+    def on_lockchk_stateChanged(self, state):
+        self.ctltab.setEnabled(not self.lockchk.isChecked())
 
     # buttons
     @pyqtSlot()

@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'trdmasterui.ui'
 #
-# Created: Fri Sep 03 11:29:36 2010
+# Created: Fri Sep 03 13:22:25 2010
 #      by: PyQt4 UI code generator 4.7.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -30,13 +30,13 @@ class Ui_MainWindow(object):
         self.gridLayout_9.addWidget(self.lockchk, 0, 2, 1, 1)
         spacerItem = QtGui.QSpacerItem(530, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
         self.gridLayout_9.addItem(spacerItem, 0, 3, 1, 1)
-        self.tabWidget_2 = QtGui.QTabWidget(self.centralwidget)
+        self.ctltab = QtGui.QTabWidget(self.centralwidget)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.tabWidget_2.sizePolicy().hasHeightForWidth())
-        self.tabWidget_2.setSizePolicy(sizePolicy)
-        self.tabWidget_2.setObjectName("tabWidget_2")
+        sizePolicy.setHeightForWidth(self.ctltab.sizePolicy().hasHeightForWidth())
+        self.ctltab.setSizePolicy(sizePolicy)
+        self.ctltab.setObjectName("ctltab")
         self.tab_2 = QtGui.QWidget()
         self.tab_2.setObjectName("tab_2")
         self.gridLayout_6 = QtGui.QGridLayout(self.tab_2)
@@ -111,7 +111,7 @@ class Ui_MainWindow(object):
         self.gridLayout_6.addWidget(self.groupBox_2, 0, 1, 1, 1)
         spacerItem1 = QtGui.QSpacerItem(40, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
         self.gridLayout_6.addItem(spacerItem1, 0, 2, 1, 1)
-        self.tabWidget_2.addTab(self.tab_2, "")
+        self.ctltab.addTab(self.tab_2, "")
         self.tab_3 = QtGui.QWidget()
         self.tab_3.setObjectName("tab_3")
         self.gridLayout_7 = QtGui.QGridLayout(self.tab_3)
@@ -175,8 +175,8 @@ class Ui_MainWindow(object):
         self.gridLayout_7.addWidget(self.groupBox_4, 0, 1, 1, 1)
         spacerItem2 = QtGui.QSpacerItem(40, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
         self.gridLayout_7.addItem(spacerItem2, 0, 2, 1, 1)
-        self.tabWidget_2.addTab(self.tab_3, "")
-        self.gridLayout_9.addWidget(self.tabWidget_2, 1, 0, 1, 4)
+        self.ctltab.addTab(self.tab_3, "")
+        self.gridLayout_9.addWidget(self.ctltab, 1, 0, 1, 4)
         self.groupBox_5 = QtGui.QGroupBox(self.centralwidget)
         self.groupBox_5.setTitle("")
         self.groupBox_5.setObjectName("groupBox_5")
@@ -199,7 +199,15 @@ class Ui_MainWindow(object):
         self.deselall.setObjectName("deselall")
         self.gridLayout_8.addWidget(self.deselall, 0, 1, 1, 1)
         spacerItem3 = QtGui.QSpacerItem(40, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
-        self.gridLayout_8.addItem(spacerItem3, 0, 2, 1, 1)
+        self.gridLayout_8.addItem(spacerItem3, 0, 3, 1, 1)
+        self.raisebtn = QtGui.QPushButton(self.groupBox_5)
+        sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.raisebtn.sizePolicy().hasHeightForWidth())
+        self.raisebtn.setSizePolicy(sizePolicy)
+        self.raisebtn.setObjectName("raisebtn")
+        self.gridLayout_8.addWidget(self.raisebtn, 0, 2, 1, 1)
         self.gridLayout_9.addWidget(self.groupBox_5, 2, 0, 1, 4)
         self.tabWidget = QtGui.QTabWidget(self.centralwidget)
         self.tabWidget.setTabPosition(QtGui.QTabWidget.South)
@@ -225,7 +233,7 @@ class Ui_MainWindow(object):
         MainWindow.setStatusBar(self.statusbar)
 
         self.retranslateUi(MainWindow)
-        self.tabWidget_2.setCurrentIndex(0)
+        self.ctltab.setCurrentIndex(0)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
@@ -245,7 +253,7 @@ class Ui_MainWindow(object):
         self.cancelopensifbtn.setText(QtGui.QApplication.translate("MainWindow", "撤单", None, QtGui.QApplication.UnicodeUTF8))
         self.label_3.setText(QtGui.QApplication.translate("MainWindow", "开仓价格", None, QtGui.QApplication.UnicodeUTF8))
         self.label_4.setText(QtGui.QApplication.translate("MainWindow", "修正", None, QtGui.QApplication.UnicodeUTF8))
-        self.tabWidget_2.setTabText(self.tabWidget_2.indexOf(self.tab_2), QtGui.QApplication.translate("MainWindow", "建仓", None, QtGui.QApplication.UnicodeUTF8))
+        self.ctltab.setTabText(self.ctltab.indexOf(self.tab_2), QtGui.QApplication.translate("MainWindow", "建仓", None, QtGui.QApplication.UnicodeUTF8))
         self.groupBox_3.setTitle(QtGui.QApplication.translate("MainWindow", "股票卖出", None, QtGui.QApplication.UnicodeUTF8))
         self.sellorder.setText(QtGui.QApplication.translate("MainWindow", "卖出", None, QtGui.QApplication.UnicodeUTF8))
         self.cancelsellorder.setText(QtGui.QApplication.translate("MainWindow", "撤卖", None, QtGui.QApplication.UnicodeUTF8))
@@ -258,8 +266,9 @@ class Ui_MainWindow(object):
         self.cancelclosesifbtn.setText(QtGui.QApplication.translate("MainWindow", "撤单", None, QtGui.QApplication.UnicodeUTF8))
         self.label_7.setText(QtGui.QApplication.translate("MainWindow", "平仓价格", None, QtGui.QApplication.UnicodeUTF8))
         self.label_8.setText(QtGui.QApplication.translate("MainWindow", "修正", None, QtGui.QApplication.UnicodeUTF8))
-        self.tabWidget_2.setTabText(self.tabWidget_2.indexOf(self.tab_3), QtGui.QApplication.translate("MainWindow", "平仓", None, QtGui.QApplication.UnicodeUTF8))
+        self.ctltab.setTabText(self.ctltab.indexOf(self.tab_3), QtGui.QApplication.translate("MainWindow", "平仓", None, QtGui.QApplication.UnicodeUTF8))
         self.selall.setText(QtGui.QApplication.translate("MainWindow", "全选", None, QtGui.QApplication.UnicodeUTF8))
         self.deselall.setText(QtGui.QApplication.translate("MainWindow", "全不选", None, QtGui.QApplication.UnicodeUTF8))
+        self.raisebtn.setText(QtGui.QApplication.translate("MainWindow", "显示窗口", None, QtGui.QApplication.UnicodeUTF8))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab), QtGui.QApplication.translate("MainWindow", "页", None, QtGui.QApplication.UnicodeUTF8))
 
