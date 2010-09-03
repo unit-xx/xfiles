@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>800</width>
+    <width>996</width>
     <height>585</height>
    </rect>
   </property>
@@ -153,17 +153,50 @@
            <string>期货建仓</string>
           </property>
           <layout class="QGridLayout" name="gridLayout_3">
-           <item row="0" column="0">
-            <widget class="QPushButton" name="pushButton_8">
+           <item row="0" column="4">
+            <widget class="QPushButton" name="opensifbtn">
              <property name="text">
               <string>空开</string>
              </property>
             </widget>
            </item>
-           <item row="0" column="1">
-            <widget class="QPushButton" name="pushButton_9">
+           <item row="0" column="5">
+            <widget class="QPushButton" name="cancelopensifbtn">
              <property name="text">
               <string>撤单</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="0">
+            <widget class="QLabel" name="label_3">
+             <property name="text">
+              <string>开仓价格</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QComboBox" name="openpricecmbox"/>
+           </item>
+           <item row="0" column="2">
+            <widget class="QLabel" name="label_4">
+             <property name="text">
+              <string>修正</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="3">
+            <widget class="QDoubleSpinBox" name="openpricefixspin">
+             <property name="suffix">
+              <string/>
+             </property>
+             <property name="decimals">
+              <number>1</number>
+             </property>
+             <property name="minimum">
+              <double>-99.000000000000000</double>
+             </property>
+             <property name="singleStep">
+              <double>0.200000000000000</double>
              </property>
             </widget>
            </item>
@@ -196,24 +229,58 @@
            <string>股票卖出</string>
           </property>
           <layout class="QGridLayout" name="gridLayout_4">
-           <item row="0" column="0">
-            <widget class="QPushButton" name="pushButton_3">
+           <item row="0" column="4">
+            <widget class="QPushButton" name="sellorder">
              <property name="text">
               <string>卖出</string>
              </property>
             </widget>
            </item>
-           <item row="0" column="1">
-            <widget class="QPushButton" name="pushButton_4">
+           <item row="0" column="5">
+            <widget class="QPushButton" name="cancelsellorder">
              <property name="text">
               <string>撤卖</string>
              </property>
             </widget>
            </item>
-           <item row="0" column="2">
-            <widget class="QPushButton" name="pushButton_7">
+           <item row="0" column="0">
+            <widget class="QLabel" name="label_5">
              <property name="text">
-              <string>强制撤卖</string>
+              <string>卖出价格</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QComboBox" name="pricepolicysell"/>
+           </item>
+           <item row="0" column="2">
+            <widget class="QLabel" name="label_6">
+             <property name="text">
+              <string>修正</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="3">
+            <widget class="QDoubleSpinBox" name="sellpricefixspin">
+             <property name="minimum">
+              <double>-99.000000000000000</double>
+             </property>
+             <property name="singleStep">
+              <double>0.010000000000000</double>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="6">
+            <widget class="QCheckBox" name="forcecancelsellchk">
+             <property name="text">
+              <string>强撤</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="7">
+            <widget class="QPushButton" name="saveorder">
+             <property name="text">
+              <string>保存组合</string>
              </property>
             </widget>
            </item>
@@ -226,17 +293,47 @@
            <string>期货平仓</string>
           </property>
           <layout class="QGridLayout" name="gridLayout_5">
-           <item row="0" column="0">
-            <widget class="QPushButton" name="pushButton_11">
+           <item row="0" column="4">
+            <widget class="QPushButton" name="closesifbtn">
              <property name="text">
               <string>空平</string>
              </property>
             </widget>
            </item>
-           <item row="0" column="1">
-            <widget class="QPushButton" name="pushButton_10">
+           <item row="0" column="5">
+            <widget class="QPushButton" name="cancelclosesifbtn">
              <property name="text">
               <string>撤单</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QComboBox" name="closepricecmbox"/>
+           </item>
+           <item row="0" column="0">
+            <widget class="QLabel" name="label_7">
+             <property name="text">
+              <string>平仓价格</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="3">
+            <widget class="QDoubleSpinBox" name="closepricefixspin">
+             <property name="decimals">
+              <number>1</number>
+             </property>
+             <property name="minimum">
+              <double>-99.000000000000000</double>
+             </property>
+             <property name="singleStep">
+              <double>0.200000000000000</double>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="2">
+            <widget class="QLabel" name="label_8">
+             <property name="text">
+              <string>修正</string>
              </property>
             </widget>
            </item>
@@ -267,7 +364,7 @@
       </property>
       <layout class="QGridLayout" name="gridLayout_8">
        <item row="0" column="0">
-        <widget class="QPushButton" name="buybtn_2">
+        <widget class="QPushButton" name="selall">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
            <horstretch>0</horstretch>
@@ -280,7 +377,7 @@
         </widget>
        </item>
        <item row="0" column="1">
-        <widget class="QPushButton" name="buybtn_3">
+        <widget class="QPushButton" name="deselall">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
            <horstretch>0</horstretch>
@@ -339,7 +436,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>800</width>
+     <width>996</width>
      <height>23</height>
     </rect>
    </property>

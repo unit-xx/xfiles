@@ -30,9 +30,13 @@ class uicontrol(QMainWindow, Ui_MainWindow):
 
         self.on_ontopchk_stateChanged(self.ontopchk.checkState())
 
+        # fill stock price combos
         self.pricepolicylist = ["latest", "s5", "s4", "s3", "s2", "s1", "b1", "b2", "b3", "b4", "b5"]
+        self.sindexpricepolicylist = ["mktval", "latest", "s1", "b1", ]
         self.buypolicy = "latest"
         self.sellpolicy = "latest"
+        self.openpolicy = "mktval"
+        self.closepolicy = "mktval"
         self.pricepolicynamemap = {"latest":u"最新价",
                 "s5":u"卖五",
                 "s4":u"卖四",
@@ -49,8 +53,15 @@ class uicontrol(QMainWindow, Ui_MainWindow):
 
         for price in self.pricepolicylist:
             self.pricepolicybuy.addItem(self.pricepolicynamemap[price])
+            self.pricepolicysell.addItem(self.pricepolicynamemap[price])
         self.pricepolicybuy.setCurrentIndex(self.pricepolicylist.index(self.buypolicy))
+        self.pricepolicysell.setCurrentIndex(self.pricepolicylist.index(self.sellpolicy))
 
+        for price in self.sindexpricepolicylist:
+            self.openpricecmbox.addItem(self.pricepolicynamemap[price])
+            self.closepricecmbox.addItem(self.pricepolicynamemap[price])
+        self.openpricecmbox.setCurrentIndex(self.sindexpricepolicylist.index(self.openpolicy))
+        self.closepricecmbox.setCurrentIndex(self.sindexpricepolicylist.index(self.closepolicy))
 
     def getselected(self):
         ptfindex = []
@@ -112,20 +123,96 @@ class uicontrol(QMainWindow, Ui_MainWindow):
             s.sendall(cmd.pack())
 
     @pyqtSlot()
+    def on_selall_clicked(self):
+        self.tableView.selectAll()
+    
+    @pyqtSlot()
+    def on_deselall_clicked(self):
+        self.tableView.clearSelection()
+
+    # buttons
+    @pyqtSlot()
     def on_buyorder_clicked(self):
         self.sendbutton()
 
+    @pyqtSlot()
+    def on_cancelbuyorder_clicked(self):
+        self.sendbutton()
+
+    @pyqtSlot()
+    def on_saveorder_2_clicked(self):
+        self.sendbutton()
+
+    @pyqtSlot()
+    def on_opensifbtn_clicked(self):
+        self.sendbutton()
+
+    @pyqtSlot()
+    def on_cancelopensifbtn_clicked(self):
+        self.sendbutton()
+
+    @pyqtSlot()
+    def on_sellorder_clicked(self):
+        self.sendbutton()
+
+    @pyqtSlot()
+    def on_cancelsellorder_clicked(self):
+        self.sendbutton()
+
+    @pyqtSlot()
+    def on_saveorder_clicked(self):
+        self.sendbutton()
+
+    @pyqtSlot()
+    def on_closesifbtn_clicked(self):
+        self.sendbutton()
+
+    @pyqtSlot()
+    def on_cancelclosesifbtn_clicked(self):
+        self.sendbutton()
+
+    # combos
+    @pyqtSlot(int)
+    def on_pricepolicybuy_currentIndexChanged(self, index):
+        self.sendcombo(index)
+
+    @pyqtSlot(int)
+    def on_openpricecmbox_currentIndexChanged(self, index):
+        self.sendcombo(index)
+
+    @pyqtSlot(int)
+    def on_pricepolicysell_currentIndexChanged(self, index):
+        self.sendcombo(index)
+
+    @pyqtSlot(int)
+    def on_closepricecmbox_currentIndexChanged(self, index):
+        self.sendcombo(index)
+
+    # checkboxes
     @pyqtSlot(int)
     def on_forcecancelbuychk_stateChanged(self, state):
         self.sendcheckbox()
 
+    @pyqtSlot(int)
+    def on_forcecancelsellchk_stateChanged(self, state):
+        self.sendcheckbox()
+
+    # spins
     @pyqtSlot(float)
     def on_buypricefixspin_valueChanged(self, value):
         self.senddoublespin(value)
 
-    @pyqtSlot(int)
-    def on_pricepolicybuy_currentIndexChanged(self, index):
-        self.sendcombo(index)
+    @pyqtSlot(float)
+    def on_openpricefixspin_valueChanged(self, value):
+        self.senddoublespin(value)
+
+    @pyqtSlot(float)
+    def on_sellpricefixspin_valueChanged(self, value):
+        self.senddoublespin(value)
+
+    @pyqtSlot(float)
+    def on_closepricefixspin_valueChanged(self, value):
+        self.senddoublespin(value)
 
 
 class masterHandler(SocketServer.StreamRequestHandler):
@@ -141,13 +228,10 @@ class masterHandler(SocketServer.StreamRequestHandler):
             try:
                 handler = getattr(self, cmd.cmdname+"Handler")
             except AttributeError:
-                #print("unknown cmd: <%s>" % str(cmd))
                 self.server.logger.exception("unknown cmd: <%s>", str(cmd))
 
             try:
                 if handler:
-                    self.server.logger.info("caling handler: %s",
-                            cmd.cmdname+"Handler")
                     shouldexit = handler(*cmd.args, **cmd.kwargs)
                     if shouldexit == True:
                         break

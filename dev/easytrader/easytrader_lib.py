@@ -293,7 +293,17 @@ class CmdWorker(Thread):
         self.logger = logging.getLogger()
         self.name = self.__class__.__name__
         self.btnslotmap = {
-                "buyorder":"buyBatch_r"
+                "buyorder":"buyBatch_r",
+                "cancelbuyorder":"cancelBuyBatch",
+                "saveorder_2":"savePortfolio",
+                "opensifbtn":"openshort_r",
+                "cancelopensifbtn":"cancelopen",
+
+                "sellorder":"sellBatch_r",
+                "cancelsellorder":"cancelSellBatch",
+                "saveorder":"savePortfolio",
+                "closesifbtn":"closeshort_r",
+                "cancelclosesifbtn":"cancelclose",
                 }
 
     def stop(self):
@@ -306,16 +316,27 @@ class CmdWorker(Thread):
                 data = self.fconn.read(4)
                 (msglen,) = unpack("!I", data)
                 cmd = pickle.loads(self.fconn.read(msglen))
-                try:
-                    handler = getattr(self, cmd.cmdname+"Handler")
-                    self.logger.info("cmd: <%s>", str(cmd))
-                    handler(*cmd.args, **cmd.kwargs)
-                except AttributeError:
-                    #print("unknown cmd: <%s>" % str(cmd))
-                    self.logger.exception("unknown cmd: <%s>", str(cmd))
-
             except socket.timeout:
-                pass
+                continue
+            except socket.error:
+                self.logger.exception("connection error with controller.")
+                break
+
+            handler = None
+            try:
+                handler = getattr(self, cmd.cmdname+"Handler")
+                self.logger.info("call %s to process %s",
+                        cmd.cmdname+"Handler",
+                        str(cmd))
+            except AttributeError:
+                self.logger.exception("unknown cmd: <%s>", str(cmd))
+
+            try:
+                if handler:
+                    handler(*cmd.args, **cmd.kwargs)
+            except:
+                self.logger.exception("handler meets exception")
+
 
     def buttonHandler(self, *args, **kwargs):
         # args = buttonname
@@ -3323,7 +3344,7 @@ class uicontrol(QMainWindow, tradeui.Ui_MainWindow):
         self.setWindowTitle(self.windowTitle() + " - " + self.portfolio.ptfn)
 
         icon = QIcon()
-        icon.addPixmap(QBitmap(":/img/gdot.jpg"), QIcon.Normal, QIcon.On)
+        icon.addPixmap(QBitmap(":/img/ztzq.ico"), QIcon.Normal, QIcon.On)
         self.setWindowIcon(icon)
 
         #icon = QIcon()
