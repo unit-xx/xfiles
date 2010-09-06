@@ -94,7 +94,7 @@ class openptfdlg(QDialog, Ui_Dialog):
         data = []
         ptfns = glob.glob(os.path.join(self.ptfpath, "*.ptf"))
         for fn in ptfns:
-            fn = fn.decode("gbk")
+            fn = fn.decode(sys.getfilesystemencoding())
             item = {}
             item["fn"] = fn
             item["ptfname"] = os.path.basename(fn)[0:-4]
@@ -110,7 +110,7 @@ class openptfdlg(QDialog, Ui_Dialog):
         data = []
         ptfns = glob.glob(os.path.join(self.ptfpath, "*.pos"))
         for fn in ptfns:
-            fn = fn.decode("gbk")
+            fn = fn.decode(sys.getfilesystemencoding())
             item = {}
             item["fn"] = fn
             item["ptfname"] = os.path.basename(fn)[0:-4]
