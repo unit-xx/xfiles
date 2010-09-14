@@ -3425,6 +3425,7 @@ class uicontrol(QMainWindow, tradeui.Ui_MainWindow):
         # setup menu
         self.mainwindow.connect(self.stockinfoact, SIGNAL("triggered()"), self.showstockinfo)
         self.mainwindow.connect(self.posstatact, SIGNAL("triggered()"), self.showposstat)
+        self.mainwindow.connect(self.genbuyfromsellact, SIGNAL("triggered()"), self.genbuyfromsell)
 
         # update status lineedit
         self.showbostate()
@@ -3657,6 +3658,14 @@ class uicontrol(QMainWindow, tradeui.Ui_MainWindow):
         pidlg.setup()
         QMetaObject.invokeMethod(pidlg.refresh, "clicked", Qt.QueuedConnection)
         pidlg.exec_()
+
+    @pyqtSlot()
+    def genbuyfromsell(self):
+        # check that bostate is in sell or cancelsell
+        # check that every stock is selled compeletly or canceled
+        # for each stock, gen buy count as selled number rounded to 100
+        # ask for saved ptf file location and save it.
+        pass
 
     def showbostate(self):
         QMetaObject.invokeMethod(self.bostatusline, "setText",

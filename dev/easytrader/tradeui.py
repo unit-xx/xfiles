@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'tradeui.ui'
 #
-# Created: Tue Aug 24 13:03:26 2010
+# Created: Tue Sep 14 15:44:44 2010
 #      by: PyQt4 UI code generator 4.7.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -20,6 +20,7 @@ class Ui_MainWindow(object):
         MainWindow.setSizePolicy(sizePolicy)
         icon = QtGui.QIcon()
         icon.addPixmap(QtGui.QPixmap(":/img/ztzq.ico"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon.addPixmap(QtGui.QPixmap(":/img/ztzq.ico"), QtGui.QIcon.Normal, QtGui.QIcon.On)
         MainWindow.setWindowIcon(icon)
         self.centralwidget = QtGui.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
@@ -681,6 +682,8 @@ class Ui_MainWindow(object):
         self.menubar.setObjectName("menubar")
         self.menu = QtGui.QMenu(self.menubar)
         self.menu.setObjectName("menu")
+        self.menu_2 = QtGui.QMenu(self.menubar)
+        self.menu_2.setObjectName("menu_2")
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QtGui.QStatusBar(MainWindow)
         self.statusbar.setObjectName("statusbar")
@@ -689,9 +692,13 @@ class Ui_MainWindow(object):
         self.stockinfoact.setObjectName("stockinfoact")
         self.posstatact = QtGui.QAction(MainWindow)
         self.posstatact.setObjectName("posstatact")
+        self.genbuyfromsellact = QtGui.QAction(MainWindow)
+        self.genbuyfromsellact.setObjectName("genbuyfromsellact")
         self.menu.addAction(self.stockinfoact)
         self.menu.addAction(self.posstatact)
+        self.menu_2.addAction(self.genbuyfromsellact)
         self.menubar.addAction(self.menu.menuAction())
+        self.menubar.addAction(self.menu_2.menuAction())
 
         self.retranslateUi(MainWindow)
         self.optab.setCurrentIndex(0)
@@ -777,7 +784,9 @@ class Ui_MainWindow(object):
         self.label_34.setText(QtGui.QApplication.translate("MainWindow", "买入点数", None, QtGui.QApplication.UnicodeUTF8))
         self.label_35.setText(QtGui.QApplication.translate("MainWindow", "卖出点数", None, QtGui.QApplication.UnicodeUTF8))
         self.menu.setTitle(QtGui.QApplication.translate("MainWindow", "查看", None, QtGui.QApplication.UnicodeUTF8))
+        self.menu_2.setTitle(QtGui.QApplication.translate("MainWindow", "操作", None, QtGui.QApplication.UnicodeUTF8))
         self.stockinfoact.setText(QtGui.QApplication.translate("MainWindow", "股份查询", None, QtGui.QApplication.UnicodeUTF8))
         self.posstatact.setText(QtGui.QApplication.translate("MainWindow", "持仓统计", None, QtGui.QApplication.UnicodeUTF8))
+        self.genbuyfromsellact.setText(QtGui.QApplication.translate("MainWindow", "生成反手买入组合", None, QtGui.QApplication.UnicodeUTF8))
 
 import et_rc

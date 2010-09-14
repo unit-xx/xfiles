@@ -21,7 +21,8 @@
   </property>
   <property name="windowIcon">
    <iconset resource="et.qrc">
-    <normaloff>:/img/ztzq.ico</normaloff>:/img/ztzq.ico</iconset>
+    <normaloff>:/img/ztzq.ico</normaloff>
+    <normalon>:/img/ztzq.ico</normalon>:/img/ztzq.ico</iconset>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout_11">
@@ -1446,7 +1447,14 @@ background-color: rgb(85, 255, 0);</string>
     <addaction name="stockinfoact"/>
     <addaction name="posstatact"/>
    </widget>
+   <widget class="QMenu" name="menu_2">
+    <property name="title">
+     <string>操作</string>
+    </property>
+    <addaction name="genbuyfromsellact"/>
+   </widget>
    <addaction name="menu"/>
+   <addaction name="menu_2"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <action name="stockinfoact">
@@ -1457,6 +1465,11 @@ background-color: rgb(85, 255, 0);</string>
   <action name="posstatact">
    <property name="text">
     <string>持仓统计</string>
+   </property>
+  </action>
+  <action name="genbuyfromsellact">
+   <property name="text">
+    <string>生成反手买入组合</string>
    </property>
   </action>
  </widget>
