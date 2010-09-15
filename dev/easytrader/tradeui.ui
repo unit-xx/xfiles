@@ -1464,7 +1464,7 @@ background-color: rgb(85, 255, 0);</string>
   </action>
   <action name="posstatact">
    <property name="text">
-    <string>持仓统计</string>
+    <string>盈亏统计</string>
    </property>
   </action>
   <action name="genbuyfromsellact">

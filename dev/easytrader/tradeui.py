@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'tradeui.ui'
 #
-# Created: Tue Sep 14 15:44:44 2010
+# Created: Wed Sep 15 14:19:18 2010
 #      by: PyQt4 UI code generator 4.7.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -786,7 +786,7 @@ class Ui_MainWindow(object):
         self.menu.setTitle(QtGui.QApplication.translate("MainWindow", "查看", None, QtGui.QApplication.UnicodeUTF8))
         self.menu_2.setTitle(QtGui.QApplication.translate("MainWindow", "操作", None, QtGui.QApplication.UnicodeUTF8))
         self.stockinfoact.setText(QtGui.QApplication.translate("MainWindow", "股份查询", None, QtGui.QApplication.UnicodeUTF8))
-        self.posstatact.setText(QtGui.QApplication.translate("MainWindow", "持仓统计", None, QtGui.QApplication.UnicodeUTF8))
+        self.posstatact.setText(QtGui.QApplication.translate("MainWindow", "盈亏统计", None, QtGui.QApplication.UnicodeUTF8))
         self.genbuyfromsellact.setText(QtGui.QApplication.translate("MainWindow", "生成反手买入组合", None, QtGui.QApplication.UnicodeUTF8))
 
 import et_rc
