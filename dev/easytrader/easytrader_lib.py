@@ -861,7 +861,7 @@ class Portfolio(object):
                 orec = OrderRecord()
                 orec["order_state"] = Portfolio.UNORDERED
                 orec["ordercount"] = str( round100(int(si["count"]) - si["pastbuycount"]) )
-                orec["orderprice"] = "%0.3f" % si["tobuyprice"]
+                orec["orderprice"] = "%0.2f" % si["tobuyprice"]
                 si["pastbuy"].append(orec)
 
                 param = {}
@@ -907,7 +907,7 @@ class Portfolio(object):
                     orec = OrderRecord()
                     orec["order_state"] = Portfolio.UNORDERED
                     orec["ordercount"] = str( round100(int(si["count"]) - si["pastbuycount"]) )
-                    orec["orderprice"] = "%0.3f" % si["tobuyprice"]
+                    orec["orderprice"] = "%0.2f" % si["tobuyprice"]
                     si["pastbuy"].append(orec)
 
                     param = {}
@@ -950,7 +950,7 @@ class Portfolio(object):
                     orec = OrderRecord()
                     orec["order_state"] = Portfolio.UNORDERED
                     orec["ordercount"] = str( round100(int(si["count"]) - si["pastbuycount"]) )
-                    orec["orderprice"] = "%0.3f" % si["tobuyprice"]
+                    orec["orderprice"] = "%0.2f" % si["tobuyprice"]
                     si["pastbuy"].append(orec)
 
                     param = {}
@@ -1197,7 +1197,7 @@ class Portfolio(object):
                     orec = OrderRecord()
                     orec["order_state"] = Portfolio.UNORDERED
                     orec["ordercount"] = str( si["pastbuycount"] - si["pastsellcount"] )
-                    orec["orderprice"] = "%0.3f" % si["tosellprice"]
+                    orec["orderprice"] = "%0.2f" % si["tosellprice"]
                     si["pastsell"].append(orec)
 
                     param = {}
@@ -1265,7 +1265,7 @@ class Portfolio(object):
                     orec = OrderRecord()
                     orec["order_state"] = Portfolio.UNORDERED
                     orec["ordercount"] = str( si["pastbuycount"] - si["pastsellcount"] )
-                    orec["orderprice"] = "%0.3f" % si["tosellprice"]
+                    orec["orderprice"] = "%0.2f" % si["tosellprice"]
                     si["pastsell"].append(orec)
 
                     param = {}
@@ -1304,7 +1304,7 @@ class Portfolio(object):
                     orec = OrderRecord()
                     orec["order_state"] = Portfolio.UNORDERED
                     orec["ordercount"] = str( si["pastbuycount"] - si["pastsellcount"] )
-                    orec["orderprice"] = "%0.3f" % si["tosellprice"]
+                    orec["orderprice"] = "%0.2f" % si["tosellprice"]
                     si["pastsell"].append(orec)
 
                     param = {}
@@ -1343,7 +1343,7 @@ class Portfolio(object):
                     orec = OrderRecord()
                     orec["order_state"] = Portfolio.UNORDERED
                     orec["ordercount"] = str( si["pastbuycount"] - si["pastsellcount"] )
-                    orec["orderprice"] = "%0.3f" % si["tosellprice"]
+                    orec["orderprice"] = "%0.2f" % si["tosellprice"]
                     si["pastsell"].append(orec)
 
                     param = {}
