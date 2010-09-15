@@ -468,3 +468,40 @@ class UserInfoReq(request):
 
 class UserInfoResp(response):
     pass
+
+
+class BatchOrderReq(request):
+    code = "303600"
+    paramlist = [
+            "customer",
+            "account",
+            "market",
+            "board",
+            "seat",
+            "secu_acc",
+            "trd_id",
+            "biz_no",
+            "password",
+            "price_msg",
+            ]
+
+    def genorder(self, stocks):
+        # stock is list of tuples containing code, price, shares.
+        return "*".join(["~".join(x) for x in stocks])
+
+class BatchOrderResp(response):
+    pass
+
+class BatchCancelReq(request):
+    code = "303601"
+    paramlist = [
+            "customer",
+            "account",
+            "market",
+            "board",
+            "biz_no",
+            ]
+
+class BatchCancelResp(response):
+    pass
+
