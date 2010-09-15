@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'positioninfoui.ui'
 #
-# Created: Wed Sep 15 13:42:14 2010
+# Created: Wed Sep 15 14:47:12 2010
 #      by: PyQt4 UI code generator 4.7.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -13,7 +13,7 @@ class Ui_positioninfodlg(object):
     def setupUi(self, positioninfodlg):
         positioninfodlg.setObjectName("positioninfodlg")
         positioninfodlg.resize(305, 238)
-        positioninfodlg.setModal(True)
+        positioninfodlg.setModal(False)
         self.gridLayout = QtGui.QGridLayout(positioninfodlg)
         self.gridLayout.setObjectName("gridLayout")
         self.groupBox = QtGui.QGroupBox(positioninfodlg)
@@ -87,7 +87,7 @@ class Ui_positioninfodlg(object):
         QtCore.QMetaObject.connectSlotsByName(positioninfodlg)
 
     def retranslateUi(self, positioninfodlg):
-        positioninfodlg.setWindowTitle(QtGui.QApplication.translate("positioninfodlg", "持仓统计", None, QtGui.QApplication.UnicodeUTF8))
+        positioninfodlg.setWindowTitle(QtGui.QApplication.translate("positioninfodlg", "盈亏统计", None, QtGui.QApplication.UnicodeUTF8))
         self.groupBox.setTitle(QtGui.QApplication.translate("positioninfodlg", "持仓信息（括号内数值减去了停牌股票市值）", None, QtGui.QApplication.UnicodeUTF8))
         self.label_2.setText(QtGui.QApplication.translate("positioninfodlg", "买入成本：", None, QtGui.QApplication.UnicodeUTF8))
         self.label_3.setText(QtGui.QApplication.translate("positioninfodlg", "持仓市值：", None, QtGui.QApplication.UnicodeUTF8))

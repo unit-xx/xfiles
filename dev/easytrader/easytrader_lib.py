@@ -3657,6 +3657,8 @@ class uicontrol(QMainWindow, tradeui.Ui_MainWindow):
         pidlg = positioninfodlg(self.portfolio)
         pidlg.setup()
         QMetaObject.invokeMethod(pidlg.refresh, "clicked", Qt.QueuedConnection)
+        pidlg.show()
+        pidlg.activateWindow()
         pidlg.exec_()
 
     @pyqtSlot()
