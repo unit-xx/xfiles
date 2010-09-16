@@ -41,7 +41,7 @@ def setupdb(dbpath, dbname, force=False):
 
 buildOptions = dict(
         build_exe = "build\\easytrader",
-        include_files = ["ztzq.ico", "hs300.txt", "trdmaster.cfg", "itrader.cfg", "itrader-gw.cfg", "itrader-jhj.cfg", "easytrader.cfg", "easytrader-prod.cfg", "easytrader-sxf.cfg", "easytrader-jhj.cfg", "msvcr_redist", "jsdhqdll", "openmusic", "closemusic", (backenddir(), "phonon_backend")],
+        include_files = ["ztzq.ico", "hs300.txt", "trdmaster.cfg", "itrader.cfg", "itrader-gw.cfg", "itrader-jhj.cfg", "easytrader.cfg", "easytrader-prod.cfg", "easytrader-sxf.cfg", "easytrader-jhj.cfg", "migrate-gw.cfg", "msvcr_redist", "jsdhqdll", "openmusic", "closemusic", (backenddir(), "phonon_backend")],
         compressed = True,
         optimize = 0)
 
@@ -58,6 +58,7 @@ setup(
         executables = [Executable("itrader.py", base = base), 
             Executable("easytrader.py", base = base), 
             Executable("trademaster.py", base = base), 
+            Executable("migratepos.py", base = "Console"), 
             Executable("genstockindex.py")]
         )
 
