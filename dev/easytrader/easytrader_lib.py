@@ -1164,6 +1164,10 @@ class Portfolio(object):
                 if orec["order_state"] == Portfolio.BUYSUCCESS:
                     if orec["ordercount"] != orec["dealcount"]:
                         self.logger.info("stock %s is in buying, cancel order fist and then sell." % scode)
+                        QMessageBox.warning(None,
+                                u"",
+                                u"<FONT COLOR='#FF0000'>%s尚未撤买</FONT>"%scode,
+                                QMessageBox.Ok)
                         allbought = False
                         break
                     else:
@@ -1232,6 +1236,7 @@ class Portfolio(object):
             # sell stocks in CANCELBUYSUCCESS state and (BUYSUCCESS and 100% buy) state.
             # At this point, stock in BUYSUCCESS state should be bought completely.
             # first is some sanity check, and updating pastbuyxxx for BUYSUCCESS stocks
+            allbought = True
             for scode in self.orderlist:
                 si = self.stockinfo[scode]
                 assert si["pastsell"] == []
@@ -1243,15 +1248,32 @@ class Portfolio(object):
                     continue
 
                 if orec["order_state"] == Portfolio.BUYSUCCESS:
-                    assert orec["ordercount"] == orec["dealcount"]
+                    if orec["ordercount"] != orec["dealcount"]:
+                        self.logger.info("stock %s is in buying, cancel order fist and then sell." % scode)
+                        QMessageBox.warning(None,
+                                u"",
+                                u"<FONT COLOR='#FF0000'>%s尚未撤买</FONT>"%scode,
+                                QMessageBox.Ok)
+                        allbought = False
+                        break
+                    else:
+                        try:
+                            assert int(si["count"]) == si["pastbuycount"]# + int(orec["dealcount"])
+                        except AssertionError:
+                            self.logger.warning("total buy is not equal to expected, %s, %s:%d",
+                                    scode, si["count"], si["pastbuycount"])
                     # only update pastbuyxxx for BUYSECCESS stocks
                     # NOTE: code is not necessary
                     #assert int(si["count"]) == si["pastbuycount"] + int(orec["dealcount"])
                     #si["pastbuycount"] = si["pastbuycount"] + int(orec["dealcount"])
                     #si["pastbuycost"] = si["pastbuycost"] + float(orec["dealamount"])
                 elif orec["order_state"] == Portfolio.CANCELBUYSUCCESS:
-                    assert int(orec["ordercount"]) > int(orec["dealcount"])
+                    pass
+                    #assert int(orec["ordercount"]) > int(orec["dealcount"])
                     # pastbuycount is updated in cancelBuyBatchBottom for this case
+            if allbought == False:
+                self.bolock.release()
+                return
 
             # Now we sell stocks
             reqclass = jz.SubmitOrderReq
