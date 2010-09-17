@@ -3434,8 +3434,6 @@ class uicontrol(QMainWindow, tradeui.Ui_MainWindow):
         self.mainwindow.connect(self.cancelbuyorder, SIGNAL("clicked()"), self.cancelBuyBatch)
         self.mainwindow.connect(self.sellorder, SIGNAL("clicked()"), self.sellBatch)
         self.mainwindow.connect(self.cancelsellorder, SIGNAL("clicked()"), self.cancelSellBatch)
-        self.mainwindow.connect(self.saveorder_2, SIGNAL("clicked()"), self.savePortfolio)
-        self.mainwindow.connect(self.saveorder, SIGNAL("clicked()"), self.savePortfolio)
 
         # setup force buy/sell checkbox
         self.portfolio.forcecancelbuy = self.forcecancelbuychk.isChecked()
@@ -3458,6 +3456,7 @@ class uicontrol(QMainWindow, tradeui.Ui_MainWindow):
         self.mainwindow.connect(self.stockinfoact, SIGNAL("triggered()"), self.showstockinfo)
         self.mainwindow.connect(self.posstatact, SIGNAL("triggered()"), self.showposstat)
         self.mainwindow.connect(self.genbuyfromsellact, SIGNAL("triggered()"), self.genbuyfromsell)
+        self.mainwindow.connect(self.saveptfact, SIGNAL("triggered()"), self.savePortfolio)
 
         # update status lineedit
         self.showbostate()
