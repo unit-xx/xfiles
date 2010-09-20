@@ -141,6 +141,7 @@ def main(args):
         app.exec_()
 
     portfoliofn = ptfdlg.selectedfn
+    portfoliobasefn = os.path.basename(portfoliofn)[0:-4]
     opennew = ptfdlg.opennew
 
     if portfoliofn == u"":
@@ -167,7 +168,7 @@ def main(args):
     uic.setup()
 
     # setup logging
-    logging.config.fileConfig(CONFIGFN)
+    logging.config.fileConfig(CONFIGFN, {"user":username.encode("gbk"),"param":portfoliobasefn.encode("gbk")})
     logger = logging.getLogger()
     msg = "i'm started"
     logger.info("========================")
