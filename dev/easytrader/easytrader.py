@@ -168,7 +168,9 @@ def main(args):
     uic.setup()
 
     # setup logging
-    logging.config.fileConfig(CONFIGFN, {"user":username.encode("gbk"),"param":portfoliobasefn.encode("gbk")})
+    logfn = u"log/easytrader-%s-%s.log" % (username, portfoliobasefn)
+    logfn = logfn.encode("gbk")
+    logging.config.fileConfig(CONFIGFN, {"logfn":logfn})
     logger = logging.getLogger()
     msg = "i'm started"
     logger.info("========================")
