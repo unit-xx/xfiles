@@ -3066,6 +3066,8 @@ class CancelOrderUpdater(Thread):
 
     def update(self):
         hasleft = False
+        today = str(datetime.today().date())
+
         for scode in self.portfolio.stocklist:
             si = self.portfolio.stockinfo[scode]
             # don't update buy if selled
@@ -3077,6 +3079,19 @@ class CancelOrderUpdater(Thread):
                 continue
 
             if order["order_id"] != "" and order["order_state"] in (Portfolio.CANCELBUYWAIT, Portfolio.CANCELSELLWAIT):
+                # reset status for old orders directly at local.
+                if order["order_date"] != today:
+                    if len(si["pastsell"]) != 0:
+                        if order["dealcount"] == order["ordercount"]:
+                            order["order_state"] = Portfolio.SELLSUCCESS
+                        else:
+                            order["order_state"] = Portfolio.CANCELSELLSUCCESS
+                    elif len(si["pastbuy"]) != 0:
+                        if order["dealcount"] == order["ordercount"]:
+                            order["order_state"] = Portfolio.BUYSUCCESS
+                        else:
+                            order["order_state"] = Portfolio.CANCELBUYSUCCESS
+
                 qoreq = jz.QueryOrderReq(self.session)
                 qoreq["begin_date"] = order["order_date"]
                 qoreq["end_date"] = order["order_date"]
