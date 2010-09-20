@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 import jz
-import sys
+import sys, csv
 from stockqueryui import Ui_stockquery
+import easytrader_lib
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 
@@ -135,6 +136,49 @@ class stockquerydlg(QDialog, Ui_stockquery):
 
         else:
             QMessageBox.information(None, "", u"刷新错误: " + sresp.retinfo)
+
+    @pyqtSlot()
+    def on_exportsellbtn_clicked(self):
+        # export stocks for selling
+        posfn = QFileDialog.getSaveFileName(self, u"", u"", u"*.pos")
+        if posfn == "":
+            return
+        try:
+            f = open(posfn, "wb")
+            writer = csv.writer(f)
+            for row in self.simodel.data:
+                if row["market"] == "10":
+                    mkt = "SH"
+                elif row["market"] == "00":
+                    mkt = "SZ"
+                else:
+                    QMessageBox.information(None, "", u"不能识别的市场：%s,%s."
+                            % (row["market"], row["secu_code"]))
+                    continue
+
+                code = row["secu_code"]
+                count = row["share_avl"]
+                if int(count) == 0:
+                    continue
+
+                pastbuy = []
+                pastsell = []
+                orec = easytrader_lib.OrderRecord()
+                orec["ordercount"] = count
+                orec["dealcount"] = count
+                orec["order_state"] = easytrader_lib.Portfolio.BUYSUCCESS
+                orec["dealprice"] = "0.0"
+                orec["dealamount"] = "0.0"
+                pastbuy.append(orec)
+
+                writer.writerow([mkt, code, count,
+                    repr(pastbuy), repr(pastsell)])
+            writer.writerow(["BO",u"买入成功".encode("utf8")])
+            f.flush()
+            f.close()
+
+        except IOError:
+            QMessageBox.information(None, "", u"不能保存卖单.")
 
     @pyqtSlot()
     def on_quit_clicked(self):

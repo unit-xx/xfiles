@@ -2928,7 +2928,11 @@ class StockStatUpdater(Thread):
                 self.pstat["sellpoint"] = sellpoint
 
                 self.pstat["state"] = self.portfolio.bostate
-                self.pstat["shares"] = self.portfolio.sindexinfo["count"]
+                self.pstat["shares"] = "0"
+                try:
+                    self.pstat["shares"] = self.portfolio.sindexinfo["count"]
+                except KeyError:
+                    pass
 
                 time.sleep(2)
             except Exception:
