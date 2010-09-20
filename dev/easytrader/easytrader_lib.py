@@ -495,6 +495,7 @@ class Portfolio(object):
         # TODO: change to use jsdworker
         self.session = jz.session(sessioncfg)
         self.ptfn = ptfn
+        self.logfn = ""
         self.logger = logging.getLogger()
         if not self.session.setup():
             self.logger.warning("session setup failed.")
@@ -3758,6 +3759,14 @@ class uicontrol(QMainWindow, tradeui.Ui_MainWindow):
                 Qt.QueuedConnection,
                 Q_ARG("QString",
                     QString(self.portfolio.bostate)))
+
+    @pyqtSlot()
+    def on_loadlogbtn_clicked(self):
+        logs = open(self.portfolio.logfn, "r").read()
+        try:
+            self.logtext.setPlainText(logs.decode("utf8"))
+        except UnicodeError:
+            self.logtext.setPlainText(logs)
 
 class basediffUpdater(Thread):
     def __init__(self, pupdter, jsdcfg, uic):

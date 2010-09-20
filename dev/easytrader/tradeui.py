@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'tradeui.ui'
 #
-# Created: Fri Sep 17 15:32:12 2010
+# Created: Mon Sep 20 14:27:32 2010
 #      by: PyQt4 UI code generator 4.7.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -526,7 +526,12 @@ class Ui_MainWindow(object):
         self.logtext.setLineWrapMode(QtGui.QPlainTextEdit.WidgetWidth)
         self.logtext.setReadOnly(True)
         self.logtext.setObjectName("logtext")
-        self.gridLayout_12.addWidget(self.logtext, 0, 0, 1, 1)
+        self.gridLayout_12.addWidget(self.logtext, 1, 0, 1, 2)
+        self.loadlogbtn = QtGui.QPushButton(self.tab_6)
+        self.loadlogbtn.setObjectName("loadlogbtn")
+        self.gridLayout_12.addWidget(self.loadlogbtn, 0, 0, 1, 1)
+        spacerItem3 = QtGui.QSpacerItem(40, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
+        self.gridLayout_12.addItem(spacerItem3, 0, 1, 1, 1)
         self.tabWidget_2.addTab(self.tab_6, "")
         self.gridLayout_11.addWidget(self.tabWidget_2, 4, 0, 1, 11)
         self.tabstat = QtGui.QTabWidget(self.centralwidget)
@@ -745,6 +750,7 @@ class Ui_MainWindow(object):
         self.label_18.setText(QtGui.QApplication.translate("MainWindow", "卖出量", None, QtGui.QApplication.UnicodeUTF8))
         self.label_17.setText(QtGui.QApplication.translate("MainWindow", "持仓名称", None, QtGui.QApplication.UnicodeUTF8))
         self.tabWidget_2.setTabText(self.tabWidget_2.indexOf(self.tab_5), QtGui.QApplication.translate("MainWindow", "组合详情", None, QtGui.QApplication.UnicodeUTF8))
+        self.loadlogbtn.setText(QtGui.QApplication.translate("MainWindow", "load", None, QtGui.QApplication.UnicodeUTF8))
         self.tabWidget_2.setTabText(self.tabWidget_2.indexOf(self.tab_6), QtGui.QApplication.translate("MainWindow", "操作日志", None, QtGui.QApplication.UnicodeUTF8))
         self.label_20.setText(QtGui.QApplication.translate("MainWindow", "停牌", None, QtGui.QApplication.UnicodeUTF8))
         self.label_25.setText(QtGui.QApplication.translate("MainWindow", "可委托", None, QtGui.QApplication.UnicodeUTF8))

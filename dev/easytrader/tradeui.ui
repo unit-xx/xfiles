@@ -1105,7 +1105,7 @@ background-color: rgb(85, 255, 0);</string>
         <string>操作日志</string>
        </attribute>
        <layout class="QGridLayout" name="gridLayout_12">
-        <item row="0" column="0">
+        <item row="1" column="0" colspan="2">
          <widget class="QPlainTextEdit" name="logtext">
           <property name="lineWrapMode">
            <enum>QPlainTextEdit::WidgetWidth</enum>
@@ -1114,6 +1114,26 @@ background-color: rgb(85, 255, 0);</string>
            <bool>true</bool>
           </property>
          </widget>
+        </item>
+        <item row="0" column="0">
+         <widget class="QPushButton" name="loadlogbtn">
+          <property name="text">
+           <string>load</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <spacer name="horizontalSpacer_4">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>40</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
         </item>
        </layout>
       </widget>

@@ -169,8 +169,8 @@ def main(args):
 
     # setup logging
     logfn = u"log/easytrader-%s-%s.log" % (username, portfoliobasefn)
-    logfn = logfn.encode("gbk")
-    logging.config.fileConfig(CONFIGFN, {"logfn":logfn})
+    p.logfn = logfn
+    logging.config.fileConfig(CONFIGFN, {"logfn":logfn.encode("gbk")})
     logger = logging.getLogger()
     msg = "i'm started"
     logger.info("========================")
