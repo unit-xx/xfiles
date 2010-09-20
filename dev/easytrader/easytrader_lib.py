@@ -3699,10 +3699,59 @@ class uicontrol(QMainWindow, tradeui.Ui_MainWindow):
     @pyqtSlot()
     def genbuyfromsell(self):
         # check that bostate is in sell or cancelsell
+        if self.portfolio.bostate not in [Portfolio.BOSELLSUCCESS, Portfolio.BOSELLCANCELED]:
+            QMessageBox.information(self.mainwindow, "", u"尚未卖出")
+            return
+
         # check that every stock is selled compeletly or canceled
-        # for each stock, gen buy count as selled number rounded to 100
+        oktogo = True
+        for scode in self.portfolio.stocklist:
+            si = self.portfolio.stockinfo[scode]
+            if len(si["pastsell"]) > 0:
+                od = si["pastsell"][-1]
+                if od["order_state"] == Portfolio.CANCELSELLSUCCESS:
+                    pass
+                elif od["order_state"] == Portfolio.CANCELSELLWAIT:
+                    QMessageBox.information(self.mainwindow, "",
+                            u"失败：卖出等成交(%s)" % scode)
+                    oktogo = False
+                    break
+                elif od["order_state"] == Portfolio.SELLSUCCESS:
+                    if od["ordercount"] != od["dealcount"]:
+                        QMessageBox.information(self.mainwindow, "",
+                                u"失败：正在卖出(%s)，先强撤" % scode)
+                        oktogo = False
+                        break
+
+        if not oktogo:
+            return
+
         # ask for saved ptf file location and save it.
-        pass
+        # for each stock, gen buy count as selled number rounded to 100
+        ptffn = QFileDialog.getSaveFileName(self, u"", u"", u"*.ptf")
+        if ptffn == "":
+            return
+        try:
+            f = open(ptffn, "wb")
+            writer = csv.writer(f)
+            for scode in self.portfolio.stocklist:
+                si = self.portfolio.stockinfo[scode]
+
+                mkt = si["market"]
+                code = si["code"]
+                count = si["currentsellcount"]
+                if int(count) < 50:
+                    continue
+
+                pastbuy = []
+                pastsell = []
+
+                writer.writerow([mkt, code, count,
+                    repr(pastbuy), repr(pastsell)])
+            f.flush()
+            f.close()
+        except IOError:
+            QMessageBox.information(None, "", u"不能保存组合.")
 
     def showbostate(self):
         QMetaObject.invokeMethod(self.bostatusline, "setText",
