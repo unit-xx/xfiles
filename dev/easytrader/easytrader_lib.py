@@ -1036,7 +1036,8 @@ class Portfolio(object):
                     if self.forcecancelbuy or float(orec["orderprice"]) < si["latestprice"]:
                         today = datetime.today().replace(hour=9,minute=0,second=0,microsecond=0)
                         odate = datetime.strptime(orec["order_date"], "%Y-%m-%d")
-                        otime = datetime.strptime(orec["order_time"], "%H:%M:%S.%f").time()
+                        # note: omit microseconds part
+                        otime = datetime.strptime(orec["order_time"].split(".")[0], "%H:%M:%S").time()
                         odatetime = datetime.combine(odate, otime)
                         # orders older than today is canceled at local directly
                         if odatetime < today:
