@@ -63,7 +63,8 @@ setup(
             Executable("easytrader.py", base = base), 
             Executable("trademaster.py", base = base), 
             Executable("migratepos.py", base = "Console"), 
-            Executable("genstockindex.py")]
+            Executable("genstockindex.py"),
+            Executable("simbuy.py")]
         )
 
 setupdb(buildOptions["build_exe"], "tradeinfo.db")
