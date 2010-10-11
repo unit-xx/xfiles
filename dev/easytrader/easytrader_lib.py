@@ -1131,9 +1131,6 @@ class Portfolio(object):
             else:
                 orec["order_state"] = Portfolio.BUYFAILED
 
-        print resp.records
-        print resp.retcode
-        print resp.retinfo
         if self.bocount == 0:
             self.bostate = Portfolio.BOBUYSUCCESS
             self.logger.info("batch buy-ed")
@@ -1559,6 +1556,233 @@ class Portfolio(object):
 
         self.bolock.acquire()
         self.bocount = self.bocount - 1
+        if self.bocount == 0:
+            self.bostate = Portfolio.BOSELLSUCCESS
+            self.logger.info("batch selled")
+        self.bolock.release()
+        if self.bocount == 0:
+            self.savePortfolio()
+
+    def sellBatch2Top(self):
+        self.bolock.acquire()
+        self.logger.info("batch selling with batch interface")
+
+        self.bocount = 0
+        tosell = []
+
+        if self.bostate == Portfolio.BOBUYSUCCESS:
+            # only succeed when all buysuccess stocks are 100% buyed
+            allbought = True
+            for scode in self.orderlist:
+                si = self.stockinfo[scode]
+                try:
+                    orec = si["pastbuy"][-1]
+                except IndexError:
+                    continue
+
+                assert si["pastsell"] == []
+                assert si["pastsellcount"] == 0
+                if orec["order_state"] == Portfolio.BUYSUCCESS:
+                    if orec["ordercount"] != orec["dealcount"]:
+                        self.logger.info("stock %s is in buying, cancel order fist and then sell." % scode)
+                        QMessageBox.warning(None,
+                                u"",
+                                u"<FONT COLOR='#FF0000'>%s尚未撤买</FONT>"%scode,
+                                QMessageBox.Ok)
+                        allbought = False
+                        break
+                    else:
+                        try:
+                            assert int(si["count"]) == si["pastbuycount"]# + int(orec["dealcount"])
+                        except AssertionError:
+                            self.logger.warning("total buy is not equal to expected, %s, %s:%d",
+                                    scode, si["count"], si["pastbuycount"])
+            if allbought == False:
+                self.bolock.release()
+                return
+
+            # At this point, all stock in BUYSUCCESS is bought completely, and we update "pastbuyxxx" now
+            # NOTE: the code is done at OrderUpdate
+            #for scode in self.stocklist:
+            #    si = self.stockinfo[scode]
+            #    orec = si["pastbuy"][-1]
+            #    if orec["order_state"] == Portfolio.BUYSUCCESS:
+            #        si["pastbuycount"] = si["pastbuycount"] + int(orec["dealcount"])
+            #        si["pastbuycost"] = si["pastbuycost"] + float(orec["dealamount"])
+
+            # Now we sell BUYSUCCESS stocks
+            for scode in self.orderlist:
+                si = self.stockinfo[scode]
+                if not self.isvalidsell(si, scode):
+                    continue
+
+                try:
+                    orec = si["pastbuy"][-1]
+                except IndexError:
+                    continue
+
+                if orec["order_state"] == Portfolio.BUYSUCCESS:
+                    # DO sell
+                    self.bocount = self.bocount + 1
+                    tosell.append(scode)
+
+        elif self.bostate == Portfolio.BOBUYCANCELED:
+            # sell stocks in CANCELBUYSUCCESS state and (BUYSUCCESS and 100% buy) state.
+            # At this point, stock in BUYSUCCESS state should be bought completely.
+            # first is some sanity check, and updating pastbuyxxx for BUYSUCCESS stocks
+            allbought = True
+            for scode in self.orderlist:
+                si = self.stockinfo[scode]
+                assert si["pastsell"] == []
+                assert si["pastsellcount"] == 0
+
+                try:
+                    orec = si["pastbuy"][-1]
+                except IndexError:
+                    continue
+
+                if orec["order_state"] == Portfolio.BUYSUCCESS:
+                    if orec["ordercount"] != orec["dealcount"]:
+                        self.logger.info("stock %s is in buying, cancel order fist and then sell." % scode)
+                        QMessageBox.warning(None,
+                                u"",
+                                u"<FONT COLOR='#FF0000'>%s尚未撤买</FONT>"%scode,
+                                QMessageBox.Ok)
+                        allbought = False
+                        break
+                    else:
+                        try:
+                            assert int(si["count"]) == si["pastbuycount"]# + int(orec["dealcount"])
+                        except AssertionError:
+                            self.logger.warning("total buy is not equal to expected, %s, %s:%d",
+                                    scode, si["count"], si["pastbuycount"])
+                    # only update pastbuyxxx for BUYSECCESS stocks
+                    # NOTE: code is not necessary
+                    #assert int(si["count"]) == si["pastbuycount"] + int(orec["dealcount"])
+                    #si["pastbuycount"] = si["pastbuycount"] + int(orec["dealcount"])
+                    #si["pastbuycost"] = si["pastbuycost"] + float(orec["dealamount"])
+                elif orec["order_state"] == Portfolio.CANCELBUYSUCCESS:
+                    pass
+                    #assert int(orec["ordercount"]) > int(orec["dealcount"])
+                    # pastbuycount is updated in cancelBuyBatchBottom for this case
+            if allbought == False:
+                self.bolock.release()
+                return
+
+            # Now we sell stocks
+            for scode in self.orderlist:
+                si = self.stockinfo[scode]
+                if not self.isvalidsell(si, scode):
+                    continue
+
+                try:
+                    orec = si["pastbuy"][-1]
+                except IndexError:
+                    continue
+
+                if orec["order_state"] in (Portfolio.BUYSUCCESS, Portfolio.CANCELBUYSUCCESS):
+                    # DO sell
+                    self.bocount = self.bocount + 1
+                    tosell.append(scode)
+
+        elif self.bostate == Portfolio.BOSELLCANCELED:
+            # At this point, pastsellxxx should be updated correctly.
+            for scode in self.orderlist:
+                si = self.stockinfo[scode]
+                if not self.isvalidsell(si, scode):
+                    continue
+
+                if len(si["pastsell"]) == 0 or si["pastsell"][-1]["order_state"] == Portfolio.CANCELSELLSUCCESS:
+                    # DO sell
+                    self.bocount = self.bocount + 1
+                    tosell.append(scode)
+
+        elif self.bostate == Portfolio.BOSELLSUCCESS:
+            # At this point, pastsellxxx should be updated correctly.
+            for scode in self.orderlist:
+                si = self.stockinfo[scode]
+                if not self.isvalidsell(si, scode):
+                    continue
+
+                if len(si["pastsell"]) == 0 or si["pastsell"][-1]["order_state"] == Portfolio.CANCELSELLSUCCESS:
+                    # DO sell
+                    self.bocount = self.bocount + 1
+                    tosell.append(scode)
+
+        else:
+            self.logger.info("not in sell-able state")
+
+        if self.bocount == 0:
+            self.logger.info("no stock to sell")
+        else:
+            self.bostate = Portfolio.BOSELLING
+            tosellsh = []
+            tosellsz = []
+            for scode in tosell:
+                si = self.stockinfo[scode]
+
+                orec = OrderRecord()
+                orec["order_state"] = Portfolio.UNORDERED
+                orec["ordercount"] = str( si["pastbuycount"] - si["pastsellcount"] )
+                orec["orderprice"] = "%0.2f" % si["tosellprice"]
+                si["pastsell"].append(orec)
+
+                if si["market"] == "SH":
+                    tosellsh.append( [si["code"], orec["orderprice"], orec["ordercount"]] )
+                elif si["market"] == "SZ":
+                    tosellsz.append( [si["code"], orec["orderprice"], orec["ordercount"]] )
+
+            reqclass = jz.BatchOrderReq
+            respclass = jz.BatchOrderResp
+            for i in range(0, len(tosellsh), 100):
+                param = {}
+                param["account"] = self.session["account"]
+                param["customer"] = self.session["user_code"]
+                param["market"] = jz.SHAMARKET
+                param["board"] = "0"
+                param["secu_acc"] = self.session["secu_acc"]["SH"]
+                param["trd_id"] = "0S"
+                param["price_msg"] = reqclass.genorder(tosellsh[i:i+100])
+                print param
+                self.tqueue.put( (reqclass, respclass, param, self.sellBatch2Bottom, True) )
+
+            for i in range(0, len(tosellsz), 100):
+                param = {}
+                param["account"] = self.session["account"]
+                param["customer"] = self.session["user_code"]
+                param["market"] = jz.SZAMARKET
+                param["board"] = "0"
+                param["secu_acc"] = self.session["secu_acc"]["SZ"]
+                param["trd_id"] = "0S"
+                param["price_msg"] = reqclass.genorder(tosellsz[i:i+100])
+                self.tqueue.put( (reqclass, respclass, param, self.sellBatch2Bottom, True) )
+
+        self.bolock.release()
+
+    sellBatch2 = sellBatch2Top
+
+    def sellBatch2Bottom(self, req, resp, param):
+        today = str(datetime.today().date())
+        mkt = ""
+        if param["market"] == "10":
+            mkt = "SH"
+        elif param["market"] == "00":
+            mkt = "SZ"
+        assert mkt != ""
+
+        self.bolock.acquire()
+        for r in resp.records:
+            self.bocount = self.bocount - 1
+            scode = mkt + r[1]
+            orec = self.stockinfo[scode]["pastsell"][-1]
+            if resp.retcode == "0":
+                orec["order_state"] = Portfolio.SELLSUCCESS
+                orec["order_date"] = today
+                orec["order_time"] = str(datetime.now().time())
+                orec["order_id"] = r[0]
+            else:
+                orec["order_state"] = Portfolio.SELLFAILED
+
         if self.bocount == 0:
             self.bostate = Portfolio.BOSELLSUCCESS
             self.logger.info("batch selled")
