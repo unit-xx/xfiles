@@ -640,7 +640,7 @@ class Portfolio(object):
         s = jsd.session(self.jsdcfg)
         if not s.setup():
             self.logger.warning("Cannot login into jsd")
-            self.close()
+            #self.close()
         self.jsdsession = s
 
     def getbostate(self):
@@ -1000,6 +1000,140 @@ class Portfolio(object):
 
         self.bolock.acquire()
         self.bocount = self.bocount - 1
+        if self.bocount == 0:
+            self.bostate = Portfolio.BOBUYSUCCESS
+            self.logger.info("batch buy-ed")
+        self.bolock.release()
+        if self.bocount == 0:
+            self.savePortfolio()
+
+    def buyBatch2Top(self):
+        self.bolock.acquire()
+        self.logger.info("batch buying with batch interface")
+
+        self.bocount = 0
+        tobuy = []
+
+        if self.bostate == Portfolio.BOUNORDERED:
+            # new and first batch buy order
+            for scode in self.orderlist:
+                si = self.stockinfo[scode]
+                if not self.isvalidbuy(si, scode):
+                    continue
+
+                try:
+                    assert si["pastbuy"] == []
+                    assert si["pastsell"] == []
+                    assert si["pastbuycount"] == 0
+                    assert si["pastbuycost"] == 0.0
+                    assert si["pastsellcount"] == 0
+                    assert si["pastsellgain"] == 0.0
+                except AssertionError:
+                    continue
+
+                self.bocount = self.bocount + 1
+                tobuy.append(scode)
+
+        elif self.bostate == Portfolio.BOBUYCANCELED:
+            # re-buy: only buy stock in CANCELBUYSUCCESS state
+            for scode in self.orderlist:
+                si = self.stockinfo[scode]
+                if not self.isvalidbuy(si, scode):
+                    continue
+
+                # there's case that a stock is never ordered, e.g. stopped yestoday.
+                if len(si["pastbuy"]) == 0 or si["pastbuy"][-1]["order_state"] == Portfolio.CANCELBUYSUCCESS:
+                    self.bocount = self.bocount + 1
+                    tobuy.append(scode)
+
+        elif self.bostate == Portfolio.BOBUYSUCCESS:
+            for scode in self.orderlist:
+                si = self.stockinfo[scode]
+                if not self.isvalidbuy(si, scode):
+                    continue
+
+                # only buy fresh stocks, e.g. recovered from stop.
+                if len(si["pastbuy"]) == 0 or si["pastbuy"][-1]["order_state"] == Portfolio.CANCELBUYSUCCESS:
+                    self.bocount = self.bocount + 1
+                    tobuy.append(scode)
+
+        else:
+            self.logger.info("not in buy-able state")
+
+        if self.bocount == 0:
+            self.logger.info("no stock to buy.")
+        else:
+            self.bostate = Portfolio.BOBUYING
+            tobuysh = []
+            tobuysz = []
+            for scode in tobuy:
+                si = self.stockinfo[scode]
+
+                orec = OrderRecord()
+                orec["order_state"] = Portfolio.UNORDERED
+                orec["ordercount"] = str( round100(int(si["count"]) - si["pastbuycount"]) )
+                orec["orderprice"] = "%0.2f" % si["tobuyprice"]
+                si["pastbuy"].append(orec)
+
+                if si["market"] == "SH":
+                    tobuysh.append( [si["code"], orec["orderprice"], orec["ordercount"]] )
+                elif si["market"] == "SZ":
+                    tobuysz.append( [si["code"], orec["orderprice"], orec["ordercount"]] )
+
+            reqclass = jz.BatchOrderReq
+            respclass = jz.BatchOrderResp
+            for i in range(0, len(tobuysh), 100):
+                param = {}
+                param["account"] = self.session["account"]
+                param["customer"] = self.session["user_code"]
+                param["market"] = jz.SHAMARKET
+                param["board"] = "0"
+                param["secu_acc"] = self.session["secu_acc"]["SH"]
+                param["trd_id"] = "0B"
+                param["price_msg"] = reqclass.genorder(tobuysh[i:i+100])
+                print param
+                self.tqueue.put( (reqclass, respclass, param, self.buyBatch2Bottom, True) )
+
+            for i in range(0, len(tobuysz), 100):
+                param = {}
+                param["account"] = self.session["account"]
+                param["customer"] = self.session["user_code"]
+                param["market"] = jz.SZAMARKET
+                param["board"] = "0"
+                param["secu_acc"] = self.session["secu_acc"]["SZ"]
+                param["trd_id"] = "0B"
+                param["price_msg"] = reqclass.genorder(tobuysz[i:i+100])
+                self.tqueue.put( (reqclass, respclass, param, self.buyBatch2Bottom, True) )
+
+        self.bolock.release()
+
+    buyBatch2 = buyBatch2Top
+
+    def buyBatch2Bottom(self, req, resp, param):
+        today = str(datetime.today().date())
+        mkt = ""
+        if param["market"] == "10":
+            mkt = "SH"
+        elif param["market"] == "00":
+            mkt = "SZ"
+        assert mkt != ""
+
+        self.bolock.acquire()
+        for r in resp.records:
+            self.bocount = self.bocount - 1
+            scode = mkt + r[1]
+            orec = self.stockinfo[scode]["pastbuy"][-1]
+            if resp.retcode == "0":
+                orec["order_state"] = Portfolio.BUYSUCCESS
+                orec["order_date"] = today
+                orec["order_time"] = str(datetime.now().time())
+                orec["order_id"] = r[0]
+            else:
+                orec["order_state"] = Portfolio.BUYFAILED
+
+        print resp.records
+        print resp.retcode
+        print resp.retinfo
         if self.bocount == 0:
             self.bostate = Portfolio.BOBUYSUCCESS
             self.logger.info("batch buy-ed")
@@ -3452,6 +3586,7 @@ class uicontrol(QMainWindow, tradeui.Ui_MainWindow):
 
         # setup batch order push button
         self.mainwindow.connect(self.buyorder, SIGNAL("clicked()"), self.buyBatch)
+        self.mainwindow.connect(self.buyorder2, SIGNAL("clicked()"), self.buyBatch2)
         self.mainwindow.connect(self.cancelbuyorder, SIGNAL("clicked()"), self.cancelBuyBatch)
         self.mainwindow.connect(self.sellorder, SIGNAL("clicked()"), self.sellBatch)
         self.mainwindow.connect(self.cancelsellorder, SIGNAL("clicked()"), self.cancelSellBatch)
@@ -3498,6 +3633,18 @@ class uicontrol(QMainWindow, tradeui.Ui_MainWindow):
         if QMessageBox.Ok == ret:
             # self.portfolio.pricepolicynamemap[self.portfolio.buypolicy], self.buypricefix
             self.portfolio.buyBatch()
+
+    @pyqtSlot()
+    def buyBatch2(self):
+        ret = QMessageBox.warning(self.mainwindow,
+                u"",
+                u"<H3>确认买入股票组合？（买入档位：<FONT COLOR='#FF0000'>%s</FONT>，价格修正：<FONT COLOR='#FF0000'>%s</FONT>）</H3>"
+                % (self.portfolio.pricepolicynamemap[self.portfolio.buypolicy],
+                    self.portfolio.buypricefix),
+                QMessageBox.Ok|QMessageBox.Cancel)
+        if QMessageBox.Ok == ret:
+            # self.portfolio.pricepolicynamemap[self.portfolio.buypolicy], self.buypricefix
+            self.portfolio.buyBatch2()
 
     @pyqtSlot()
     def buyBatch_r(self):

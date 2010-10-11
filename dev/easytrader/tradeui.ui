@@ -90,14 +90,14 @@
              </property>
             </widget>
            </item>
-           <item row="0" column="5">
+           <item row="0" column="6">
             <widget class="QPushButton" name="cancelbuyorder">
              <property name="text">
               <string>撤买</string>
              </property>
             </widget>
            </item>
-           <item row="0" column="7">
+           <item row="0" column="8">
             <widget class="QPushButton" name="autosubmit_2">
              <property name="text">
               <string>自动下单</string>
@@ -147,7 +147,7 @@
              </property>
             </widget>
            </item>
-           <item row="0" column="6">
+           <item row="0" column="7">
             <widget class="QCheckBox" name="forcecancelbuychk">
              <property name="text">
               <string>强撤</string>
@@ -168,6 +168,13 @@ background-color: rgb(255, 0, 0);</string>
              </property>
              <property name="text">
               <string>Txt</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="5">
+            <widget class="QPushButton" name="buyorder2">
+             <property name="text">
+              <string>买入(批量)</string>
              </property>
             </widget>
            </item>
@@ -387,14 +394,14 @@ background-color: rgb(255, 0, 0);</string>
              </property>
             </widget>
            </item>
-           <item row="0" column="5">
+           <item row="0" column="6">
             <widget class="QPushButton" name="cancelsellorder">
              <property name="text">
               <string>撤卖</string>
              </property>
             </widget>
            </item>
-           <item row="0" column="7">
+           <item row="0" column="8">
             <widget class="QPushButton" name="autosubmit">
              <property name="text">
               <string>自动下单</string>
@@ -432,7 +439,7 @@ background-color: rgb(255, 0, 0);</string>
              </property>
             </widget>
            </item>
-           <item row="0" column="6">
+           <item row="0" column="7">
             <widget class="QCheckBox" name="forcecancelsellchk">
              <property name="text">
               <string>强撤</string>
@@ -453,6 +460,13 @@ background-color: rgb(85, 255, 0);</string>
              </property>
              <property name="text">
               <string>Txt</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="5">
+            <widget class="QPushButton" name="sellorder2">
+             <property name="text">
+              <string>卖出(批量)</string>
              </property>
             </widget>
            </item>

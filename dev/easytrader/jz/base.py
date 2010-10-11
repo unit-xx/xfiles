@@ -485,7 +485,8 @@ class BatchOrderReq(request):
             "price_msg",
             ]
 
-    def genorder(self, stocks):
+    @staticmethod
+    def genorder(stocks):
         # stock is list of tuples containing code, price, shares.
         return "*".join(["~".join(x) for x in stocks])
 

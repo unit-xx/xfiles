@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'tradeui.ui'
 #
-# Created: Mon Sep 20 14:27:32 2010
+# Created: Mon Oct 11 09:59:06 2010
 #      by: PyQt4 UI code generator 4.7.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -63,10 +63,10 @@ class Ui_MainWindow(object):
         self.gridLayout_2.addWidget(self.buyorder, 0, 4, 1, 1)
         self.cancelbuyorder = QtGui.QPushButton(self.groupBox_2)
         self.cancelbuyorder.setObjectName("cancelbuyorder")
-        self.gridLayout_2.addWidget(self.cancelbuyorder, 0, 5, 1, 1)
+        self.gridLayout_2.addWidget(self.cancelbuyorder, 0, 6, 1, 1)
         self.autosubmit_2 = QtGui.QPushButton(self.groupBox_2)
         self.autosubmit_2.setObjectName("autosubmit_2")
-        self.gridLayout_2.addWidget(self.autosubmit_2, 0, 7, 1, 1)
+        self.gridLayout_2.addWidget(self.autosubmit_2, 0, 8, 1, 1)
         self.buypricefixspin = QtGui.QDoubleSpinBox(self.groupBox_2)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
@@ -84,13 +84,16 @@ class Ui_MainWindow(object):
         self.gridLayout_2.addWidget(self.buypricefixspin, 0, 3, 1, 1)
         self.forcecancelbuychk = QtGui.QCheckBox(self.groupBox_2)
         self.forcecancelbuychk.setObjectName("forcecancelbuychk")
-        self.gridLayout_2.addWidget(self.forcecancelbuychk, 0, 6, 1, 1)
+        self.gridLayout_2.addWidget(self.forcecancelbuychk, 0, 7, 1, 1)
         self.label_32 = QtGui.QLabel(self.groupBox_2)
         self.label_32.setMaximumSize(QtCore.QSize(16777215, 15))
         self.label_32.setStyleSheet("color: rgb(255, 0, 0);\n"
 "background-color: rgb(255, 0, 0);")
         self.label_32.setObjectName("label_32")
         self.gridLayout_2.addWidget(self.label_32, 0, 0, 1, 1)
+        self.buyorder2 = QtGui.QPushButton(self.groupBox_2)
+        self.buyorder2.setObjectName("buyorder2")
+        self.gridLayout_2.addWidget(self.buyorder2, 0, 5, 1, 1)
         self.gridLayout_3.addWidget(self.groupBox_2, 0, 0, 1, 1)
         self.groupBox_5 = QtGui.QGroupBox(self.tab)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Minimum, QtGui.QSizePolicy.Preferred)
@@ -194,10 +197,10 @@ class Ui_MainWindow(object):
         self.gridLayout.addWidget(self.sellorder, 0, 4, 1, 1)
         self.cancelsellorder = QtGui.QPushButton(self.groupBox)
         self.cancelsellorder.setObjectName("cancelsellorder")
-        self.gridLayout.addWidget(self.cancelsellorder, 0, 5, 1, 1)
+        self.gridLayout.addWidget(self.cancelsellorder, 0, 6, 1, 1)
         self.autosubmit = QtGui.QPushButton(self.groupBox)
         self.autosubmit.setObjectName("autosubmit")
-        self.gridLayout.addWidget(self.autosubmit, 0, 7, 1, 1)
+        self.gridLayout.addWidget(self.autosubmit, 0, 8, 1, 1)
         self.sellpricefixspin = QtGui.QDoubleSpinBox(self.groupBox)
         self.sellpricefixspin.setMinimumSize(QtCore.QSize(80, 0))
         self.sellpricefixspin.setMaximumSize(QtCore.QSize(80, 16777215))
@@ -208,13 +211,16 @@ class Ui_MainWindow(object):
         self.gridLayout.addWidget(self.sellpricefixspin, 0, 3, 1, 1)
         self.forcecancelsellchk = QtGui.QCheckBox(self.groupBox)
         self.forcecancelsellchk.setObjectName("forcecancelsellchk")
-        self.gridLayout.addWidget(self.forcecancelsellchk, 0, 6, 1, 1)
+        self.gridLayout.addWidget(self.forcecancelsellchk, 0, 7, 1, 1)
         self.label_33 = QtGui.QLabel(self.groupBox)
         self.label_33.setMaximumSize(QtCore.QSize(16777215, 15))
         self.label_33.setStyleSheet("color: rgb(85, 255, 0);\n"
 "background-color: rgb(85, 255, 0);")
         self.label_33.setObjectName("label_33")
         self.gridLayout.addWidget(self.label_33, 0, 0, 1, 1)
+        self.sellorder2 = QtGui.QPushButton(self.groupBox)
+        self.sellorder2.setObjectName("sellorder2")
+        self.gridLayout.addWidget(self.sellorder2, 0, 5, 1, 1)
         self.gridLayout_4.addWidget(self.groupBox, 0, 0, 1, 1)
         spacerItem1 = QtGui.QSpacerItem(0, 0, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
         self.gridLayout_4.addItem(spacerItem1, 0, 3, 1, 1)
@@ -708,6 +714,7 @@ class Ui_MainWindow(object):
         self.buypricefixspin.setSuffix(QtGui.QApplication.translate("MainWindow", "元", None, QtGui.QApplication.UnicodeUTF8))
         self.forcecancelbuychk.setText(QtGui.QApplication.translate("MainWindow", "强撤", None, QtGui.QApplication.UnicodeUTF8))
         self.label_32.setText(QtGui.QApplication.translate("MainWindow", "Txt", None, QtGui.QApplication.UnicodeUTF8))
+        self.buyorder2.setText(QtGui.QApplication.translate("MainWindow", "买入(批量)", None, QtGui.QApplication.UnicodeUTF8))
         self.groupBox_5.setTitle(QtGui.QApplication.translate("MainWindow", "股指期货", None, QtGui.QApplication.UnicodeUTF8))
         self.opensifbtn.setText(QtGui.QApplication.translate("MainWindow", "空开", None, QtGui.QApplication.UnicodeUTF8))
         self.cancelopensifbtn.setText(QtGui.QApplication.translate("MainWindow", "撤单", None, QtGui.QApplication.UnicodeUTF8))
@@ -726,6 +733,7 @@ class Ui_MainWindow(object):
         self.sellpricefixspin.setSuffix(QtGui.QApplication.translate("MainWindow", "元", None, QtGui.QApplication.UnicodeUTF8))
         self.forcecancelsellchk.setText(QtGui.QApplication.translate("MainWindow", "强撤", None, QtGui.QApplication.UnicodeUTF8))
         self.label_33.setText(QtGui.QApplication.translate("MainWindow", "Txt", None, QtGui.QApplication.UnicodeUTF8))
+        self.sellorder2.setText(QtGui.QApplication.translate("MainWindow", "卖出(批量)", None, QtGui.QApplication.UnicodeUTF8))
         self.groupBox_4.setTitle(QtGui.QApplication.translate("MainWindow", "股指期货", None, QtGui.QApplication.UnicodeUTF8))
         self.closesifbtn.setText(QtGui.QApplication.translate("MainWindow", "空平", None, QtGui.QApplication.UnicodeUTF8))
         self.cancelclosesifbtn.setText(QtGui.QApplication.translate("MainWindow", "撤单", None, QtGui.QApplication.UnicodeUTF8))

@@ -6,9 +6,9 @@ from datetime import datetime
 # config
 session_config = {}
 session_config["tradedbfn"] = "tradeinfo.db"
-session_config["jzserver"] = "172.18.20.52"
+session_config["jzserver"] = "10.137.31.5"
 session_config["jzport"] = 9100
-session_config["jzaccount"] = "85804530"
+session_config["jzaccount"] = "85804533"
 session_config["jzaccounttype"] = "Z"
 session_config["jzpasswd"] = "123444"
 
