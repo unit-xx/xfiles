@@ -26,7 +26,7 @@ orderreq["account"] = s["account"]
 orderreq["secu_code"] = "510051"
 orderreq["trd_id"] = "7K"
 orderreq["price"] = "1.000"
-orderreq["qty"] = "1000000"
+orderreq["qty"] = raw_input("number(in 1x10^6): ")
 orderreq.send()
 orderresp = jz.SubmitOrderResp(s)
 orderresp.recv()
