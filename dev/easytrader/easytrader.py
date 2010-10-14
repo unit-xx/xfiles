@@ -230,22 +230,29 @@ def main(args):
     bdiffupdter = basediffUpdater(pupdater, jsd_sessioncfg, uic)
     bdiffupdter.start()
 
+    # stock stats collector
     ssu = StockStatUpdater(uic, p, pstat)
     ssu.start()
 
+    # connect to controller
     caddr = config.get(MYSEC, "controlleraddr")
     cport = config.getint(MYSEC, "controllerport")
     client = trdClient(caddr, cport, pstat, uic)
-
     client.start()
+
+    # sif updater for quick submit
+    sifuq = SIFOrderUpdaterQ(p, jsd_sessioncfg, uic)
+    sifuq.start()
 
     uic.show()
     app.exec_()
 
+    # exit process
+    sifuq.stop()
+
     client.stop()
     client.join()
 
-    # exit process
     ssu.stop()
     ssu.join()
 

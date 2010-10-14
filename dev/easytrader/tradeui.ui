@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1277</width>
+    <width>1278</width>
     <height>615</height>
    </rect>
   </property>
@@ -25,7 +25,7 @@
     <normalon>:/img/ztzq.ico</normalon>:/img/ztzq.ico</iconset>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <layout class="QGridLayout" name="gridLayout_11">
+   <layout class="QGridLayout" name="gridLayout_9">
     <item row="0" column="0" colspan="12">
      <widget class="QTabWidget" name="optab">
       <property name="sizePolicy">
@@ -173,6 +173,9 @@ background-color: rgb(255, 0, 0);</string>
            </item>
            <item row="0" column="5">
             <widget class="QPushButton" name="buyorder2">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
              <property name="text">
               <string>买入(批量)</string>
              </property>
@@ -279,7 +282,7 @@ background-color: rgb(255, 0, 0);</string>
           </layout>
          </widget>
         </item>
-        <item row="0" column="3">
+        <item row="0" column="2">
          <spacer name="horizontalSpacer">
           <property name="orientation">
            <enum>Qt::Horizontal</enum>
@@ -294,50 +297,6 @@ background-color: rgb(255, 0, 0);</string>
            </size>
           </property>
          </spacer>
-        </item>
-        <item row="0" column="2">
-         <widget class="QGroupBox" name="groupBox_6">
-          <property name="title">
-           <string>单笔开仓</string>
-          </property>
-          <layout class="QGridLayout" name="gridLayout_9">
-           <item row="0" column="0">
-            <widget class="QSpinBox" name="sopenspin"/>
-           </item>
-           <item row="0" column="1">
-            <widget class="QPushButton" name="sopenbtn">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>40</width>
-               <height>16777215</height>
-              </size>
-             </property>
-             <property name="text">
-              <string>空开</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="2">
-            <widget class="QPushButton" name="lopenbtn">
-             <property name="maximumSize">
-              <size>
-               <width>40</width>
-               <height>16777215</height>
-              </size>
-             </property>
-             <property name="text">
-              <string>多开</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
         </item>
        </layout>
       </widget>
@@ -465,6 +424,9 @@ background-color: rgb(85, 255, 0);</string>
            </item>
            <item row="0" column="5">
             <widget class="QPushButton" name="sellorder2">
+             <property name="enabled">
+              <bool>false</bool>
+             </property>
              <property name="text">
               <string>卖出(批量)</string>
              </property>
@@ -473,7 +435,7 @@ background-color: rgb(85, 255, 0);</string>
           </layout>
          </widget>
         </item>
-        <item row="0" column="3">
+        <item row="0" column="2">
          <spacer name="horizontalSpacer_2">
           <property name="orientation">
            <enum>Qt::Horizontal</enum>
@@ -575,52 +537,133 @@ background-color: rgb(85, 255, 0);</string>
           </layout>
          </widget>
         </item>
-        <item row="0" column="2">
-         <widget class="QGroupBox" name="groupBox_7">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Fixed" vsizetype="Minimum">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="title">
-           <string>单笔平仓</string>
-          </property>
-          <layout class="QGridLayout" name="gridLayout_10">
-           <item row="0" column="0">
-            <widget class="QSpinBox" name="sclosespin"/>
-           </item>
-           <item row="0" column="1">
-            <widget class="QPushButton" name="sclosebtn">
-             <property name="maximumSize">
-              <size>
-               <width>40</width>
-               <height>16777215</height>
-              </size>
-             </property>
-             <property name="text">
-              <string>空平</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="2">
-            <widget class="QPushButton" name="lclosebtn">
-             <property name="maximumSize">
-              <size>
-               <width>40</width>
-               <height>16777215</height>
-              </size>
-             </property>
-             <property name="text">
-              <string>多平</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
-        </item>
        </layout>
       </widget>
+     </widget>
+    </item>
+    <item row="0" column="12" rowspan="3">
+     <widget class="QGroupBox" name="sifquick">
+      <property name="minimumSize">
+       <size>
+        <width>200</width>
+        <height>0</height>
+       </size>
+      </property>
+      <property name="title">
+       <string>期货快捷</string>
+      </property>
+      <layout class="QGridLayout" name="gridLayout_10">
+       <item row="0" column="0" colspan="2">
+        <widget class="QSpinBox" name="sifnumspin"/>
+       </item>
+       <item row="0" column="2" colspan="2">
+        <widget class="QPushButton" name="sifsubmitbtn">
+         <property name="text">
+          <string>submit!</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="4">
+        <spacer name="horizontalSpacer_5">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>15</width>
+           <height>20</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item row="1" column="0">
+        <widget class="QRadioButton" name="sifosrad">
+         <property name="text">
+          <string>空开</string>
+         </property>
+         <property name="checked">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="1" colspan="2">
+        <widget class="QRadioButton" name="sifcsrad">
+         <property name="text">
+          <string>空平</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="3">
+        <widget class="QRadioButton" name="sifolrad">
+         <property name="text">
+          <string>多开</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="4">
+        <widget class="QRadioButton" name="sifclrad">
+         <property name="text">
+          <string>多平</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="0">
+        <widget class="QLabel" name="label">
+         <property name="text">
+          <string>委托号</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="1" colspan="4">
+        <widget class="QLineEdit" name="sifoidline">
+         <property name="readOnly">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="0">
+        <widget class="QLabel" name="label_3">
+         <property name="text">
+          <string>委托量</string>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="1" colspan="4">
+        <widget class="QLineEdit" name="sifocntline">
+         <property name="readOnly">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item row="4" column="0">
+        <widget class="QLabel" name="label_8">
+         <property name="text">
+          <string>成交量</string>
+         </property>
+        </widget>
+       </item>
+       <item row="4" column="1" colspan="4">
+        <widget class="QLineEdit" name="sifdcntline">
+         <property name="readOnly">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item row="5" column="0">
+        <widget class="QLabel" name="label_10">
+         <property name="text">
+          <string>委托状态</string>
+         </property>
+        </widget>
+       </item>
+       <item row="5" column="1" colspan="4">
+        <widget class="QLineEdit" name="sifstatusline">
+         <property name="readOnly">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+      </layout>
      </widget>
     </item>
     <item row="1" column="0" colspan="12">
@@ -1034,6 +1077,38 @@ background-color: rgb(85, 255, 0);</string>
       </property>
      </widget>
     </item>
+    <item row="3" column="4">
+     <widget class="QLabel" name="label_34">
+      <property name="text">
+       <string>买入点数</string>
+      </property>
+     </widget>
+    </item>
+    <item row="3" column="5">
+     <widget class="QLineEdit" name="buypointline">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>0</width>
+        <height>0</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>80</width>
+        <height>16777215</height>
+       </size>
+      </property>
+      <property name="readOnly">
+       <bool>true</bool>
+      </property>
+     </widget>
+    </item>
     <item row="3" column="6">
      <widget class="QLabel" name="label_18">
       <property name="text">
@@ -1066,6 +1141,38 @@ background-color: rgb(85, 255, 0);</string>
       </property>
      </widget>
     </item>
+    <item row="3" column="8">
+     <widget class="QLabel" name="label_35">
+      <property name="text">
+       <string>卖出点数</string>
+      </property>
+     </widget>
+    </item>
+    <item row="3" column="9">
+     <widget class="QLineEdit" name="sellpointline">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>0</width>
+        <height>0</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>80</width>
+        <height>16777215</height>
+       </size>
+      </property>
+      <property name="readOnly">
+       <bool>true</bool>
+      </property>
+     </widget>
+    </item>
     <item row="3" column="10">
      <widget class="QLabel" name="label_17">
       <property name="text">
@@ -1073,7 +1180,7 @@ background-color: rgb(85, 255, 0);</string>
       </property>
      </widget>
     </item>
-    <item row="3" column="11">
+    <item row="3" column="11" colspan="2">
      <widget class="QLineEdit" name="posnameline">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -1153,7 +1260,7 @@ background-color: rgb(85, 255, 0);</string>
       </widget>
      </widget>
     </item>
-    <item row="4" column="11">
+    <item row="4" column="11" colspan="2">
      <widget class="QTabWidget" name="tabstat">
       <property name="maximumSize">
        <size>
@@ -1351,70 +1458,6 @@ background-color: rgb(85, 255, 0);</string>
       </widget>
      </widget>
     </item>
-    <item row="3" column="4">
-     <widget class="QLabel" name="label_34">
-      <property name="text">
-       <string>买入点数</string>
-      </property>
-     </widget>
-    </item>
-    <item row="3" column="8">
-     <widget class="QLabel" name="label_35">
-      <property name="text">
-       <string>卖出点数</string>
-      </property>
-     </widget>
-    </item>
-    <item row="3" column="5">
-     <widget class="QLineEdit" name="buypointline">
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-        <horstretch>0</horstretch>
-        <verstretch>0</verstretch>
-       </sizepolicy>
-      </property>
-      <property name="minimumSize">
-       <size>
-        <width>0</width>
-        <height>0</height>
-       </size>
-      </property>
-      <property name="maximumSize">
-       <size>
-        <width>80</width>
-        <height>16777215</height>
-       </size>
-      </property>
-      <property name="readOnly">
-       <bool>true</bool>
-      </property>
-     </widget>
-    </item>
-    <item row="3" column="9">
-     <widget class="QLineEdit" name="sellpointline">
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-        <horstretch>0</horstretch>
-        <verstretch>0</verstretch>
-       </sizepolicy>
-      </property>
-      <property name="minimumSize">
-       <size>
-        <width>0</width>
-        <height>0</height>
-       </size>
-      </property>
-      <property name="maximumSize">
-       <size>
-        <width>80</width>
-        <height>16777215</height>
-       </size>
-      </property>
-      <property name="readOnly">
-       <bool>true</bool>
-      </property>
-     </widget>
-    </item>
    </layout>
   </widget>
   <widget class="QMenuBar" name="menubar">
@@ -1425,7 +1468,7 @@ background-color: rgb(85, 255, 0);</string>
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1277</width>
+     <width>1278</width>
      <height>23</height>
     </rect>
    </property>

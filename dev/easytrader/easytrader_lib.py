@@ -643,6 +643,9 @@ class Portfolio(object):
             #self.close()
         self.jsdsession = s
 
+        # order id for the last order in quick sif operation
+        self.sifquickoid = ""
+
     def getbostate(self):
         return self._bostate
 
@@ -1082,7 +1085,8 @@ class Portfolio(object):
 
             reqclass = jz.BatchOrderReq
             respclass = jz.BatchOrderResp
-            for i in range(0, len(tobuysh), 100):
+            batchnum = 90
+            for i in range(0, len(tobuysh), batchnum):
                 param = {}
                 param["account"] = self.session["account"]
                 param["customer"] = self.session["user_code"]
@@ -1090,11 +1094,10 @@ class Portfolio(object):
                 param["board"] = "0"
                 param["secu_acc"] = self.session["secu_acc"]["SH"]
                 param["trd_id"] = "0B"
-                param["price_msg"] = reqclass.genorder(tobuysh[i:i+100])
-                print param
+                param["price_msg"] = reqclass.genorder(tobuysh[i:i+batchnum])
                 self.tqueue.put( (reqclass, respclass, param, self.buyBatch2Bottom, True) )
 
-            for i in range(0, len(tobuysz), 100):
+            for i in range(0, len(tobuysz), batchnum):
                 param = {}
                 param["account"] = self.session["account"]
                 param["customer"] = self.session["user_code"]
@@ -1102,7 +1105,7 @@ class Portfolio(object):
                 param["board"] = "0"
                 param["secu_acc"] = self.session["secu_acc"]["SZ"]
                 param["trd_id"] = "0B"
-                param["price_msg"] = reqclass.genorder(tobuysz[i:i+100])
+                param["price_msg"] = reqclass.genorder(tobuysz[i:i+batchnum])
                 self.tqueue.put( (reqclass, respclass, param, self.buyBatch2Bottom, True) )
 
         self.bolock.release()
@@ -1734,7 +1737,8 @@ class Portfolio(object):
 
             reqclass = jz.BatchOrderReq
             respclass = jz.BatchOrderResp
-            for i in range(0, len(tosellsh), 100):
+            batchnum = 90
+            for i in range(0, len(tosellsh), batchnum):
                 param = {}
                 param["account"] = self.session["account"]
                 param["customer"] = self.session["user_code"]
@@ -1742,11 +1746,10 @@ class Portfolio(object):
                 param["board"] = "0"
                 param["secu_acc"] = self.session["secu_acc"]["SH"]
                 param["trd_id"] = "0S"
-                param["price_msg"] = reqclass.genorder(tosellsh[i:i+100])
-                print param
+                param["price_msg"] = reqclass.genorder(tosellsh[i:i+batchnum])
                 self.tqueue.put( (reqclass, respclass, param, self.sellBatch2Bottom, True) )
 
-            for i in range(0, len(tosellsz), 100):
+            for i in range(0, len(tosellsz), batchnum):
                 param = {}
                 param["account"] = self.session["account"]
                 param["customer"] = self.session["user_code"]
@@ -1754,7 +1757,7 @@ class Portfolio(object):
                 param["board"] = "0"
                 param["secu_acc"] = self.session["secu_acc"]["SZ"]
                 param["trd_id"] = "0S"
-                param["price_msg"] = reqclass.genorder(tosellsz[i:i+100])
+                param["price_msg"] = reqclass.genorder(tosellsz[i:i+batchnum])
                 self.tqueue.put( (reqclass, respclass, param, self.sellBatch2Bottom, True) )
 
         self.bolock.release()
@@ -1771,16 +1774,21 @@ class Portfolio(object):
         assert mkt != ""
 
         self.bolock.acquire()
-        for r in resp.records:
-            self.bocount = self.bocount - 1
-            scode = mkt + r[1]
-            orec = self.stockinfo[scode]["pastsell"][-1]
-            if resp.retcode == "0":
+        print resp.header_left
+        if resp.retcode == "0":
+            for r in resp.records:
+                self.bocount = self.bocount - 1
+                scode = mkt + r[1]
+                orec = self.stockinfo[scode]["pastsell"][-1]
                 orec["order_state"] = Portfolio.SELLSUCCESS
                 orec["order_date"] = today
                 orec["order_time"] = str(datetime.now().time())
                 orec["order_id"] = r[0]
-            else:
+        else:
+            for r in resp.records:
+                self.bocount = self.bocount - 1
+                scode = mkt + r[1]
+                orec = self.stockinfo[scode]["pastsell"][-1]
                 orec["order_state"] = Portfolio.SELLFAILED
 
         if self.bocount == 0:
@@ -2166,6 +2174,10 @@ class Portfolio(object):
         req.makeopenshort(code, price, share)
         req.send()
         resp.recv()
+        if resp.anwser == "Y":
+            return resp.records[0][1], ""
+        else:
+            return None, resp.failinfo
 
     def closeshort2(self, code, price, share):
         req = jsd.OrderReq(self.jsdsession)
@@ -2173,6 +2185,10 @@ class Portfolio(object):
         req.makecloseshort(code, price, share)
         req.send()
         resp.recv()
+        if resp.anwser == "Y":
+            return resp.records[0][1], ""
+        else:
+            return None, resp.failinfo
 
     def openlong2(self, code, price, share):
         req = jsd.OrderReq(self.jsdsession)
@@ -2180,6 +2196,10 @@ class Portfolio(object):
         req.makeopenlong(code, price, share)
         req.send()
         resp.recv()
+        if resp.anwser == "Y":
+            return resp.records[0][1], ""
+        else:
+            return None, resp.failinfo
 
     def closelong2(self, code, price, share):
         req = jsd.OrderReq(self.jsdsession)
@@ -2187,6 +2207,10 @@ class Portfolio(object):
         req.makecloselong(code, price, share)
         req.send()
         resp.recv()
+        if resp.anwser == "Y":
+            return resp.records[0][1], ""
+        else:
+            return None, resp.failinfo
 
     def updateopencount(self):
         # used in SIFOrderPushee, with sindexlock already acquired
@@ -2899,6 +2923,63 @@ class SIFOrderUpdater(Thread):
 
             if order["order_id"] != "" and order["order_state"] in ("nsap") and int(order["dealcount"]) < int(order["ordercount"]):
                     pass
+
+    def stop(self):
+        self.runflag = False
+
+    def run(self):
+        try:
+            s = jsd.session(self.jsdcfg)
+            if not s.setup():
+                self.logger.warning("Cannot login")
+                return False
+            self.session = s
+
+            while self.runflag:
+                self.update()
+                time.sleep(1)
+
+            self.close()
+        except Exception:
+            self.logger.exception("Oh!!!")
+
+class SIFOrderUpdaterQ(Thread):
+    """
+    order updater for orders from quick operation
+    """
+    def __init__(self, portfolio, jsdcfg, uic):
+        Thread.__init__(self)
+        self.portfolio = portfolio
+        self.jsdcfg = jsdcfg
+        self.uic = uic
+        self.name = self.__class__.__name__
+        self.logger = logging.getLogger()
+        self.session = None
+        self.runflag = True
+
+    def close(self):
+        if self.session:
+            self.session.close()
+            self.session = None
+
+    def update(self):
+        oid = self.portfolio.sifquickoid
+        if oid:
+            qreq = jsd.QueryOrderReq(self.session)
+            qreq["order_id"] = oid
+            qreq["seat"] = self.session["seat"]
+            qreq.send()
+            qresp = jsd.QueryOrderResp(self.session)
+            qresp.recv()
+            if qresp.anwser == "Y":
+                dealcnt = qresp.records[0][2]
+                ordercnt = qresp.records[0][4]
+                QMetaObject.invokeMethod(self.uic.sifdcntline, "setText",
+                        Qt.QueuedConnection,
+                        Q_ARG("QString",
+                            QString(dealcnt)))
+                if dealcnt == ordercnt:
+                    self.portfolio.sifquickoid = ""
 
     def stop(self):
         self.runflag = False
@@ -3813,6 +3894,7 @@ class uicontrol(QMainWindow, tradeui.Ui_MainWindow):
         self.mainwindow.connect(self.buyorder2, SIGNAL("clicked()"), self.buyBatch2)
         self.mainwindow.connect(self.cancelbuyorder, SIGNAL("clicked()"), self.cancelBuyBatch)
         self.mainwindow.connect(self.sellorder, SIGNAL("clicked()"), self.sellBatch)
+        self.mainwindow.connect(self.sellorder2, SIGNAL("clicked()"), self.sellBatch2)
         self.mainwindow.connect(self.cancelsellorder, SIGNAL("clicked()"), self.cancelSellBatch)
 
         # setup force buy/sell checkbox
@@ -3827,10 +3909,8 @@ class uicontrol(QMainWindow, tradeui.Ui_MainWindow):
         self.mainwindow.connect(self.closesifbtn, SIGNAL("clicked()"), self.closeshort)
         self.mainwindow.connect(self.cancelclosesifbtn, SIGNAL("clicked()"), self.cancelclose)
 
-        self.mainwindow.connect(self.sopenbtn, SIGNAL("clicked()"), self.openshort2)
-        self.mainwindow.connect(self.sclosebtn, SIGNAL("clicked()"), self.closeshort2)
-        self.mainwindow.connect(self.lopenbtn, SIGNAL("clicked()"), self.openlong2)
-        self.mainwindow.connect(self.lclosebtn, SIGNAL("clicked()"), self.closelong2)
+        # setup shortcut stock index operations
+        self.mainwindow.connect(self.sifsubmitbtn, SIGNAL("clicked()"), self.sifsubmit)
 
         # setup menu
         self.mainwindow.connect(self.stockinfoact, SIGNAL("triggered()"), self.showstockinfo)
@@ -3893,6 +3973,17 @@ class uicontrol(QMainWindow, tradeui.Ui_MainWindow):
                 QMessageBox.Ok|QMessageBox.Cancel)
         if QMessageBox.Ok == ret:
             self.portfolio.sellBatch()
+
+    @pyqtSlot()
+    def sellBatch2(self):
+        ret = QMessageBox.warning(self.mainwindow,
+                u"",
+                u"<H3>确认卖出股票组合？（卖出档位：<FONT COLOR='#FF0000'>%s</FONT>，价格修正：<FONT COLOR='#FF0000'>%s</FONT>）</H3>"
+                % (self.portfolio.pricepolicynamemap[self.portfolio.sellpolicy],
+                    self.portfolio.sellpricefix),
+                QMessageBox.Ok|QMessageBox.Cancel)
+        if QMessageBox.Ok == ret:
+            self.portfolio.sellBatch2()
 
     @pyqtSlot()
     def sellBatch_r(self):
@@ -3965,60 +4056,66 @@ class uicontrol(QMainWindow, tradeui.Ui_MainWindow):
             self.savePortfolio()
 
     @pyqtSlot()
-    def openshort2(self):
+    def sifsubmit(self):
         code = self.portfolio.sindexinfo["code"]
-        price = "%0.1f" % self.portfolio.sindexinfo["openposprice"]
-        share = str(self.sopenspin.value())
-        ret = QMessageBox.warning(self.mainwindow,
-                u"",
-                u"<H3>确认单笔空开？\n代码：%s\n价格：%s\n数量：%s</H3>"
-                % (code, price, share),
-                QMessageBox.Ok|QMessageBox.Cancel)
-        if QMessageBox.Ok == ret:
+        share = str(self.sifnumspin.value())
+        if self.sifosrad.isChecked():
+            op = self.portfolio.openshort2
+            optxt = u"空开"
             price = "%0.1f" % self.portfolio.sindexinfo["openposprice"]
-            self.portfolio.openshort2(code, price, share)
-
-    @pyqtSlot()
-    def closeshort2(self):
-        code = self.portfolio.sindexinfo["code"]
-        price = "%0.1f" % self.portfolio.sindexinfo["closeposprice"]
-        share = str(self.sclosespin.value())
-        ret = QMessageBox.warning(self.mainwindow,
-                u"",
-                u"<H3>确认单笔空平？\r代码：%s\r价格：%s\r数量：%s</H3>"
-                % (code, price, share),
-                QMessageBox.Ok|QMessageBox.Cancel)
-        if QMessageBox.Ok == ret:
+        elif self.sifcsrad.isChecked():
+            op = self.portfolio.closeshort2
+            optxt = u"空平"
             price = "%0.1f" % self.portfolio.sindexinfo["closeposprice"]
-            self.portfolio.closeshort2(code, price, share)
-
-    @pyqtSlot()
-    def openlong2(self):
-        code = self.portfolio.sindexinfo["code"]
-        price = "%0.1f" % self.portfolio.sindexinfo["openposprice"]
-        share = str(self.sopenspin.value())
-        ret = QMessageBox.warning(self.mainwindow,
-                u"",
-                u"<H3>确认单笔多开？\n代码：%s\n价格：%s\n数量：%s</H3>"
-                % (code, price, share),
-                QMessageBox.Ok|QMessageBox.Cancel)
-        if QMessageBox.Ok == ret:
+        elif self.sifolrad.isChecked():
+            op = self.portfolio.openlong2
+            optxt = u"多开"
             price = "%0.1f" % self.portfolio.sindexinfo["openposprice"]
-            self.portfolio.openlong2(code, price, share)
+        elif self.sifclrad.isChecked():
+            op = self.portfolio.closelong2
+            optxt = u"多平"
+            price = "%0.1f" % self.portfolio.sindexinfo["closeposprice"]
+        else:
+            QMessageBox.warning(self.mainwindow,
+                    u"",
+                    u"未选操作",
+                    QMessageBox.Ok)
+            return
 
-    @pyqtSlot()
-    def closelong2(self):
-        code = self.portfolio.sindexinfo["code"]
-        price = "%0.1f" % self.portfolio.sindexinfo["closeposprice"]
-        share = str(self.sclosespin.value())
         ret = QMessageBox.warning(self.mainwindow,
                 u"",
-                u"<H3>确认单笔多平？\r代码：%s\r价格：%s\r数量：%s</H3>"
-                % (code, price, share),
+                u"<H3>确认%s？\n代码：%s\n价格：%s\n数量：%s</H3>"
+                % (optxt, code, price, share),
                 QMessageBox.Ok|QMessageBox.Cancel)
         if QMessageBox.Ok == ret:
-            price = "%0.1f" % self.portfolio.sindexinfo["closeposprice"]
-            self.portfolio.closelong2(code, price, share)
+            oid,infotxt = op(code, price, share)
+            self.portfolio.sifquickoid = oid
+            QMetaObject.invokeMethod(self.sifocntline, "setText",
+                    Qt.QueuedConnection,
+                    Q_ARG("QString",
+                        QString(share)))
+            QMetaObject.invokeMethod(self.sifdcntline, "setText",
+                    Qt.QueuedConnection,
+                    Q_ARG("QString",
+                        QString("")))
+            if oid == None:
+                QMetaObject.invokeMethod(self.sifstatusline, "setText",
+                        Qt.QueuedConnection,
+                        Q_ARG("QString",
+                            QString(u"委托失败: %s"%infotxt)))
+                QMetaObject.invokeMethod(self.sifoidline, "setText",
+                        Qt.QueuedConnection,
+                        Q_ARG("QString",
+                            QString("")))
+            else:
+                QMetaObject.invokeMethod(self.sifoidline, "setText",
+                        Qt.QueuedConnection,
+                        Q_ARG("QString",
+                            QString(oid)))
+                QMetaObject.invokeMethod(self.sifstatusline, "setText",
+                        Qt.QueuedConnection,
+                        Q_ARG("QString",
+                            QString(u"委托成功")))
 
     @pyqtSlot()
     def savePortfolio(self):
