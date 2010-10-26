@@ -22,7 +22,8 @@ class session:
     def setup(self):
         try:
             c = socket.socket()
-            c.settimeout(10)
+            # cannot remember why set timeout here, try disable it.
+            #c.settimeout(10)
             c.connect((self.sessioncfg["jsdserver"], self.sessioncfg["jsdport"]))
             self.conn = c
 
