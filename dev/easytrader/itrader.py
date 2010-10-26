@@ -123,6 +123,7 @@ def main(args):
         app.exec_()
 
     portfoliofn = ptfdlg.selectedfn
+    portfoliobasefn = os.path.basename(portfoliofn)[0:-4]
     opennew = ptfdlg.opennew
 
     if portfoliofn == u"":
@@ -140,12 +141,18 @@ def main(args):
     pmodel = PortfolioModel(p)
     sindexmodel = StockIndexModel(p)
 
+    pstat = PortfolioStat()
+    pstat.ptfname = portfoliobasefn
+    pstat.username = username
+
     # main window
     uic = uicontrol(session_config, p, pmodel, sindexmodel, opennew)
     uic.setup()
 
     # setup logging
-    logging.config.fileConfig(CONFIGFN)
+    logfn = u"log/itrader-%s-%s.log" % (username, portfoliobasefn)
+    p.logfn = logfn
+    logging.config.fileConfig(CONFIGFN, {"logfn":logfn.encode("gbk")})
     logger = logging.getLogger()
     msg = "i'm started"
     logger.info("========================")
@@ -203,13 +210,29 @@ def main(args):
     bdiffupdter = basediffUpdater(pupdater, jsd_sessioncfg, uic)
     bdiffupdter.start()
 
-    ssu = StockStatUpdater(uic, p)
+    # stock stats collector
+    ssu = StockStatUpdater(uic, p, pstat)
     ssu.start()
+
+    # connect to controller
+    caddr = config.get(MYSEC, "controlleraddr")
+    cport = config.getint(MYSEC, "controllerport")
+    client = trdClient(caddr, cport, pstat, uic)
+    client.start()
+
+    # sif updater for quick submit
+    sifuq = SIFOrderUpdaterQ(p, jsd_sessioncfg, uic)
+    sifuq.start()
 
     uic.show()
     app.exec_()
 
     # exit process
+    sifuq.stop()
+
+    client.stop()
+    client.join()
+
     ssu.stop()
     ssu.join()
 

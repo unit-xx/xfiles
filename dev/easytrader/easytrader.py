@@ -160,7 +160,7 @@ def main(args):
     sindexmodel = StockIndexModel(p)
 
     pstat = PortfolioStat()
-    pstat.ptfname = os.path.basename(portfoliofn)[0:-4]
+    pstat.ptfname = portfoliobasefn
     pstat.username = username
 
     # main window
