@@ -283,6 +283,31 @@ class OrderReq(request):
     code = "6021"
     paramlist = ["exchcode", "code", "longshort", "openclose", "ifhedge", "count", "price", "tradenum", "seat"]
 
+    def makeorder(self, code, price, share,
+            openclose, longshort, ifhedge=False):
+        self["exchcode"] = self.session["cffexcode"]
+        self["code"] = code
+
+        if longshort == "long":
+            self["longshort"] = "0"
+        else:
+            self["longshort"] = "1"
+
+        if openclose == "open":
+            self["openclose"] = "0"
+        else:
+            self["openclose"] = "1"
+
+        if ifhedge:
+            self["ifhedge"] = "1"
+        else:
+            self["ifhedge"] = "0"
+
+        self["count"] = share
+        self["price"] = price
+        self["clientnum"] = self.session["clientnum"]
+        self["seat"] = self.session["seat"]
+
     def makeopenshort(self, code, price, share):
         self["exchcode"] = self.session["cffexcode"]
         self["code"] = code
@@ -334,6 +359,20 @@ class OrderResp(response):
 class CancelOrderReq(request):
     code = "6022"
     paramlist = ["exchcode", "code", "longshort", "openclose", "ifhedge", "count", "price", "order_id", "cancelcount", "syscenter", "seat", "orderseat"]
+
+    def makecancelorder(self, sirec, cancelcount):
+        self["exchcode"] = self.session["cffexcode"]
+        self["code"] = sirec["code"]
+        self["longshort"] = sirec["longshort"]
+        self["openclose"] = sirec["openclose"]
+        self["ifhedge"] = sirec["ifhedge"]
+        self["count"] = sirec["ordercount"]
+        self["price"] = sirec["orderprice"]
+        self["order_id"] = sirec["order_id"]
+        self["cancelcount"] = str(cancelcount)
+        self["syscenter"] = sirec["syscenter"]
+        self["seat"] = self.session["seat"]
+        self["orderseat"] = sirec["orderseat"]
 
 class CancelOrderResp(response):
     okfieldn = 13

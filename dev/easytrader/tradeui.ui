@@ -563,19 +563,6 @@ background-color: rgb(85, 255, 0);</string>
          </property>
         </widget>
        </item>
-       <item row="0" column="4">
-        <spacer name="horizontalSpacer_5">
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>15</width>
-           <height>20</height>
-          </size>
-         </property>
-        </spacer>
-       </item>
        <item row="1" column="0">
         <widget class="QRadioButton" name="sifosrad">
          <property name="text">
@@ -600,13 +587,6 @@ background-color: rgb(85, 255, 0);</string>
          </property>
         </widget>
        </item>
-       <item row="1" column="4">
-        <widget class="QRadioButton" name="sifclrad">
-         <property name="text">
-          <string>多平</string>
-         </property>
-        </widget>
-       </item>
        <item row="2" column="0">
         <widget class="QLabel" name="label">
          <property name="text">
@@ -614,7 +594,7 @@ background-color: rgb(85, 255, 0);</string>
          </property>
         </widget>
        </item>
-       <item row="2" column="1" colspan="4">
+       <item row="2" column="1" colspan="5">
         <widget class="QLineEdit" name="sifoidline">
          <property name="readOnly">
           <bool>true</bool>
@@ -628,7 +608,7 @@ background-color: rgb(85, 255, 0);</string>
          </property>
         </widget>
        </item>
-       <item row="3" column="1" colspan="4">
+       <item row="3" column="1" colspan="5">
         <widget class="QLineEdit" name="sifocntline">
          <property name="readOnly">
           <bool>true</bool>
@@ -642,7 +622,7 @@ background-color: rgb(85, 255, 0);</string>
          </property>
         </widget>
        </item>
-       <item row="4" column="1" colspan="4">
+       <item row="4" column="1" colspan="5">
         <widget class="QLineEdit" name="sifdcntline">
          <property name="readOnly">
           <bool>true</bool>
@@ -656,10 +636,24 @@ background-color: rgb(85, 255, 0);</string>
          </property>
         </widget>
        </item>
-       <item row="5" column="1" colspan="4">
+       <item row="5" column="1" colspan="5">
         <widget class="QLineEdit" name="sifstatusline">
          <property name="readOnly">
           <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="4" colspan="2">
+        <widget class="QPushButton" name="sifcancelbtn">
+         <property name="text">
+          <string>cancel</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="4">
+        <widget class="QRadioButton" name="sifclrad">
+         <property name="text">
+          <string>多平</string>
          </property>
         </widget>
        </item>

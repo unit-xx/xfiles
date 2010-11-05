@@ -213,6 +213,7 @@ class SIndexRecord:
     def __init__(self, dictdata=None):
         self.data = {}
         self.data["order_id"] = ""
+        self.data["code"] = ""
         #self.data["order_state"] = Portfolio.IFUNORDERED
         self.data["order_date"] = ""
         self.data["order_time"] = ""
@@ -226,8 +227,8 @@ class SIndexRecord:
         self.data["orderseat"] = ""
         self.data["syscenter"] = ""
 
-        #self.data["dealcount"] = "0"
-        #self.data["dealprice"] = "0.0"
+        self.data["dealcount"] = "0"
+        self.data["dealprice"] = "0.0"
         self.data["cancel_date"] = ""
         self.data["cancel_time"] = ""
         if dictdata:
@@ -241,6 +242,34 @@ class SIndexRecord:
 
     def __repr__(self):
         return repr(self.data)
+
+    def updatefrom(self, oreq, oresp):
+        try:
+            resp = oresp.records[0]
+            if oresp.anwser == "Y":
+                self["order_id"] = resp[1]
+                self["order_date"] = str(datetime.today().date())
+                self["order_time"] = str(datetime.now().time())
+                self["ordercount"] = resp[14]
+                self["orderprice"] = resp[15]
+                self["longshort"] = oreq["longshort"]
+                self["openclose"] = oreq["openclose"]
+                self["ifhedge"] = oreq["ifhedge"]
+                self["orderseat"] = resp[30]
+                self["syscenter"] = resp[19]
+            elif oresp.anwser == "N":
+                self["order_date"] = str(datetime.today().date())
+                self["order_time"] = str(datetime.now().time())
+                self["ordercount"] = oreq["count"]
+                self["orderprice"] = oreq["price"]
+                self["longshort"] = oreq["longshort"]
+                self["openclose"] = oreq["openclose"]
+                self["ifhedge"] = oreq["ifhedge"]
+                self["failcode"] = oresp.failcode
+                self["failinfo"] = oresp.failinfo
+        except IndexError:
+            pass
+
 
 class PortfolioStat:
     def __init__(self):
@@ -644,7 +673,7 @@ class Portfolio(object):
         self.jsdsession = s
 
         # order id for the last order in quick sif operation
-        self.sifquickoid = ""
+        self.sifquickinfo = SIndexRecord()
 
     def getbostate(self):
         return self._bostate
@@ -2168,49 +2197,64 @@ class Portfolio(object):
             else:
                 self.logger.info("not in cancelclose-able state")
 
+    def makesiforder(self, code, price, share, openclose, longshort):
+        oreq = jsd.OrderReq(self.jsdsession)
+        oresp = jsd.OrderResp(self.jsdsession)
+        oreq.makeorder(code, price, share, openclose, longshort)
+        oreq.send()
+        oresp.recv()
+        sirec = SIndexRecord()
+        sirec.updatefrom(oreq, oresp)
+        return sirec
+
+    def cancelsiforder(self, sirec, cancelcount):
+        coreq = jsd.CancelOrderReq(self.jsdsession)
+        coresp = jsd.CancelOrderResp(self.jsdsession)
+        coreq.makecancelorder(sirec, cancelcount)
+        coreq.send()
+        coresp.recv()
+        return coresp.records[0]
+
+    # TODO: remove FOUR duplicated functions below.
     def openshort2(self, code, price, share):
-        req = jsd.OrderReq(self.jsdsession)
-        resp = jsd.OrderResp(self.jsdsession)
-        req.makeopenshort(code, price, share)
-        req.send()
-        resp.recv()
-        if resp.anwser == "Y":
-            return resp.records[0][1], ""
-        else:
-            return None, resp.failinfo
+        oreq = jsd.OrderReq(self.jsdsession)
+        oresp = jsd.OrderResp(self.jsdsession)
+        oreq.makeopenshort(code, price, share)
+        oreq.send()
+        oresp.recv()
+        sirec = SIndexRecord()
+        sirec.updatefrom(oresp)
+        return sirec
 
     def closeshort2(self, code, price, share):
-        req = jsd.OrderReq(self.jsdsession)
-        resp = jsd.OrderResp(self.jsdsession)
-        req.makecloseshort(code, price, share)
-        req.send()
-        resp.recv()
-        if resp.anwser == "Y":
-            return resp.records[0][1], ""
-        else:
-            return None, resp.failinfo
+        oreq = jsd.OrderReq(self.jsdsession)
+        oresp = jsd.OrderResp(self.jsdsession)
+        oreq.makecloseshort(code, price, share)
+        oreq.send()
+        oresp.recv()
+        sirec = SIndexRecord()
+        sirec.updatefrom(oresp)
+        return sirec
 
     def openlong2(self, code, price, share):
-        req = jsd.OrderReq(self.jsdsession)
-        resp = jsd.OrderResp(self.jsdsession)
-        req.makeopenlong(code, price, share)
-        req.send()
-        resp.recv()
-        if resp.anwser == "Y":
-            return resp.records[0][1], ""
-        else:
-            return None, resp.failinfo
+        oreq = jsd.OrderReq(self.jsdsession)
+        oresp = jsd.OrderResp(self.jsdsession)
+        oreq.makeopenlong(code, price, share)
+        oreq.send()
+        oresp.recv()
+        sirec = SIndexRecord()
+        sirec.updatefrom(oresp)
+        return sirec
 
     def closelong2(self, code, price, share):
-        req = jsd.OrderReq(self.jsdsession)
-        resp = jsd.OrderResp(self.jsdsession)
-        req.makecloselong(code, price, share)
-        req.send()
-        resp.recv()
-        if resp.anwser == "Y":
-            return resp.records[0][1], ""
-        else:
-            return None, resp.failinfo
+        oreq = jsd.OrderReq(self.jsdsession)
+        oresp = jsd.OrderResp(self.jsdsession)
+        oreq.makecloselong(code, price, share)
+        oreq.send()
+        oresp.recv()
+        sirec = SIndexRecord()
+        sirec.updatefrom(oresp)
+        return sirec
 
     def updateopencount(self):
         # used in SIFOrderPushee, with sindexlock already acquired
@@ -2963,23 +3007,22 @@ class SIFOrderUpdaterQ(Thread):
             self.session = None
 
     def update(self):
-        oid = self.portfolio.sifquickoid
-        if oid:
+        sirec = self.portfolio.sifquickinfo
+        if sirec["order_id"] and sirec["ordercount"] != sirec["dealcount"]:
             qreq = jsd.QueryOrderReq(self.session)
-            qreq["order_id"] = oid
+            qreq["order_id"] = sirec["order_id"]
             qreq["seat"] = self.session["seat"]
             qreq.send()
             qresp = jsd.QueryOrderResp(self.session)
             qresp.recv()
             if qresp.anwser == "Y":
                 dealcnt = qresp.records[0][2]
-                ordercnt = qresp.records[0][4]
-                QMetaObject.invokeMethod(self.uic.sifdcntline, "setText",
-                        Qt.QueuedConnection,
-                        Q_ARG("QString",
-                            QString(dealcnt)))
-                if dealcnt == ordercnt:
-                    self.portfolio.sifquickoid = ""
+                if dealcnt != sirec["dealcount"]:
+                    sirec["dealcount"] = dealcnt
+                    QMetaObject.invokeMethod(self.uic.sifdcntline, "setText",
+                            Qt.QueuedConnection,
+                            Q_ARG("QString",
+                                QString(dealcnt)))
 
     def stop(self):
         self.runflag = False
@@ -3911,6 +3954,7 @@ class uicontrol(QMainWindow, tradeui.Ui_MainWindow):
 
         # setup shortcut stock index operations
         self.mainwindow.connect(self.sifsubmitbtn, SIGNAL("clicked()"), self.sifsubmit)
+        self.mainwindow.connect(self.sifcancelbtn, SIGNAL("clicked()"), self.sifcancel)
 
         # setup menu
         self.mainwindow.connect(self.stockinfoact, SIGNAL("triggered()"), self.showstockinfo)
@@ -4060,19 +4104,23 @@ class uicontrol(QMainWindow, tradeui.Ui_MainWindow):
         code = self.portfolio.sindexinfo["code"]
         share = str(self.sifnumspin.value())
         if self.sifosrad.isChecked():
-            op = self.portfolio.openshort2
+            openclose = "open"
+            longshort = "short"
             optxt = u"空开"
             price = "%0.1f" % self.portfolio.sindexinfo["openposprice"]
         elif self.sifcsrad.isChecked():
-            op = self.portfolio.closeshort2
+            openclose = "close"
+            longshort = "short"
             optxt = u"空平"
             price = "%0.1f" % self.portfolio.sindexinfo["closeposprice"]
         elif self.sifolrad.isChecked():
-            op = self.portfolio.openlong2
+            openclose = "open"
+            longshort = "long"
             optxt = u"多开"
             price = "%0.1f" % self.portfolio.sindexinfo["openposprice"]
         elif self.sifclrad.isChecked():
-            op = self.portfolio.closelong2
+            openclose = "close"
+            longshort = "long"
             optxt = u"多平"
             price = "%0.1f" % self.portfolio.sindexinfo["closeposprice"]
         else:
@@ -4088,8 +4136,8 @@ class uicontrol(QMainWindow, tradeui.Ui_MainWindow):
                 % (optxt, code, price, share),
                 QMessageBox.Ok|QMessageBox.Cancel)
         if QMessageBox.Ok == ret:
-            oid,infotxt = op(code, price, share)
-            self.portfolio.sifquickoid = oid
+            sioinf = self.portfolio.makesiforder(code, price, share, openclose, longshort)
+            self.portfolio.sifquickinfo = sioinf
             QMetaObject.invokeMethod(self.sifocntline, "setText",
                     Qt.QueuedConnection,
                     Q_ARG("QString",
@@ -4098,11 +4146,11 @@ class uicontrol(QMainWindow, tradeui.Ui_MainWindow):
                     Qt.QueuedConnection,
                     Q_ARG("QString",
                         QString("")))
-            if oid == None:
+            if sioinf["order_id"] == "":
                 QMetaObject.invokeMethod(self.sifstatusline, "setText",
                         Qt.QueuedConnection,
                         Q_ARG("QString",
-                            QString(u"委托失败: %s"%infotxt)))
+                            QString(u"委托失败: %s"%sioinf["failinfo"])))
                 QMetaObject.invokeMethod(self.sifoidline, "setText",
                         Qt.QueuedConnection,
                         Q_ARG("QString",
@@ -4111,11 +4159,29 @@ class uicontrol(QMainWindow, tradeui.Ui_MainWindow):
                 QMetaObject.invokeMethod(self.sifoidline, "setText",
                         Qt.QueuedConnection,
                         Q_ARG("QString",
-                            QString(oid)))
+                            QString(sioinf["order_id"])))
                 QMetaObject.invokeMethod(self.sifstatusline, "setText",
                         Qt.QueuedConnection,
                         Q_ARG("QString",
                             QString(u"委托成功")))
+
+    @pyqtSlot()
+    def sifcancel(self):
+        if self.portfolio.sifquickinfo["order_id"]:
+            sirec = self.portfolio.sifquickinfo
+            cancelcount = int(sirec["ordercount"]) - int(sirec["dealcount"]) 
+            if cancelcount != 0:
+                resp = self.portfolio.cancelsiforder(sirec, str(cancelcount))
+                if resp[0] == "Y":
+                    QMetaObject.invokeMethod(self.sifstatusline, "setText",
+                            Qt.QueuedConnection,
+                            Q_ARG("QString",
+                                QString(u"撤单成功")))
+                else:
+                    QMetaObject.invokeMethod(self.sifstatusline, "setText",
+                            Qt.QueuedConnection,
+                            Q_ARG("QString",
+                                QString(u"撤单失败: %s"%resp.failinfo)))
 
     @pyqtSlot()
     def savePortfolio(self):
