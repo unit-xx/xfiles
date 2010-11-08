@@ -2337,9 +2337,8 @@ class PortfolioUpdater_dbf(Thread):
         self.logger = logging.getLogger()
 
         # one-to-one mapping of dbfield to stockattr, for SH
-        self.shdbfield = ["S1", "S2", "S3", "S4", "S8"]#, "S9", "S10"]
+        self.shdbfield = ["S2", "S3", "S4", "S8"]#, "S9", "S10"]
         self.shdbmapping = {
-                "S1":"code",
                 "S2":"name",
                 "S3":"close",
                 "S4":"open",
@@ -2348,9 +2347,8 @@ class PortfolioUpdater_dbf(Thread):
         assert(len(self.shdbfield) == len(self.shdbmapping))
 
         # for SZ
-        self.szdbfield = ["HQZQDM", "HQZRSP", "HQJRKP", "HQZQJC", "HQZJCJ"]#, "HQBJW1", "HQSJW1"]
+        self.szdbfield = ["HQZRSP", "HQJRKP", "HQZQJC", "HQZJCJ"]#, "HQBJW1", "HQSJW1"]
         self.szdbmapping = {
-                "HQZQDM":"code",
                 "HQZQJC":"name",
                 "HQZRSP":"close",
                 "HQJRKP":"open",
