@@ -159,6 +159,7 @@ class cparbigui(QMainWindow, Ui_MainWindow):
 
     def setup(self, model):
         self.setupUi(self)
+        self.setWindowTitle(u"移仓")
         self.arbitbl.setModel(model)
         self.autochk.setChecked(self.portfolio.autosubmit)
         self.openspin.setValue(self.portfolio.openpoint)
