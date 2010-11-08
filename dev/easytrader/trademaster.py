@@ -364,14 +364,16 @@ def main(args):
     csockmap = dict()
     ptfdata = trdTablemodel.trdData()
     ptfdata.colname = ["username", "ptfname", 
-            "shares", "state",
+            "shares", "openshares", "closeshares", "state",
             "buytotalw", "buypoint", "selltotalw", "sellpoint",
             "stopped",
             "buyable", "buycomplete", "sellable", "sellcomplete"]
     ptfdata.colnamemap = {
             "username":u"用户",
             "ptfname":u"组合", 
-            "shares":u"手数",
+            "shares":u"期货手数",
+            "openshares":u"开仓手数",
+            "closeshares":u"平仓手数",
             "state":u"状态",
             "buytotalw":u"买入（万）",
             "buypoint":u"买入点",

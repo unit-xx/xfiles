@@ -3415,6 +3415,8 @@ class StockStatUpdater(Thread):
                 self.pstat["shares"] = "0"
                 try:
                     self.pstat["shares"] = self.portfolio.sindexinfo["count"]
+                    self.pstat["openshares"] = self.portfolio.sindexinfo["opencount"]
+                    self.pstat["closeshares"] = self.portfolio.sindexinfo["closecount"]
                 except KeyError:
                     pass
 

@@ -288,14 +288,17 @@ class OrderReq(request):
         self["exchcode"] = self.session["cffexcode"]
         self["code"] = code
 
-        if longshort == "long":
+        if longshort == "long" and openclose == "open":
             self["longshort"] = "0"
-        else:
-            self["longshort"] = "1"
-
-        if openclose == "open":
             self["openclose"] = "0"
-        else:
+        if longshort == "short" and openclose == "open":
+            self["longshort"] = "1"
+            self["openclose"] = "0"
+        if longshort == "long" and openclose == "close":
+            self["longshort"] = "1"
+            self["openclose"] = "1"
+        if longshort == "short" and openclose == "close":
+            self["longshort"] = "0"
             self["openclose"] = "1"
 
         if ifhedge:
