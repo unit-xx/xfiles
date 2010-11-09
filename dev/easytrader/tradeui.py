@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'tradeui.ui'
 #
-# Created: Wed Nov 03 13:43:37 2010
+# Created: Tue Nov 09 08:53:11 2010
 #      by: PyQt4 UI code generator 4.7.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -92,7 +92,7 @@ class Ui_MainWindow(object):
         self.label_32.setObjectName("label_32")
         self.gridLayout_2.addWidget(self.label_32, 0, 0, 1, 1)
         self.buyorder2 = QtGui.QPushButton(self.groupBox_2)
-        self.buyorder2.setEnabled(False)
+        self.buyorder2.setEnabled(True)
         self.buyorder2.setObjectName("buyorder2")
         self.gridLayout_2.addWidget(self.buyorder2, 0, 5, 1, 1)
         self.gridLayout_3.addWidget(self.groupBox_2, 0, 0, 1, 1)
@@ -199,7 +199,7 @@ class Ui_MainWindow(object):
         self.label_33.setObjectName("label_33")
         self.gridLayout.addWidget(self.label_33, 0, 0, 1, 1)
         self.sellorder2 = QtGui.QPushButton(self.groupBox)
-        self.sellorder2.setEnabled(False)
+        self.sellorder2.setEnabled(True)
         self.sellorder2.setObjectName("sellorder2")
         self.gridLayout.addWidget(self.sellorder2, 0, 5, 1, 1)
         self.gridLayout_4.addWidget(self.groupBox, 0, 0, 1, 1)

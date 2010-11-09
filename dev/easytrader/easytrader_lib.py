@@ -840,8 +840,6 @@ class Portfolio(object):
     def isvalidbuy(self, si, scode):
         if si["stopped"]:
             return False
-        #if int(si["count"]) < 100:
-        #    return False
         if int(si["count"]) - si["pastbuycount"] < 50:
             return False
         if si["tobuyprice"] > si["ceiling"] or si["tobuyprice"] < si["floor"]:
@@ -853,8 +851,6 @@ class Portfolio(object):
     def isvalidsell(self, si, scode):
         if si["stopped"]:
             return False
-        #if si["pastbuycount"] <= 0:
-        #    return False
         if si["pastbuycount"] - si["pastsellcount"] <= 0:
             return False
         if si["tosellprice"] > si["ceiling"] or si["tosellprice"] < si["floor"]:
@@ -1114,7 +1110,7 @@ class Portfolio(object):
 
             reqclass = jz.BatchOrderReq
             respclass = jz.BatchOrderResp
-            batchnum = 90
+            batchnum = 50
             for i in range(0, len(tobuysh), batchnum):
                 param = {}
                 param["account"] = self.session["account"]
@@ -1766,7 +1762,7 @@ class Portfolio(object):
 
             reqclass = jz.BatchOrderReq
             respclass = jz.BatchOrderResp
-            batchnum = 90
+            batchnum = 50
             for i in range(0, len(tosellsh), batchnum):
                 param = {}
                 param["account"] = self.session["account"]
@@ -3453,14 +3449,14 @@ class OrderUpdater(Thread):
                 else:
                     continue
 
-                if order["order_id"] != "" and order["order_state"] in (Portfolio.BUYSUCCESS, Portfolio.SELLSUCCESS) and int(order["dealcount"]) < int(order["ordercount"]):
+                if order["order_id"] != "" and order["order_state"] in (Portfolio.BUYSUCCESS, Portfolio.SELLSUCCESS) and int(order["dealcount"]) != int(order["ordercount"]):
                     qoreq = jz.QueryOrderReq(self.session)
                     qoreq["begin_date"] = order["order_date"]
                     qoreq["end_date"] = order["order_date"]
                     qoreq["get_orders_mode"] = "0" # all submissions
                     qoreq["user_code"] = self.session["user_code"]
                     # a bug in protocol/document results in next odd line
-                    qoreq["biz_no"] = order["order_id"]
+                    qoreq["order_id"] = order["order_id"]
                     qoreq.send()
                     qoresp = jz.QueryOrderResp(self.session)
                     qoresp.recv()
@@ -3581,7 +3577,7 @@ class CancelOrderUpdater(Thread):
                 qoreq["get_orders_mode"] = "0" # all submissions
                 qoreq["user_code"] = self.session["user_code"]
                 # a bug in protocol/document results in next odd line
-                qoreq["biz_no"] = order["order_id"]
+                qoreq["order_id"] = order["order_id"]
                 qoreq.send()
                 qoresp = jz.QueryOrderResp(self.session)
                 qoresp.recv()

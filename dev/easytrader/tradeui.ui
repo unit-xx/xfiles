@@ -174,7 +174,7 @@ background-color: rgb(255, 0, 0);</string>
            <item row="0" column="5">
             <widget class="QPushButton" name="buyorder2">
              <property name="enabled">
-              <bool>false</bool>
+              <bool>true</bool>
              </property>
              <property name="text">
               <string>买入(批量)</string>
@@ -425,7 +425,7 @@ background-color: rgb(85, 255, 0);</string>
            <item row="0" column="5">
             <widget class="QPushButton" name="sellorder2">
              <property name="enabled">
-              <bool>false</bool>
+              <bool>true</bool>
              </property>
              <property name="text">
               <string>卖出(批量)</string>
