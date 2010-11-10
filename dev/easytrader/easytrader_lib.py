@@ -1040,6 +1040,7 @@ class Portfolio(object):
         self.logger.info("batch buying with batch interface")
 
         self.bocount = 0
+        self.boerror = False
         tobuy = []
 
         if self.bostate == Portfolio.BOUNORDERED:
@@ -1119,7 +1120,8 @@ class Portfolio(object):
                 param["board"] = "0"
                 param["secu_acc"] = self.session["secu_acc"]["SH"]
                 param["trd_id"] = "0B"
-                param["price_msg"] = reqclass.genorder(tobuysh[i:i+batchnum])
+                param["stocklist"] = tobuysh[i:i+batchnum]
+                param["price_msg"] = reqclass.genorder(param["stocklist"])
                 self.tqueue.put( (reqclass, respclass, param, self.buyBatch2Bottom, True) )
 
             for i in range(0, len(tobuysz), batchnum):
@@ -1130,7 +1132,8 @@ class Portfolio(object):
                 param["board"] = "0"
                 param["secu_acc"] = self.session["secu_acc"]["SZ"]
                 param["trd_id"] = "0B"
-                param["price_msg"] = reqclass.genorder(tobuysz[i:i+batchnum])
+                param["stocklist"] = tobuysz[i:i+batchnum]
+                param["price_msg"] = reqclass.genorder(param["stocklist"])
                 self.tqueue.put( (reqclass, respclass, param, self.buyBatch2Bottom, True) )
 
         self.bolock.release()
@@ -1147,21 +1150,30 @@ class Portfolio(object):
         assert mkt != ""
 
         self.bolock.acquire()
-        for r in resp.records:
-            self.bocount = self.bocount - 1
-            scode = mkt + r[1]
-            orec = self.stockinfo[scode]["pastbuy"][-1]
-            if resp.retcode == "0":
+        if resp.retcode == "0":
+            for r in resp.records:
+                self.bocount = self.bocount - 1
+                scode = mkt + r[1]
+                orec = self.stockinfo[scode]["pastbuy"][-1]
                 orec["order_state"] = Portfolio.BUYSUCCESS
                 orec["order_date"] = today
                 orec["order_time"] = str(datetime.now().time())
                 orec["order_id"] = r[0]
-            else:
-                orec["order_state"] = Portfolio.BUYFAILED
+        else:
+            self.logger.warning("batch order failed %s:%s" % (resp.retcode, resp.retinfo))
+            self.boerror = True
+            for s in param["stocklist"]:
+                self.bocount = self.bocount - 1
+                scode = mkt + s[0]
+                orec = self.stockinfo[scode]["pastbuy"][-1]
+                orec["order_state"] = Portfolio.CANCELBUYSUCCESS
 
         if self.bocount == 0:
             self.bostate = Portfolio.BOBUYSUCCESS
             self.logger.info("batch buy-ed")
+            if self.boerror:
+                QMetaObject.invokeMethod(self.uic,
+                        "warnbatchfailed", Qt.QueuedConnection)
         self.bolock.release()
         if self.bocount == 0:
             self.savePortfolio()
@@ -1596,6 +1608,7 @@ class Portfolio(object):
         self.logger.info("batch selling with batch interface")
 
         self.bocount = 0
+        self.boerror = False
         tosell = []
 
         if self.bostate == Portfolio.BOBUYSUCCESS:
@@ -1771,7 +1784,8 @@ class Portfolio(object):
                 param["board"] = "0"
                 param["secu_acc"] = self.session["secu_acc"]["SH"]
                 param["trd_id"] = "0S"
-                param["price_msg"] = reqclass.genorder(tosellsh[i:i+batchnum])
+                param["stocklist"] = tosellsh[i:i+batchnum]
+                param["price_msg"] = reqclass.genorder(param["stocklist"])
                 self.tqueue.put( (reqclass, respclass, param, self.sellBatch2Bottom, True) )
 
             for i in range(0, len(tosellsz), batchnum):
@@ -1782,7 +1796,8 @@ class Portfolio(object):
                 param["board"] = "0"
                 param["secu_acc"] = self.session["secu_acc"]["SZ"]
                 param["trd_id"] = "0S"
-                param["price_msg"] = reqclass.genorder(tosellsz[i:i+batchnum])
+                param["stocklist"] = tosellsz[i:i+batchnum]
+                param["price_msg"] = reqclass.genorder(param["stocklist"])
                 self.tqueue.put( (reqclass, respclass, param, self.sellBatch2Bottom, True) )
 
         self.bolock.release()
@@ -1799,7 +1814,6 @@ class Portfolio(object):
         assert mkt != ""
 
         self.bolock.acquire()
-        print resp.header_left
         if resp.retcode == "0":
             for r in resp.records:
                 self.bocount = self.bocount - 1
@@ -1810,15 +1824,20 @@ class Portfolio(object):
                 orec["order_time"] = str(datetime.now().time())
                 orec["order_id"] = r[0]
         else:
-            for r in resp.records:
+            self.logger.warning("batch order failed %s:%s" % (resp.retcode, resp.retinfo))
+            self.boerror = True
+            for s in param["stocklist"]:
                 self.bocount = self.bocount - 1
-                scode = mkt + r[1]
+                scode = mkt + s[0]
                 orec = self.stockinfo[scode]["pastsell"][-1]
-                orec["order_state"] = Portfolio.SELLFAILED
+                orec["order_state"] = Portfolio.CANCELSELLSUCCESS
 
         if self.bocount == 0:
             self.bostate = Portfolio.BOSELLSUCCESS
             self.logger.info("batch selled")
+            if self.boerror:
+                QMetaObject.invokeMethod(self.uic,
+                        "warnbatchfailed", Qt.QueuedConnection)
         self.bolock.release()
         if self.bocount == 0:
             self.savePortfolio()
@@ -4313,6 +4332,13 @@ class uicontrol(QMainWindow, tradeui.Ui_MainWindow):
             self.logtext.setPlainText(logs.decode("utf8"))
         except UnicodeError:
             self.logtext.setPlainText(logs)
+
+    @pyqtSlot()
+    def warnbatchfailed(self):
+        QMessageBox.warning(None,
+                u"",
+                u"<FONT COLOR='#FF0000'>存在批量失败</FONT>",
+                QMessageBox.Ok)
 
 class basediffUpdater(Thread):
     def __init__(self, pupdter, jsdcfg, uic):

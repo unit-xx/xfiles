@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'tradeui.ui'
 #
-# Created: Tue Nov 09 08:53:11 2010
+# Created: Wed Nov 10 13:17:20 2010
 #      by: PyQt4 UI code generator 4.7.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -59,6 +59,7 @@ class Ui_MainWindow(object):
         self.label_4.setObjectName("label_4")
         self.gridLayout_2.addWidget(self.label_4, 0, 2, 1, 1)
         self.buyorder = QtGui.QPushButton(self.groupBox_2)
+        self.buyorder.setMaximumSize(QtCore.QSize(40, 16777215))
         self.buyorder.setObjectName("buyorder")
         self.gridLayout_2.addWidget(self.buyorder, 0, 4, 1, 1)
         self.cancelbuyorder = QtGui.QPushButton(self.groupBox_2)
@@ -173,6 +174,8 @@ class Ui_MainWindow(object):
         self.label_2.setObjectName("label_2")
         self.gridLayout.addWidget(self.label_2, 0, 2, 1, 1)
         self.sellorder = QtGui.QPushButton(self.groupBox)
+        self.sellorder.setMinimumSize(QtCore.QSize(0, 0))
+        self.sellorder.setMaximumSize(QtCore.QSize(40, 16777215))
         self.sellorder.setObjectName("sellorder")
         self.gridLayout.addWidget(self.sellorder, 0, 4, 1, 1)
         self.cancelsellorder = QtGui.QPushButton(self.groupBox)
@@ -723,7 +726,7 @@ class Ui_MainWindow(object):
         MainWindow.setWindowTitle(QtGui.QApplication.translate("MainWindow", "EasyTrader", None, QtGui.QApplication.UnicodeUTF8))
         self.groupBox_2.setTitle(QtGui.QApplication.translate("MainWindow", "股票组合", None, QtGui.QApplication.UnicodeUTF8))
         self.label_4.setText(QtGui.QApplication.translate("MainWindow", "修正", None, QtGui.QApplication.UnicodeUTF8))
-        self.buyorder.setText(QtGui.QApplication.translate("MainWindow", "买入/补买", None, QtGui.QApplication.UnicodeUTF8))
+        self.buyorder.setText(QtGui.QApplication.translate("MainWindow", "买入", None, QtGui.QApplication.UnicodeUTF8))
         self.cancelbuyorder.setText(QtGui.QApplication.translate("MainWindow", "撤买", None, QtGui.QApplication.UnicodeUTF8))
         self.autosubmit_2.setText(QtGui.QApplication.translate("MainWindow", "自动下单", None, QtGui.QApplication.UnicodeUTF8))
         self.buypricefixspin.setPrefix(QtGui.QApplication.translate("MainWindow", "￥", None, QtGui.QApplication.UnicodeUTF8))
@@ -739,7 +742,7 @@ class Ui_MainWindow(object):
         self.optab.setTabText(self.optab.indexOf(self.tab), QtGui.QApplication.translate("MainWindow", "建仓", None, QtGui.QApplication.UnicodeUTF8))
         self.groupBox.setTitle(QtGui.QApplication.translate("MainWindow", "股票组合", None, QtGui.QApplication.UnicodeUTF8))
         self.label_2.setText(QtGui.QApplication.translate("MainWindow", "修正", None, QtGui.QApplication.UnicodeUTF8))
-        self.sellorder.setText(QtGui.QApplication.translate("MainWindow", "卖出/补卖", None, QtGui.QApplication.UnicodeUTF8))
+        self.sellorder.setText(QtGui.QApplication.translate("MainWindow", "卖出", None, QtGui.QApplication.UnicodeUTF8))
         self.cancelsellorder.setText(QtGui.QApplication.translate("MainWindow", "撤卖", None, QtGui.QApplication.UnicodeUTF8))
         self.autosubmit.setText(QtGui.QApplication.translate("MainWindow", "自动下单", None, QtGui.QApplication.UnicodeUTF8))
         self.sellpricefixspin.setPrefix(QtGui.QApplication.translate("MainWindow", "￥", None, QtGui.QApplication.UnicodeUTF8))

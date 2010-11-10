@@ -85,8 +85,14 @@
            </item>
            <item row="0" column="4">
             <widget class="QPushButton" name="buyorder">
+             <property name="maximumSize">
+              <size>
+               <width>40</width>
+               <height>16777215</height>
+              </size>
+             </property>
              <property name="text">
-              <string>买入/补买</string>
+              <string>买入</string>
              </property>
             </widget>
            </item>
@@ -348,8 +354,20 @@ background-color: rgb(255, 0, 0);</string>
            </item>
            <item row="0" column="4">
             <widget class="QPushButton" name="sellorder">
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>40</width>
+               <height>16777215</height>
+              </size>
+             </property>
              <property name="text">
-              <string>卖出/补卖</string>
+              <string>卖出</string>
              </property>
             </widget>
            </item>
