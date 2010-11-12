@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'tradeui.ui'
 #
-# Created: Wed Nov 10 13:17:20 2010
+# Created: Thu Nov 11 08:42:22 2010
 #      by: PyQt4 UI code generator 4.7.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -59,7 +59,7 @@ class Ui_MainWindow(object):
         self.label_4.setObjectName("label_4")
         self.gridLayout_2.addWidget(self.label_4, 0, 2, 1, 1)
         self.buyorder = QtGui.QPushButton(self.groupBox_2)
-        self.buyorder.setMaximumSize(QtCore.QSize(40, 16777215))
+        self.buyorder.setMaximumSize(QtCore.QSize(16777215, 16777215))
         self.buyorder.setObjectName("buyorder")
         self.gridLayout_2.addWidget(self.buyorder, 0, 4, 1, 1)
         self.cancelbuyorder = QtGui.QPushButton(self.groupBox_2)
@@ -94,6 +94,7 @@ class Ui_MainWindow(object):
         self.gridLayout_2.addWidget(self.label_32, 0, 0, 1, 1)
         self.buyorder2 = QtGui.QPushButton(self.groupBox_2)
         self.buyorder2.setEnabled(True)
+        self.buyorder2.setStyleSheet("color: rgb(255, 0, 0);")
         self.buyorder2.setObjectName("buyorder2")
         self.gridLayout_2.addWidget(self.buyorder2, 0, 5, 1, 1)
         self.gridLayout_3.addWidget(self.groupBox_2, 0, 0, 1, 1)
@@ -175,7 +176,7 @@ class Ui_MainWindow(object):
         self.gridLayout.addWidget(self.label_2, 0, 2, 1, 1)
         self.sellorder = QtGui.QPushButton(self.groupBox)
         self.sellorder.setMinimumSize(QtCore.QSize(0, 0))
-        self.sellorder.setMaximumSize(QtCore.QSize(40, 16777215))
+        self.sellorder.setMaximumSize(QtCore.QSize(16777215, 16777215))
         self.sellorder.setObjectName("sellorder")
         self.gridLayout.addWidget(self.sellorder, 0, 4, 1, 1)
         self.cancelsellorder = QtGui.QPushButton(self.groupBox)
@@ -203,6 +204,7 @@ class Ui_MainWindow(object):
         self.gridLayout.addWidget(self.label_33, 0, 0, 1, 1)
         self.sellorder2 = QtGui.QPushButton(self.groupBox)
         self.sellorder2.setEnabled(True)
+        self.sellorder2.setStyleSheet("color: rgb(255, 0, 0);")
         self.sellorder2.setObjectName("sellorder2")
         self.gridLayout.addWidget(self.sellorder2, 0, 5, 1, 1)
         self.gridLayout_4.addWidget(self.groupBox, 0, 0, 1, 1)

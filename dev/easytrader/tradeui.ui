@@ -87,7 +87,7 @@
             <widget class="QPushButton" name="buyorder">
              <property name="maximumSize">
               <size>
-               <width>40</width>
+               <width>16777215</width>
                <height>16777215</height>
               </size>
              </property>
@@ -181,6 +181,9 @@ background-color: rgb(255, 0, 0);</string>
             <widget class="QPushButton" name="buyorder2">
              <property name="enabled">
               <bool>true</bool>
+             </property>
+             <property name="styleSheet">
+              <string notr="true">color: rgb(255, 0, 0);</string>
              </property>
              <property name="text">
               <string>买入(批量)</string>
@@ -362,7 +365,7 @@ background-color: rgb(255, 0, 0);</string>
              </property>
              <property name="maximumSize">
               <size>
-               <width>40</width>
+               <width>16777215</width>
                <height>16777215</height>
               </size>
              </property>
@@ -444,6 +447,9 @@ background-color: rgb(85, 255, 0);</string>
             <widget class="QPushButton" name="sellorder2">
              <property name="enabled">
               <bool>true</bool>
+             </property>
+             <property name="styleSheet">
+              <string notr="true">color: rgb(255, 0, 0);</string>
              </property>
              <property name="text">
               <string>卖出(批量)</string>

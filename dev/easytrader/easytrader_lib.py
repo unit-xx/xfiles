@@ -3099,10 +3099,13 @@ class SIFOrderPushee(Thread):
     def getOrderRec(self):
         si = self.portfolio.sindexinfo
         ret = None
-        if len(si["pastclose"]) != 0:
-            ret = si["pastclose"][-1]
-        elif len(si["pastopen"]) != 0:
-            ret = si["pastopen"][-1]
+        try:
+            if len(si["pastclose"]) != 0:
+                ret = si["pastclose"][-1]
+            elif len(si["pastopen"]) != 0:
+                ret = si["pastopen"][-1]
+        except KeyError:#happens when no IF code is included in ptf
+            pass
         return ret
 
     def nonehdl(self, cmd, length, data):

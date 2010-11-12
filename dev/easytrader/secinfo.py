@@ -6,11 +6,11 @@ from datetime import datetime
 # config
 session_config = {}
 session_config["tradedbfn"] = "tradeinfo.db"
-session_config["jzserver"] = "172.18.20.52"
+session_config["jzserver"] = "172.18.12.205"
 session_config["jzport"] = 9100
-session_config["jzaccount"] = "85804530"
+session_config["jzaccount"] = "36825141"
 session_config["jzaccounttype"] = "Z"
-session_config["jzpasswd"] = "123444"
+session_config["jzpasswd"] = "111519"
 
 s = jz.session(session_config)
 if not s.setup():
@@ -18,8 +18,8 @@ if not s.setup():
     sys.exit(1)
 
 sireq = jz.SecuInfoReq(s)
-sireq["market"] = jz.SHAMARKET
-sireq["secu_code"] = "600350"
+sireq["market"] = jz.SZAMARKET
+sireq["secu_code"] = "000012"
 sireq.send()
 siresp = jz.SecuInfoResp(s)
 siresp.recv()
