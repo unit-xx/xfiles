@@ -227,7 +227,7 @@ def main(args):
     sifop.start()
 
     # start base diff updater
-    bdiffupdter = basediffUpdater(pupdater, jsd_sessioncfg, uic)
+    bdiffupdter = basediffUpdater(pupdater, jsd_sessioncfg, uic, pstat)
     bdiffupdter.start()
 
     # stock stats collector

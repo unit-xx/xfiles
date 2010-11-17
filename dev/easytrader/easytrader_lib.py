@@ -4344,7 +4344,7 @@ class uicontrol(QMainWindow, tradeui.Ui_MainWindow):
                 QMessageBox.Ok)
 
 class basediffUpdater(Thread):
-    def __init__(self, pupdter, jsdcfg, uic):
+    def __init__(self, pupdter, jsdcfg, uic, pstat):
         Thread.__init__(self)
         self.runflag = True
 
@@ -4352,6 +4352,7 @@ class basediffUpdater(Thread):
         self.jsdsession = None
         self.uic = uic
         self.pupdter = pupdter
+        self.pstat = pstat
         self.hs300code = "SH000300"
         self.pupdter.addhook(self.hs300code)
 
@@ -4419,6 +4420,8 @@ class basediffUpdater(Thread):
                 # calculate basediff
                 basediff = silatest - hs300latest
                 basediffper = basediff / hs300latest * 100
+                self.pstat["basediff"] = basediff
+                self.pstat["basediffper"] = basediffper
 
                 # update UI
                 QMetaObject.invokeMethod(self.uic.hs300line, "setText", Qt.QueuedConnection,
