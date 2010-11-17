@@ -8,9 +8,9 @@ session_config = {}
 session_config["tradedbfn"] = "tradeinfo.db"
 session_config["jzserver"] = "172.18.12.205"
 session_config["jzport"] = 9100
-session_config["jzaccount"] = "36825141"
+session_config["jzaccount"] = ""
 session_config["jzaccounttype"] = "Z"
-session_config["jzpasswd"] = "111519"
+session_config["jzpasswd"] = ""
 
 s = jz.session(session_config)
 if not s.setup():
