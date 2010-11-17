@@ -100,6 +100,21 @@ class Portfolio:
             "0.0",
             self.data["short"]["share"]))
 
+    def domigrate_reverse(self):
+        self.wqueue.put((
+            "open",
+            "short",
+            self.data["long"]["code"],
+            "0.0",
+            self.data["long"]["share"]))
+
+        self.wqueue.put((
+            "close",
+            "short",
+            self.data["short"]["code"],
+            "0.0",
+            self.data["short"]["share"]))
+
     def doclose(self):
         return
 
@@ -173,7 +188,8 @@ class cparbigui(QMainWindow, Ui_MainWindow):
 
     @pyqtSlot()
     def on_closebtn_clicked(self):
-        self.portfolio.doclose()
+        #self.portfolio.doclose()
+        self.portfolio.domigrate_reverse()
 
     @pyqtSlot(int)
     def on_autochk_stateChanged(self, state):
