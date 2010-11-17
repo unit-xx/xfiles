@@ -46,6 +46,7 @@ class session:
             if loginresp.anwser != "Y":
                 self.logger.warning("Login failed")
                 return False
+            self["username"] = loginresp.records[0][1]
 
             getcnreq = GetClientNumReq(self)
             getcnreq["exchcode"] = self["cffexcode"]

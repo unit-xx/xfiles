@@ -172,9 +172,9 @@ class cparbigui(QMainWindow, Ui_MainWindow):
         QMainWindow.__init__(self)
         self.portfolio = portfolio
 
-    def setup(self, model):
+    def setup(self, model, username):
         self.setupUi(self)
-        self.setWindowTitle(u"移仓")
+        self.setWindowTitle(u"移仓 - %s" % username)
         self.arbitbl.setModel(model)
         self.autochk.setChecked(self.portfolio.autosubmit)
         self.openspin.setValue(self.portfolio.openpoint)
@@ -395,6 +395,21 @@ def main(args):
         jsdcfg["jsdport"] = 9100
     jsdcfg["jsdpasswd"] = getpass.getpass("Password: ")
 
+    testsession = jsd.session(jsdcfg)
+    loginok = True
+    if not testsession.setup():
+        loginok = False
+        #logger.warning("Cannot login jsd.")
+        QMessageBox.warning(None,
+                u"",
+                u"<H3><FONT COLOR='#FF0000'>金士达系统不能登录！</FONT></H3>",
+                QMessageBox.Ok)
+    testsession.close()
+    if not loginok:
+        sys.exit(1)
+    
+    username = testsession["username"]
+
     wqueue = Queue.Queue()
     p = Portfolio(wqueue)
     p.load(config)
@@ -402,7 +417,7 @@ def main(args):
     arbimodel = CPArbiModel(p)
 
     ui = cparbigui(p)
-    ui.setup(arbimodel)
+    ui.setup(arbimodel, username)
     ui.show()
 
     hqaddr = config.get("jsd", "hqaddr")

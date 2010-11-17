@@ -155,6 +155,10 @@ class uicontrol(QMainWindow, Ui_MainWindow):
         self.sendbutton()
 
     @pyqtSlot()
+    def on_buyorderbatch_clicked(self):
+        self.sendbutton()
+
+    @pyqtSlot()
     def on_cancelbuyorder_clicked(self):
         self.sendbutton()
 
@@ -172,6 +176,10 @@ class uicontrol(QMainWindow, Ui_MainWindow):
 
     @pyqtSlot()
     def on_sellorder_clicked(self):
+        self.sendbutton()
+
+    @pyqtSlot()
+    def on_sellorderbatch_clicked(self):
         self.sendbutton()
 
     @pyqtSlot()

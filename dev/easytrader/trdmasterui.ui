@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>996</width>
+    <width>1070</width>
     <height>585</height>
    </rect>
   </property>
@@ -90,7 +90,7 @@
              </property>
             </widget>
            </item>
-           <item row="0" column="5">
+           <item row="0" column="6">
             <widget class="QPushButton" name="cancelbuyorder">
              <property name="text">
               <string>撤买</string>
@@ -124,17 +124,27 @@
              </property>
             </widget>
            </item>
-           <item row="0" column="6">
+           <item row="0" column="7">
             <widget class="QCheckBox" name="forcecancelbuychk">
              <property name="text">
               <string>强撤</string>
              </property>
             </widget>
            </item>
-           <item row="0" column="7">
+           <item row="0" column="8">
             <widget class="QPushButton" name="saveorder_2">
              <property name="text">
               <string>保存组合</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="5">
+            <widget class="QPushButton" name="buyorderbatch">
+             <property name="styleSheet">
+              <string notr="true">color: rgb(255, 0, 0);</string>
+             </property>
+             <property name="text">
+              <string>买入（批量）</string>
              </property>
             </widget>
            </item>
@@ -236,7 +246,7 @@
              </property>
             </widget>
            </item>
-           <item row="0" column="5">
+           <item row="0" column="6">
             <widget class="QPushButton" name="cancelsellorder">
              <property name="text">
               <string>撤卖</string>
@@ -270,17 +280,27 @@
              </property>
             </widget>
            </item>
-           <item row="0" column="6">
+           <item row="0" column="7">
             <widget class="QCheckBox" name="forcecancelsellchk">
              <property name="text">
               <string>强撤</string>
              </property>
             </widget>
            </item>
-           <item row="0" column="7">
+           <item row="0" column="8">
             <widget class="QPushButton" name="saveorder">
              <property name="text">
               <string>保存组合</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="5">
+            <widget class="QPushButton" name="sellorderbatch">
+             <property name="styleSheet">
+              <string notr="true">color: rgb(255, 0, 0);</string>
+             </property>
+             <property name="text">
+              <string>卖出（批量）</string>
              </property>
             </widget>
            </item>
@@ -449,7 +469,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>996</width>
+     <width>1070</width>
      <height>23</height>
     </rect>
    </property>

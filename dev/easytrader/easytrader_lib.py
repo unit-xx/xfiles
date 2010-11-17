@@ -323,12 +323,14 @@ class CmdWorker(Thread):
         self.name = self.__class__.__name__
         self.btnslotmap = {
                 "buyorder":"buyBatch_r",
+                "buyorderbatch":"buyBatch2_r",
                 "cancelbuyorder":"cancelBuyBatch",
                 "saveorder_2":"savePortfolio",
                 "opensifbtn":"openshort_r",
                 "cancelopensifbtn":"cancelopen",
 
                 "sellorder":"sellBatch_r",
+                "sellorderbatch":"sellBatch2_r",
                 "cancelsellorder":"cancelSellBatch",
                 "saveorder":"savePortfolio",
                 "closesifbtn":"closeshort_r",
@@ -4018,6 +4020,11 @@ class uicontrol(QMainWindow, tradeui.Ui_MainWindow):
         self.portfolio.buyBatch()
 
     @pyqtSlot()
+    def buyBatch2_r(self):
+        # _r for remote call from controller
+        self.portfolio.buyBatch2()
+
+    @pyqtSlot()
     def cancelBuyBatch(self):
         #ret = QMessageBox.warning(self.mainwindow,
         #        u"", u"<H3>确认<FONT COLOR='#FF0000'>撤销买入</FONT>？</H3>",
@@ -4050,6 +4057,10 @@ class uicontrol(QMainWindow, tradeui.Ui_MainWindow):
     @pyqtSlot()
     def sellBatch_r(self):
         self.portfolio.sellBatch()
+
+    @pyqtSlot()
+    def sellBatch2_r(self):
+        self.portfolio.sellBatch2()
 
     @pyqtSlot()
     def cancelSellBatch(self):

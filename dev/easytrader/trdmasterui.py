@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'trdmasterui.ui'
 #
-# Created: Fri Sep 03 13:22:25 2010
+# Created: Wed Nov 17 13:06:26 2010
 #      by: PyQt4 UI code generator 4.7.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -12,7 +12,7 @@ from PyQt4 import QtCore, QtGui
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(996, 585)
+        MainWindow.resize(1070, 585)
         self.centralwidget = QtGui.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.gridLayout_9 = QtGui.QGridLayout(self.centralwidget)
@@ -55,7 +55,7 @@ class Ui_MainWindow(object):
         self.gridLayout.addWidget(self.buyorder, 0, 4, 1, 1)
         self.cancelbuyorder = QtGui.QPushButton(self.groupBox)
         self.cancelbuyorder.setObjectName("cancelbuyorder")
-        self.gridLayout.addWidget(self.cancelbuyorder, 0, 5, 1, 1)
+        self.gridLayout.addWidget(self.cancelbuyorder, 0, 6, 1, 1)
         self.label = QtGui.QLabel(self.groupBox)
         self.label.setObjectName("label")
         self.gridLayout.addWidget(self.label, 0, 0, 1, 1)
@@ -72,10 +72,14 @@ class Ui_MainWindow(object):
         self.gridLayout.addWidget(self.buypricefixspin, 0, 3, 1, 1)
         self.forcecancelbuychk = QtGui.QCheckBox(self.groupBox)
         self.forcecancelbuychk.setObjectName("forcecancelbuychk")
-        self.gridLayout.addWidget(self.forcecancelbuychk, 0, 6, 1, 1)
+        self.gridLayout.addWidget(self.forcecancelbuychk, 0, 7, 1, 1)
         self.saveorder_2 = QtGui.QPushButton(self.groupBox)
         self.saveorder_2.setObjectName("saveorder_2")
-        self.gridLayout.addWidget(self.saveorder_2, 0, 7, 1, 1)
+        self.gridLayout.addWidget(self.saveorder_2, 0, 8, 1, 1)
+        self.buyorderbatch = QtGui.QPushButton(self.groupBox)
+        self.buyorderbatch.setStyleSheet("color: rgb(255, 0, 0);")
+        self.buyorderbatch.setObjectName("buyorderbatch")
+        self.gridLayout.addWidget(self.buyorderbatch, 0, 5, 1, 1)
         self.gridLayout_6.addWidget(self.groupBox, 0, 0, 1, 1)
         self.groupBox_2 = QtGui.QGroupBox(self.tab_2)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Preferred, QtGui.QSizePolicy.Preferred)
@@ -125,7 +129,7 @@ class Ui_MainWindow(object):
         self.gridLayout_4.addWidget(self.sellorder, 0, 4, 1, 1)
         self.cancelsellorder = QtGui.QPushButton(self.groupBox_3)
         self.cancelsellorder.setObjectName("cancelsellorder")
-        self.gridLayout_4.addWidget(self.cancelsellorder, 0, 5, 1, 1)
+        self.gridLayout_4.addWidget(self.cancelsellorder, 0, 6, 1, 1)
         self.label_5 = QtGui.QLabel(self.groupBox_3)
         self.label_5.setObjectName("label_5")
         self.gridLayout_4.addWidget(self.label_5, 0, 0, 1, 1)
@@ -142,10 +146,14 @@ class Ui_MainWindow(object):
         self.gridLayout_4.addWidget(self.sellpricefixspin, 0, 3, 1, 1)
         self.forcecancelsellchk = QtGui.QCheckBox(self.groupBox_3)
         self.forcecancelsellchk.setObjectName("forcecancelsellchk")
-        self.gridLayout_4.addWidget(self.forcecancelsellchk, 0, 6, 1, 1)
+        self.gridLayout_4.addWidget(self.forcecancelsellchk, 0, 7, 1, 1)
         self.saveorder = QtGui.QPushButton(self.groupBox_3)
         self.saveorder.setObjectName("saveorder")
-        self.gridLayout_4.addWidget(self.saveorder, 0, 7, 1, 1)
+        self.gridLayout_4.addWidget(self.saveorder, 0, 8, 1, 1)
+        self.sellorderbatch = QtGui.QPushButton(self.groupBox_3)
+        self.sellorderbatch.setStyleSheet("color: rgb(255, 0, 0);")
+        self.sellorderbatch.setObjectName("sellorderbatch")
+        self.gridLayout_4.addWidget(self.sellorderbatch, 0, 5, 1, 1)
         self.gridLayout_7.addWidget(self.groupBox_3, 0, 0, 1, 1)
         self.groupBox_4 = QtGui.QGroupBox(self.tab_3)
         self.groupBox_4.setObjectName("groupBox_4")
@@ -225,7 +233,7 @@ class Ui_MainWindow(object):
         self.gridLayout_9.addWidget(self.tabWidget, 3, 0, 1, 4)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtGui.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 996, 23))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 1070, 23))
         self.menubar.setObjectName("menubar")
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QtGui.QStatusBar(MainWindow)
@@ -248,6 +256,7 @@ class Ui_MainWindow(object):
         self.label_2.setText(QtGui.QApplication.translate("MainWindow", "修正", None, QtGui.QApplication.UnicodeUTF8))
         self.forcecancelbuychk.setText(QtGui.QApplication.translate("MainWindow", "强撤", None, QtGui.QApplication.UnicodeUTF8))
         self.saveorder_2.setText(QtGui.QApplication.translate("MainWindow", "保存组合", None, QtGui.QApplication.UnicodeUTF8))
+        self.buyorderbatch.setText(QtGui.QApplication.translate("MainWindow", "买入（批量）", None, QtGui.QApplication.UnicodeUTF8))
         self.groupBox_2.setTitle(QtGui.QApplication.translate("MainWindow", "期货建仓", None, QtGui.QApplication.UnicodeUTF8))
         self.opensifbtn.setText(QtGui.QApplication.translate("MainWindow", "空开", None, QtGui.QApplication.UnicodeUTF8))
         self.cancelopensifbtn.setText(QtGui.QApplication.translate("MainWindow", "撤单", None, QtGui.QApplication.UnicodeUTF8))
@@ -261,6 +270,7 @@ class Ui_MainWindow(object):
         self.label_6.setText(QtGui.QApplication.translate("MainWindow", "修正", None, QtGui.QApplication.UnicodeUTF8))
         self.forcecancelsellchk.setText(QtGui.QApplication.translate("MainWindow", "强撤", None, QtGui.QApplication.UnicodeUTF8))
         self.saveorder.setText(QtGui.QApplication.translate("MainWindow", "保存组合", None, QtGui.QApplication.UnicodeUTF8))
+        self.sellorderbatch.setText(QtGui.QApplication.translate("MainWindow", "卖出（批量）", None, QtGui.QApplication.UnicodeUTF8))
         self.groupBox_4.setTitle(QtGui.QApplication.translate("MainWindow", "期货平仓", None, QtGui.QApplication.UnicodeUTF8))
         self.closesifbtn.setText(QtGui.QApplication.translate("MainWindow", "空平", None, QtGui.QApplication.UnicodeUTF8))
         self.cancelclosesifbtn.setText(QtGui.QApplication.translate("MainWindow", "撤单", None, QtGui.QApplication.UnicodeUTF8))
