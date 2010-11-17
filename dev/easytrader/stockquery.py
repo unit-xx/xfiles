@@ -140,12 +140,45 @@ class stockquerydlg(QDialog, Ui_stockquery):
     @pyqtSlot()
     def on_exportsellbtn_clicked(self):
         # export stocks for selling
+        sifcode = unicode(self.sifcodeline.text())
+        sifshare = unicode(self.sifshareline.text())
+        ret = QMessageBox.information(None, "",
+                u"对应期货：%s，手数：%s，确认？" % (sifcode, sifshare),
+                QMessageBox.Ok|QMessageBox.Cancel)
+        if QMessageBox.Ok != ret:
+            return
+
         posfn = QFileDialog.getSaveFileName(self, u"", u"", u"*.pos")
         if posfn == "":
             return
         try:
             f = open(posfn, "wb")
             writer = csv.writer(f)
+
+            if sifcode != "" and sifshare != "":
+                sindexinfo = {}
+                sindexinfo["code"] = sifcode
+
+                sindexinfo["count"] = sifshare
+                sindexinfo["state"] = easytrader_lib.Portfolio.IFOPENSHORTOK
+                sindexinfo["pastopen"] = []
+                r = easytrader_lib.SIndexRecord()
+                r["order_id"] = "deadface"
+                r["ordercount"] = sindexinfo["count"]
+                r["openclose"] = "0"
+                r["longshort"] = "1"
+                r["ifhedge"] = "0"
+                sindexinfo["pastopen"].append(r)
+                sindexinfo["pastclose"] = []
+                sindexinfo["deals"] = {}
+                sindexinfo["deals"]["deadface"] = [(int(sindexinfo["count"]), 0.0)]
+
+                writer.writerow(["IF", sindexinfo["code"], sindexinfo["count"],
+                        sindexinfo["state"].encode("utf-8"),
+                        repr(sindexinfo["pastopen"]),
+                        repr(sindexinfo["pastclose"]),
+                        repr(sindexinfo["deals"])])
+
             for row in self.simodel.data:
                 if row["market"] == "10":
                     mkt = "SH"
