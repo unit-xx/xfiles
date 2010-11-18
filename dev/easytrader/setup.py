@@ -45,6 +45,7 @@ buildOptions = dict(
             "itrader.cfg", "itrader-gw.cfg", "itrader-jhj.cfg",
             "easytrader.cfg", "easytrader-prod.cfg", "easytrader-sxf.cfg", "easytrader-jhj.cfg", "easytrader-wdl.cfg",
             "migrate-gw.cfg", "migrate-jhj.cfg", "migrate-sxf.cfg", "migrate-wdl.cfg",
+            "arbi0708-prod.cfg",
             "msvcr_redist", "jsdhqdll", "openmusic", "closemusic", (backenddir(), "phonon_backend")],
         compressed = True,
         optimize = 0)
@@ -65,7 +66,8 @@ setup(
             Executable("migratepos.py", base = "Console"), 
             Executable("genstockindex.py"),
             Executable("simbuy.py"),
-            Executable("etfsub.py")]
+            Executable("etfsub.py"),
+            Executable("cparbigui.py")]
         )
 
 setupdb(buildOptions["build_exe"], "tradeinfo.db")

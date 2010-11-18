@@ -67,14 +67,14 @@ class Portfolio:
         share = config.get(MYSEC, "share")
 
         self.data["long"] = {}
-        self.data["long"]["direction"] = u"买入"
+        self.data["long"]["direction"] = u"买入开仓"
         self.data["long"]["code"] = config.get(MYSEC, "long")
         self.data["long"]["share"] = share
         self.data["long"]["pricepolicy"] = "current"
         self.data["long"]["current"] = "0.0"
 
         self.data["short"] = {}
-        self.data["short"]["direction"] = u"卖出"
+        self.data["short"]["direction"] = u"卖出开仓"
         self.data["short"]["code"] = config.get(MYSEC, "short")
         self.data["short"]["share"] = share
         self.data["short"]["pricepolicy"] = "current"
