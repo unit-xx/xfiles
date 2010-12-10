@@ -46,6 +46,7 @@ buildOptions = dict(
             "easytrader.cfg", "easytrader-prod.cfg", "easytrader-sxf.cfg", "easytrader-jhj.cfg", "easytrader-wdl.cfg",
             "migrate-gw.cfg", "migrate-jhj.cfg", "migrate-sxf.cfg", "migrate-wdl.cfg",
             "arbi0708-prod.cfg",
+            "sindexquoteserver.cfg",
             "msvcr_redist", "jsdhqdll", "openmusic", "closemusic", (backenddir(), "phonon_backend")],
         compressed = True,
         optimize = 0)
@@ -67,7 +68,9 @@ setup(
             Executable("genstockindex.py"),
             Executable("simbuy.py"),
             Executable("etfsub.py"),
-            Executable("cparbigui.py")]
+            Executable("cparbigui.py"),
+            Executable("cparbigui.py"),
+            Executable("sindexquoteserver.py")]
         )
 
 setupdb(buildOptions["build_exe"], "tradeinfo.db")
