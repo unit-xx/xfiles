@@ -1186,6 +1186,7 @@ class Portfolio(object):
 
         if self.bostate in (Portfolio.BOBUYSUCCESS, Portfolio.BOBUYCANCELED):
             # set Portfolio batch state
+            oldbostate = self.bostate
             self.bostate = Portfolio.BOBUYCANCELING
             self.bocount = 0
 
@@ -1231,7 +1232,7 @@ class Portfolio(object):
                             self.tqueue.put( (reqclass, respclass, param, self.cancelBuyBatchBottom, True) )
             if self.bocount == 0:
                 self.logger.info("no stock to cancel buy")
-                self.bostate = Portfolio.BOBUYSUCCESS
+                self.bostate = oldbostate
                 # no work to do, let OrderUpdater go on.
                 self.updtlock.release()
         else:
@@ -1849,6 +1850,7 @@ class Portfolio(object):
         self.logger.info("batch sell canceling")
 
         if self.bostate in (Portfolio.BOSELLSUCCESS, Portfolio.BOSELLCANCELED):
+            oldbostate = self.bostate
             self.bostate = Portfolio.BOSELLCANCELING
             self.bocount = 0
 
@@ -1883,7 +1885,7 @@ class Portfolio(object):
 
             if self.bocount == 0:
                 self.logger.info("no stock to cancel selling")
-                self.bostate = Portfolio.BOSELLSUCCESS
+                self.bostate = oldbostate
                 # no work to do, let OrderUpdater go on.
                 self.updtlock.release()
         else:
