@@ -1,5 +1,6 @@
 import sys
 import time
+import datetime
 import socket
 import zlib
 import pickle
@@ -44,7 +45,7 @@ try:
             if count % 100 == 0:
                 print count
             if qd.varity_code == "IF":
-                print qd.sys_recv_time, qd.upd_date, qd.lastPrice, qd.varity_code, qd.deliv_date, qd.doneVolume, qd.openInterest, qd.bidPrice1
+                print str(datetime.datetime.now()), qd.sys_recv_time, qd.varity_code, qd.deliv_date, qd.lastPrice, qd.doneVolume, qd.openInterest, qd.bidPrice1, qd.bidVolume1, qd.askPrice1, qd.askVolume1
 except KeyboardInterrupt:
     pass
 

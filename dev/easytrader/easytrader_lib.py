@@ -2232,7 +2232,7 @@ class Portfolio(object):
         coreq.makecancelorder(sirec, cancelcount)
         coreq.send()
         coresp.recv()
-        return coresp.records[0]
+        return coresp
 
     # TODO: remove FOUR duplicated functions below.
     def openshort2(self, code, price, share):
@@ -3028,7 +3028,6 @@ class SIFOrderUpdaterQ(Thread):
         if sirec["order_id"] and sirec["ordercount"] != sirec["dealcount"]:
             qreq = jsd.QueryOrderReq(self.session)
             qreq["order_id"] = sirec["order_id"]
-            qreq["seat"] = self.session["seat"]
             qreq.send()
             qresp = jsd.QueryOrderResp(self.session)
             qresp.recv()
@@ -3040,6 +3039,8 @@ class SIFOrderUpdaterQ(Thread):
                             Qt.QueuedConnection,
                             Q_ARG("QString",
                                 QString(dealcnt)))
+            else:
+                print "query error", qresp.failinfo
 
     def stop(self):
         self.runflag = False
@@ -4203,7 +4204,7 @@ class uicontrol(QMainWindow, tradeui.Ui_MainWindow):
             cancelcount = int(sirec["ordercount"]) - int(sirec["dealcount"]) 
             if cancelcount != 0:
                 resp = self.portfolio.cancelsiforder(sirec, str(cancelcount))
-                if resp[0] == "Y":
+                if resp.records[0][0] == "Y":
                     QMetaObject.invokeMethod(self.sifstatusline, "setText",
                             Qt.QueuedConnection,
                             Q_ARG("QString",
