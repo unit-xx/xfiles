@@ -3483,7 +3483,7 @@ class OrderUpdater(Thread):
                     qoreq["get_orders_mode"] = "0" # all submissions
                     qoreq["user_code"] = self.session["user_code"]
                     # a bug in protocol/document results in next odd line
-                    qoreq["order_id"] = order["order_id"]
+                    qoreq["biz_no"] = order["order_id"]
                     qoreq.send()
                     qoresp = jz.QueryOrderResp(self.session)
                     qoresp.recv()
@@ -3604,7 +3604,7 @@ class CancelOrderUpdater(Thread):
                 qoreq["get_orders_mode"] = "0" # all submissions
                 qoreq["user_code"] = self.session["user_code"]
                 # a bug in protocol/document results in next odd line
-                qoreq["order_id"] = order["order_id"]
+                qoreq["biz_no"] = order["order_id"]
                 qoreq.send()
                 qoresp = jz.QueryOrderResp(self.session)
                 qoresp.recv()
