@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1278</width>
+    <width>1355</width>
     <height>615</height>
    </rect>
   </property>
@@ -926,9 +926,6 @@ background-color: rgb(85, 255, 0);</string>
            <height>16777215</height>
           </size>
          </property>
-         <property name="styleSheet">
-          <string notr="true"/>
-         </property>
          <property name="frame">
           <bool>true</bool>
          </property>
@@ -1043,6 +1040,13 @@ background-color: rgb(85, 255, 0);</string>
          </property>
          <property name="text">
           <string>平仓信号</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="16">
+        <widget class="QCheckBox" name="highlightchk">
+         <property name="text">
+          <string>高亮行情</string>
          </property>
         </widget>
        </item>
@@ -1486,7 +1490,7 @@ background-color: rgb(85, 255, 0);</string>
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1278</width>
+     <width>1355</width>
      <height>23</height>
     </rect>
    </property>

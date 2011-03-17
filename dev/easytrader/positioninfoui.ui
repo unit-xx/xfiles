@@ -20,7 +20,7 @@
    <item row="0" column="0" colspan="3">
     <widget class="QGroupBox" name="groupBox">
      <property name="title">
-      <string>持仓信息（括号内数值减去了停牌股票市值）</string>
+      <string>持仓信息（括号内数值减去了未卖出股票市值）</string>
      </property>
      <layout class="QGridLayout" name="gridLayout_2">
       <item row="0" column="0">
@@ -41,7 +41,7 @@
        </widget>
       </item>
       <item row="1" column="0">
-       <widget class="QLabel" name="label_3">
+       <widget class="QLabel" name="gainlbl">
         <property name="text">
          <string>持仓市值：</string>
         </property>

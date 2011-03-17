@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'positioninfoui.ui'
 #
-# Created: Wed Sep 15 14:47:12 2010
+# Created: Wed Mar 16 10:54:28 2011
 #      by: PyQt4 UI code generator 4.7.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -28,9 +28,9 @@ class Ui_positioninfodlg(object):
         self.totalcost.setReadOnly(True)
         self.totalcost.setObjectName("totalcost")
         self.gridLayout_2.addWidget(self.totalcost, 0, 1, 1, 1)
-        self.label_3 = QtGui.QLabel(self.groupBox)
-        self.label_3.setObjectName("label_3")
-        self.gridLayout_2.addWidget(self.label_3, 1, 0, 1, 1)
+        self.gainlbl = QtGui.QLabel(self.groupBox)
+        self.gainlbl.setObjectName("gainlbl")
+        self.gridLayout_2.addWidget(self.gainlbl, 1, 0, 1, 1)
         self.mktval = QtGui.QLineEdit(self.groupBox)
         self.mktval.setFrame(True)
         self.mktval.setReadOnly(True)
@@ -88,9 +88,9 @@ class Ui_positioninfodlg(object):
 
     def retranslateUi(self, positioninfodlg):
         positioninfodlg.setWindowTitle(QtGui.QApplication.translate("positioninfodlg", "盈亏统计", None, QtGui.QApplication.UnicodeUTF8))
-        self.groupBox.setTitle(QtGui.QApplication.translate("positioninfodlg", "持仓信息（括号内数值减去了停牌股票市值）", None, QtGui.QApplication.UnicodeUTF8))
+        self.groupBox.setTitle(QtGui.QApplication.translate("positioninfodlg", "持仓信息（括号内数值减去了未卖出股票市值）", None, QtGui.QApplication.UnicodeUTF8))
         self.label_2.setText(QtGui.QApplication.translate("positioninfodlg", "买入成本：", None, QtGui.QApplication.UnicodeUTF8))
-        self.label_3.setText(QtGui.QApplication.translate("positioninfodlg", "持仓市值：", None, QtGui.QApplication.UnicodeUTF8))
+        self.gainlbl.setText(QtGui.QApplication.translate("positioninfodlg", "持仓市值：", None, QtGui.QApplication.UnicodeUTF8))
         self.label.setText(QtGui.QApplication.translate("positioninfodlg", "盈亏值：", None, QtGui.QApplication.UnicodeUTF8))
         self.label_4.setText(QtGui.QApplication.translate("positioninfodlg", "盈亏比：", None, QtGui.QApplication.UnicodeUTF8))
         self.label_5.setText(QtGui.QApplication.translate("positioninfodlg", "期货盈亏", None, QtGui.QApplication.UnicodeUTF8))

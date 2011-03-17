@@ -14,6 +14,9 @@ class positioninfodlg(QDialog, Ui_positioninfodlg):
         totalcost = 0.0
         mktval = 0.0
         stopmktval = 0.0
+        totalgain = 0.0
+        unsellgain = 0.0
+
         for scode in self.portfolio.stockinfo:
             si = self.portfolio.stockinfo[scode]
             totalcost = totalcost + si["currentbuycost"]
@@ -23,26 +26,38 @@ class positioninfodlg(QDialog, Ui_positioninfodlg):
                 mktval = mktval + si["currentbuycount"] * si["latestprice"]
             try:
                 if si["stopped"]:
-                    if si["latestprice"] == 0.0:
-                        stopmktval = stopmktval + si["currentbuycount"] * si["close"]
-                    else:
-                        stopmktval = stopmktval + si["currentbuycount"] * si["latestprice"]
+                    stopmktval = stopmktval + si["currentbuycount"] * si["close"]
             except KeyError:
                 pass
 
-        profitval = 0.0
+            totalgain = totalgain + si["currentsellgain"]
+            if si["currentsellcount"] == 0:
+                if si["latestprice"] == 0.0:
+                    unsellgain = unsellgain + si["currentbuycount"] * si["close"]
+                else:
+                    unsellgain = unsellgain + si["currentbuycount"] * si["latestprice"]
+
+        profitval = 0.0#total gain
         profitper = 0.0
-        profitval2 = 0.0
+        profitval2 = 0.0#realized gain
         profitper2 = 0.0
         try:
-            profitval = mktval - totalcost
-            profitval2 = profitval - stopmktval
+            if totalgain == 0.0:
+                profitval = mktval - totalcost
+                profitval2 = profitval - stopmktval
+            else:
+                profitval = totalgain + unsellgain - totalcost
+                profitval2 = profitval - unsellgain
             profitper = profitval / totalcost * 100
             profitper2 = profitval2 / totalcost * 100
         except ZeroDivisionError:
             pass
 
         wan = 10000.0
+        if totalgain == 0.0:
+            self.gainlbl.setText(QString(u"持仓市值"))
+        else:
+            self.gainlbl.setText(QString(u"卖出收益"))
         self.totalcost.setText(QString(u"%0.2f万" % (totalcost/wan)))
         self.mktval.setText(QString(u"%0.2f万 (%0.2f万)" % (mktval/wan, (mktval-stopmktval)/wan)))
         self.profitval.setText(QString(u"%0.2f万 (%0.2f万)" % (profitval/wan, profitval2/wan)))

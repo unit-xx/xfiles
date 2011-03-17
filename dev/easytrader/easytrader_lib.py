@@ -630,7 +630,7 @@ class Portfolio(object):
                 # of type SIndexRecord
                 "pastopen", "pastclose",
                 # of type float
-                "opencount", "closecount", "earning",
+                "opencount", "closecount", "earning", "earningM",
                 "openavg", "closeavg",
                 # of dict order_id -> (dealcount, dealprice)
                 "deals",
@@ -638,7 +638,7 @@ class Portfolio(object):
         self.sindexmodelattr = ["count", "code",
                 "latestprice", "close", "open", "ceiling", "floor",
                 "openposprice", "closeposprice",
-                "opencount", "closecount", "earning",
+                "opencount", "closecount", "earning", "earningM",
                 "openavg", "closeavg",
                 "state"]
         # need state? or just a replication of order_state of last order
@@ -658,7 +658,8 @@ class Portfolio(object):
                 "stopped":u"停牌",
                 "opencount":u"建仓量",
                 "closecount":u"平仓量",
-                "earning":u"盈亏",
+                "earning":u"盈亏点",
+                "earningM":u"盈亏值",
                 "state":u"状态"
                 }
         self.sindexinfo = {}
@@ -2314,6 +2315,7 @@ class Portfolio(object):
         self.sindexinfo["closeavg"] = 0.0
         try:
             self.sindexinfo["earning"] = gain - paid - self.sindexinfo["latestprice"] * (self.sindexinfo["opencount"] - self.sindexinfo["closecount"])
+            self.sindexinfo["earningM"] = u"%.2f万" % (self.sindexinfo["earning"] * 300 / 10000)
             self.sindexinfo["openavg"] = gain / self.sindexinfo["opencount"]
             self.sindexinfo["closeavg"] = paid / self.sindexinfo["closecount"]
         except KeyError:#latestprice is not updated
@@ -3378,10 +3380,11 @@ class StockStatUpdater(Thread):
                             unbuymktval = unbuymktval + closemktval
 
                         if si["currentsellgain"] == 0.0:
-                            if si["currentbuycost"] == 0.0:
-                                unsellmktval = unsellmktval + closemktval
-                            else:
-                                unsellmktval = unsellmktval + si["currentbuycost"]
+                            #if si["currentbuycost"] == 0.0:
+                            #    unsellmktval = unsellmktval + closemktval
+                            #else:
+                            #    unsellmktval = unsellmktval + si["currentbuycost"]
+                            unsellmktval = unsellmktval + closemktval
                     except KeyError:
                         pass
 
@@ -3441,7 +3444,7 @@ class StockStatUpdater(Thread):
                 except KeyError:
                     pass
 
-                time.sleep(2)
+                time.sleep(3)
             except Exception:
                     self.logger.exception("stats-er exit anormally.")
                     self.runflag = False
@@ -3943,6 +3946,9 @@ class uicontrol(QMainWindow, tradeui.Ui_MainWindow):
         self.mainwindow.connect(self.openpricecmbox, SIGNAL("currentIndexChanged(int)"), self.setopenpricepolicy)
         self.mainwindow.connect(self.closepricecmbox, SIGNAL("currentIndexChanged(int)"), self.setclosepricepolicy)
 
+        # setup basediff info style
+        self.mainwindow.connect(self.highlightchk, SIGNAL("stateChanged(int)"), self.highlightbasediff)
+
         # setup buy/sell batch price fix
         self.portfolio.buypricefix = self.buypricefixspin.value()
         self.portfolio.sellpricefix = self.sellpricefixspin.value()
@@ -3989,7 +3995,7 @@ class uicontrol(QMainWindow, tradeui.Ui_MainWindow):
         self.showbostate()
 
         # setup console output from stdout
-        self.logtext.write = lambda txt: self.logtext.appendPlainText(QString(txt))
+        #self.logtext.write = lambda txt: self.logtext.appendPlainText(QString(txt))
         #sys.stdout = self.logtext
         #sys.stderr = self.logtext
 
@@ -4258,6 +4264,27 @@ class uicontrol(QMainWindow, tradeui.Ui_MainWindow):
     @pyqtSlot(int)
     def setforcecancelsell(self, state):
         self.portfolio.forcecancelsell = self.forcecancelsellchk.isChecked()
+
+    @pyqtSlot(int)
+    def highlightbasediff(self, state):
+        if self.highlightchk.isChecked():
+            QMetaObject.invokeMethod(self.hs300line, "setStyleSheet",
+                    Qt.QueuedConnection, Q_ARG("QString", QString(str("background-color: rgb(255, 0, 0);"))))
+            QMetaObject.invokeMethod(self.sindexline, "setStyleSheet",
+                    Qt.QueuedConnection, Q_ARG("QString", QString(str("background-color: rgb(255, 0, 0);"))))
+            QMetaObject.invokeMethod(self.basediffline, "setStyleSheet",
+                    Qt.QueuedConnection, Q_ARG("QString", QString(str("background-color: rgb(255, 0, 0);"))))
+            QMetaObject.invokeMethod(self.basediffperline, "setStyleSheet",
+                    Qt.QueuedConnection, Q_ARG("QString", QString(str("background-color: rgb(255, 0, 0);"))))
+        else:
+            QMetaObject.invokeMethod(self.hs300line, "setStyleSheet",
+                    Qt.QueuedConnection, Q_ARG("QString", QString(str("background-color: rgb(255, 255, 255);"))))
+            QMetaObject.invokeMethod(self.sindexline, "setStyleSheet",
+                    Qt.QueuedConnection, Q_ARG("QString", QString(str("background-color: rgb(255, 255, 255);"))))
+            QMetaObject.invokeMethod(self.basediffline, "setStyleSheet",
+                    Qt.QueuedConnection, Q_ARG("QString", QString(str("background-color: rgb(255, 255, 255);"))))
+            QMetaObject.invokeMethod(self.basediffperline, "setStyleSheet",
+                    Qt.QueuedConnection, Q_ARG("QString", QString(str("background-color: rgb(255, 255, 255);"))))
 
     @pyqtSlot()
     def showstockinfo(self):

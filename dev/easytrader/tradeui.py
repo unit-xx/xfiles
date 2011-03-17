@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'tradeui.ui'
 #
-# Created: Thu Nov 11 08:42:22 2010
+# Created: Thu Mar 17 11:00:03 2011
 #      by: PyQt4 UI code generator 4.7.2
 #
 # WARNING! All changes made in this file will be lost!
@@ -12,7 +12,7 @@ from PyQt4 import QtCore, QtGui
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(1278, 615)
+        MainWindow.resize(1355, 615)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Maximum, QtGui.QSizePolicy.Maximum)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -431,7 +431,6 @@ class Ui_MainWindow(object):
         self.openthresholdspin.setSizePolicy(sizePolicy)
         self.openthresholdspin.setMinimumSize(QtCore.QSize(80, 0))
         self.openthresholdspin.setMaximumSize(QtCore.QSize(80, 16777215))
-        self.openthresholdspin.setStyleSheet("None")
         self.openthresholdspin.setFrame(True)
         self.openthresholdspin.setButtonSymbols(QtGui.QAbstractSpinBox.UpDownArrows)
         self.openthresholdspin.setPrefix("")
@@ -481,6 +480,9 @@ class Ui_MainWindow(object):
         self.label_16.setSizePolicy(sizePolicy)
         self.label_16.setObjectName("label_16")
         self.gridLayout_5.addWidget(self.label_16, 0, 12, 1, 1)
+        self.highlightchk = QtGui.QCheckBox(self.groupBox_3)
+        self.highlightchk.setObjectName("highlightchk")
+        self.gridLayout_5.addWidget(self.highlightchk, 0, 16, 1, 1)
         self.gridLayout_9.addWidget(self.groupBox_3, 2, 0, 1, 12)
         self.label_15 = QtGui.QLabel(self.centralwidget)
         self.label_15.setObjectName("label_15")
@@ -691,7 +693,7 @@ class Ui_MainWindow(object):
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtGui.QMenuBar(MainWindow)
         self.menubar.setEnabled(True)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 1278, 23))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 1355, 23))
         self.menubar.setNativeMenuBar(True)
         self.menubar.setObjectName("menubar")
         self.menu = QtGui.QMenu(self.menubar)
@@ -779,6 +781,7 @@ class Ui_MainWindow(object):
         self.playsignalchk.setText(QtGui.QApplication.translate("MainWindow", "报警", None, QtGui.QApplication.UnicodeUTF8))
         self.closethresholdspin.setSuffix(QtGui.QApplication.translate("MainWindow", " %", None, QtGui.QApplication.UnicodeUTF8))
         self.label_16.setText(QtGui.QApplication.translate("MainWindow", "平仓信号", None, QtGui.QApplication.UnicodeUTF8))
+        self.highlightchk.setText(QtGui.QApplication.translate("MainWindow", "高亮行情", None, QtGui.QApplication.UnicodeUTF8))
         self.label_15.setText(QtGui.QApplication.translate("MainWindow", "组合操作状态", None, QtGui.QApplication.UnicodeUTF8))
         self.label_19.setText(QtGui.QApplication.translate("MainWindow", "买入量", None, QtGui.QApplication.UnicodeUTF8))
         self.label_34.setText(QtGui.QApplication.translate("MainWindow", "买入点数", None, QtGui.QApplication.UnicodeUTF8))
