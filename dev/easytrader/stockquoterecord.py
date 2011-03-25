@@ -34,11 +34,11 @@ try:
                 if shmap is None or szmap is None:
                     print "gen stock map failed."
 
-                print "gen new log file name."
+                print now, "gen new log file name."
                 logfn = "stock%4d%02d%02d.log" % (now.year, now.month, now.day)
                 logfnz = logfn+".gz"
-                logf = open(logfn, "w")
-                logfz = gzip.open(logfnz, "w")
+                logf = open(logfn, "a")
+                logfz = gzip.open(logfnz, "a")
 
                 dbsh = dbf.Dbf(shdbfn, ignoreErrors=True, readOnly=True)
                 dbsz = dbf.Dbf(szdbfn, ignoreErrors=True, readOnly=True)
@@ -47,9 +47,11 @@ try:
         else:
             recstate = 0 # 0 for close
             if logf is not None:
-                print "close logs."
+                print now, "close logs."
                 logf.close()
                 logfz.close()
+                logf = None
+                logfz = None
                 logfn = ""
                 logfnz = ""
                 dbsh.close()
@@ -77,6 +79,8 @@ except KeyboardInterrupt:
     if logf is not None:
         logf.close()
         logfz.close()
+        logf = None
+        logfz - None
         logfn = ""
         logfnz = ""
         dbsh.close()

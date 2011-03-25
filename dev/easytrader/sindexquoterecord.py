@@ -47,19 +47,22 @@ try:
         if nowtime > starttime and nowtime < endtime:
             # start a new record period.
             if recstate == 0:
-                print "gen new log file name."
+                print now, "gen new log file name."
                 logfn = "siq%4d%02d%02d.log" % (now.year, now.month, now.day)
                 logfnz = logfn+".gz"
-                logf = open(logfn, "w")
-                logfz = gzip.open(logfnz, "w")
+                logf = open(logfn, "a")
+                logfz = gzip.open(logfnz, "a")
 
             recstate = 1 # 1 for open
         else:
             recstate = 0 # 0 for close
+            time.sleep(5)
             if logf is not None:
-                print "close logs."
+                print now, "close logs."
                 logf.close()
                 logfz.close()
+                logf = None
+                logfz = None
                 logfn = ""
                 logfnz = ""
 
@@ -84,6 +87,8 @@ except KeyboardInterrupt:
     if logf is not None:
         logf.close()
         logfz.close()
+        logf = None
+        logfz = None
         logfn = ""
         logfnz = ""
 
