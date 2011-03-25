@@ -152,11 +152,25 @@ class uicontrol(QMainWindow, Ui_MainWindow):
     # buttons
     @pyqtSlot()
     def on_buyorder_clicked(self):
-        self.sendbutton()
+        ret = True
+        if self.confirmchk.isChecked():
+            ret = QMessageBox.warning(self,
+                    u"",
+                    u"<H3>确认买入？</H3>",
+                    QMessageBox.Ok|QMessageBox.Cancel)
+        if ret:
+            self.sendbutton()
 
     @pyqtSlot()
     def on_buyorderbatch_clicked(self):
-        self.sendbutton()
+        ret = True
+        if self.confirmchk.isChecked():
+            ret = QMessageBox.warning(self,
+                    u"",
+                    u"<H3>确认买入？</H3>",
+                    QMessageBox.Ok|QMessageBox.Cancel)
+        if ret:
+            self.sendbutton()
 
     @pyqtSlot()
     def on_cancelbuyorder_clicked(self):
@@ -168,7 +182,14 @@ class uicontrol(QMainWindow, Ui_MainWindow):
 
     @pyqtSlot()
     def on_opensifbtn_clicked(self):
-        self.sendbutton()
+        ret = True
+        if self.confirmchk.isChecked():
+            ret = QMessageBox.warning(self,
+                    u"",
+                    u"<H3>确认卖空？</H3>",
+                    QMessageBox.Ok|QMessageBox.Cancel)
+        if ret:
+            self.sendbutton()
 
     @pyqtSlot()
     def on_cancelopensifbtn_clicked(self):
@@ -176,11 +197,25 @@ class uicontrol(QMainWindow, Ui_MainWindow):
 
     @pyqtSlot()
     def on_sellorder_clicked(self):
-        self.sendbutton()
+        ret = True
+        if self.confirmchk.isChecked():
+            ret = QMessageBox.warning(self,
+                    u"",
+                    u"<H3>确认卖出？</H3>",
+                    QMessageBox.Ok|QMessageBox.Cancel)
+        if ret:
+            self.sendbutton()
 
     @pyqtSlot()
     def on_sellorderbatch_clicked(self):
-        self.sendbutton()
+        ret = True
+        if self.confirmchk.isChecked():
+            ret = QMessageBox.warning(self,
+                    u"",
+                    u"<H3>确认卖出？</H3>",
+                    QMessageBox.Ok|QMessageBox.Cancel)
+        if ret:
+            self.sendbutton()
 
     @pyqtSlot()
     def on_cancelsellorder_clicked(self):
@@ -192,7 +227,14 @@ class uicontrol(QMainWindow, Ui_MainWindow):
 
     @pyqtSlot()
     def on_closesifbtn_clicked(self):
-        self.sendbutton()
+        ret = True
+        if self.confirmchk.isChecked():
+            ret = QMessageBox.warning(self,
+                    u"",
+                    u"<H3>确认空平？</H3>",
+                    QMessageBox.Ok|QMessageBox.Cancel)
+        if ret:
+            self.sendbutton()
 
     @pyqtSlot()
     def on_cancelclosesifbtn_clicked(self):
