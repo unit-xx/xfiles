@@ -5,6 +5,8 @@ from datetime import datetime, timedelta
 
 f = open(sys.argv[1])
 
+maxlongpos = 1
+maxshortpos = 1
 longdeals = []
 shortdeals = []
 longs = []
@@ -13,7 +15,7 @@ openmax = 100
 openthr = Decimal('0.5')
 closetol = Decimal('0.0')
 closethr = Decimal('0.5')
-holdinterval = timedelta(0, 10, 000000)
+holdinterval = timedelta(0, 4, 000000)
 
 """
 1. how many concurrent opens?
@@ -45,14 +47,16 @@ while 1:
     t = makerec(t)
 
     # add opens for short and long
-    if t[5] > openthr and t[6] > openthr and t[7] > openthr:
-        toearn = Decimal("%.1f"%(math.floor(min(t[5:8])*5)/5))
-        #open, close, [toearn price, close price]
-        shorts.append([t, None, [t[8], t[8]-toearn, 0.0]]) 
+    if len(shorts) <= maxshortpos:
+        if t[5] > openthr and t[6] > openthr and t[7] > openthr:
+            toearn = Decimal("%.1f"%(math.floor(min(t[5:8])*5)/5))
+            #open, close, [toearn price, close price]
+            shorts.append([t, None, [t[8], t[8]-toearn, 0.0]]) 
 
-    if t[5] < -openthr and t[6] < -openthr and t[7] < -openthr:
-        toearn = Decimal("%.1f"%(math.floor(-max(t[5:8])*5)/5))
-        longs.append([t, None, [t[8], t[8]+toearn, 0.0]])
+    if len(longs) <= maxlongpos:
+        if t[5] < -openthr and t[6] < -openthr and t[7] < -openthr:
+            toearn = Decimal("%.1f"%(math.floor(-max(t[5:8])*5)/5))
+            longs.append([t, None, [t[8], t[8]+toearn, 0.0]])
     # look for close opportunity.
     p = t[8]
     toremove = []

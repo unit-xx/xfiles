@@ -43,3 +43,12 @@ def incmonth(yearmonth, inc=1):
             month += 1
     return (year, month)
 
+def getcross(n, mid):
+    # n is a array of numbers
+    # return how many times the array goes across the horizential `mid'
+    count = 0
+    tmp = [int(x < mid) for x in n]
+    for i, v in enumerate(tmp[1:], 1):
+        if v != tmp[i-1]:
+            count = count + 1
+    return count

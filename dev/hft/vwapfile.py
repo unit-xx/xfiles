@@ -8,8 +8,7 @@ import zlib
 import pickle
 from struct import unpack
 
-HOST, PORT = "172.30.4.98", 22888
-TARGET = "1102"
+TARGET = "1104"
 
 pv = [] # price, volume, p*v
 lastdv = 0

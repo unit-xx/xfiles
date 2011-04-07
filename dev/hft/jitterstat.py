@@ -1,6 +1,6 @@
 # get stats for sif jitters within certain ticks, for a day.
 
-import sys, gzip
+import sys, gzip, os
 import math
 import util
 
@@ -18,7 +18,7 @@ if qfn.endswith(".gz"):
 else:
     qf = open(qfn)
 
-sifs = util.calsicontracts(qfn.split(".")[0][3:])
+sifs = util.calsicontracts(os.path.basename(qfn).split(".")[0][3:])
 sif = sifs[sifindex]
 lastnq = []
 avg = 0.0
@@ -27,6 +27,13 @@ sqravg = 0.0
 stddev = 0.0
 baspread = 0.0
 count = 0
+
+zcrossmax = ntick - 1
+zcrossper = 0.0
+zcross = 0
+
+schema = "date, time, index, avg, stdev, max-min, spread, z-cross, z-cross%"
+print "#", schema
 for line in qf:
     tmp = line.split()
     if len(tmp) != 12:
@@ -51,4 +58,8 @@ for line in qf:
             except ValueError:
                 #var is too small and it's considered as negative float
                 stddev = 0.0
-            print tmp[0], tmp[2], count, "%.1f"%avg, "%.2f"%stddev, "%.1f"%(max(lastnq)-min(lastnq)), "%.1f"%baspread
+
+            zcross = util.getcross(lastnq, avg)
+            zcrossper = float(zcross) / zcrossmax
+
+            print tmp[0], tmp[2], count, "%.1f"%avg, "%.2f"%stddev, "%.1f"%(max(lastnq)-min(lastnq)), "%.1f"%baspread, zcross, "%.2f"%zcrossper
