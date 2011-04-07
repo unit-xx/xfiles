@@ -376,7 +376,7 @@ class LoginResp(response):
         self.session["user_code"] = self.records[0][4]
         self.session["branch"] = self.records[0][6]
         self.session["session"] = self.records[0][7]
-        assert len(self.records) == 2
+        assert len(self.records) >= 2
         for r in self.records:
             if r[0] == SZAMARKET:
                 self.session["secu_acc"]["SZ"] = r[1]
