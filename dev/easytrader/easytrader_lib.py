@@ -110,6 +110,9 @@ class PortfolioModel(QAbstractTableModel):
                     else:
                         if orec["dealcount"] != orec["ordercount"]:
                             return QVariant(QColor(Qt.green))
+            elif columnkey == "code":
+                if si["margintrd"]:
+                    return QVariant(QColor(Qt.darkCyan))
 
         return QVariant()
 
@@ -603,7 +606,7 @@ class Portfolio(object):
                 "floor":u"跌停"
                 }
         # price policies
-        self.pricepolicylist = ["latest", "s5", "s4", "s3", "s2", "s1", "b1", "b2", "b3", "b4", "b5"]
+        self.pricepolicylist = ["latest", "s5", "s4", "s3", "s2", "s1", "b1", "b2", "b3", "b4", "b5", "floor", "ceiling"]
         self.buypolicy = "latest"
         self.sellpolicy = "latest"
         self.pricepolicynamemap = {"latest":u"最新价",
@@ -617,7 +620,9 @@ class Portfolio(object):
                 "b3":u"买三",
                 "b4":u"买四",
                 "b5":u"买五",
-                "mktval":u"市价"
+                "mktval":u"市价",
+                "floor":u"跌停",
+                "ceiling":u"涨停",
                 }
 
         self._bostate = Portfolio.BOUNORDERED
@@ -713,7 +718,7 @@ class Portfolio(object):
         reader = csv.reader(f)
         self.bostate = Portfolio.BOUNORDERED
         for i in reader:
-            assert(i[0] in ("BO", "IF", "SH", "SZ"))
+            assert(i[0][0:2] in ("BO", "IF", "SH", "SZ"))
             if i[0] == "BO":
                 self.bostate = i[1].decode("utf-8")
             elif i[0] == "IF":
@@ -749,12 +754,20 @@ class Portfolio(object):
                 # TODO: update opencount, closecount, earning
                 # TODO: also save deals in savePortfolio
             else:# stock batch
-                scode = i[0].upper() + i[1]
+                scode = i[0][0:2].upper() + i[1]
                 self.stocklist.append(scode)
                 self.stockinfo.setdefault(scode, {})
 
                 si = self.stockinfo[scode]
-                si["market"] = i[0].upper()
+
+                si["rawmkt"] = i[0].upper()
+                tmp = si["rawmkt"].split(".")
+                si["market"] = tmp[0]
+                if len(tmp) == 1:
+                    si["margintrd"] = False
+                else:
+                    si["margintrd"] = (tmp[1]=="RZ")
+
                 si["code"] = i[1]
                 si["count"] = i[2]
                 si["pastbuy"] = []
@@ -830,7 +843,7 @@ class Portfolio(object):
                 pass
             for scode in self.stocklist:
                 si = self.stockinfo[scode]
-                writer.writerow([si["market"], si["code"],
+                writer.writerow([si["rawmkt"], si["code"],
                     si["count"],
                     repr(si["pastbuy"]),
                     repr(si["pastsell"])])
@@ -909,6 +922,8 @@ class Portfolio(object):
                 param["trd_id"] = trdcode
                 param["price"] = orec["orderprice"]
                 param["qty"] = orec["ordercount"]
+                if si["margintrd"]:
+                    param["order_type"] = jz.TRD_MARGINBUY
                 self.tqueue.put( (reqclass, respclass, param, self.buyBatchBottom, True) )
 
             if self.bocount == 0:
@@ -955,6 +970,8 @@ class Portfolio(object):
                     param["trd_id"] = trdcode
                     param["price"] = orec["orderprice"]
                     param["qty"] = orec["ordercount"]
+                    if si["margintrd"]:
+                        param["order_type"] = jz.TRD_MARGINBUY
                     self.tqueue.put( (reqclass, respclass, param, self.buyBatchBottom, True) )
 
             if self.bocount == 0:
@@ -998,6 +1015,8 @@ class Portfolio(object):
                     param["trd_id"] = trdcode
                     param["price"] = orec["orderprice"]
                     param["qty"] = orec["ordercount"]
+                    if si["margintrd"]:
+                        param["order_type"] = jz.TRD_MARGINBUY
                     self.tqueue.put( (reqclass, respclass, param, self.buyBatchBottom, True) )
 
             if self.bocount == 0:
@@ -1404,6 +1423,8 @@ class Portfolio(object):
                     param["trd_id"] = trdcode
                     param["price"] = orec["orderprice"]
                     param["qty"] = orec["ordercount"]
+                    if si["margintrd"]:
+                        param["order_type"] = jz.TRD_MARGINSELL
                     self.tqueue.put( (reqclass, respclass, param, self.sellBatchBottom, True) )
             if self.bocount == 0:
                 self.logger.info("no stock to sell")
@@ -1490,6 +1511,8 @@ class Portfolio(object):
                     param["trd_id"] = trdcode
                     param["price"] = orec["orderprice"]
                     param["qty"] = orec["ordercount"]
+                    if si["margintrd"]:
+                        param["order_type"] = jz.TRD_MARGINSELL
                     self.tqueue.put( (reqclass, respclass, param, self.sellBatchBottom, True) )
             if self.bocount == 0:
                 self.logger.info("no stock to sell")
@@ -1529,6 +1552,8 @@ class Portfolio(object):
                     param["trd_id"] = trdcode
                     param["price"] = orec["orderprice"]
                     param["qty"] = orec["ordercount"]
+                    if si["margintrd"]:
+                        param["order_type"] = jz.TRD_MARGINSELL
                     self.tqueue.put( (reqclass, respclass, param, self.sellBatchBottom, True) )
             if self.bocount == 0:
                 self.logger.info("no stock to sell")
@@ -1568,6 +1593,8 @@ class Portfolio(object):
                     param["trd_id"] = trdcode
                     param["price"] = orec["orderprice"]
                     param["qty"] = orec["ordercount"]
+                    if si["margintrd"]:
+                        param["order_type"] = jz.TRD_MARGINSELL
                     self.tqueue.put( (reqclass, respclass, param, self.sellBatchBottom, True) )
             if self.bocount == 0:
                 self.logger.info("no stock to sell")
@@ -2449,8 +2476,19 @@ class PortfolioUpdater_dbf(Thread):
                         stockinfo[self.shdbmapping[f]] = rec[f].decode("GBK")
                     else:
                         stockinfo[self.shdbmapping[f]] = rec[f]
-                stockinfo["tobuyprice"] = self.getpricesh(rec, self.portfolio.buypolicy) + self.portfolio.buypricefix
-                stockinfo["tosellprice"] = self.getpricesh(rec, self.portfolio.sellpolicy) + self.portfolio.sellpricefix
+                if self.portfolio.buypolicy == "floor":
+                    stockinfo["tobuyprice"] = stockinfo["floor"]
+                elif self.portfolio.buypolicy == "ceiling":
+                    stockinfo["tobuyprice"] = stockinfo["ceiling"]
+                else:
+                    stockinfo["tobuyprice"] = self.getpricesh(rec, self.portfolio.buypolicy) + self.portfolio.buypricefix
+
+                if self.portfolio.sellpolicy == "floor":
+                    stockinfo["tosellprice"] = stockinfo["floor"]
+                elif self.portfolio.sellpolicy == "ceiling":
+                    stockinfo["tosellprice"] = stockinfo["ceiling"]
+                else:
+                    stockinfo["tosellprice"] = self.getpricesh(rec, self.portfolio.sellpolicy) + self.portfolio.sellpricefix
             elif stockinfo["market"] == "SZ":
                 rec = dbsz[szmap[scode]]
                 for f in self.szdbfield:
@@ -2458,8 +2496,20 @@ class PortfolioUpdater_dbf(Thread):
                         stockinfo[self.szdbmapping[f]] = rec[f].decode("GBK")
                     else:
                         stockinfo[self.szdbmapping[f]] = rec[f]
-                stockinfo["tobuyprice"] = self.getpricesz(rec, self.portfolio.buypolicy) + self.portfolio.buypricefix
-                stockinfo["tosellprice"] = self.getpricesz(rec, self.portfolio.sellpolicy) + self.portfolio.sellpricefix
+
+                if self.portfolio.buypolicy == "floor":
+                    stockinfo["tobuyprice"] = stockinfo["floor"]
+                elif self.portfolio.buypolicy == "ceiling":
+                    stockinfo["tobuyprice"] = stockinfo["ceiling"]
+                else:
+                    stockinfo["tobuyprice"] = self.getpricesz(rec, self.portfolio.buypolicy) + self.portfolio.buypricefix
+
+                if self.portfolio.sellpolicy == "floor":
+                    stockinfo["tosellprice"] = stockinfo["floor"]
+                elif self.portfolio.sellpolicy == "ceiling":
+                    stockinfo["tosellprice"] = stockinfo["ceiling"]
+                else:
+                    stockinfo["tosellprice"] = self.getpricesz(rec, self.portfolio.sellpolicy) + self.portfolio.sellpricefix
             # update a row
             #rowindex = self.portfolio.stocklist.index(scode)
             #QMetaObject.invokeMethod(self.portmodel,
@@ -2688,9 +2738,9 @@ class SecuInfoUpdater(Thread):
             siresp = jz.SecuInfoResp(self.session)
             siresp.recv()
             if siresp.retcode == "0":
-                si["ceiling"] = float(siresp.records[0][10])
-                si["floor"] = float(siresp.records[0][11])
-                si["stopped"] = (siresp.records[0][12] == "1")
+                si["ceiling"] = float(siresp.records[0]["PRICE_CEILING"])
+                si["floor"] = float(siresp.records[0]["PRICE_FLOOR"])
+                si["stopped"] = (siresp.records[0]["SUSP_FLAG"] == "1")
                 QMetaObject.invokeMethod(self.pmodel, "updaterow", Qt.QueuedConnection,
                         Q_ARG("int", rowindex))
 
@@ -3872,8 +3922,8 @@ class dbserver(Thread):
         resp = task[1]
         self.db.execute('insert into rawtradeinfo values (?, ?, ?, ?)',
                 (str(t),
-                    req.payload.decode("GBK"),
-                    resp.payload.decode("GBK"),
+                    req.payload,#.decode("GBK"),
+                    resp.payload,#.decode("GBK"),
                     "%s:%s" % (resp.retcode, resp.retinfo)
                     ))
         self.db.commit()
@@ -3993,6 +4043,10 @@ class uicontrol(QMainWindow, tradeui.Ui_MainWindow):
 
         # update status lineedit
         self.showbostate()
+
+        if self.session_cfg["usebatch"] == 0:
+            self.mainwindow.buyorder2.setEnabled(False)
+            self.mainwindow.sellorder2.setEnabled(False)
 
         # setup console output from stdout
         #self.logtext.write = lambda txt: self.logtext.appendPlainText(QString(txt))

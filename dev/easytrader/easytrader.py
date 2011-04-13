@@ -42,10 +42,13 @@ def main(args):
     session_config = {}
     for k,v in config.items(JZSEC):
         session_config[k] = v
+
+    session_config["jzport"] = int(session_config["jzport"])
+
     try:
-        session_config["jzport"] = int(session_config["jzport"])
+        session_config["usebatch"] = int(session_config["usebatch"])
     except KeyError:
-        pass
+        session_config["usebatch"] = 1
 
     # get jsd session config
     jsd_sessioncfg = {}
@@ -123,7 +126,7 @@ def main(args):
         uiresp = jz.UserInfoResp(testsession)
         uiresp.recv()
         if uiresp.retcode == "0":
-            username = uiresp.records[0][0].decode("GBK")
+            username = uiresp.records[0]["USER_NAME"]#.decode("GBK")
         testsession.close()
     if username == "":
         QMessageBox.warning(None,
