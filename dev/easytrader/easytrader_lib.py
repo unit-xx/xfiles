@@ -527,6 +527,7 @@ class Portfolio(object):
 
     def __init__(self, ptfn, sessioncfg, tqueue, updtlock, jsdcfg):
         # TODO: change to use jsdworker
+        self.sessioncfg = sessioncfg
         self.session = jz.session(sessioncfg)
         self.ptfn = ptfn
         self.logfn = ""
@@ -606,7 +607,10 @@ class Portfolio(object):
                 "floor":u"跌停"
                 }
         # price policies
-        self.pricepolicylist = ["latest", "s5", "s4", "s3", "s2", "s1", "b1", "b2", "b3", "b4", "b5", "floor", "ceiling"]
+        self.pricepolicylist = ["latest", "s5", "s4", "s3", "s2", "s1", "b1", "b2", "b3", "b4", "b5",]
+        self.boundprice = ["floor", "ceiling"]
+        if self.sessioncfg["useboundprice"]:
+            self.pricepolicylist.extend(self.boundprice)
         self.buypolicy = "latest"
         self.sellpolicy = "latest"
         self.pricepolicynamemap = {"latest":u"最新价",

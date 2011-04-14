@@ -49,6 +49,10 @@ def main(args):
         session_config["usebatch"] = int(session_config["usebatch"])
     except KeyError:
         session_config["usebatch"] = 1
+    try:
+        session_config["useboundprice"] = int(session_config["useboundprice"])
+    except KeyError:
+        session_config["useboundprice"] = 0
 
     # get jsd session config
     jsd_sessioncfg = {}
