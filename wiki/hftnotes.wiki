@@ -1,5 +1,5 @@
 #summary notes on finding hft trading strategies.
-#labels Phase-Design
+#labels Phase-Design,Phase-Requirements,Featured
 
 = Introduction =
 
