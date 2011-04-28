@@ -2,10 +2,10 @@
 
 = Introduction =
 
-Add your content here.
+We try to design a HF trading strategy for IF. The basic idea is mm like.
 
 
-= Details =
+= Design =
 
 Add your content here.  Format your content with:
   * Text in *bold* or _italic_
