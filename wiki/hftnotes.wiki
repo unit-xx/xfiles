@@ -1,5 +1,7 @@
 #summary notes on finding hft trading strategies.
 
+<wiki:toc max_depth="1" />
+
 = Introduction =
 
 We try to design a HF trading strategy for IF. The basic idea is mm like. When current price (cp) is greater than the predicted price (pp), we short IF, otherwise, we long IF.
