@@ -105,7 +105,7 @@ class stockquerydlg(QDialog, Ui_stockquery):
             for r in sresp.records:
                 row = {}
                 row["market"] = r[2]
-                row["secu_name"] = r[4].decode("GBK")
+                row["secu_name"] = r[4]
                 row["secu_code"] = r[5]
                 row["share_bln"] = r[11]
                 row["share_avl"] = r[12]
