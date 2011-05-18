@@ -1,0 +1,12 @@
+#summary experiments on hft explorer.
+
+= Introduction =
+
+Add your content here.
+
+
+= Details =
+
+  * vwap: max(abs(price-jitter)) is linear with stdev.
+  * Headings, paragraphs, and lists
+  * Automatic links to other wiki pages
