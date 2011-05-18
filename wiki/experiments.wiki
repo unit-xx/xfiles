@@ -7,6 +7,7 @@ Add your content here.
 
 = Details =
 
-  * vwap: max(abs(price-jitter)) is linear with stdev.
+  * vwap: max(abs(price-jitter)) is linear with stdev. And beta increases while time window increass.
+
   * Headings, paragraphs, and lists
   * Automatic links to other wiki pages
