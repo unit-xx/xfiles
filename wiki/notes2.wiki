@@ -1,0 +1,4 @@
+#summary One-sentence summary of this page.
+
+  * dmi: 买入卖出力量对比
+  * bolling，rsi：价格区间，超买超卖
