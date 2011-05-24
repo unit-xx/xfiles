@@ -11,10 +11,10 @@ longdeals = []
 shortdeals = []
 longs = []
 shorts = []
-openmax = 100
-openthr = Decimal('0.5')
+openthr = Decimal('0.7')
+openvarthr = 1.0
 closetol = Decimal('0.0')
-closethr = Decimal('0.5')
+stoploessthr = Decimal('0.5')
 holdinterval = timedelta(0, 4, 000000)
 
 """
@@ -41,27 +41,31 @@ while 1:
     if len(t) == 0:
         break
 
-    if len(t) != 12:
+    if len(t) != 15:
         continue
 
     t = makerec(t)
+    p = t[2]
 
     # add opens for short and long
-    if len(shorts) <= maxshortpos:
-        if t[5] > openthr and t[6] > openthr and t[7] > openthr:
-            toearn = Decimal("%.1f"%(math.floor(min(t[5:8])*5)/5))
-            #open, close, [toearn price, close price]
-            shorts.append([t, None, [t[8], t[8]-toearn, 0.0]]) 
+    if len(shorts) < maxshortpos:
+        #if t[5] > openthr and t[6] > openthr and t[7] > openthr:
+        if t[4] > openthr and t[4] > Decimal('1.5')*t[10]:
+            #toearn = Decimal("%.1f"%(math.floor(min(t[5:8])*5)/5))
+            toearn = t[4]
+            #open, close, [open price, toclose price, close price(filled later)]
+            shorts.append([t, None, [p, p-toearn, None]]) 
 
-    if len(longs) <= maxlongpos:
-        if t[5] < -openthr and t[6] < -openthr and t[7] < -openthr:
-            toearn = Decimal("%.1f"%(math.floor(-max(t[5:8])*5)/5))
-            longs.append([t, None, [t[8], t[8]+toearn, 0.0]])
+    if len(longs) < maxlongpos:
+        #if t[5] < -openthr and t[6] < -openthr and t[7] < -openthr:
+        if -t[4] > openthr and -t[4] > Decimal('1.5')*t[10]:
+            #toearn = Decimal("%.1f"%(math.floor(-max(t[5:8])*5)/5))
+            toearn = -t[4]
+            longs.append([t, None, [p, p+toearn, None]])
     # look for close opportunity.
-    p = t[8]
     toremove = []
     for x in shorts:
-        if p <= x[2][1]+closetol or t[1]-x[0][1] > holdinterval or p > x[2][0]+closethr:
+        if p <= x[2][1]+closetol or t[1]-x[0][1] > holdinterval or p > x[2][0]+stoploessthr:
             toremove.append(x)
             shortdeals.append(x)
             x[1] = t
@@ -71,7 +75,7 @@ while 1:
 
     toremove = []
     for x in longs:
-        if p >= x[2][1]-closetol or t[1]-x[0][1] > holdinterval or p < x[2][0]-closethr:
+        if p >= x[2][1]-closetol or t[1]-x[0][1] > holdinterval or p < x[2][0]-stoploessthr:
             toremove.append(x)
             longdeals.append(x)
             x[1] = t
@@ -92,7 +96,9 @@ print "=== dealed shorts %d ===" % len(shortdeals)
 for x in shortdeals:
 
     duration = x[1][1] - x[0][1]
-    print x[0][1].time(), x[1][1].time(), x[0][8], x[1][8], toseconds(duration), x[2][0]-x[2][1], x[2][0]-x[2][2], x[0][9], x[0][10], x[0][11], x[0][5], x[0][6], x[0][7]
+    # opent, closet, open price, close price, hold time, toearn, act earn, 
+    print x[0][1].time(), x[1][1].time(), x[0][2], x[1][2], toseconds(duration), x[2][0]-x[2][1], x[2][0]-x[2][2]
+    #print x[0][1].time(), x[1][1].time(), x[0][8], x[1][8], toseconds(duration), x[2][0]-x[2][1], x[2][0]-x[2][2], x[0][9], x[0][10], x[0][11], x[0][5], x[0][6], x[0][7]
 
 print "=== undealed shorts %d ===" % len(shorts)
 for x in shorts:
@@ -101,7 +107,8 @@ for x in shorts:
 print "=== dealed longs %d ===" % len(longdeals)
 for x in longdeals:
     duration = x[1][1] - x[0][1]
-    print x[0][1].time(), x[1][1].time(), x[0][8], x[1][8], toseconds(duration), x[2][1]-x[2][0], x[2][2]-x[2][0], x[0][9], x[0][10], x[0][11], x[0][5], x[0][6], x[0][7]
+    print x[0][1].time(), x[1][1].time(), x[0][2], x[1][2], toseconds(duration), x[2][1]-x[2][0], x[2][2]-x[2][0]
+    #print x[0][1].time(), x[1][1].time(), x[0][8], x[1][8], toseconds(duration), x[2][1]-x[2][0], x[2][2]-x[2][0], x[0][9], x[0][10], x[0][11], x[0][5], x[0][6], x[0][7]
 
 print "=== undealed longs %d ===" % len(longs)
 for x in longs:
