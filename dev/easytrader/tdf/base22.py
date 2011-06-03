@@ -38,10 +38,14 @@ ID_HDFDATAFLAGS_COMPRESSED = 0x00010000#启用数据压缩
 ID_HDFDATAFLAGS_ABQUEUE_FAST = 0x00020000#以FAST方式提供委托队列数据
 
 
+class itemobj:
+    def __str__(self):
+        return str(self.__dict__)
+
 class session:
     MAGIC = 0x5340
 
-    headerfmt = "HHiii"
+    headerfmt = "=HHiii"
     headerlen = calcsize(headerfmt)
 
     def __init__(self, config):
@@ -85,8 +89,8 @@ class session:
         h = self.packheader(self, req)
         self.sock.sendall(h)
 
-    def unpackheader(self, msg):
-        return unpack(self.headerfmt, msg)
+    def unpackheader(self, h):
+        return unpack(self.headerfmt, h)
 
     def recvheader(self):
         h = self.recv_n(self.headerlen)
@@ -117,26 +121,69 @@ class request(object):
         #self.session.sock.sendall(self.payload)
 
 class response:
-    code = ID_TDFTELE_UNDEF
     paramfmt = ""
     paramlen = calcsize(paramfmt)
     paramlist = []
 
     def __init__(self, session):
         self.session = session
+        self.code = ID_TDFTELE_UNDEF
+        self.header = None
+        self.payload = None
 
     def recv(self):
+        # should be called by subclass who knows the message type
         self.header = self.session.recvheader()
         (magic, code, msglen, time, sn) = self.session.unpackheader(self.header)
         self.code = code
         self.payload = self.session.recv_n(msglen)
+        self.parse()
+
+    def frommsg(self, header, payload):
+        # when created by respfactory dynamically on recved header/payload.
+        self.header = header
+        (magic, code, msglen, time, sn) = self.session.unpackheader(self.header)
+        self.code = code
+        self.payload = payload
+        #print "code:%d"%self.code, "payloadlen:%d"%len(self.payload)
+        self.parse()
+
+    def parse(self):
         tmp = unpack(self.paramfmt, self.payload[0:self.paramlen])
         for i, p in enumerate(self.paramlist):
             self.__dict__[p] = tmp[i]
 
+class response2(response):
+    # response which has 2-level of data structure
+    itemfmt = ""
+    itemlen = calcsize(itemfmt)
+    itemlist = []
+
+    def parse(self):
+        response.parse(self)
+        self.parseitems()
+
+    def parseitems(self):
+        #print self.itemfmt
+        #print self.nitem
+        #print self.itemlen
+        #print len(self.payload)
+        #print self.paramlen
+
+        self.items = []
+        m = self.payload[self.paramlen:]
+        # len(m) should equals to self.nitem*self.itemlen
+        assert len(m) == self.nitem*self.itemlen
+        for i in range(0, self.nitem*self.itemlen, self.itemlen):
+            tmp = unpack(self.itemfmt, m[i:i+self.itemlen])
+            tmp2 = itemobj()
+            for j, p in enumerate(self.itemlist):
+                tmp2.__dict__[p] = tmp[j]
+            self.items.append(tmp2)
+
 class loginReq(request):
     code = ID_TDFTELE_LOGIN
-    paramfmt = "".join(["16s", "32s", "8s", "32s"])
+    paramfmt = "".join(["=16s", "32s", "8s", "32s"])
     paramlen = calcsize(paramfmt)
     paramlist = ["user", "passwd", "id", "chksum"]
 
@@ -148,8 +195,7 @@ class loginReq(request):
         self.send()
 
 class loginResp(response):
-    code = ID_TDFTELE_LOGINANSWER
-    paramfmt = "".join(["64s", "i", "i", "128s", "32i"])
+    paramfmt = "".join(["=64s", "i", "i", "128s", "32i"])
     paramlen = calcsize(paramfmt)
     paramlist = ["info", "ans", "nmkt", "mktflag", "date"]
 
@@ -159,10 +205,11 @@ class loginResp(response):
             start = i*4
             mkt = self.mktflag[start:start+4].strip("\x00")
             self.markets.append(mkt)
+        return self.markets
 
 class codetblReq(request):
     code = ID_TDFTELE_COCDETABLE
-    paramfmt = "".join(["4s", "i"])
+    paramfmt = "".join(["=4s", "i"])
     paramlen = calcsize(paramfmt)
     paramlist = ["mkt", "date"]
 
@@ -171,33 +218,25 @@ class codetblReq(request):
         self.date = date
         self.send()
 
-class codetblResp(response):
-    code = ID_TDFTELE_COCDETABLE
-    paramfmt = "".join(["iiii"])
+class codetblResp(response2):
+    paramfmt = "".join(["=iiii"])
     paramlen = calcsize(paramfmt)
     paramlist = ["mktcode", "date", "nitem", "flag"]
 
-    itemfmt = "".join(["i", "i", "8s", "16s"])
+    itemfmt = "".join(["=i", "i", "8s", "16s"])
     itemlen = calcsize(itemfmt)
     itemlist = ["idnum", "type", "secucode", "secuname"]
 
-    def getitems(self):
-        self.items = []
-        m = self.payload[self.paramlen:]
-        # len(m) should equals to self.nitem*self.itemlen
-        assert len(m) == self.nitem*self.itemlen
-        for i in range(0, self.nitem*self.itemlen, self.itemlen):
-            tmp = unpack(self.itemfmt, m[i:i+self.itemlen])
-            tmp2 = {}
-            for j, p in enumerate(self.itemlist):
-                tmp2[p] = tmp[j]
-            tmp2["secuname"] = tmp2["secuname"].strip("\x00")
-            tmp2["secucode"] = tmp2["secucode"].strip("\x00")
-            self.items.append(tmp2)
+    def parse(self):
+        response2.parse(self)
+
+        for i in self.items:
+            i.secuname = i.secuname.strip("\x00")
+            i.secucode = i.secucode.strip("\x00")
 
 class getquoteReq(request):
     code = ID_TDFTELE_REQDATA
-    paramfmt = "".join(["4s", "i"])
+    paramfmt = "".join(["=4s", "i"])
     paramlen = calcsize(paramfmt)
     paramlist = ["mkt", "flag"]
 
@@ -206,5 +245,50 @@ class getquoteReq(request):
         self.flag = flag
         self.send()
 
+class futurequoteResp(response2):
+    paramfmt = "".join(["=i"])
+    paramlen = calcsize(paramfmt)
+    paramlist = ["nitem"]
 
+    itemfmt = "".join(["=3i", "q", "6I", "3q", "4I", "2i", "20I"])
+    itemlen = calcsize(itemfmt)
+    itemlist = ["idnum", "time", "status", "preopenint", "preclose",
+            "presettleprice", "open", "high", "low", "match", "volume",
+            "turnover", "openint", "close", "settleprice", "highlimit",
+            "lowlimit", "predelta", "delta",
+            "ask1", "ask2", "ask3", "ask4", "ask5",
+            "askvol1", "askvol2", "askvol3", "askvol4", "askvol5",
+            "bid1", "bid2", "bid3", "bid4", "bid5",
+            "bidvol1", "bidvol2", "bidvol3", "bidvol4", "bidvol5",
+            ]
+
+class indexquoteResp(response2):
+    paramfmt = "".join(["=i"])
+    paramlen = calcsize(paramfmt)
+    paramlist = ["nitem"]
+
+    itemfmt = "".join(["=6i", "2q", "i"])
+    itemlen = calcsize(itemfmt)
+    itemlist = ["idnum", "time", "open", "high", "low", "last",
+            "totalvol", "turnover", "preclose"]
+
+class respfactory:
+    dispatchmap = {
+            ID_TDFTELE_MARKETDATA_FUTURES:futurequoteResp,
+            ID_TDFTELE_INDEXDATA:indexquoteResp,
+            }
+
+    def __init__(self, session):
+        self.session = session
+
+    def dispatch(self):
+        header = self.session.recvheader()
+        (magic, code, msglen, time, sn) = self.session.unpackheader(header)
+        payload = self.session.recv_n(msglen)
+        try:
+            resp = self.dispatchmap[code](self.session)
+        except KeyError:
+            resp = response(self.session)
+        resp.frommsg(header, payload)
+        return resp
 

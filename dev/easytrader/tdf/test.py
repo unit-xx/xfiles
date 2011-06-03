@@ -1,5 +1,7 @@
 from base22 import *
 from binascii import hexlify
+import datetime
+import sys
 
 config = {}
 config["tdfserver"] = "172.18.20.141"
@@ -21,16 +23,22 @@ for m in lresp.markets:
     ctblreq.getcodetbl(m)
     ctblresp = codetblResp(s)
     ctblresp.recv()
-    ctblresp.getitems()
+    #ctblresp.getitems()
     print ctblresp.mktcode
-    print ctblresp.items
+    for i in ctblresp.items:
+        print i
+    #print ctblresp.items
     print
 
 for m in lresp.markets:
     qreq = getquoteReq(s)
     qreq.getquote(m)
 
+rfact = respfactory(s)
 while 1:
-    resp = response(s)
-    resp.recv()
-    print resp.code
+    resp = rfact.dispatch()
+    print "code", resp.code
+    if resp.code == ID_TDFTELE_INDEXDATA:
+        #print resp.paramlen, len(resp.payload)
+        for i in resp.items:
+            print i
