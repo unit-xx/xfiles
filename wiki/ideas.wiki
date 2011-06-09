@@ -2,4 +2,4 @@
   * basis of basis
   * jitter (mm in essence)
   * TA based day-trading
-  * TA+AR (TA is MA in most cases, so we may explore ARMA)
+  * TA+AR (TA is MA in most cases, so we may explore ARMA), Kalman filter, for example.
