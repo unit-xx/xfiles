@@ -2,6 +2,6 @@
   * basis of basis
   * jitter (mm in essence)
   * TA based day-trading
-  * TA+AR (TA is MA in most cases, so we may explore ARMA), Kalman filter, for example.
+  * TA+AR (TA is simple AR in most cases, so we may explore ARMA), Kalman filter, for example.
   * news driven trading
   * predict trends by consider bond/SHIBOR/etc. indicators.
