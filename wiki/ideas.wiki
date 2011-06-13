@@ -5,4 +5,4 @@
   * TA+AR (TA is simple AR in most cases, so we may explore ARMA), Kalman filter, for example.
   * news driven trading
   * predict trends by consider bond/SHIBOR/etc. indicators.
-  * migrate between future contracts, equivalent to cross-contract arbi.
+  * migrate between future contracts, equivalent to spread arbi.
