@@ -7,6 +7,6 @@ do
     gnuplot <<EOF
     set terminal png size 1280,768
     set output "$outputdir/$bfn.lc.png"
-    plot "$fn" using 3 with lp title "$bfn"
+    plot "$fn" using 3 with lp title "$bfn.ask1", "$fn" using 4 with lp title "$bfn.bid1", "$fn" using 5 with lp title "$bfn.spread"
 EOF
 done

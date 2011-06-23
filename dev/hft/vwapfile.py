@@ -105,8 +105,8 @@ while 1:
             except ZeroDivisionError:
                 wstdev[i] = 0.0
 
-            if len(pv) > 30*maxqlen:
-                del pv[0:-maxqlen]
+            if len(pv) > 30*maxqlen[0]:
+                del pv[0:-maxqlen[0]]
 
         pv.append((p, v, p*v))
         #print "#date, time, price, price-delta*%d, awp*%d, stdev*%d, avol*%d" % (len(awp))*4
