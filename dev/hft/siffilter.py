@@ -46,8 +46,8 @@ class WMAFilter(filter):
     TRUNCMAX = 4
     def __init__(self, slen):
         filter.__init__(self)
-        self.slen = slen
         self.trunclimit = self.TRUNCMAX * slen
+        self.slen = slen
         self.vbuf = []
         self.wbuf = []
         self.vwbuf = []
@@ -65,7 +65,7 @@ class WMAFilter(filter):
             self.wsum = self.wsum - self.wbuf[-self.slen] + w
             self.vwsum = self.vwsum - self.vwbuf[-self.slen] + vw
             try:
-                self._value = self.vwsum/self.wsum
+                self._value = self.vwsum/float(self.wsum)
             except ZeroDivisionError:
                 self._value = 0.0
 
@@ -78,7 +78,7 @@ class WMAFilter(filter):
             self.wsum = sum(self.wbuf)
             self.vwsum = sum(self.vwbuf)
             try:
-                self._value = self.vwsum/self.wsum
+                self._value = self.vwsum/float(self.wsum)
             except ZeroDivisionError:
                 self._value = 0.0
 
@@ -157,13 +157,14 @@ class DirectionFilter(filter):
         except TypeError:
             pass
 
-
 if __name__=="__main__":
+    import time
+    print "before import", time.time()
     import random
     from scipy import stats
     import numpy
 
-    slen = 10
+    slen = 3
     vbuf = []
     wbuf = []
     vwbuf = []
@@ -172,10 +173,13 @@ if __name__=="__main__":
     vf = VarianceFilter(slen)
     covf = CovFillter(slen)
     dirf = DirectionFilter(slen)
+    start = time.time()
+    print "after import", start
     for i in range(2*slen):
-        w = random.random()
-        #w = random.random()
-        v = w*2
+        w = random.random()*10
+        #w = i
+        v = random.random()*10
+        #v = w*2
         vbuf.append(v)
         wbuf.append(w)
         vwbuf.append(v*w)
@@ -207,4 +211,9 @@ if __name__=="__main__":
     y = numpy.array(wbuf[-slen:])
     slope, intercept, r_value, p_value, std_err = stats.linregress(x,y)
     beta, corr = dirf.value()
+    print beta, corr
     print (beta - slope < 1e-10) and (corr-r_value < 1e-10)
+
+    end = time.time()
+    print "end time", end
+    print "time cost: %.2f" % (end-start)
