@@ -89,13 +89,13 @@ class QuotePusheeSet:
 
     def broadcast(self, msg):
         with self.plock:
-            toremove = []
+            toremove = set()
             for p in self.pushee:
                 try:
                     p.sendall(pack("!I", len(msg)))
                     p.sendall(msg)
                 except socket.error, e:#pushee connection may close
-                    toremove.append(p)
+                    toremove.add(p)
             if len(toremove) > 0:
                 self.logger.info("pushee to be removed: %s", "|".join([str(x.getpeername()) for x in toremove]))
                 self.pushee -= toremove
