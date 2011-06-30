@@ -14,8 +14,10 @@ class QuoteReqHandler(SocketServer.BaseRequestHandler):
     def handle(self):
         # add the connection to a queue
         logger = logging.getLogger()
-        logger.info("pushee to be added: %s", self.request.getpeername())
+        pname = self.request.getpeername()
+        logger.info("pushee to be added: %s", pname)
         self.server.pset.add(self.request)
+        logger.info("pushee already added: %s", pname)
 
 class QuotePusher(Thread):
     def __init__(self, pset, param):
@@ -87,17 +89,17 @@ class QuotePusheeSet:
 
     def broadcast(self, msg):
         with self.plock:
-            toremove = set()
+            toremove = []
             for p in self.pushee:
                 try:
                     p.sendall(pack("!I", len(msg)))
                     p.sendall(msg)
-                except socket.error:#pushee connection may close
-                    toremove.add(p)
+                except socket.error, e:#pushee connection may close
+                    toremove.append(p)
             if len(toremove) > 0:
-                for p in toremove:
-                    self.logger.info("pushee to be removed: %s", p.getpeername())
+                self.logger.info("pushee to be removed: %s", "|".join([str(x.getpeername()) for x in toremove]))
                 self.pushee -= toremove
+                self.logger.info("pushee still in queue: %s", "|".join([str(x.getpeername()) for x in self.pushee]))
 
 class QuoteServer(SocketServer.ThreadingTCPServer):
     def __init__(self, server_address, RequestHandlerClass, QuotePusherClass, param):
@@ -109,6 +111,15 @@ class QuoteServer(SocketServer.ThreadingTCPServer):
         self.pset = QuotePusheeSet()
         self.pusher = QuotePusherClass(self.pset, param)
         self.pusher.start()
+
+    def shutdown_request(self, request):
+        """
+        intentially leave the function empty, so that the requsts are not
+        close after processed by QuoteReqHandler.
+
+        shutdown_request is new in Python 2.7, which almost replace/wrap close_request.
+        """
+        pass
 
     def close_request(self, request):
         """

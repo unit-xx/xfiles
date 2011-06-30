@@ -5,33 +5,22 @@ import socket
 import zlib, gzip
 import pickle
 from struct import unpack
+from util import recv_n
 
 HOST, PORT = "172.30.4.93", 22888
 
 logfn = ""
 logf = None
+sock = None
 
 starttime = datetime.time(9, 10, 00)
 endtime = datetime.time(15, 20, 00)
 recstate = 0
 
 # Create a socket (SOCK_STREAM means a TCP socket)
-sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 # Connect to server and send data
-sock.connect((HOST, PORT))
 
-def recv_n(conn, n):
-    left = n
-    content = []
-    while 1:
-        if left <= 0:
-            break
-        buf = conn.recv(left)
-        content.append(buf)
-        left = left - len(buf)
-
-    return "".join(content)
 
 # Receive data from the server and shut down
 start = time.time()
@@ -47,16 +36,25 @@ try:
         if nowtime > starttime and nowtime < endtime:
             # start a new record period.
             if recstate == 0:
+                try:
+                    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    sock.connect((HOST, PORT))
+                except socket.error:
+                    sock.close()
+                    sock = None
+
+                    print "cannot connect to quoteserver, sleep and try another time."
+                    time.sleep(10)
+                    continue
+
                 print now, "gen new log file name."
                 logfn = "siq%4d%02d%02d.log" % (now.year, now.month, now.day)
                 logfnz = logfn+".gz"
                 logf = open(logfn, "a")
                 logfz = gzip.open(logfnz, "a")
-
-            recstate = 1 # 1 for open
+                recstate = 1 # 1 for open
         else:
             recstate = 0 # 0 for close
-            time.sleep(5)
             if logf is not None:
                 print now, "close logs."
                 logf.close()
@@ -65,9 +63,14 @@ try:
                 logfz = None
                 logfn = ""
                 logfnz = ""
+                sock.close()
+                sock = None
+
+            time.sleep(30)
 
         if recstate:
-            (pktlen,) = unpack("!I", sock.recv(4))
+            tmp = recv_n(sock, 4)
+            (pktlen,) = unpack("!I", tmp)
             received = recv_n(sock, pktlen)
             assert len(received) == pktlen
             price = pickle.loads(zlib.decompress(received))
