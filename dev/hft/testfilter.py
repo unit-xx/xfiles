@@ -1,5 +1,6 @@
 import sys
 import random
+import math
 
 from siffilter import *
 
@@ -7,10 +8,11 @@ from scipy import stats
 import numpy
 
 
-slen = 4
+slen = 10
 
 vf = VarianceFilter(slen)
 df = DirectionFilter(slen)
+maf = WMAFilter(slen)
 
 xbuf = []
 ybuf = []
@@ -21,17 +23,33 @@ for i in range(slen*1):
     xbuf.append(x)
     ybuf.append(y)
     vf.feed((x,1))
-    #df.feed((x,y))
+    df.feed((x,y))
     xa = numpy.array(xbuf[-slen:])
     ya = numpy.array(ybuf[-slen:])
     if df.value() is not None:
-        beta, corr = df.value()
+        alpha, beta, corr = df.value()
         slope, intercept, r_value, p_value, std_err = stats.linregress(xa,ya)
-        #print beta, corr
-        #print slope, r_value
-        #print
+        print "lnreg:"
+        print alpha, beta, corr
+        print intercept, slope, r_value
+        print
 
     if vf.value() is not None:
         print vf.value()
         print xa.var()
         print xa
+        print
+
+
+for i in range(slen):
+    vf.feed((10,1))
+    maf.feed((10,1))
+
+print vf.value(), maf.value()
+
+for i in range(slen):
+    vf.feed((20,1))
+    maf.feed((20,1))
+    print math.sqrt(vf.value()), maf.value()
+
+

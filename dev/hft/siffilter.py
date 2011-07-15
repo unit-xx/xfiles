@@ -42,12 +42,28 @@ class FuncFilter(filter):
     def feed(self, x):
         self._value = self.func(x)
 
+class MedianFilter(filter):
+    def __init__(self, slen):
+        filter.__init__(self)
+        self.slen = slen
+        self.medpos = -(int)(slen/2)
+        self.vbuf = []
+
+    def feed(self, x):
+        # update _value and truncate data
+        self.vbuf.append(x)
+        del self.vbuf[0:-self.slen]
+        self.vbuf.sort()
+        if len(self.vbuf) >= self.slen:
+            self._value = self.vbuf[self.medpos]
+
 class WMAFilter(filter):
     TRUNCMAX = 4
-    def __init__(self, slen):
+    def __init__(self, slen, delay=0):
         filter.__init__(self)
         self.trunclimit = self.TRUNCMAX * slen
         self.slen = slen
+        self.delay = delay
         self.vbuf = []
         self.wbuf = []
         self.vwbuf = []
@@ -150,10 +166,19 @@ class DirectionFilter(filter):
         self.fmap["xvar"].feed((x,1))
         self.fmap["yvar"].feed((y,1))
         try:
-            beta = self.fmap["cov"].value()/self.fmap["xvar"].value()
-            corr = self.fmap["cov"].value()/math.sqrt(self.fmap["xvar"].value()*
-                    self.fmap["yvar"].value())
-            self._value = (beta, corr)
+            cov = self.fmap["cov"].value()
+            if cov < 1e-6 and cov > -1e-6:
+                beta = 0.0
+                corr = 0.0
+            else:
+                beta = self.fmap["cov"].value()/self.fmap["xvar"].value()
+                corr = self.fmap["cov"].value()/math.sqrt(self.fmap["xvar"].value()*
+                        self.fmap["yvar"].value())
+                # a hack into VarianceFilter to get average value
+                xavg = self.fmap["xvar"].fmap["p"].value()
+                yavg = self.fmap["yvar"].fmap["p"].value()
+                alpha = yavg - beta*xavg
+                self._value = (alpha, beta, corr)
         except TypeError:
             pass
 
