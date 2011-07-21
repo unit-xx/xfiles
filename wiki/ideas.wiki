@@ -6,3 +6,5 @@
   * news driven trading
   * predict trends by consider bond/SHIBOR/etc. indicators.
   * migrate between future contracts, equivalent to spread arbi.
+  * consider: 1) reaction among futures and index 2) find critical price
+  * reduce beta
