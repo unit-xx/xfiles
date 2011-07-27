@@ -12,7 +12,7 @@ set origin 0.0, 0.0
 set ytics nomirror
 set y2tics autofreq
 #plot 'tmp' every ::6000::7000 using 1:3 with line  title 'corr', 'tmp' every ::6000::7000 using 1:($2*10) with line title 'beta x 10', 'tmp' every ::6000::7000 using 1:(0) with line title 'zerobeta'
-load 'tmp.arrow'
+#load 'tmp.arrow'
 plot [0:]  'tmp' using 1:3 axis x1y2 with line title 'corr', 'tmp' using 1:2 with line title 'beta', 'tmp' using 1:4 with line title 'beta-long', 'tmp' using 1:(tan(2*atan($4)-atan($2))) with line title 'beta-delayed', 'tmp' using 1:(0) with line lt 1 lc rgb 'red' notitle
 
 # 'tmp' using 1:(0) axis x1y2 with line lc rgb 'red' notitle
@@ -30,7 +30,7 @@ set ytics 5
 #set mytics 5
 #set yrange [185:200]
 #plot 'tmp' every ::6000::7000 using 1:($5-2700) with line title 'price'
-load 'tmp.arrow'
+#load 'tmp.arrow'
 plot [0:] 'tmp' using 1:8 axis x1y2 with impulses lt 1 lc rgb 'cyan' title 'dv', 'tmp' using 1:(20*$10/$9) axis x1y2 with line title '20 x dv-MA/dv-20minMA' lc rgb 'blue', 'tmp' using 1:7 with line title 'price' lc rgb 'black' lt 1
 
 # 'tmp' using 1:7 axis x1y2 with line lc rgb 'purple' title 'dv-MA', 

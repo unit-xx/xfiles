@@ -1,3 +1,6 @@
+# sample stock price and get average price for a day.
+# read data from stockyyyymmdd.log file
+
 import os, sys, glob, gzip
 from datetime import datetime, timedelta
 
@@ -5,13 +8,17 @@ from siffilter import *
 
 scodefn = sys.argv[1]
 # analysis windows size
-wsize = int(sys.argv[2])
-stockqdir = sys.argv[3]
+stockqdir = sys.argv[2]
 
 def sampledavg(qfile, scodes, sintval=timedelta(0,1800)):
-    year = int(qfile[-15:-11])
-    month = int(qfile[-11:-9])
-    day = int(qfile[-9:-7])
+    # sampled average price with quotes in qfile and stock code in scodes
+    if qfile.endswith(".gz"):
+        datebase = -15
+    else:
+        datebase = -12
+    year = int(qfile[datebase:datebase+4])
+    month = int(qfile[datebase+4:datebase+6])
+    day = int(qfile[datebase+6:datebase+8])
     qday = datetime(year, month, day)
     # pass Saturday and Sunday
     if qday.weekday() in (5,6):
@@ -36,7 +43,10 @@ def sampledavg(qfile, scodes, sintval=timedelta(0,1800)):
         ts = ts + sintval
     #print samplets
 
-    f = gzip.open(qfile) # ignore open failure...
+    if qfile.endswith(".gz"):
+        f = gzip.open(qfile) # ignore open failure...
+    else:
+        f = open(qfile)
     tick = None
     tsindex = -1
     sampletime = 0
@@ -93,14 +103,17 @@ def sampledavg(qfile, scodes, sintval=timedelta(0,1800)):
                     # not empty line
                     pass
                 scode = tmp[0]
-                sname = tmp[1]
+                #sname = tmp[1]
                 if scode in scodes:
-                    if scode == "000300":
+                    if scode == "000300":# indexes
                         price = float(tmp[7])
                     elif scode.startswith("00"):
                         price = float(tmp[4])
                     elif scode.startswith("60"):
                         price = float(tmp[7])
+
+                    if price < 1e-6: # stock closed
+                        price = float(tmp[2])
                     psums[scode] += price
     f.close()
 
@@ -111,21 +124,23 @@ def sampledavg(qfile, scodes, sintval=timedelta(0,1800)):
         pavgs = dict()
         for s in scodes:
             pavgs[s] = psums[s]/(sampletime+0.0)
-        return pavgs
+        return qday.date(), pavgs
 
 
 if __name__=="__main__":
-    #sqs = glob.glob(stockqdir+os.sep+"stock*.log.gz")
-    sqs = glob.glob(stockqdir+os.sep+"stock20110714.log.gz")
+    sqs = glob.glob(stockqdir+os.sep+"stock*.log.gz")
+    #sqs = glob.glob(stockqdir+os.sep+"stock201107*.log")
     sqs.sort()
 
     scodes = [x.strip() for x in open(scodefn)]
-    df = DirectionFilter(wsize)
+    print "#date, %s" % ", ".join(scodes)
     for qf in sqs:
         # go through the quotes in that day for scode, and 
         # get sampled average price
-        ap = sampledavg(qf, scodes)
-        print ap
+        qdate, ap = sampledavg(qf, scodes)
+        print qdate, 
+        for s in scodes:
+            print "%.2f"%ap[s],
+        print
 
-        #df.feed((baseap,ap))
 

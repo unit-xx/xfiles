@@ -42,6 +42,19 @@ class FuncFilter(filter):
     def feed(self, x):
         self._value = self.func(x)
 
+class DiffRatioFilter(filter):
+    def __init__(self):
+        filter.__init__(self)
+        self.lastv = None
+
+    def feed(self, x):
+        if self.lastv is not None:
+            try:
+                self._value = x/float(self.lastv) - 1
+            except ZeroDivisionError:
+                self._value = float("Inf")
+        self.lastv = x
+
 class MedianFilter(filter):
     def __init__(self, slen):
         filter.__init__(self)
@@ -172,13 +185,12 @@ class DirectionFilter(filter):
                 corr = 0.0
             else:
                 beta = self.fmap["cov"].value()/self.fmap["xvar"].value()
-                corr = self.fmap["cov"].value()/math.sqrt(self.fmap["xvar"].value()*
-                        self.fmap["yvar"].value())
-                # a hack into VarianceFilter to get average value
-                xavg = self.fmap["xvar"].fmap["p"].value()
-                yavg = self.fmap["yvar"].fmap["p"].value()
-                alpha = yavg - beta*xavg
-                self._value = (alpha, beta, corr)
+                corr = self.fmap["cov"].value()/math.sqrt(self.fmap["xvar"].value()* self.fmap["yvar"].value())
+            # a hack into VarianceFilter to get average value
+            xavg = self.fmap["xvar"].fmap["p"].value()
+            yavg = self.fmap["yvar"].fmap["p"].value()
+            alpha = yavg - beta*xavg
+            self._value = (alpha, beta, corr)
         except TypeError:
             pass
 

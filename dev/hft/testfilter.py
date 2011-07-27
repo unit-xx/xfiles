@@ -29,9 +29,12 @@ for i in range(slen*1):
     if df.value() is not None:
         alpha, beta, corr = df.value()
         slope, intercept, r_value, p_value, std_err = stats.linregress(xa,ya)
+        slope2, intercept2, r_value2, p_value2, std_err2 = stats.linregress(ya,xa)
         print "lnreg:"
         print alpha, beta, corr
         print intercept, slope, r_value
+        print intercept2, slope2, r_value2
+        print slope2*slope
         print
 
     if vf.value() is not None:
@@ -40,6 +43,7 @@ for i in range(slen*1):
         print xa
         print
 
+sys.exit(1)
 
 for i in range(slen):
     vf.feed((10,1))

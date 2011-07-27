@@ -1,3 +1,5 @@
+# direction analysis of HS300 futures
+# data source: siqyyyymmdd.log
 import sys
 import random
 import time
@@ -7,7 +9,7 @@ from siffilter import *
 
 slen = int(sys.argv[1])
 fn = sys.argv[2]
-TARGET = "1107"
+TARGET = "1108"
 
 df = DirectionFilter(slen)
 dflong = DirectionFilter(2*slen)
@@ -57,7 +59,7 @@ for line in open(fn):
                             math.sqrt(vardv.value()), meddv.value(),
                     if df2.value() is not None:
                         alpha2, beta2, corr2 = df2.value()
-                        print beta2, corr2
+                        print beta2, corr2,
                     else:
                         print 0, 0,
                     print float(t[10]) - float(t[8]) # bid-ask spread
