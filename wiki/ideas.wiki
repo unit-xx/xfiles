@@ -13,4 +13,6 @@
 
   * news driven trading
   * predict trends by consider bond/SHIBOR/etc. indicators.
-  * consider: 1) reaction among futures and index, futures and stocks, futures and futures 2) find critical price, i.e. stop-loss point.
+  * reaction among futures and index, futures and stocks, futures and futures 
+  * find critical price, i.e. stop-loss point.
+  * open interests and price trends. when open interest reverse, price may reverse.
