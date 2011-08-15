@@ -16,3 +16,4 @@
   * reaction among 1) futures and index, 2) futures and stocks, 3) futures and futures 
   * find critical price, i.e. stop-loss point.
   * open interests and price trends, e.g., when open interest reverse, price may reverse.
+  * price change + trade volume + open interest change
