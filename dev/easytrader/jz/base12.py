@@ -396,7 +396,7 @@ class LoginResp(response):
 
 class CapitalQueryReq(request):
     code = "502"
-    paramlist = ["user_code", "account", "currency"]
+    paramlist = ["user_code", "user_roles", "account", "currency"]
 
 class CapitalQueryResp(response):
     pass

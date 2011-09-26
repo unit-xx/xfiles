@@ -441,7 +441,7 @@ def main(args):
     ptfmodel = trdTablemodel.TradeTableModel_dd(ptfdata)
 
     # start master socket server
-    mserver = masterServer( ("127.0.0.1", config.getint(MYSEC, "port")),
+    mserver = masterServer( ("", config.getint(MYSEC, "port")),
             masterHandler,
             csockmap, ptfmodel, ptfdata)
     t = Thread(target=mserver.serve_forever)
