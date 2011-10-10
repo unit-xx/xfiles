@@ -939,7 +939,7 @@ background-color: rgb(85, 255, 0);</string>
           <string> %</string>
          </property>
          <property name="decimals">
-          <number>1</number>
+          <number>2</number>
          </property>
          <property name="minimum">
           <double>0.000000000000000</double>
@@ -1014,7 +1014,7 @@ background-color: rgb(85, 255, 0);</string>
           <string> %</string>
          </property>
          <property name="decimals">
-          <number>1</number>
+          <number>2</number>
          </property>
          <property name="minimum">
           <double>-10000.000000000000000</double>
