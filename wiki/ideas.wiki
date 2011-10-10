@@ -5,7 +5,7 @@
   * reduce beta, select max-variance alpha
 
 ==HFT==
-fat tail, intermittency, hurst exponet
+fat tail, intermittency, hurst exponent
 
 ==spec==
   * jitter (mm in essence)
