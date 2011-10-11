@@ -26,6 +26,97 @@
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout_9">
+    <item row="4" column="0" colspan="11">
+     <widget class="QTabWidget" name="tabWidget_2">
+      <property name="currentIndex">
+       <number>0</number>
+      </property>
+      <widget class="QWidget" name="tab_5">
+       <attribute name="title">
+        <string>组合详情</string>
+       </attribute>
+       <layout class="QGridLayout" name="gridLayout_6">
+        <item row="0" column="0">
+         <widget class="QTableView" name="stock">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="tab_6">
+       <attribute name="title">
+        <string>操作日志</string>
+       </attribute>
+       <layout class="QGridLayout" name="gridLayout_12">
+        <item row="1" column="0" colspan="2">
+         <widget class="QPlainTextEdit" name="logtext">
+          <property name="lineWrapMode">
+           <enum>QPlainTextEdit::WidgetWidth</enum>
+          </property>
+          <property name="readOnly">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="0">
+         <widget class="QPushButton" name="loadlogbtn">
+          <property name="text">
+           <string>load</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <spacer name="horizontalSpacer_4">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>40</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="tab_7">
+       <attribute name="title">
+        <string>账户信息</string>
+       </attribute>
+       <layout class="QGridLayout" name="gridLayout_11">
+        <item row="0" column="0">
+         <widget class="QPushButton" name="geninfobtn">
+          <property name="text">
+           <string>refresh</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <spacer name="horizontalSpacer_5">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>967</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item row="1" column="0" colspan="2">
+         <widget class="QTextEdit" name="accntinfotext"/>
+        </item>
+       </layout>
+      </widget>
+     </widget>
+    </item>
     <item row="0" column="0" colspan="12">
      <widget class="QTabWidget" name="optab">
       <property name="sizePolicy">
@@ -1221,67 +1312,6 @@ background-color: rgb(85, 255, 0);</string>
       </property>
      </widget>
     </item>
-    <item row="4" column="0" colspan="11">
-     <widget class="QTabWidget" name="tabWidget_2">
-      <property name="currentIndex">
-       <number>0</number>
-      </property>
-      <widget class="QWidget" name="tab_5">
-       <attribute name="title">
-        <string>组合详情</string>
-       </attribute>
-       <layout class="QGridLayout" name="gridLayout_6">
-        <item row="0" column="0">
-         <widget class="QTableView" name="stock">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </widget>
-      <widget class="QWidget" name="tab_6">
-       <attribute name="title">
-        <string>操作日志</string>
-       </attribute>
-       <layout class="QGridLayout" name="gridLayout_12">
-        <item row="1" column="0" colspan="2">
-         <widget class="QPlainTextEdit" name="logtext">
-          <property name="lineWrapMode">
-           <enum>QPlainTextEdit::WidgetWidth</enum>
-          </property>
-          <property name="readOnly">
-           <bool>true</bool>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="0">
-         <widget class="QPushButton" name="loadlogbtn">
-          <property name="text">
-           <string>load</string>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="1">
-         <spacer name="horizontalSpacer_4">
-          <property name="orientation">
-           <enum>Qt::Horizontal</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>40</width>
-            <height>20</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
-       </layout>
-      </widget>
-     </widget>
-    </item>
     <item row="4" column="11" colspan="2">
      <widget class="QTabWidget" name="tabstat">
       <property name="maximumSize">
@@ -1481,6 +1511,24 @@ background-color: rgb(85, 255, 0);</string>
      </widget>
     </item>
    </layout>
+   <zorder>tabWidget_2</zorder>
+   <zorder>optab</zorder>
+   <zorder>sifquick</zorder>
+   <zorder>stockindex</zorder>
+   <zorder>groupBox_3</zorder>
+   <zorder>label_15</zorder>
+   <zorder>bostatusline</zorder>
+   <zorder>label_19</zorder>
+   <zorder>buytotalline</zorder>
+   <zorder>label_34</zorder>
+   <zorder>buypointline</zorder>
+   <zorder>label_18</zorder>
+   <zorder>selltotalline</zorder>
+   <zorder>label_35</zorder>
+   <zorder>sellpointline</zorder>
+   <zorder>label_17</zorder>
+   <zorder>posnameline</zorder>
+   <zorder>tabstat</zorder>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="enabled">
