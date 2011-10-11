@@ -171,7 +171,7 @@ def main(args):
     pstat.username = username
 
     # main window
-    uic = uicontrol(session_config, p, pmodel, sindexmodel, opennew)
+    uic = uicontrol(session_config, jsd_sessioncfg, p, pmodel, sindexmodel, opennew)
     uic.setup()
 
     # setup logging

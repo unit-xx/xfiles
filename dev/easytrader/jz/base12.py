@@ -477,6 +477,12 @@ class UserInfoReq(request):
 class UserInfoResp(response):
     pass
 
+class StockQuoteReq(request):
+    code = '401'
+    paramlist = ['market', 'secu_code']
+
+class StockQuoteResp(response):
+    pass
 
 class BatchOrderReq(request):
     code = "303600"

@@ -3936,10 +3936,11 @@ class dbserver(Thread):
         self.runflag = False
 
 class uicontrol(QMainWindow, tradeui.Ui_MainWindow):
-    def __init__(self, session_cfg, portfolio, pmodel, sindexmodel, opennew):
+    def __init__(self, session_cfg, jsdcfg, portfolio, pmodel, sindexmodel, opennew):
         QMainWindow.__init__(self)
         self.mainwindow = self#for backward code compatibility
         self.session_cfg = session_cfg
+        self.jsdcfg = jsdcfg
         self.portfolio = portfolio
         self.pmodel = pmodel
         self.sindexmodel = sindexmodel
@@ -4346,7 +4347,7 @@ class uicontrol(QMainWindow, tradeui.Ui_MainWindow):
 
     @pyqtSlot()
     def showstockinfo(self):
-        sqdlg = stockquerydlg(self.session_cfg)
+        sqdlg = stockquerydlg(self.session_cfg, self.jsdcfg)
         if sqdlg.setup():
             sqdlg.show()
             sqdlg.activateWindow()

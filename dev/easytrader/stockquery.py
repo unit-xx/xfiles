@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
-import jz
+import jz, jsd
 import sys, csv
 from stockqueryui import Ui_stockquery
 import easytrader_lib
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
+from util import calsicontracts, incmonth
+import datetime
 
 class StockInfoModel(QAbstractTableModel):
     def __init__(self, header, headermap, data, parent=None):
@@ -52,9 +54,10 @@ class StockInfoModel(QAbstractTableModel):
                 self.index(rowindex,self.columnCount()-1))
 
 class stockquerydlg(QDialog, Ui_stockquery):
-    def __init__(self, sessioncfg):
+    def __init__(self, sessioncfg, jsdcfg):
         QDialog.__init__(self)
         self.sessioncfg = sessioncfg
+        self.jsdcfg = jsdcfg
 
         self.siattr = ["market", "secu_name", "secu_code", "share_bln",
                 "share_avl", "share_trd_frz", "share_otd",
@@ -88,12 +91,143 @@ class stockquerydlg(QDialog, Ui_stockquery):
 
         self.session = jz.session(self.sessioncfg)
         if not self.session.setup():
-            print "Cannot login"
+            print "Cannot login jz"
             return False
+
+        self.jsdsession = jsd.session(self.jsdcfg)
+        if not self.jsdsession.setup():
+            print "Cannot login jsd"
+            return False
+
         return True
+
+    def getaccinfo(self):
+        # 股票：可用、市值、资产、可以建仓数
+        # 期货：保证金、动态权益、持仓、支撑上涨比率
+
+        # username
+        self.accinfotext.append(QString("==== %s =====" % datetime.datetime.today().ctime()))
+        self.accinfotext.append(QString(''))
+
+        username = ""
+
+        uireq = jz.UserInfoReq(self.session)
+        uireq["user_code"] = self.session["user_code"]
+        uireq.send()
+        uiresp = jz.UserInfoResp(self.session)
+        uiresp.recv()
+        username = ""
+        if uiresp.retcode == "0":
+            username = uiresp.records[0]["USER_NAME"]#.decode("GBK")
+        self.accinfotext.append(QString(u"用户：%s" % username))
+        self.accinfotext.append(QString(u""))
+
+        # current quote of HS300 and futures
+        hs300q = 0.0
+        ifq0 = 0.0
+        ifq1 = 0.0
+
+        sireq = jz.StockQuoteReq(self.session)
+        sireq["market"] = jz.SHAMARKET
+        sireq["secu_code"] = '000300'
+        sireq.send()
+        siresp = jz.StockQuoteResp(self.session)
+        siresp.recv()
+        if siresp.retcode == "0":
+            hs300q = float(siresp.records[0]["ZJCJ"])
+
+        sifc = calsicontracts()
+        hqreq = jsd.QueryHQReq(self.jsdsession)
+        hqreq["exchcode"] = self.jsdsession["cffexcode"]
+        hqreq["code"] = sifc[0]
+        hqreq.send()
+        hqresp = jsd.QueryHQResp(self.jsdsession)
+        hqresp.recv()
+        if hqresp.anwser == "Y":
+            ifq0 = float(hqresp.records[0][9])
+        hqreq = jsd.QueryHQReq(self.jsdsession)
+        hqreq["exchcode"] = self.jsdsession["cffexcode"]
+        hqreq["code"] = sifc[1]
+        hqreq.send()
+        hqresp = jsd.QueryHQResp(self.jsdsession)
+        hqresp.recv()
+        if hqresp.anwser == "Y":
+            ifq1 = float(hqresp.records[0][9])
+
+        self.accinfotext.append(QString(u"行情："))
+        self.accinfotext.append(QString(u"   HS300: %.2f %s: %.2f %s: %.2f" % (hs300q, sifc[0], ifq0, sifc[1], ifq1)))
+        self.accinfotext.append(QString(u""))
+
+        # stock capital
+        stkcap = 0.0
+        stkcash = 0.0
+        stkmktval = 0.0
+        openable = 0.0
+
+        cqreq = jz.CapitalQueryReq(self.session)
+        cqreq["user_code"] = self.session["user_code"]
+        cqreq["currency"] = "0"#rmb
+        cqreq.send()
+        cqresp = jz.CapitalQueryResp(self.session)
+        cqresp.recv()
+        stkcap = 0.0
+        if cqresp.retcode == "0":
+            stkcap = float(cqresp.records[0]["ASSERT_VAL"])
+            stkcash = float(cqresp.records[0]["AVAILABLE"])
+            stkmktval = float(cqresp.records[0]["MKT_VAL"])
+            openable = stkcash/300/hs300q
+
+        self.accinfotext.append(QString(u"股票："))
+        self.accinfotext.append(QString(u"    资产：%.2f 市值：%.2f 可用资金：%.2f 市值+可用：%.2f 可开手数：%.2f" % (stkcap, stkmktval, stkcash, stkmktval+stkcash, openable)))
+        self.accinfotext.append(QString(u""))
+
+        # futures
+        tcinforeq = jsd.TradeCapInfoReq(self.jsdsession)
+        tcinforeq.send()
+        tcinforesp = jsd.TradeCapInfoResp(self.jsdsession)
+        tcinforesp.recv()
+        margin = 0.0
+        fcash = 0.0
+        gl = 0.0
+        dynequity = 0.0
+        uplimit0 = 0.0
+        uplimit1 = 0.0
+        if tcinforesp.anwser == "Y":
+            resp = tcinforesp.records[0]
+            margin = float(resp[21])
+            fcash = float(resp[9])
+            gl = float(resp[14])
+            dynequity = float(resp[10])
+            uplimit0 = (dynequity*hs300q/(stkcash+stkmktval)/ifq0 - 0.17)/1.17
+            uplimit1 = (dynequity*hs300q/(stkcash+stkmktval)/ifq0 - 0.17)/1.17
+        self.accinfotext.append(QString(u"期货："))
+        self.accinfotext.append(QString(u"    保证金：%.2f 可用资金：%.2f 动态权益：%.2f" % (margin, fcash, dynequity)))
+        self.accinfotext.append(QString(u"    支持%s上涨：%.2f%% 支持%s上涨：%.2f%%" % (sifc[0], uplimit0*100, sifc[1], uplimit1*100)))
+        self.accinfotext.append(QString(u""))
+
+        posreq = jsd.QueryPosReq(self.jsdsession)
+        posreq.send()
+        posresp = jsd.QueryPosResp(self.jsdsession)
+        posresp.recv()
+        pos ={}
+        if posresp.anwser == "Y":
+            for resp in posresp.records:
+                code = resp[2]
+                pos.setdefault(code, [0,0])
+                if resp[4] != "":#long positions
+                    pos[code][0] += int(resp[4])
+                if resp[6] != "":#long positions
+                    pos[code][1] += int(resp[6])
+        self.accinfotext.append(QString(u"期货持仓："))
+        for p in pos:
+            self.accinfotext.append(QString(u"    代码：%s 买：%d 卖：%d" % (p, pos[p][0], pos[p][1])))
+        self.accinfotext.append(QString(u""))
+
 
     @pyqtSlot()
     def on_refresh_clicked(self):
+        self.getaccinfo()
+
         sreq = jz.StockQueryReq(self.session)
         sreq["user_code"] = self.session["user_code"]
         sreq.send()
@@ -216,6 +350,7 @@ class stockquerydlg(QDialog, Ui_stockquery):
     @pyqtSlot()
     def on_quit_clicked(self):
         self.session.close()
+        self.jsdsession.close()
         self.done(0)
 
 def main(args):
@@ -223,13 +358,23 @@ def main(args):
     app = QApplication(args)
     session_config = {}
     session_config["tradedbfn"] = "tradeinfo.db"
-    session_config["jzserver"] = "172.18.20.52"
+    session_config["jzserver"] = ""
     session_config["jzport"] = 9100
-    session_config["jzaccount"] = "85804530"
+    session_config["jzaccount"] = ""
     session_config["jzaccounttype"] = "Z"
-    session_config["jzpasswd"] = "123444"
+    session_config["jzpasswd"] = ""
 
-    sqdlg = stockquerydlg(session_config)
+    jsdcfg = {}
+    jsdcfg["tradedbfn"] = "tradeinfo.db"
+    jsdcfg["jsdserver"] = ""
+    jsdcfg["jsdport"] = 17990
+    jsdcfg["jsdaccount"] = ""
+    jsdcfg["cffexcode"] = "D"
+    jsdcfg["branchcode"] = ""
+    jsdcfg["ordermethod"] = ""
+    jsdcfg["jsdpasswd"] = ""
+
+    sqdlg = stockquerydlg(session_config, jsdcfg)
     if sqdlg.setup():
         sqdlg.show()
         sqdlg.activateWindow()
