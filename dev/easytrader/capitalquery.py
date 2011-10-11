@@ -6,11 +6,11 @@ from datetime import datetime
 # config
 session_config = {}
 session_config["tradedbfn"] = "tradeinfo.db"
-session_config["jzserver"] = "172.18.20.52"
+session_config["jzserver"] = ""
 session_config["jzport"] = 9100
-session_config["jzaccount"] = "85804530"
+session_config["jzaccount"] = ""
 session_config["jzaccounttype"] = "Z"
-session_config["jzpasswd"] = "123444"
+session_config["jzpasswd"] = ""
 
 s = jz.session(session_config)
 if not s.setup():
@@ -19,6 +19,7 @@ if not s.setup():
 
 cqreq = jz.CapitalQueryReq(s)
 cqreq["user_code"] = s["user_code"]
+cqreq["account"] = s["account"]
 
 #qoreq["order_id"] = "17063324"
 # NOTE: use order_id in QueryOrderReq as biz_no in QueryOrder

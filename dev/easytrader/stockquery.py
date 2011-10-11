@@ -167,6 +167,7 @@ class stockquerydlg(QDialog, Ui_stockquery):
         cqreq = jz.CapitalQueryReq(self.session)
         cqreq["user_code"] = self.session["user_code"]
         cqreq["currency"] = "0"#rmb
+        cqreq["account"] = self.session["account"]
         cqreq.send()
         cqresp = jz.CapitalQueryResp(self.session)
         cqresp.recv()
