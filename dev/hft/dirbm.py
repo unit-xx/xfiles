@@ -13,9 +13,11 @@ for line in open(sys.argv[1]):
         continue
 
     tick = int(t[0])
-    beta, corr, betalong, corrlong, mafbete, p, dv, dvmalong, \
+    date, time = t[1:3]
+    beta, corr, betalong, corrlong, mafbete, p, \
+            dv, dvmalong, \
             dvma, dvsgm, dvmed, bcbeta, bccorr, basprd= \
-            [float(x) for x in t[1:]]
+            [float(x) for x in t[3:]]
 
     if posopen:
         # try close

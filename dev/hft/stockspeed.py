@@ -1,4 +1,5 @@
 # stock price changing speed should give hints to HS300 futures.
+# datasource: stockyyyymmdd.log
 import sys
 from datetime import datetime
 
@@ -9,13 +10,19 @@ if __name__=="__main__":
     stockqfn = sys.argv[2]
 
     scodes = [x.strip() for x in open(scodefn)]
+    try:
+        scodes.remove('000300')
+    except ValueError:
+        pass
     qf = open(stockqfn)
 
     tick = None
     tstart = None
     dirfs = {}
+    emafs = {}
     for s in scodes:
         dirfs[s] = DirectionFilter(12)
+        emafs[s] = EMAFilter(0.3)
 
     for line in qf:
         if line.startswith("==="):
@@ -37,9 +44,10 @@ if __name__=="__main__":
 
                 if dirfs[scodes[0]].value() is not None:
                     # should not be None for all dirfs
-                    alphas = [x.value()[1] for x in dirfs.values()]
-                    alphas.sort(reverse=True)
-                    print tick, " ".join("%.5f"%x for x in alphas[0:6])
+                    betas = [x.value() for x in emafs.values()]
+                    betas.sort(reverse=True)
+                    print tick, " ".join("%.6f"%x for x in betas[0:5]), \
+                            " ".join("%.6f"%x for x in betas[-5:])
 
         else:
             if tick == None:
@@ -56,4 +64,6 @@ if __name__=="__main__":
                     price = float(tmp[7])
 
                 dirfs[scode].feed(((tick-tstart).seconds, price))
+                if dirfs[scode].value() is not None:
+                    emafs[scode].feed(dirfs[scode].value()[1])
 

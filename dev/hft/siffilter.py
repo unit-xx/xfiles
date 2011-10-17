@@ -70,6 +70,35 @@ class MedianFilter(filter):
         if len(self.vbuf) >= self.slen:
             self._value = self.vbuf[self.medpos]
 
+class EMAFilter(filter):
+    def __init__(self, lmbda):
+        filter.__init__(self)
+        self.lmbda = lmbda
+        self._value = None
+
+    def feed(self, x):
+        try:
+            self._value = self._value*(1-self.lmbda) + x*self.lmbda
+        except TypeError:
+            self._value = x
+
+class EMVariance(filter):
+    def __init__(self, lmbda):
+        filter.__init__(self)
+        self.lmbda = lmbda
+        self._value = None
+        self.p = None
+        self.p2 = None
+
+    def feed(self, x):
+        try:
+            self.p = self.p*(1-self.lmbda) + x*self.lmbda
+            self.p2 = self.p2*(1-self.lmbda) + x*x*self.lmbda
+        except TypeError:
+            self.p = x
+            self.p2 = x**2
+        self._value = self.p2 - self.p**2
+
 class WMAFilter(filter):
     TRUNCMAX = 4
     def __init__(self, slen, delay=0):

@@ -54,7 +54,9 @@ for line in open(fn):
                 df2.feed((beta, corr))
                 mafbeta.feed((beta, 1))
                 if mafbeta.value() is not None and mafdvlong.value() is not None:
-                    print lc, beta, corr, betalong, corrlong, mafbeta.value(), \
+                    dd = t[0]
+                    tt = t[1]
+                    print dd, tt, lc, beta, corr, betalong, corrlong, mafbeta.value(), \
                             p, dv, mafdvlong.value(), mafdv.value(), \
                             math.sqrt(vardv.value()), meddv.value(),
                     if df2.value() is not None:
