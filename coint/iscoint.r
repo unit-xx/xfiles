@@ -96,6 +96,7 @@ for (i in 1:(length(codes)-1))
 {
     for (j in (i+1):length(codes))
     {
+        print(c(codes[i], codes[j]))
         ret <- coint.test(codes[i], codes[j])
         allret <- rbind(allret, ret)
     }

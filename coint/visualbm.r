@@ -63,7 +63,7 @@ plotpair <- function (left, right, beta, smean, ssd, emean, esd, decay)
     s.zoo <- cbind(s.zoo, emean=emeanline)
 
     pdf(paste(left,right,'bm','pdf',sep='.'), width=11.7, height=8.3)
-    ylim = c(min(lower, elower, sprd), max(upper, eupper, sprd))
+    ylim = c(min(lower, elower, sprd, na.rm=TRUE), max(upper, eupper, sprd, na.rm=TRUE))
     plot(ylim=ylim, sprd)
     lines(s.zoo$upper, col='red')
     lines(s.zoo$lower, col='red')
@@ -122,7 +122,7 @@ plotpair2 <- function (left, right, beta, smean, ssd, emean, esd, decay)
     s.zoo <- cbind(s.zoo, emean=emeanline)
 
     pdf(paste(left,right,'bm2','pdf',sep='.'), width=17.55, height=8.3)
-    ylim = c(min(lower, elower, sprd), max(upper, eupper, sprd))
+    ylim = c(min(lower, elower, sprd, na.rm=TRUE), max(upper, eupper, sprd, na.rm=TRUE))
     plot(ylim=ylim, sprd)
     lines(s.zoo$upper, col='red')
     lines(s.zoo$lower, col='red')
@@ -148,8 +148,8 @@ for (i in 1:nrow(pttest))
     pvalue <- as.numeric(pttest[i,]$pvalue)
     smean <- as.numeric(pttest[i,]$smean)
     ssd <- as.numeric(pttest[i,]$ssd)
-    emean <- as.numeric(pttest[i,]$emean360)
-    esd <- as.numeric(pttest[i,]$esd360)
+    emean <- as.numeric(pttest[i,]$emean270)
+    esd <- as.numeric(pttest[i,]$esd270)
 
     if (pvalue < 0.06)
     {
@@ -158,6 +158,6 @@ for (i in 1:nrow(pttest))
         right <- tmp[2]
         print(c(left, right))
 
-        plotpair2(left, right, beta, smean, ssd, emean, esd, 90*2)
+        plotpair2(left, right, beta, smean, ssd, emean, esd, 90*3)
     }
 }
