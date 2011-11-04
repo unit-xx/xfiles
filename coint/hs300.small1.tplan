@@ -1,0 +1,18 @@
+#tag
+tag=small2
+
+# data dir: 000300.db etc.
+dbdir=hs300out
+
+# code file name
+codefn=hs300
+
+# coint test db, written by iscoint, read by visualbm
+cointdb=hs300.db
+
+# source of beta, NA for calc by lm, so don't use NA as tag
+betafrom=large
+
+# coint test start/end time
+testfrom=2011-01-01
+testto=2011-12-31

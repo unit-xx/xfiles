@@ -1,0 +1,22 @@
+#tag, usually it's the table name to write coint result
+tag=large
+
+# data dir: 000300.db etc.
+dbdir=hs300out
+
+# code file name
+codefn=hs300
+
+# coint test db, written by iscoint, read by visualbm
+cointdb=hs300.db
+
+# source of beta, NA for calc by lm, so don't use NA as tag
+betafrom=NA
+
+# coint test start/end time
+testfrom=2005-01-01
+testto=2010-12-31
+
+# visualbm start/end time
+visualfrom=2005-01-01
+visualto=2011-12-31

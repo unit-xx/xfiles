@@ -3,28 +3,75 @@
 # generate batch .in/.out samples for testing.
 
 import sys, csv, os
+import ConfigParser
+import sqlite3
 
 os.putenv('NLS_LANG', 'SIMPLIFIED CHINESE_CHINA.ZHS16GBK')
-#os.putenv('NLS_LANG', 'AL32UTF8')
 import cx_Oracle
 
 # TODO: read from config
-outdir = 'data'
-codefn = sys.argv[1]
-istart = '20010101'
-iend = '20101231'
-ostart = '20110101'
-oend = '20110930'
+SEC = 'main'
+c = ConfigParser.ConfigParser()
+c.read(sys.argv[1])
+o = dict(c.items(SEC))
+outdir = o['outdir']
+codefn = o['codefn']
+start = o['start']
+end = o['end']
 
-ip = '172.18.19.37'
-port = 1521
-sid = 'webdb1'
-user='beijing'
-passwd='beijing'
+ip = o['ip']
+port = int(o['port'])
+sid = o['sid']
+user = o['user']
+passwd = o['passwd']
 
-force=False # force overwrite old, otherwise skip existing sample
+force = bool(int(o['force']))
 
 def main():
+    q = """
+select 
+    F16_1090 as code
+    ,ob_object_name_1090 as name
+    ,F5_1120 as open
+    ,F8_1120 as close
+    ,F6_1120 as high
+    ,F7_1120 as low
+    ,F2_1120 as "DATE"
+    ,F9_1120 as vol
+    ,F11_1120 as turnover
+from wind.tb_object_1090,wind.TB_OBJECT_1120
+where
+    F16_1090=:code
+    and F1_1120=F2_1090
+    and F4_1090='S'
+    and F5_1120 is not NULL
+    --and rownum <=2
+order by "DATE"
+    """
+
+    createtbl = """
+CREATE TABLE IF NOT EXISTS data(
+code text,
+name text,
+open real,
+close real,
+high real,
+low real,
+date text NOT NULL PRIMARY KEY ASC,
+vol real,
+turnover real
+);
+    """
+
+    findexistdate = """
+SELECT date FROM data
+    """
+
+    insertdata = """
+INSERT OR REPLACE INTO data
+VALUES (?,?,?,?,?,?,?,?,?)
+    """
+
     dsn = cx_Oracle.makedsn(ip, port, sid)
     conn = cx_Oracle.connect(user, passwd, dsn)
     curs = conn.cursor()
@@ -39,68 +86,39 @@ def main():
 
     os.chdir(outdir)
 
-    q = """
-select 
-    F16_1090 as code
-    ,ob_object_name_1090 as name
-    ,F4_1120 as preclose
-    ,F5_1120 as open
-    ,F6_1120 as high
-    ,F7_1120 as low
-    ,F2_1120 as "DATE"
-    ,F9_1120 as vol
-    ,F11_1120 as turnover
-from wind.tb_object_1090,wind.TB_OBJECT_1120
-where
-    F16_1090=:code
-    and F1_1120=F2_1090
-    and F4_1090='S'
-    and F4_1120 is not NULL
-    --and rownum <=2
-order by "DATE"
-    """
     for code in scodes:
         print code, '...',
 
-        ifn = code+'.in'
-        ofn = code+'.out'
-        if os.path.exists(ifn) or os.path.exists(ofn):
-            if not force:
-                print 'skipped'
-                continue
-            else:
-                print '(overwrite old sample)',
+        # create table if not exists
+        dbn = code+'.db'
+        db = sqlite3.connect(dbn)
+        c = db.cursor()
+        c.execute(createtbl)
 
-        iff = open(ifn, 'wb')
-        off = open(ofn, 'wb')
-        iwriter = csv.writer(iff)
-        owriter = csv.writer(off)
+        existdate = []
+        if force == False:
+            # need to find existing quotes' date
+            c.execute(findexistdate)
+            existdate = [x[0] for x in c.fetchall()]
+        #print existdate
 
-        #print q
+        # get data from wind db
         curs.execute(q, {'code':code})
-        #print conn.encoding
-        #print curs.description
 
-        # write headers
-        dateindex = 0
-        tmp = []
-        for i, d in enumerate(curs.description):
-            tmp.append(d[0])
-            if d[0] == 'DATE':
-                dateindex = i
-        iwriter.writerow(tmp)
-        owriter.writerow(tmp)
+        dateindex = 6
 
-        # write data
-        for row in curs:
-            rdate = row[dateindex]
-            if rdate >= istart and rdate <= iend:
-                iwriter.writerow(row)
-            if rdate >= ostart and rdate <= oend:
-                owriter.writerow(row)
+        rst = curs.fetchall()
+        toinsert = []
+        for r in rst:
+            if r[dateindex] not in existdate:
+                r = [x for x in r]
+                r[1] = r[1].decode('GBK')
+                toinsert.append(r)
+        print '(insert %d lines)'%len(toinsert) ,
+        c.executemany(insertdata, toinsert)
 
-        iff.close()
-        off.close()
+        db.commit()
+        db.close()
 
         print 'done'
 

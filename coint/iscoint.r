@@ -1,47 +1,42 @@
 # gen input sample files names
 library(zoo)
 library(tseries)
+library(RSQLite)
 
-ema <- function (x, lambda = 0.1, startup = 0)
+source('util.r')
+
+coint.test <- function (dbdrv, left, right, startdate, enddate, beta=NA)
 {
-    y = as.vector(x)
-    if (lambda >= 1) 
-        lambda = 2/(lambda + 1)
-    if (startup == 0) 
-        startup = floor(2/lambda)
-    if (lambda == 0) {
-        ema = rep(mean(x), length(x))
-    }
-    if (lambda > 0) {
-        ylam = y * lambda
-        ylam[1] = mean(y[1:startup])
-        ema = filter(ylam, filter = (1 - lambda), method = "rec")
-    }
-    x = as.vector(ema)
-    x
-}
+    con <- dbConnect(drv, dbname = paste(left, 'db', sep='.'))
+    s1 <- dbReadTable(con, 'data')
+    dbDisconnect(con)
+    Encoding(s1$name) = 'UTF-8'
+    s1_date <- as.Date(as.character(s1$date), '%Y%m%d')
 
-coint.test <- function (left, right)
-{
-    s1 <- read.csv(paste(left,'in',sep='.'), stringsAsFactors=F)
-    s1_date <- as.Date(as.character(s1$DATE), '%Y%m%d')
+    con <- dbConnect(drv, dbname = paste(right, 'db', sep='.'))
+    s2 <- dbReadTable(con, 'data')
+    dbDisconnect(con)
+    Encoding(s2$name) = 'UTF-8'
+    s2_date <- as.Date(as.character(s2$date), '%Y%m%d')
 
-    s2 <- read.csv(paste(right,'in',sep='.'), stringsAsFactors=F)
-    s2_date <- as.Date(as.character(s2$DATE), '%Y%m%d')
-
-    left.name = s1$NAME[1]
-    right.name = s2$NAME[1]
-    s1 <- zoo(s1$PRECLOSE, s1_date)
-    s2 <- zoo(s2$PRECLOSE, s2_date)
+    left.name = s1$name[1]
+    right.name = s2$name[1]
+    s1 <- zoo(s1$close, s1_date)
+    s2 <- zoo(s2$close, s2_date)
 
     s.zoo <- merge(s1, s2, all=FALSE)
-#s.zoo <- window(s.zoo, start=as.Date('2008-01-01'))
+    s.zoo <- window(s.zoo, start=startdate, end=enddate)
     s <- as.data.frame(s.zoo)
 
     #cat("Date range is", format(start(s.zoo)), "to", format(end(s.zoo)), "\n")
 
-    m <- lm(s$s1 ~ s$s2 + 0)#, data=s)
-    beta <- coef(m)[1]
+    beta_isext = TRUE
+    if (is.na(beta))
+    {
+        beta_isext = FALSE
+        m <- lm(as.vector(s$s1) ~ as.vector(s$s2) + 0)#, data=s)
+        beta <- coef(m)[1]
+    }
 
     #cat("Assumed hedge ratio is", beta, "\n")
 
@@ -60,54 +55,75 @@ coint.test <- function (left, right)
     smean <- mean(sprd)
     ssd <- sd(sprd)
 
-    cc <- 2.8854
+    # calculate half-life time of reversion
+    hlife = ouhlife(sprd)
 
-    emean90 <- tail(ema(sprd, lambda=cc*90),1)
-    emean90sqr <- tail(ema(sprd**2, lambda=cc*90),1)
-    esd90 <- sqrt(emean90sqr - emean90**2)
-
-    emean180 <- tail(ema(sprd, lambda=cc*180),1)
-    emean180sqr <- tail(ema(sprd**2, lambda=cc*180),1)
-    esd180 <- sqrt(emean180sqr - emean180**2)
-
-    emean270 <- tail(ema(sprd, lambda=cc*270),1)
-    emean270sqr <- tail(ema(sprd**2, lambda=cc*270),1)
-    esd270 <- sqrt(emean270sqr - emean270**2)
-
-    emean360 <- tail(ema(sprd, lambda=cc*360),1)
-    emean360sqr <- tail(ema(sprd**2, lambda=cc*360),1)
-    esd360 <- sqrt(emean360sqr - emean360**2)
-
-    info <- c(paste(left,right,sep='.'), paste(left.name, right.name, sep='.'), beta, ht$p.value, smean, ssd, emean90, esd90, emean180, esd180, emean270, esd270, emean360, esd360)
-    #print(info)
+    info <- as.data.frame(list(cpair=paste(left,right,sep='.'),
+                 npair=paste(left.name, right.name, sep='.'), 
+                 beta=beta, 
+                 beta_isext=beta_isext,
+                 pvalue=ht$p.value, 
+                 hlife=hlife,
+                 smean=smean,
+                 ssd=ssd,
+                 startdate=format(startdate),
+                 enddate=format(enddate)),
+                 stringsAsFactors=FALSE)
     info
     #list(info=info,spread=sprd)
 }
 
 args <- commandArgs(TRUE)
+if (length(args) < 1) stop("iscoint plan-file")
+
 print(args)
-codes <- read.table(args[1], colClasses="character")#, fileEncoding='GB2312')
+plan <- read.table(args[1], row.names=1, sep='=', colClasses='character', strip.white=TRUE)
+
+codes <- read.table(plan['codefn',1], colClasses="character")
 codes <- codes[,1]
-#print(length(codes))
-#print(codes)
-setwd('data')
-allret <- matrix(, nrow=0, ncol = 14, dimnames=list(c(),c('cpair', 'npair', 'beta', 'pvalue', 'smean', 'ssd', 'emean90', 'esd90', 'emean180', 'esd180', 'emean270', 'esd270', 'emean360', 'esd360')))
+allret <- data.frame(stringsAsFactors=FALSE)
+startdate = as.Date(plan['testfrom',1])
+enddate = as.Date(plan['testto',1])
+
+drv = dbDriver('SQLite')
+con <- dbConnect(drv, plan['cointdb',1])
+
+betas = NULL
+if (!is.na(plan['betafrom',1]))
+{
+    betas = dbGetQuery(con, paste('select cpair, beta from', plan['betafrom',1]))
+}
+dbDisconnect(con)
+
+setwd(plan['dbdir',1])
 for (i in 1:(length(codes)-1))
 {
     for (j in (i+1):length(codes))
     {
         print(c(codes[i], codes[j]))
-        ret <- coint.test(codes[i], codes[j])
+        if (is.null(betas))
+        {
+            ret <- coint.test(drv, codes[i], codes[j], startdate, enddate)
+        }
+        else
+        {
+            cpair = paste(codes[i], codes[j], sep='.')
+            beta = betas$beta[which(betas$cpair == cpair)]
+            ret <- coint.test(drv, codes[i], codes[j], startdate, enddate, beta)
+        }
         allret <- rbind(allret, ret)
     }
 }
 setwd('..')
-#print(allret)
 print(NROW(allret))
 print(NCOL(allret))
-write.csv(allret, file=args[2], row.names=FALSE)
-#print(allret[order(allret[,4]),])
 
-#pdf('09-13.pdf', width=11.7, height=8.3)
-#plot(s.zoo$s1-beta*s.zoo$s2)
-#dev.off()
+tag <- plan['tag',1]
+con <- dbConnect(drv, plan['cointdb',1])
+s1 <- dbWriteTable(con, tag, allret, row.names=FALSE, overwrite=TRUE)
+dbCommit(con)
+dbDisconnect(con)
+dbUnloadDriver(drv)
+
+warnings()
+#print(allret[order(allret[,4]),])

@@ -1,0 +1,19 @@
+#tag
+tag=small1
+# visualize 2011 data using large test params
+
+# data dir: 000300.db etc.
+dbdir=hs300out
+
+# coint test db, written by iscoint, read by visualbm
+cointdb=hs300.db
+
+# source of beta, NA for calc by lm, so don't use NA as tag
+betafrom=large
+
+# a list of pairs to visualize
+visuallist="select cpair from large where pvalue < 0.06"
+
+# visualbm start/end time
+visualfrom=2011-01-01
+visualto=2011-12-31
