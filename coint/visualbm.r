@@ -4,7 +4,7 @@ library(RSQLite)
 
 source('util.r')
 
-plotpair2 <- function (drv, left, right, leftname, rightname, tag, betafrom, start, end, beta, pvalue, hlife, smean, ssd, decay)
+plotpair2 <- function (drv, left, right, leftname, rightname, tag, betafrom, start, end, beta, pvalue, hlife, smean, ssd, decay, upper, lower, dotrd=FALSE)
 {
 # plot in+out
     con <- dbConnect(drv, dbname = paste(left, 'db', sep='.'))
@@ -34,10 +34,10 @@ plotpair2 <- function (drv, left, right, leftname, rightname, tag, betafrom, sta
     s.zoo <- cbind(s.zoo, sprd=sprd)
 
     # average lines from test result
-    upper <- smean + 1*ssd
-    lower <- smean - 1*ssd
-    upper2 <- smean + 2*ssd
-    lower2 <- smean - 2*ssd
+    upperline <- smean + 1*ssd
+    lowerline <- smean - 1*ssd
+    upper2line <- smean + 2*ssd
+    lower2line <- smean - 2*ssd
 
     emeanline <- ema(sprd, lambda=2.8854*decay)
     emean2line <- ema(sprd**2, lambda=2.8854*decay)
@@ -49,10 +49,10 @@ plotpair2 <- function (drv, left, right, leftname, rightname, tag, betafrom, sta
     elower2 <- emeanline - 2*esdline
 
     s.zoo <- cbind(s.zoo, smean=smean)
-    s.zoo <- cbind(s.zoo, upper=upper)
-    s.zoo <- cbind(s.zoo, lower=lower)
-    s.zoo <- cbind(s.zoo, upper2=upper2)
-    s.zoo <- cbind(s.zoo, lower2=lower2)
+    s.zoo <- cbind(s.zoo, upper=upperline)
+    s.zoo <- cbind(s.zoo, lower=lowerline)
+    s.zoo <- cbind(s.zoo, upper2=upper2line)
+    s.zoo <- cbind(s.zoo, lower2=lower2line)
 
     s.zoo <- cbind(s.zoo, emean=emeanline)
     s.zoo <- cbind(s.zoo, eupper=eupper)
@@ -61,7 +61,7 @@ plotpair2 <- function (drv, left, right, leftname, rightname, tag, betafrom, sta
     s.zoo <- cbind(s.zoo, elower2=elower2)
 
     pdf(paste(left,right,tag,'pdf',sep='.'), width=17.55, height=8.3)
-    ylim = c(min(lower2, elower2, sprd, na.rm=TRUE), max(upper2, eupper2, sprd, na.rm=TRUE))
+    ylim = c(min(lower2line, elower2, sprd, na.rm=TRUE), max(upper2line, eupper2, sprd, na.rm=TRUE))
     plot(ylim=ylim, sprd)
     lines(s.zoo$upper, col='red')
     lines(s.zoo$lower, col='red')
@@ -74,11 +74,29 @@ plotpair2 <- function (drv, left, right, leftname, rightname, tag, betafrom, sta
     lines(s.zoo$elower2, col='blue')
     lines(s.zoo$emean, col='blue', type='p', pch='*')
 
-    titlestr = sprintf('%s(in=%s) %s.%s.%s.%s beta=%.2f\nin.pvalue=%.2f in.hlife=%.2f\nout.pvalue=%.2f out.hlife=%.2f\ndecay=%d',
+    if (dotrd)
+    {
+        bmrst = spreadbm(sprd, s.zoo, upper, lower, decay)
+        for (i in 1:nrow(bmrst))
+        {
+            x = bmrst[i,][,c(2,3)]
+            xy = sprd[x]
+            color = ifelse((bmrst[i,]$opendir == 1), 'red', 'green')
+            lines(xy, col=color, lwd=2)
+        }
+    }
+
+    titlestr = sprintf('%s(in=%s) %s.%s.%s.%s\nbeta=%.2f decay=%d\nin.pvalue=%.2f in.hlife=%.2f\nout.pvalue=%.2f out.hlife=%.2f',
                         tag, betafrom,
                         left, right, leftname, rightname,
-                        beta, pvalue, hlife, newpvalue, newhlife, decay)
-    title(titlestr, family='song')
+                        beta, decay,
+                        pvalue, hlife, newpvalue, newhlife)
+
+    if (dotrd)
+    {
+        titlestr = sprintf('%s\ntrades=%d upper=%.2f lower=%.2f', titlestr, nrow(bmrst), upper, lower)
+    }
+    title(titlestr, family='song', line=-2)
 
     abline(v=as.Date(unique(as.yearmon(index(s.zoo)))),
            h=seq(round(ylim[1],-2),round(ylim[2],-1),50),
@@ -103,8 +121,10 @@ drv = dbDriver('SQLite')
 con <- dbConnect(drv, dbname = plan['cointdb', 1])
 tovisual <- dbGetQuery(con, plan['visuallist', 1])
 betafrom <- plan['betafrom', 1]
+dotrd <- as.logical(plan['dotrd', 1])
+upper.default <- as.numeric(plan['upper.default', 1])
+lower.default <- as.numeric(plan['lower.default', 1])
 pttest <- dbReadTable(con, betafrom)
-dbDisconnect(con)
 
 tovisual <- merge(tovisual, pttest, by='cpair', all=FALSE)
 
@@ -128,7 +148,21 @@ for (i in 1:nrow(tovisual))
     rightname <- tmp[2]
     print(c(left, right))
 
-    plotpair2(drv, left, right, leftname, rightname, tag, betafrom, startdate, enddate, beta, pvalue, hlife, smean, ssd, 22*6)
+    upper = upper.default
+    lower = lower.default
+    if (dotrd)
+    {
+        q = sprintf('select upper, lower from tradeparam where cpair="%s"', cpair)
+        ul = dbGetQuery(con, q)
+        if (nrow(ul) > 0)
+        {
+            upper = ul$upper
+            lower = ul$lower
+        }
+    }
+
+    plotpair2(drv, left, right, leftname, rightname, tag, betafrom, startdate, enddate, beta, pvalue, hlife, smean, ssd, 22*6, upper, lower, dotrd)
 }
+dbDisconnect(con)
 dbUnloadDriver(drv)
 warnings()

@@ -1,5 +1,5 @@
 #tag
-tag=small1
+tag=tmp
 # visualize 2011 data using large test params
 
 # data dir: 000300.db etc.
@@ -12,7 +12,18 @@ cointdb=hs300.db
 betafrom=large
 
 # a list of pairs to visualize
-visuallist="select cpair from large where pvalue < 0.06"
+listtype='sql'
+#visuallist="select cpair from large where pvalue < 0.06"
+visuallist="select '000300.000951' as cpair"
+#visuallist="select a.cpair as cpair from large a inner join small2 b on (a.cpair=b.cpair) where a.pvalue < 0.06 and b.pvalue < 0.1"
+
+dotrd=T
+tparam=paramtable
+upper.default=1.2
+lower.default=0.3
+
+uprange=1.1:3:0.1
+lorange=0:1:0.1
 
 # visualbm start/end time
 visualfrom=2011-01-01

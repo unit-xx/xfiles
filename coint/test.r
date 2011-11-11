@@ -23,6 +23,10 @@ print(args)
 x=c(1,2,3,4,5)
 pdf('test.pdf')
 plot(x,x)
-title('最最')
+title('最最', family='song')
+mtext('最最', family='song')
+xxx=0
+if (FALSE) xxx=1
+print(xxx)
 dev.off()
 warnings()

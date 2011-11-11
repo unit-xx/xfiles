@@ -38,3 +38,123 @@ ouhlife <- function(spread)
     hlife = -log(2)/coef(rst)[1];
     hlife
 }
+
+spreadbm <- function(spread, pair, upper, lower, decay=0, bcost=0.5/1000, scost=1.5/1000)
+{
+# decay==0 for static mean/sd, else for ema
+# spread is a data.frame/zoo object with 1-column: spread value
+
+    if (decay == 0)
+    {
+        meanline = mean(spread)
+        sdline = sd(spread)
+    }
+    else
+    {
+        meanline = ema(spread, lambda = 2.8854*decay)
+        mean2line = ema(spread**2, lambda = 2.8854*decay)
+        sdline <- sqrt(mean2line - meanline**2)
+    }
+
+    s = cbind(spread, meanline, sdline)
+    opendir = 0
+    ttrace = data.frame(stringsAsFactors=FALSE)
+    tcost = 0
+
+    for (i in 1:nrow(s))
+    {
+        p = s[i,]
+        sv = p[[1]]
+        mv = p[[2]]
+        sdv = p[[3]]
+        if (opendir == 0)
+        {
+            # looking for open
+            if ((sv-mv)/sdv > upper)
+            # open short
+            {
+                opendir = -1
+                opent = index(p)
+                tcost = tcost + pair[i,][[1]]*scost + pair[i,][[2]]*bcost
+            }
+
+            if ((sv-mv)/sdv < -upper)
+            # open long
+            {
+                opendir = 1
+                opent = index(p)
+                tcost = tcost + pair[i,][[1]]*bcost + pair[i,][[2]]*scost
+            }
+        }
+        else
+        {
+            # looking for close
+            if ((opendir == -1) && ((sv-mv)/sdv < lower))
+            {
+            # close short
+                closet = index(p)
+                tcost = tcost + pair[i,][[1]]*bcost + pair[i,][[2]]*scost
+                earn = (s[closet,][[1]] - s[opent,][[1]]) * opendir - tcost
+
+                ttrace = rbind(ttrace, as.data.frame(list(opendir=opendir,
+                                                       opent=opent, closet=closet,
+                                                       earn=earn, tcost=tcost)))
+                opendir = 0
+                tcost = 0
+            }
+
+            if ((opendir == 1) && ((sv-mv)/sdv > -lower))
+            {
+            # close short
+                closet = index(p)
+                tcost = tcost + pair[i,][[1]]*bcost + pair[i,][[2]]*scost
+                earn = (s[closet,][[1]] - s[opent,][[1]]) * opendir - tcost
+                ttrace = rbind(ttrace, as.data.frame(list(opendir=opendir,
+                                                       opent=opent, closet=closet,
+                                                       earn=earn, tcost=tcost)))
+                opendir = 0
+                tcost = 0
+            }
+        }
+    }
+    ttrace
+}
+
+bmstat <- function(bmrst)
+{
+# bmrst from spreadbm
+# trade count, earning in total/avg/sd, max drawback, longest drawback time
+    tcount = nrow(bmrst)
+    tearn = 0.0
+    avgearn = 0.0
+    sdearn = 0.0
+
+    tcost = 0.0
+    avgcost = 0.0
+    sdcost = 00
+
+    ttxdur = 0.0
+    avgtxdur = 0.0
+    sdtxdur = 0.0
+    if (tcount > 0)
+    {
+        earns = as.vector(bmrst$earn)
+        tearn = sum(earns)
+        avgearn = mean(earns)
+        sdearn = sd(earns)
+
+        cost = as.vector(bmrst$tcost)
+        tcost = sum(cost)
+        avgcost = mean(cost)
+        sdcost = sd(cost)
+
+        tduration = as.vector(bmrst$closet - bmrst$opent)
+        ttxdur = as.numeric(sum(tduration))
+        avgtxdur = as.numeric(mean(tduration))
+        sdtxdur = as.numeric(sd(tduration))
+    }
+    as.data.frame(list(tcount=tcount,
+                       tearn=tearn, avgearn = avgearn, sdearn=sdearn,
+                       tcost=tcost, avgcost = avgcost, sdcost=sdcost,
+                       ttxdur=ttxdur, avgtxdur=avgtxdur, sdtxdur=sdtxdur))
+}
