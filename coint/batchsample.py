@@ -41,6 +41,7 @@ select
     ,F2_1120 as "DATE"
     ,F9_1120 as vol
     ,F11_1120 as turnover
+    , 1 as factor
 from wind.tb_object_1090,wind.TB_OBJECT_1120
 where
     F16_1090=:code
@@ -63,7 +64,7 @@ select
     ,F2_1425 as "DATE"
     ,F8_1425 as vol
     ,F9_1425 as turnover
-    --,F10_1425 as factor
+    ,F10_1425 as factor
     --,TO_CHAR(1000*F9_1425/F11_1425, 'FM9999.99') as avgprice
 from wind.tb_object_1090,wind.TB_OBJECT_1425
 where
@@ -86,7 +87,8 @@ high real,
 low real,
 date text NOT NULL PRIMARY KEY ASC,
 vol real,
-turnover real
+turnover real,
+factor real
 );
     """
 
@@ -96,7 +98,7 @@ SELECT date FROM data
 
     insertdata = """
 INSERT OR REPLACE INTO data
-VALUES (?,?,?,?,?,?,?,?,?)
+VALUES (?,?,?,?,?,?,?,?,?,?)
     """
 
     if needex:

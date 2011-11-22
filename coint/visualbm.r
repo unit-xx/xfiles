@@ -1,10 +1,11 @@
 library(zoo)
 library(tseries)
 library(RSQLite)
+library(fractal)
 
 source('util.r')
 
-plotpair2 <- function (drv, left, right, leftname, rightname, tag, betafrom, start, end, beta, pvalue, hlife, smean, ssd, decay, upper, lower, dotrd=FALSE)
+plotpair2 <- function (drv, left, right, leftname, rightname, tag, betafrom, start, end, beta, alpha, pvalue, hlife, smean, ssd, decay, upper, lower, dotrd=FALSE)
 {
 # plot in+out
     con <- dbConnect(drv, dbname = paste(left, 'db', sep='.'))
@@ -28,7 +29,7 @@ plotpair2 <- function (drv, left, right, leftname, rightname, tag, betafrom, sta
 
     sprd <- s$s1 - beta*(s$s2)
     newhlife = ouhlife(sprd)
-    newpvalue = adf.test(sprd, alternative="stationary", k=0)$p.value
+    newpvalue = adf.test(sprd, alternative="stationary")$p.value
 
     sprd <- s.zoo$s1 - beta*(s.zoo$s2)
     s.zoo <- cbind(s.zoo, sprd=sprd)
@@ -61,6 +62,8 @@ plotpair2 <- function (drv, left, right, leftname, rightname, tag, betafrom, sta
     s.zoo <- cbind(s.zoo, elower2=elower2)
 
     pdf(paste(left,right,tag,'pdf',sep='.'), width=17.55, height=8.3)
+
+
     ylim = c(min(lower2line, elower2, sprd, na.rm=TRUE), max(upper2line, eupper2, sprd, na.rm=TRUE))
     plot(ylim=ylim, sprd)
     lines(s.zoo$upper, col='red')
@@ -86,10 +89,10 @@ plotpair2 <- function (drv, left, right, leftname, rightname, tag, betafrom, sta
         }
     }
 
-    titlestr = sprintf('%s(in=%s) %s.%s.%s.%s\nbeta=%.2f decay=%d\nin.pvalue=%.2f in.hlife=%.2f\nout.pvalue=%.2f out.hlife=%.2f',
+    titlestr = sprintf('%s(in=%s) %s.%s.%s.%s\nbeta=%.2f alpha=%.2f decay=%d\nin.pvalue=%.2f in.hlife=%.2f\nout.pvalue=%.2f out.hlife=%.2f',
                         tag, betafrom,
                         left, right, leftname, rightname,
-                        beta, decay,
+                        beta, alpha, decay,
                         pvalue, hlife, newpvalue, newhlife)
 
     if (dotrd)
@@ -102,6 +105,11 @@ plotpair2 <- function (drv, left, right, leftname, rightname, tag, betafrom, sta
            h=seq(round(ylim[1],-2),round(ylim[2],-1),50),
            col='lightgrey',lty='dotted',lwd=1)
 
+    # Hurst exponet using DFA
+    #hexp <- rollapply(sprd, 132, function(z){DFA(z)[[1]]}, by=5, align = "right")
+    #par(new=TRUE)
+    #plot(hexp, col='green', axes=FALSE, bty='c', xlab='', ylab='')
+    #axis(4, col.axis='black', col='black')
     dev.off()
 }
 
@@ -116,6 +124,7 @@ plan <- read.table(args[1], row.names=1, sep='=', colClasses='character', strip.
 startdate = as.Date(plan['visualfrom', 1])
 enddate = as.Date(plan['visualto', 1])
 tag = plan['tag', 1]
+decay = as.numeric(plan['decay', 1])
 
 drv = dbDriver('SQLite')
 con <- dbConnect(drv, dbname = plan['cointdb', 1])
@@ -134,6 +143,7 @@ for (i in 1:nrow(tovisual))
     cpair <- tovisual[i,]$cpair
     npair <- tovisual[i,]$npair
     beta <- as.numeric(tovisual[i,]$beta)
+    alpha <- as.numeric(tovisual[i,]$alpha)
     pvalue <- as.numeric(tovisual[i,]$pvalue)
     hlife <- as.numeric(tovisual[i,]$hlife)
     smean <- as.numeric(tovisual[i,]$smean)
@@ -161,7 +171,7 @@ for (i in 1:nrow(tovisual))
         }
     }
 
-    plotpair2(drv, left, right, leftname, rightname, tag, betafrom, startdate, enddate, beta, pvalue, hlife, smean, ssd, 22*6, upper, lower, dotrd)
+    plotpair2(drv, left, right, leftname, rightname, tag, betafrom, startdate, enddate, beta, alpha, pvalue, hlife, smean, ssd, decay, upper, lower, dotrd)
 }
 dbDisconnect(con)
 dbUnloadDriver(drv)

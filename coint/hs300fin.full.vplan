@@ -3,19 +3,24 @@ tag=full
 # view full range spread line using beta/pvalue/hlife from large test
 
 # data dir: 000300.db etc.
-dbdir=hs300out
+dbdir=hs300finout
 
 # coint test db, written by iscoint, read by visualbm
-cointdb=hs300.db
+cointdb=hs300fin.db
 
 # source of beta, NA for calc by lm, so don't use NA as tag
 betafrom=large
-decay=132
-
-dotrd=F
 
 # a list of pairs to visualize
-visuallist="select cpair from large where pvalue < 0.06"
+visuallist="select cpair from large where pvalue <= 0.01"
+
+dotrd=F
+tparam=paramtable
+upper.default=1.2
+lower.default=0.3
+
+uprange=1.1:3:0.1
+lorange=0:1:0.1
 
 # visualbm start/end time
 visualfrom=2005-01-01

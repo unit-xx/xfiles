@@ -2,13 +2,13 @@
 tag=large
 
 # data dir: 000300.db etc.
-dbdir=hs300out
+dbdir=hs300finout
 
 # code file name
-codefn=hs300
+codefn=hs300fin
 
 # coint test db, written by iscoint, read by visualbm
-cointdb=hs300.db
+cointdb=hs300fin.db
 
 # source of beta, NA for calc by lm, so don't use NA as tag
 betafrom=NA

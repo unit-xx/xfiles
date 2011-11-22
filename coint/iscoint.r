@@ -5,7 +5,7 @@ library(RSQLite)
 
 source('util.r')
 
-coint.test <- function (dbdrv, left, right, startdate, enddate, beta=NA)
+coint.test <- function (dbdrv, left, right, startdate, enddate, beta=NA, alpha=NA)
 {
     con <- dbConnect(drv, dbname = paste(left, 'db', sep='.'))
     s1 <- dbReadTable(con, 'data')
@@ -34,14 +34,15 @@ coint.test <- function (dbdrv, left, right, startdate, enddate, beta=NA)
     if (is.na(beta))
     {
         beta_isext = FALSE
-        m <- lm(as.vector(s$s1) ~ as.vector(s$s2) + 0)#, data=s)
-        beta <- coef(m)[1]
+        m <- lm(as.vector(s$s1) ~ as.vector(s$s2))#, data=s)
+        alpha <- coef(m)[1]
+        beta <- coef(m)[2]
     }
 
     #cat("Assumed hedge ratio is", beta, "\n")
 
     sprd <- s$s1 - beta*s$s2
-    ht <- adf.test(sprd, alternative="stationary", k=0)
+    ht <- adf.test(sprd, alternative="stationary")
 
     #cat("ADF p-value is", ht$p.value, "\n")
 
@@ -60,7 +61,7 @@ coint.test <- function (dbdrv, left, right, startdate, enddate, beta=NA)
 
     info <- as.data.frame(list(cpair=paste(left,right,sep='.'),
                  npair=paste(left.name, right.name, sep='.'), 
-                 beta=beta, 
+                 beta=beta, alpha=alpha,
                  beta_isext=beta_isext,
                  pvalue=ht$p.value, 
                  hlife=hlife,
@@ -91,7 +92,8 @@ con <- dbConnect(drv, plan['cointdb',1])
 betas = NULL
 if (!is.na(plan['betafrom',1]))
 {
-    betas = dbGetQuery(con, paste('select cpair, beta from', plan['betafrom',1]))
+    betas = dbGetQuery(con, paste('select cpair, beta, alpha from', plan['betafrom',1]))
+    rownames(betas) <- betas$cpair
 }
 dbDisconnect(con)
 
@@ -108,8 +110,9 @@ for (i in 1:(length(codes)-1))
         else
         {
             cpair = paste(codes[i], codes[j], sep='.')
-            beta = betas$beta[which(betas$cpair == cpair)]
-            ret <- coint.test(drv, codes[i], codes[j], startdate, enddate, beta)
+            beta = betas[cpair,]$beta
+            alpha = betas[cpair,]$alpha
+            ret <- coint.test(drv, codes[i], codes[j], startdate, enddate, beta, alpha)
         }
         allret <- rbind(allret, ret)
     }
