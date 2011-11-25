@@ -6,7 +6,7 @@ dbdir=hs300indexout
 
 # code file name
 codefn=hs300indexa
-tmode='1v3'
+tmode='1v1'
 
 # coint test db, written by iscoint, read by visualbm
 cointdb=hs300index.db

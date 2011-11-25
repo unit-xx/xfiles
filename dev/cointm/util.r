@@ -159,13 +159,31 @@ bmstat <- function(bmrst)
                        ttxdur=ttxdur, avgtxdur=avgtxdur, sdtxdur=sdtxdur))
 }
 
-getquote <- function(dbdrv, code)
+getquote <- function(dbdrv, codes, startdate, enddate, pricetag='close')
 {
-    con <- dbConnect(dbdrv, dbname = paste(code, 'db', sep='.'))
-    s1 <- dbReadTable(con, 'data')
+    left = codes[1]
+    right = codes[-1]
+
+    con <- dbConnect(drv, dbname = paste(left, 'db', sep='.'))
+    s0 <- dbReadTable(con, 'data')
     dbDisconnect(con)
-    Encoding(s1$name) = 'UTF-8'
-    s1_date <- as.Date(as.character(s1$date), '%Y%m%d')
-    s1 <- zoo(s1$close, s1_date)
-    s1
+    Encoding(s0$name) = 'UTF-8'
+    s0_date <- as.Date(as.character(s0$date), '%Y%m%d')
+    s.zoo <- zoo(s0[,pricetag], s0_date)
+
+    for(i in 1:length(right))
+    {
+        con <- dbConnect(drv, dbname = paste(right[i], 'db', sep='.'))
+        sx <- dbReadTable(con, 'data')
+        dbDisconnect(con)
+        Encoding(sx$name) = 'UTF-8'
+        sx_date <- as.Date(as.character(sx$date), '%Y%m%d')
+        sx <- zoo(sx[,pricetag], sx_date)
+        s.zoo <- merge(s.zoo, sx, all=FALSE)
+    }
+
+    s.zoo <- window(s.zoo, start=startdate, end=enddate)
+    snames = c(paste('s',left,sep=''), paste('s',right,sep=''))
+    names(s.zoo) <- snames
+    s.zoo
 }

@@ -8,33 +8,11 @@ source('util.r')
 
 coint.test <- function (dbdrv, left, right, startdate, enddate, beta=NA, alpha=NA)
 {
-    con <- dbConnect(drv, dbname = paste(left, 'db', sep='.'))
-    s0 <- dbReadTable(con, 'data')
-    dbDisconnect(con)
-    Encoding(s0$name) = 'UTF-8'
-    s0_date <- as.Date(as.character(s0$date), '%Y%m%d')
-    s.zoo <- zoo(s0$close, s0_date)
-
-    for(i in 1:length(right))
-    {
-        con <- dbConnect(drv, dbname = paste(right[i], 'db', sep='.'))
-        sx <- dbReadTable(con, 'data')
-        dbDisconnect(con)
-        Encoding(sx$name) = 'UTF-8'
-        sx_date <- as.Date(as.character(sx$date), '%Y%m%d')
-        sx <- zoo(sx$close, sx_date)
-        s.zoo <- merge(s.zoo, sx, all=FALSE)
-    }
-
-    s.zoo <- window(s.zoo, start=startdate, end=enddate)
-    snames = c(paste('s',left,sep=''), paste('s',right,sep=''))
-    names(s.zoo) <- snames
-
-    #cat("Date range is", format(start(s.zoo)), "to", format(end(s.zoo)), "\n")
+    s.zoo = getquote(dbdrv, c(left, right), startdate, enddate)
+    snames = names(s.zoo)
 
     beta_isext = TRUE
-    if (is.na(beta))
-    {
+    if (is.na(beta)) {
         beta_isext = FALSE
         f = as.formula(paste(snames[1], '~', paste(snames[-1], collapse='+')))
         #print(f)
@@ -45,20 +23,9 @@ coint.test <- function (dbdrv, left, right, startdate, enddate, beta=NA, alpha=N
         names(beta) <- paste('beta', right, sep='')
     }
 
-    #cat("Assumed hedge ratio is", beta, "\n")
-
-    #sprd <- s.zoo$s1-beta1*s.zoo$s2-beta2*s.zoo$s3
-    sprd <- apply(s.zoo, 1, function(x) {x[1] - sum(x[-1]*beta)})   #beta1*s$s2 - beta2*s$s3
+    sprd <- apply(s.zoo, 1, function(x) {x[1] - sum(x[-1]*beta)})
 
     ht <- adf.test(as.vector(sprd), alternative="stationary")
-
-    #cat("ADF p-value is", ht$p.value, "\n")
-
-    #if (ht$p.value < 0.05) {
-    #    cat("The spread is likely mean-reverting\n")
-    #} else {
-    #    cat("The spread is not mean-reverting.\n")
-    #}
 
     smean <- mean(sprd)
     ssd <- sd(sprd)
@@ -78,7 +45,6 @@ coint.test <- function (dbdrv, left, right, startdate, enddate, beta=NA, alpha=N
                                enddate=format(enddate)),
                 ,stringsAsFactors=FALSE)
     info
-    #list(info=info,spread=sprd)
 }
 
 args <- commandArgs(TRUE)
@@ -114,7 +80,7 @@ csa = combinations(length(sas), choiceN, v=sas)
 for (i in 1:nrow(csa))
 {
     sa = csa[i,]
-    print(c(i, sa))
+    print(c(i, s0, sa))
     if (is.null(betas)==T)
     {
         ret <- coint.test(drv, s0, sa, startdate, enddate)
