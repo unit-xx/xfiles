@@ -86,7 +86,7 @@ for (i in 1:nrow(csa))
         ret <- coint.test(drv, s0, sa, startdate, enddate)
     } else
     {
-        cpair = paste(codes, collapse='.')
+        cpair = paste(s0, paste(sa, collapse='.'), sep='.')
         beta = as.numeric(unlist(strsplit(betas[cpair,]$beta, ';')))
         alpha = betas[cpair,]$alpha
         ret <- coint.test(drv, s0, sa, startdate, enddate, beta, alpha)
@@ -105,5 +105,5 @@ dbCommit(con)
 dbDisconnect(con)
 dbUnloadDriver(drv)
 
-warnings()
+#warnings()
 #print(allret[order(allret[,4]),])

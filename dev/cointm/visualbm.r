@@ -136,7 +136,7 @@ dotrd <- as.logical(plan['dotrd', 1])
 upper.default <- as.numeric(plan['upper.default', 1])
 lower.default <- as.numeric(plan['lower.default', 1])
 
-pttest <- dbReadTable(con, paste(betafrom, choiceN, sep=''))
+pttest <- dbReadTable(con, betafrom)
 tovisual <- merge(tovisual, pttest, by='cpair', all=FALSE)
 rownames(tovisual) <- tovisual$cpair
 
