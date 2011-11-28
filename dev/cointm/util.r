@@ -161,6 +161,8 @@ bmstat <- function(bmrst)
 
 getquote <- function(dbdrv, codes, startdate, enddate, pricetag='close')
 {
+# return quotes as columns, and column names are 's'+codes
+
     left = codes[1]
     right = codes[-1]
 
@@ -186,4 +188,28 @@ getquote <- function(dbdrv, codes, startdate, enddate, pricetag='close')
     snames = c(paste('s',left,sep=''), paste('s',right,sep=''))
     names(s.zoo) <- snames
     s.zoo
+}
+
+getbeta <- function(quote, bydates)
+{
+# beta is calculated by lm(left ~ right), as in getquote.
+# bydates is a vector of dates.
+    alphabeta = data.frame(stringsAsFactors=FALSE)
+    snames = names(quote)
+    f = as.formula(paste(snames[1], '~', paste(snames[-1], collapse='+')))
+
+    for(i in 1:length(bydates))
+    {
+        q = window(quote, start=start(quote), end=bydates[i])
+        m = lm(f, data=q)
+        alphabeta = rbind(alphabeta, coef(m))
+    }
+
+    #alphabeta = rbind(alphabeta[1,], alphabeta)
+    #alphabeta = zoo(alphabeta, c(start(quote), bydates))
+    alphabeta = zoo(alphabeta, bydates)
+    names(alphabeta) <- c('alpha', paste('beta', 1:(ncol(quote)-1), sep=''))
+    alphabeta
+    #b = rbind(zoo(as.matrix(b[1,]), start(s.zoo)), b)
+
 }
