@@ -57,3 +57,7 @@ while 1:
 
 print
 print 'disconnect', hs.DisConnect()
+
+# NOTE: buy, batchbuy, cancel, query orders
+# marketinfo, secuinfo, login
+# stockquote, capitalquery, stockquery

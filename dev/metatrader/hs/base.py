@@ -5,6 +5,12 @@ import sqlite3 as db
 import win32com.client
 
 HSVERSION = '3.13'
+
+#TODO: constant definitions here.
+#TODO: common fields vs. fields per request
+#TODO: fill interface in request
+#TODO: common field names, so that hs/jz switch is smooth.
+
 """
 Maintains connections, common fields in header.
 """
@@ -72,6 +78,9 @@ class request:
     # controls what attributes to send and in what sequence, each 
     # request should set paramlist explicitly.
     paramlist = []
+    # some required params are stored in sessionparams. If
+    # needed, read by self.session['<key>']
+    sessionparams = []
 
     def __init__(self, session):
         self.session = session
@@ -84,7 +93,7 @@ class request:
         try:
             return self.params[key]
         # in case a param is not set, we assume it is empty
-        except KeyError: 
+        except KeyError:
             return ""
 
     def __setitem__(self, key, value):
@@ -94,14 +103,17 @@ class request:
         hs = self.session.hs
 
         hs.SetHead(self.session['branchno'], self.code)
-        hs.Setrange(len(self.paramlist), 1)
+        hs.SetRange(len(self.paramlist), 1)
 
         pkeys = self.params.keys()
         for p in self.pkeys:
             hs.AddField(p)
 
         for p in self.pkeys:
-            hs.AddValue(self.params[k])
+            if p in self sessionparams:
+                hs.AddValue(self.session[k])
+            else:
+                hs.AddValue(self.params[k])
 
     def send(self):
         hs = self.session.hs
@@ -115,6 +127,7 @@ class request:
 class response:
     def __init__(self, session):
         # TODO: define common field
+        # NOTE: errorno/errorinfo is not listed in success responses
         self.session = session
         self.records = []
         self.errorno = 0
