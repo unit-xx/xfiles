@@ -1,0 +1,28 @@
+#tag, as mid-fix in graph filenames to differentiate vplans
+tag=small
+# view full range spread line using beta/pvalue/hlife from large test
+
+# data dir: 000300.db etc.
+dbdir=hs300indexout
+
+# coint test db, written by iscoint, read by visualbm
+cointdb=hs300index.db
+
+# source of beta, NA for calc by lm, so don't use NA as tag
+betafrom=large3
+#decay=22
+decay=-0.5
+
+dotrd=F
+normalized=F
+
+# a list of pairs to visualize
+#visuallist="select cpair from large3 where pvalue <= 0.01"
+visuallist="select '000300.000908.000912.000918' as cpair"
+#visuallist="SELECT cpair from large3 where pvalue < 0.05 AND hlife < 25"
+
+# visualbm start/end time
+visualfrom=2007-01-01
+visualto=2011-12-31
+
+

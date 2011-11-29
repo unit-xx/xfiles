@@ -4,7 +4,7 @@ library(RSQLite)
 
 source('util.r')
 
-plotpair2 <- function (drv, left, right, tag, betafrom, startdate, enddate, beta, alpha, pvalue, hlife, smean, ssd, decay, upper, lower, dotrd=FALSE)
+plotpair2 <- function (drv, left, right, tag, betafrom, startdate, enddate, beta, alpha, pvalue, hlife, smean, ssd, decay, upper, lower, dotrd=FALSE, normalized=F)
 {
     con <- dbConnect(drv, dbname = paste(left, 'db', sep='.'))
     s0 <- dbReadTable(con, 'data')
@@ -32,47 +32,59 @@ plotpair2 <- function (drv, left, right, tag, betafrom, startdate, enddate, beta
     newhlife = ouhlife(sprd)
     newpvalue = adf.test(as.vector(sprd), alternative="stationary")$p.value
 
-    # average lines from test result
-    upperline <- smean + 1*ssd
-    lowerline <- smean - 1*ssd
-    upper2line <- smean + 2*ssd
-    lower2line <- smean - 2*ssd
+    if (decay < 0) decay = round(hlife * -decay)
 
     emeanline <- ema(sprd, lambda=2.8854*decay)
     emean2line <- ema(sprd**2, lambda=2.8854*decay)
     esdline <- sqrt(emean2line - emeanline**2)
 
-    eupper <- emeanline + 1*esdline
-    elower <- emeanline - 1*esdline
-    eupper2 <- emeanline + 2*esdline
-    elower2 <- emeanline - 2*esdline
+    s.zoo <- cbind(s.zoo, sprd=sprd)
 
     s.zoo <- cbind(s.zoo, smean=smean)
-    s.zoo <- cbind(s.zoo, upper=upperline)
-    s.zoo <- cbind(s.zoo, lower=lowerline)
-    s.zoo <- cbind(s.zoo, upper2=upper2line)
-    s.zoo <- cbind(s.zoo, lower2=lower2line)
+    s.zoo <- cbind(s.zoo, ssd=ssd)
+    s.zoo <- cbind(s.zoo, upper=(smean+ssd))
+    s.zoo <- cbind(s.zoo, lower=(smean-ssd))
+    s.zoo <- cbind(s.zoo, upper2=(smean+2*ssd))
+    s.zoo <- cbind(s.zoo, lower2=(smean-2*ssd))
 
     s.zoo <- cbind(s.zoo, emean=emeanline)
-    s.zoo <- cbind(s.zoo, eupper=eupper)
-    s.zoo <- cbind(s.zoo, elower=elower)
-    s.zoo <- cbind(s.zoo, eupper2=eupper2)
-    s.zoo <- cbind(s.zoo, elower2=elower2)
+    s.zoo <- cbind(s.zoo, esd=esdline)
+    s.zoo <- cbind(s.zoo, eupper=(s.zoo$emean+s.zoo$esd))
+    s.zoo <- cbind(s.zoo, elower=(s.zoo$emean-s.zoo$esd))
+    s.zoo <- cbind(s.zoo, eupper2=(s.zoo$emean+2*s.zoo$esd))
+    s.zoo <- cbind(s.zoo, elower2=(s.zoo$emean-2*s.zoo$esd))
 
     pdf(paste(left,paste(right,collapse='.'),tag,'pdf',sep='.'), width=17.55, height=8.3)
 
-    ylim = c(min(lower2line, elower2, sprd, na.rm=TRUE), max(upper2line, eupper2, sprd, na.rm=TRUE))
-    plot(ylim=ylim, sprd)
-    lines(s.zoo$upper, col='red')
-    lines(s.zoo$lower, col='red')
-    lines(s.zoo$upper2, col='red')
-    lines(s.zoo$lower2, col='red')
-    lines(s.zoo$smean, col='red', type='p', pch='+')
-    lines(s.zoo$eupper, col='blue')
-    lines(s.zoo$elower, col='blue')
-    lines(s.zoo$eupper2, col='blue')
-    lines(s.zoo$elower2, col='blue')
-    lines(s.zoo$emean, col='blue', type='p', pch='*')
+    if (normalized)
+    {
+        nsprd = (s.zoo$sprd-s.zoo$emean)/s.zoo$esd
+        ylim = c(min(nsprd), max(nsprd))
+        plot(ylim=ylim, nsprd)
+        sprdunit = 0.5
+        abline(v=as.Date(unique(as.yearmon(index(s.zoo)))),
+               h=seq(round(ylim[1],-2),round(ylim[2],-1),sprdunit),
+               col='grey',lty='dashed',lwd=1)
+    } else
+    {
+        ylim = c(min(s.zoo$elower2, s.zoo$lower2, na.rm=TRUE), max(s.zoo$eupper2, s.zoo$upper2, na.rm=TRUE))
+        plot(ylim=ylim, sprd)
+        lines(s.zoo$upper, col='red')
+        lines(s.zoo$lower, col='red')
+        lines(s.zoo$upper2, col='red')
+        lines(s.zoo$lower2, col='red')
+        lines(s.zoo$smean, col='red', type='p', pch='+')
+        lines(s.zoo$eupper, col='blue')
+        lines(s.zoo$elower, col='blue')
+        lines(s.zoo$eupper2, col='blue')
+        lines(s.zoo$elower2, col='blue')
+        lines(s.zoo$emean, col='blue', type='p', pch='*')
+
+        sprdunit = 50
+        abline(v=as.Date(unique(as.yearmon(index(s.zoo)))),
+               h=seq(round(ylim[1],-2),round(ylim[2],-1),sprdunit),
+               col='grey',lty='dashed',lwd=1)
+   }
 
     if (dotrd)
     {
@@ -99,10 +111,6 @@ plotpair2 <- function (drv, left, right, tag, betafrom, startdate, enddate, beta
     }
     title(titlestr, family='song', line=-2)
 
-    abline(v=as.Date(unique(as.yearmon(index(s.zoo)))),
-           h=seq(round(ylim[1],-2),round(ylim[2],-1),50),
-           col='lightgrey',lty='dotted',lwd=1)
-
     # Hurst exponet using DFA
     #hexp <- rollapply(sprd, 132, function(z){DFA(z)[[1]]}, by=5, align = "right")
     #par(new=TRUE)
@@ -123,14 +131,13 @@ startdate = as.Date(plan['visualfrom', 1])
 enddate = as.Date(plan['visualto', 1])
 tag = plan['tag', 1]
 decay = as.numeric(plan['decay', 1])
+normalized = as.logical(plan['normalized', 1])
 
 drv = dbDriver('SQLite')
 con <- dbConnect(drv, dbname = plan['cointdb', 1])
 
 tovisual <- dbGetQuery(con, plan['visuallist', 1])
 betafrom <- plan['betafrom', 1]
-tmode = plan['tmode', 1]
-choiceN = as.integer(substr(tmode, 3, nchar(tmode)))
 
 dotrd <- as.logical(plan['dotrd', 1])
 upper.default <- as.numeric(plan['upper.default', 1])
@@ -170,7 +177,7 @@ for (i in 1:nrow(tovisual))
         }
     }
 
-    plotpair2(drv, left, right, tag, betafrom, startdate, enddate, beta, alpha, pvalue, hlife, smean, ssd, decay, upper, lower, dotrd)
+    plotpair2(drv, left, right, tag, betafrom, startdate, enddate, beta, alpha, pvalue, hlife, smean, ssd, decay, upper, lower, dotrd, normalized)
 }
 dbDisconnect(con)
 dbUnloadDriver(drv)
