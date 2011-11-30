@@ -5,8 +5,8 @@ library(RSQLite)
 
 source('util.r')
 
-# given a pair and its beta, trade benchmarking using upper/lower bound params.
-# results: opent/closet/earn/cost
+# given a pair and its beta, trade benchmarking using upper/lower bound params,
+# and draw the returns figure
 
 pairbm.draw <- function (dbdrv, left, right, npair, startdate, enddate, betafrom, beta, upper, lower, decay=0)
 {
