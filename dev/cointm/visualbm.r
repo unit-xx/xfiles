@@ -6,25 +6,8 @@ source('util.r')
 
 plotpair2 <- function (drv, left, right, tag, betafrom, startdate, enddate, beta, alpha, pvalue, hlife, smean, ssd, decay, upper, lower, dotrd=FALSE, normalized=F)
 {
-    con <- dbConnect(drv, dbname = paste(left, 'db', sep='.'))
-    s0 <- dbReadTable(con, 'data')
-    dbDisconnect(con)
-    s0_date <- as.Date(as.character(s0$date), '%Y%m%d')
-    s.zoo <- zoo(s0$close, s0_date)
-
-    for(i in 1:length(right))
-    {
-        con <- dbConnect(drv, dbname = paste(right[i], 'db', sep='.'))
-        sx <- dbReadTable(con, 'data')
-        dbDisconnect(con)
-        sx_date <- as.Date(as.character(sx$date), '%Y%m%d')
-        sx <- zoo(sx$close, sx_date)
-        s.zoo <- merge(s.zoo, sx, all=FALSE)
-    }
-
-    s.zoo <- window(s.zoo, start=startdate, end=enddate)
-    snames = c(paste('s',left,sep=''), paste('s',right,sep=''))
-    names(s.zoo) <- snames
+    s.zoo = getquote(dbdrv, c(left, right), startdate, enddate)
+    snames = names(s.zoo)
 
     sprd <- apply(s.zoo, 1, function(x) {x[1] - sum(x[-1]*beta)})
     sprd <- zoo(as.vector(sprd), index(s.zoo))

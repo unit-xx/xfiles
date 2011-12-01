@@ -39,81 +39,98 @@ ouhlife <- function(spread)
     hlife
 }
 
-spreadbm <- function(spread, pair, upper, lower, decay=0, bcost=0.5/1000, scost=1.5/1000)
+spreadbm <- function(spread, legquote, beta, upper, lower, dir=c('short','long','both'), longbcost=0.5/1000, longscost=1.5/1000, shortbcost=0.6/10000, shortscost=0.6/10000, shortmargin=2.5*1/6)
 {
-# decay==0 for static mean/sd, else for ema
-# spread is a data.frame/zoo object with 1-column: spread value
+# spread is a data.frame/zoo object with 3 columns: $sprd, $mean, $sd.
+# for simplicity, beta has the same number of columns as legquote and beta values are aligned in the same order as corresponding quote.
+# upper/lower is in unit of sd.
 
-    if (decay == 0)
-    {
-        meanline = mean(spread)
-        sdline = sd(spread)
-    }
-    else
-    {
-        meanline = ema(spread, lambda = 2.8854*decay)
-        mean2line = ema(spread**2, lambda = 2.8854*decay)
-        sdline <- sqrt(mean2line - meanline**2)
-    }
-
-    s = cbind(spread, meanline, sdline)
-    opendir = 0
+    toopendir = match.arg(dir)
+    toopendir = switch(toopendir, long=1, short=-1, both=0)
     ttrace = data.frame(stringsAsFactors=FALSE)
-    tcost = 0
 
-    for (i in 1:nrow(s))
+    opendir = 0
+    tcost = 0
+    holdcap = 0
+    shortcap = 0
+    longcap = 0
+    shortindex = c()
+    longindex = c()
+
+    for (i in 1:nrow(spread))
     {
-        p = s[i,]
-        sv = p[[1]]
-        mv = p[[2]]
-        sdv = p[[3]]
+        p = spread[i,]
+        sv = p$sprd
+        mv = p$mean
+        sdv = p$sd
+
         if (opendir == 0)
         {
             # looking for open
-            if ((sv-mv)/sdv > upper)
+            if ((sv-mv)/sdv > upper && toopendir<=0) # deviation from mean is large enough and short is allowed.
             # open short
             {
                 opendir = -1
                 opent = index(p)
-                tcost = tcost + pair[i,][[1]]*scost + pair[i,][[2]]*bcost
+                shortindex = which(-beta < 0)
+                longindex = which(-beta > 0)
+                shortcap = sum(legquote[i,][,shortindex] * (-beta)[shortindex])
+                longcap = sum(legquote[i,][,longindex] * (-beta)[longindex])
+                holdcap = longcap + shortcap * shortmargin
+                tcost = shortcap * shortscost + longcap * longbcost
             }
 
-            if ((sv-mv)/sdv < -upper)
+            if ((sv-mv)/sdv < -upper && toopendir>=0)
             # open long
             {
                 opendir = 1
                 opent = index(p)
-                tcost = tcost + pair[i,][[1]]*bcost + pair[i,][[2]]*scost
+                shortindex = which(beta < 0)
+                longindex = which(beta > 0)
+                shortcap = sum(legquote[i,][,shortindex] * (beta)[shortindex])
+                longcap = sum(legquote[i,][,longindex] * (beta)[longindex])
+                holdcap = longcap + shortcap * shortmargin
+                tcost = shortcap * shortscost + longcap * longbcost
             }
         }
         else
         {
             # looking for close
-            if ((opendir == -1) && ((sv-mv)/sdv < lower))
+            if ( ((opendir == -1) && ((sv-mv)/sdv < lower)) || ((opendir == 1) && ((sv-mv)/sdv > -lower)) )
             {
-            # close short
+            # close short and long
                 closet = index(p)
-                tcost = tcost + pair[i,][[1]]*bcost + pair[i,][[2]]*scost
-                earn = (s[closet,][[1]] - s[opent,][[1]]) * opendir - tcost
+                if (opendir == -1)
+                {
+                    shortcap = sum(legquote[i,][,shortindex] * (-beta)[shortindex])
+                    longcap = sum(legquote[i,][,longindex] * (-beta)[longindex])
+                } else
+                {
+                    shortcap = sum(legquote[i,][,shortindex] * (beta)[shortindex])
+                    longcap = sum(legquote[i,][,longindex] * (beta)[longindex])
+                }
+
+                tcost = tcost + shortcap * shortbcost + longcap * longscost
+                earn = (as.numeric(spread[closet,]$sprd) - as.numeric(spread[opent,]$sprd)) * opendir - tcost
+
+                ret = opendir * diff(window(spread$sprd, start=opent, end=closet))/holdcap
+                maxdd = maxDrawdown(as.data.frame(ret), geometric=F)
+
+                opensprd = spread[opent,]$sprd
+                closesprd = spread[closet,]$sprd
 
                 ttrace = rbind(ttrace, as.data.frame(list(opendir=opendir,
+                                                       opensprd=opensprd, closesprd=closesprd,
+                                                       holdcap=holdcap, maxdd=maxdd,
                                                        opent=opent, closet=closet,
                                                        earn=earn, tcost=tcost)))
                 opendir = 0
                 tcost = 0
-            }
-
-            if ((opendir == 1) && ((sv-mv)/sdv > -lower))
-            {
-            # close short
-                closet = index(p)
-                tcost = tcost + pair[i,][[1]]*bcost + pair[i,][[2]]*scost
-                earn = (s[closet,][[1]] - s[opent,][[1]]) * opendir - tcost
-                ttrace = rbind(ttrace, as.data.frame(list(opendir=opendir,
-                                                       opent=opent, closet=closet,
-                                                       earn=earn, tcost=tcost)))
-                opendir = 0
-                tcost = 0
+                shortcap = 0
+                longcap = 0
+                holdcap = 0
+                shortindex = c()
+                longindex = c()
             }
         }
     }
@@ -125,17 +142,23 @@ bmstat <- function(bmrst)
 # bmrst from spreadbm
 # trade count, earning in total/avg/sd, max drawback, longest drawback time
     tcount = nrow(bmrst)
+
     tearn = 0.0
     avgearn = 0.0
     sdearn = 0.0
 
     tcost = 0.0
     avgcost = 0.0
-    sdcost = 00
+    sdcost = 0.0
 
     ttxdur = 0.0
     avgtxdur = 0.0
     sdtxdur = 0.0
+
+    maxdd = 0.0
+    avgdd = 0.0
+    sddd = 0.0
+
     if (tcount > 0)
     {
         earns = as.vector(bmrst$earn)
@@ -152,11 +175,18 @@ bmstat <- function(bmrst)
         ttxdur = as.numeric(sum(tduration))
         avgtxdur = as.numeric(mean(tduration))
         sdtxdur = as.numeric(sd(tduration))
+
+        maxdds = as.vector(bmrst$maxdd)
+        maxdd = max(maxdds)
+        avgdd = mean(maxdds)
+        sddd = sd(maxdds)
     }
     as.data.frame(list(tcount=tcount,
                        tearn=tearn, avgearn = avgearn, sdearn=sdearn,
                        tcost=tcost, avgcost = avgcost, sdcost=sdcost,
-                       ttxdur=ttxdur, avgtxdur=avgtxdur, sdtxdur=sdtxdur))
+                       ttxdur=ttxdur, avgtxdur=avgtxdur, sdtxdur=sdtxdur,
+                       maxdd=maxdd, avgdd=avgdd, sddd=sddd
+                       ))
 }
 
 getquote <- function(dbdrv, codes, startdate, enddate, pricetag='close')

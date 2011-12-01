@@ -16,13 +16,16 @@ decay=-0.5
 dotrd=F
 normalized=F
 
+upper.default=1.2
+lower.default=0.1
+
 # a list of pairs to visualize
 #visuallist="select cpair from large3 where pvalue <= 0.01"
-visuallist="select '000300.000908.000912.000918' as cpair"
+visuallist="select '000300.000908.000915.000917' as cpair"
 #visuallist="SELECT cpair from large3 where pvalue < 0.05 AND hlife < 25"
 
 # visualbm start/end time
-visualfrom=2007-01-01
+visualfrom=2011-01-01
 visualto=2011-12-31
 
 
