@@ -10,49 +10,88 @@ source('util.r')
 
 pairbm.draw <- function (dbdrv, left, right, startdate, enddate, betafrom, beta, upper, lower, hlife, decay)
 {
-    s.zoo = getquote(dbdrv, c(left, right), seq(startdate, length=2, by='-1 years')[2] , enddate)
+    s.zoo = getquote(dbdrv, c(left, right), startdate, enddate)
     snames = names(s.zoo)
 
     sprd <- apply(s.zoo, 1, function(x) {x[1] - sum(x[-1]*beta)})
     sprd <- zoo(as.vector(sprd), index(s.zoo))
 
-    bmrst = read.table(paste(left,paste(right,collapse='.')), header=T, stringsAsFactors=F)
+    bmrst = read.table(paste(left,paste(right,collapse='.'),tag,'trdbm',sep='.'), header=T, stringsAsFactors=F)
+
+    if (decay < 0) decay = round(hlife * -decay)
 
     relret = zoo(0, index(s.zoo))
     absret = zoo(0, index(s.zoo))
 
-    # caculate return for each day, merge then all and get cumsum
+    # caculate return for each day, merge them all and get cumsum
     for (i in 1:nrow(bmrst))
     {
         trd = bmrst[i,]
         ret = trd$opendir * diff(window(sprd, start=as.Date(trd$opent), end=as.Date(trd$closet)))
         absret = merge(absret, ret, all=T, fill=0)
-        relret = merge(absret/trd$holdcap, ret, all=T, fill=0)
+        relret = merge(relret, ret/trd$holdcap, all=T, fill=0)
     }
     relret[,1] <- apply(relret, 1, function(x) {sum(x)})
     relret = 1 + cumsum(relret[,1])
     absret[,1] <- apply(absret, 1, function(x) {sum(x)})
     absret = cumsum(absret[,1])
 
+    abscost = sum(bmrst$tcost)
+    relcost = sum(bmrst$tcost/bmrst$holdcap)
+    absallret = as.numeric(tail(absret,1)) - abscost
+    relallret = as.numeric(tail(relret,1)) - relcost
+
     pdf(paste(left,paste(right,collapse='.'),tag,'trdbm','pdf',sep='.'), width=17.55, height=8.3)
-    plot(relret)
     ylim = c(min(relret), max(relret))
-    abline(v=as.Date(unique(as.yearmon(index(returns)))),
+    plot(relret, ylim=ylim)
+    abline(v=as.Date(unique(as.yearmon(index(relret)))),
            h=seq(round(ylim[1],2),ylim[2],0.01),
            col='grey',lty='dashed',lwd=1)
-    title('Abosolute Returns (with Tx cost)')
+    abline(h=relallret, col='red', lty='dashed')
+    for (i in 1:nrow(bmrst))
+    {
+        trd = bmrst[i,]
+        x = as.Date(c(trd$opent, trd$closet))
+        xy = relret[x,]
+        color = ifelse((bmrst[i,]$opendir == 1), 'red', 'green')
+        lines(xy, col=color, lwd=2)
+        
+        x = as.Date(trd$closet)
+        r = as.numeric(relret[x])
+        y = c(r, r-trd$tcost/trd$holdcap)
+        lines(c(x,x), y, col='red', lwd=3)
+    }
 
-    plot(relret)
-    ylim = c(min(relret), max(relret))
-    abline(v=as.Date(unique(as.yearmon(index(returns)))),
-           h=seq(round(ylim[1],2),ylim[2],0.01),
-           col='grey',lty='dashed',lwd=1)
-
-    titlestr = sprintf('%s(in=%s) %s.%s.%s\nupper=%.2f lower=%.2f\nTxcost=%.2f',
+    title('Relative Returns (with Tx cost)')
+    titlestr = sprintf('%s(in=%s) %s.%s\nupper=%.2f lower=%.2f\nabs.Txcost=%.2f rel.Txcost=%.2f\nabs.ret=%.2f rel.ret=%.4f',
                         tag, betafrom,
-                        left, right, npair,
-                        upper, lower, sum(bmrst$tcost))
+                        left, paste(right,collapse='.'),
+                        upper, lower, abscost, relcost,
+                        absallret, relallret)
     mtext(titlestr, family='song', padj=1)
+
+    ylim = c(min(absret), max(absret))
+    plot(absret, ylim=ylim)
+    abline(v=as.Date(unique(as.yearmon(index(absret)))),
+           h=seq(round(ylim[1],-1),ylim[2],10),
+           col='grey',lty='dashed',lwd=1)
+    abline(h=absallret, col='red', lty='dashed')
+    for (i in 1:nrow(bmrst))
+    {
+        trd = bmrst[i,]
+        x = as.Date(c(trd$opent, trd$closet))
+        xy = absret[x,]
+        color = ifelse((bmrst[i,]$opendir == 1), 'red', 'green')
+        lines(xy, col=color, lwd=2)
+        
+        x = as.Date(trd$closet)
+        r = as.numeric(absret[x])
+        y = c(r, r-trd$tcost)
+        lines(c(x,x), y, col='red', lwd=3)
+    }
+    title('Absolute Returns (with Tx cost)')
+    mtext(titlestr, family='song', padj=1)
+
     dev.off()
 }
 
@@ -71,11 +110,11 @@ tag = plan['tag', 1]
 drv = dbDriver('SQLite')
 con <- dbConnect(drv, dbname = plan['cointdb', 1])
 tovisual <- dbGetQuery(con, plan['visuallist', 1])
-upper <- as.numeric(plan['upper', 1])
-lower <- as.numeric(plan['lower', 1])
+upper.default <- as.numeric(plan['upper.default', 1])
+lower.default <- as.numeric(plan['lower.default', 1])
 betafrom <- plan['betafrom', 1]
+decay = as.numeric(plan['decay', 1])
 pttest <- dbReadTable(con, betafrom)
-dbDisconnect(con)
 
 tovisual <- merge(tovisual, pttest, by='cpair', all=FALSE)
 
@@ -83,17 +122,27 @@ setwd(plan['dbdir', 1])
 for (i in 1:nrow(tovisual))
 {
     cpair <- tovisual[i,]$cpair
-    npair <- tovisual[i,]$npair
-    npair <- iconv(npair, from='UTF-8', to='GBK')
-    beta <- as.numeric(tovisual[i,]$beta)
+    beta = as.numeric(unlist(strsplit(tovisual[i,]$beta, ';')))
+
+    upper = upper.default
+    lower = lower.default
+    q = sprintf('select upper, lower from tradeparam where cpair="%s"', cpair)
+    ul = dbGetQuery(con, q)
+    if (nrow(ul) > 0)
+    {
+        upper = ul$upper
+        lower = ul$lower
+    }
 
     tmp <- unlist(strsplit(cpair, "\\."))
     left <- tmp[1]
-    right <- tmp[2]
+    right <- tmp[2:length(tmp)]
     print(c(left, right))
 
-    pairbm.draw(drv, left, right, npair, startdate, enddate, betafrom, beta, upper, lower, 22*6)
+    hlife <- as.numeric(tovisual[i,]$hlife)
+    pairbm.draw(drv, left, right, startdate, enddate, betafrom, beta, upper, lower, hlife, decay)
 }
+dbDisconnect(con)
 dbUnloadDriver(drv)
 warnings()
 

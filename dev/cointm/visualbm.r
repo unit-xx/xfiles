@@ -71,10 +71,11 @@ plotpair2 <- function (drv, left, right, tag, betafrom, startdate, enddate, beta
 
     if (dotrd)
     {
-        bmrst = spreadbm(sprd, s.zoo, upper, lower, decay)
+        bmrst = read.table(paste(left,paste(right,collapse='.'),tag,'trdbm',sep='.'), header=T, stringsAsFactors=F)
         for (i in 1:nrow(bmrst))
         {
-            x = bmrst[i,][,c(2,3)]
+            trd = bmrst[i,]
+            x = as.Date(c(trd$opent, trd$closet))
             xy = sprd[x]
             color = ifelse((bmrst[i,]$opendir == 1), 'red', 'green')
             lines(xy, col=color, lwd=2)
@@ -92,7 +93,7 @@ plotpair2 <- function (drv, left, right, tag, betafrom, startdate, enddate, beta
     {
         titlestr = sprintf('%s\ntrades=%d upper=%.2f lower=%.2f', titlestr, nrow(bmrst), upper, lower)
     }
-    title(titlestr, family='song', line=-2)
+    title(titlestr, family='song', line=-4)
 
     # Hurst exponet using DFA
     #hexp <- rollapply(sprd, 132, function(z){DFA(z)[[1]]}, by=5, align = "right")

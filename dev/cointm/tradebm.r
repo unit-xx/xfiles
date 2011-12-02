@@ -76,6 +76,10 @@ for (i in 1:nrow(tovisual))
 
     ret = pairbm(drv, left, right, startdate, enddate, beta, upper, lower, hlife, decay)
     write.table(ret, paste(left,paste(right,collapse='.'),tag,'trdbm',sep='.'), row.names=FALSE)
+
+    summary = bmstat(ret)
+    write.table(summary, paste(left,paste(right,collapse='.'),tag,'trdstat',sep='.'), row.names=FALSE)
+
 }
 dbDisconnect(con)
 dbUnloadDriver(drv)
