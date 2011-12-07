@@ -1,0 +1,20 @@
+# plan for calculating hurst exponent
+
+dbdir=hs300indexout
+
+cointdb=hs300index.db
+
+hurstdb=hs300index.hurst.db
+
+betafrom=large3
+
+visuallist="SELECT cpair from large3 where pvalue < 0.05 AND hlife < 25"
+#visuallist="select '000300.000908.000915.000917' as cpair"
+
+scale.max=256
+scale.min=2
+scale.ratio=2
+
+# the quote data before visualfrom should be long enough that contains at least scale.max days of data
+visualfrom=2010-01-01
+visualto=2011-12-31

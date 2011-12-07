@@ -39,35 +39,30 @@ plotpair2 <- function (drv, left, right, tag, betafrom, startdate, enddate, beta
 
     pdf(paste(left,paste(right,collapse='.'),tag,'pdf',sep='.'), width=17.55, height=8.3)
 
-    if (normalized)
-    {
-        nsprd = (s.zoo$sprd-s.zoo$emean)/s.zoo$esd
-        ylim = c(min(nsprd), max(nsprd))
-        plot(ylim=ylim, nsprd)
-        sprdunit = 0.5
-        abline(v=as.Date(unique(as.yearmon(index(s.zoo)))),
-               h=seq(round(ylim[1],-2),round(ylim[2],-1),sprdunit),
-               col='grey',lty='dashed',lwd=1)
-    } else
-    {
-        ylim = c(min(s.zoo$elower2, s.zoo$lower2, na.rm=TRUE), max(s.zoo$eupper2, s.zoo$upper2, na.rm=TRUE))
-        plot(ylim=ylim, sprd)
-        lines(s.zoo$upper, col='red')
-        lines(s.zoo$lower, col='red')
-        lines(s.zoo$upper2, col='red')
-        lines(s.zoo$lower2, col='red')
-        lines(s.zoo$smean, col='red', type='p', pch='+')
-        lines(s.zoo$eupper, col='blue')
-        lines(s.zoo$elower, col='blue')
-        lines(s.zoo$eupper2, col='blue')
-        lines(s.zoo$elower2, col='blue')
-        lines(s.zoo$emean, col='blue', type='p', pch='*')
+    ylim = c(min(s.zoo$elower2, s.zoo$lower2, na.rm=TRUE), max(s.zoo$eupper2, s.zoo$upper2, na.rm=TRUE))
+    plot(ylim=ylim, sprd, type='o', pch='-')
+    lines(s.zoo$upper, col='red')
+    lines(s.zoo$lower, col='red')
+    lines(s.zoo$upper2, col='red')
+    lines(s.zoo$lower2, col='red')
+    lines(s.zoo$smean, col='red', type='p', pch='+')
+    lines(s.zoo$eupper, col='blue')
+    lines(s.zoo$elower, col='blue')
+    lines(s.zoo$eupper2, col='blue')
+    lines(s.zoo$elower2, col='blue')
+    lines(s.zoo$emean, col='blue', type='p', pch='+')
 
-        sprdunit = 50
-        abline(v=as.Date(unique(as.yearmon(index(s.zoo)))),
-               h=seq(round(ylim[1],-2),round(ylim[2],-1),sprdunit),
-               col='grey',lty='dashed',lwd=1)
-   }
+    sprdunit = 50
+    abline(v=as.Date(unique(as.yearmon(index(s.zoo)))),
+           h=seq(round(ylim[1],-2),round(ylim[2],-1),sprdunit),
+           col='grey',lty='dashed',lwd=1)
+
+    titlestr = sprintf('%s(in=%s) %s.%s\nbeta=(%s)\nalpha=%.2f decay=%d\nin.pvalue=%.2f in.hlife=%.2f\nout.pvalue=%.2f out.hlife=%.2f',
+                        tag, betafrom,
+                        left, paste(right,collapse='.'),
+                        paste(round(beta,2), collapse=';'),
+                        alpha, decay,
+                        pvalue, hlife, newpvalue, newhlife)
 
     if (dotrd)
     {
@@ -80,20 +75,41 @@ plotpair2 <- function (drv, left, right, tag, betafrom, startdate, enddate, beta
             color = ifelse((bmrst[i,]$opendir == 1), 'red', 'green')
             lines(xy, col=color, lwd=2)
         }
-    }
-
-    titlestr = sprintf('%s(in=%s) %s.%s\nbeta=(%s)\nalpha=%.2f decay=%d\nin.pvalue=%.2f in.hlife=%.2f\nout.pvalue=%.2f out.hlife=%.2f',
-                        tag, betafrom,
-                        left, paste(right,collapse='.'),
-                        paste(round(beta,2), collapse=';'),
-                        alpha, decay,
-                        pvalue, hlife, newpvalue, newhlife)
-
-    if (dotrd)
-    {
         titlestr = sprintf('%s\ntrades=%d upper=%.2f lower=%.2f', titlestr, nrow(bmrst), upper, lower)
     }
+
     title(titlestr, family='song', line=-4)
+
+    plot(density(sprd), main=paste('raw spread', round(mean(sprd),3), round(sd(sprd),3)))
+
+    rrate = diff((sprd))
+    barplot(rrate, main='raw spread diff')
+    plot(density(rrate), main=paste('raw spread diff', round(mean(rrate),3), round(sd(rrate),3)))
+
+    if (normalized)
+    {
+        nsprd = (s.zoo$sprd-s.zoo$emean)/s.zoo$esd
+        ylim = c(min(nsprd), max(nsprd))
+        plot(ylim=ylim, nsprd, type='o', pch='-', main='normalized spread view')
+        sprdunit = 0.2
+        abline(v=as.Date(unique(as.yearmon(index(s.zoo)))),
+               h=seq(round(ylim[1],0),round(ylim[2],0),sprdunit),
+               col='grey',lty='dashed',lwd=1)
+        if (dotrd)
+        {
+            for (i in 1:nrow(bmrst))
+            {
+                trd = bmrst[i,]
+                x = as.Date(c(trd$opent, trd$closet))
+                xy = nsprd[x]
+                color = ifelse((bmrst[i,]$opendir == 1), 'red', 'green')
+                lines(xy, col=color, lwd=2)
+            }
+        }
+        rrate = diff((nsprd))
+        barplot(rrate, main='normalized spread diff')
+        plot(density(rrate), main=paste('normalized spread diff', round(mean(rrate),3), round(sd(rrate),3)))
+    }
 
     # Hurst exponet using DFA
     #hexp <- rollapply(sprd, 132, function(z){DFA(z)[[1]]}, by=5, align = "right")

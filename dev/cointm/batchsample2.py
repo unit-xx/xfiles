@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 # generate batch .in/.out samples for testing.
-# use wind db
+# use gangao db
 
 import sys, csv, os
 import ConfigParser
@@ -19,8 +19,7 @@ outdir = o['outdir']
 codefn = o['codefn']
 start = o['start']
 end = o['end']
-needex = o['needex']
-market = o['market']
+isindex = o['isindex']
 
 ip = o['ip']
 port = int(o['port'])
@@ -31,51 +30,46 @@ passwd = o['passwd']
 force = bool(int(o['force']))
 
 def main():
-    q1 = """
-select 
-    F16_1090 as code
-    ,ob_object_name_1090 as name
-    ,F5_1120 as open
-    ,F8_1120 as close
-    ,F6_1120 as high
-    ,F7_1120 as low
-    ,F2_1120 as "DATE"
-    ,F9_1120 as vol
-    ,F11_1120 as turnover
-    , 1 as factor
-from wind.tb_object_1090,wind.TB_OBJECT_1120
-where
-    F16_1090=:code
-    and F1_1120=F2_1090
-    and F4_1090=:market
-    and F5_1120 is not NULL
-    and F2_1120>=:startdate
-    and F2_1120<=:enddate
-order by "DATE"
+    qstk = """
+select
+    b.tradingcode as code, 
+    b.secuabbr as name, 
+    a.openingprice as open, 
+    a.closingprice as close, 
+    a.highestprice as high, 
+    a.lowestprice as low, 
+    --a.adjustclosingprice as adjclose, 
+    TO_CHAR(a.tradingday, 'yyyymmdd') as "DATE", 
+    a.turnovervol as vol, 
+    a.turnoverval as turnover, 
+    a.adjustclosingprice/a.closingprice as factor
+from center_admin.stk_dailyquote a, center_admin.stk_basicinfo b 
+where 
+    b.tradingcode=:code 
+    and a.secucode=b.secucode 
+    and a.tradingday>=TO_DATE(:startdate, 'yyyymmdd')
+    and a.tradingday<=TO_DATE(:enddate, 'yyyymmdd')
     """
 
-    q2 = """
-select 
-    F16_1090 as code
-    ,ob_object_name_1090 as name
-    ,F4_1425 as open
-    ,F7_1425 as close
-    ,F5_1425 as high
-    ,F6_1425 as low
-    ,F2_1425 as "DATE"
-    ,F8_1425 as vol
-    ,F9_1425 as turnover
-    ,F10_1425 as factor
-    --,TO_CHAR(1000*F9_1425/F11_1425, 'FM9999.99') as avgprice
-from wind.tb_object_1090,wind.TB_OBJECT_1425
-where
-    F16_1090=:code
-    and F1_1425=F2_1090
-    and F4_1090=:market
-    and F5_1425 is not NULL
-    and F2_1425>=:startdate
-    and F2_1425<=:enddate
-order by "DATE"
+    qinx = """
+select
+    b.tradingcode as code, 
+    b.secuabbr as name, 
+    a.openingprice as open, 
+    a.closingprice as close, 
+    a.highestprice as high, 
+    a.lowestprice as low, 
+    --a.closingprice as adjclose, 
+    TO_CHAR(a.tradingday, 'yyyymmdd') as "DATE", 
+    a.turnovervol as vol, 
+    a.turnoverval as turnover, 
+    1 as factor
+from center_admin.inx_dailyquote a, center_admin.inx_basicinfo b 
+where 
+    b.tradingcode=:code
+    and a.indexcode=b.secucode 
+    and a.tradingday>=TO_DATE(:startdate, 'yyyymmdd')
+    and a.tradingday<=TO_DATE(:enddate, 'yyyymmdd')
     """
 
     createtbl = """
@@ -86,6 +80,7 @@ open real,
 close real,
 high real,
 low real,
+--adjclose real,
 date text NOT NULL PRIMARY KEY ASC,
 vol real,
 turnover real,
@@ -102,10 +97,10 @@ INSERT OR REPLACE INTO data
 VALUES (?,?,?,?,?,?,?,?,?,?)
     """
 
-    if needex:
-        q = q2
+    if isindex:
+        q = qinx
     else:
-        q = q1
+        q = qstk
 
     dsn = cx_Oracle.makedsn(ip, port, sid)
     conn = cx_Oracle.connect(user, passwd, dsn)
@@ -140,7 +135,7 @@ VALUES (?,?,?,?,?,?,?,?,?,?)
         #print existdate
 
         # get data from wind db
-        curs.execute(q, {'code':code, 'startdate':start, 'enddate':end, 'market':market})
+        curs.execute(q, {'code':code, 'startdate':start, 'enddate':end})
 
         dateindex = 6
 
