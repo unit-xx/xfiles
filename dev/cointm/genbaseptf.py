@@ -2,6 +2,7 @@
 
 import sys, csv, os
 import ConfigParser
+import datetime
 import sqlite3
 from collections import defaultdict
 
@@ -13,13 +14,13 @@ c_shares=5
 c_cointdbn='hs300index.db'
 c_betafrom='large3'
 c_quotedbdir='hs300indexout'
-c_visuallist="select '000300.000908.000915.000917' as cpair"
+c_visuallist="select '000300.000908.000911.000917' as cpair"
 
-c_ip = '172.18.19.37'
+c_ip = '172.18.18.67'
 c_port = 1521
-c_sid = 'webdb1'
-c_user = 'beijing'
-c_passwd = 'beijing'
+c_sid = 'centerdb'
+c_user = 'center_read'
+c_passwd = 'center_read'
 
 #c_visuallist="select cpair from large3 where pvalue < 0.05 AND hlife < 25"
 
@@ -27,9 +28,11 @@ c_passwd = 'beijing'
 
 betaq = 'select cpair, beta from %s where cpair=?' % c_betafrom
 
-lastdateq = "select max(F2_1120) from wind.tb_object_1090,wind.TB_OBJECT_1120 where F16_1090='000300' and F1_1120=F2_1090 and F4_1090='S'"
+lastdateq = "select TO_CHAR(max(a.tradingday), 'yyyymmdd') from center_admin.inx_dailyquote a, center_admin.inx_basicinfo b where b.tradingcode='000300' and a.indexcode=b.secucode"
 
-quoteq1 = 'select F8_1120 from wind.tb_object_1090,wind.TB_OBJECT_1120 where F1_1120=F2_1090 and F16_1090=:code and F4_1090=:mkt and F2_1120=:day'
+quoteinx = "select closingprice from center_admin.inx_dailyquote a, center_admin.inx_basicinfo b where b.tradingcode=:code and a.indexcode=b.secucode and tradingday=TO_DATE(:day,'yyyymmdd')"
+
+quotestk = "select closingprice from center_admin.stk_dailyquote a, center_admin.stk_basicinfo b where b.tradingcode=:code and a.secucode=b.secucode and tradingday=TO_DATE(:day,'yyyymmdd')"
 
 weightq = ''
 
@@ -42,38 +45,46 @@ dsn = cx_Oracle.makedsn(c_ip, c_port, c_sid)
 conn = cx_Oracle.connect(c_user, c_passwd, dsn)
 curs = conn.cursor()
 
-for bleg in cpairs:
+legcap = 0.0
+for pair in cpairs:
     # read beta for buy legs
-    legcode, beta = cointdb.execute(betaq, (bleg,)).fetchall()[0]
+    legcode, beta = cointdb.execute(betaq, (pair,)).fetchall()[0]
     legs = legcode.split('.')[1:]
     beta = [float(x) for x in beta.split(';')]
 
     lastday = curs.execute(lastdateq).fetchall()[0][0]
 
-    # read weight for comonents for buy lesg
-    # NOTE: wind db error, and read from file temporarily.
+    # read weight for components for buy lesg
     # read latest quotes for buy legs
     for i, l in enumerate(legs):
-        legq = curs.execute(quoteq1, {'code':l, 'mkt':'S', 'day':lastday}).fetchall()[0][0]
+        legq = curs.execute(quoteinx, {'code':l, 'day':lastday}).fetchall()[0][0]
+        legcap += legq * beta[i] * c_multiplier * c_shares
         wtfn = l+'.wt'
-        for line in open(os.path.join(c_quotedbdir, wtfn)):
-            stk, weight = line.split()
+        wtf = open(os.path.join(c_quotedbdir, wtfn), 'rb')
+        csvrd = csv.reader(wtf)
+        for line in csvrd:
+            stk, weight = line
             stkalloc[stk] += legq * beta[i] * float(weight) * c_multiplier * c_shares/100
+        wtf.close()
+    stkcap = sum(stkalloc.values())
+    print "stkcap: %.3f, legcap: %.3f, diffratio: %.3f%%" % (stkcap, legcap, 100*(stkcap-legcap)/legcap)
+
     # now we have capital allocation for each component stock.
     # and we can read the latest close prices and generate the portfolio in stock count
-
-    print 'IF,IF,%d'%c_shares
+    today = (datetime.datetime.today().strftime('%Y%m%d'))
+    ptf = open('.'.join([pair, today, 'ptf']), 'wb')
+    csvwrt = csv.writer(ptf)
+    csvwrt.writerow(['IF', 'IF', c_shares])
     for s in stkalloc:
-        sq = curs.execute(quoteq1, {'code':s, 'mkt':'A', 'day':lastday}).fetchall()[0][0]
+        sq = curs.execute(quotestk, {'code':s, 'day':lastday}).fetchall()[0][0]
         stkalloc[s] = stkalloc[s]/sq
         mkt = ''
-        if s[0:4] == '000':
+        if s[0:2] == '00':
             mkt = 'SZ'
         else:
             mkt = 'SH'
-        print ','.join([mkt, s, str(int(stkalloc[s]))])
+        csvwrt.writerow([mkt, s, str(int(stkalloc[s]))])
+    ptf.close()
 
-
-
-
+    legcap = 0.0
 
