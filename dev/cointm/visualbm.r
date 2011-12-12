@@ -1,10 +1,11 @@
 library(zoo)
 library(tseries)
 library(RSQLite)
+library(TTR)
 
 source('util.r')
 
-plotpair2 <- function (drv, left, right, tag, betafrom, startdate, enddate, beta, alpha, pvalue, hlife, smean, ssd, decay, upper, lower, dotrd=FALSE, normalized=F)
+plotpair2 <- function (drv, left, right, tag, betafrom, startdate, enddate, beta, alpha, pvalue, hlife, smean, ssd, decay, upper, lower, hurstdb, scale.max, scale.min, scale.ratio, dotrd=FALSE, normalized=F, sprddetail=F, quantilebound=0.05, usersi=F)
 {
     s.zoo = getquote(dbdrv, c(left, right), startdate, enddate)
     snames = names(s.zoo)
@@ -39,7 +40,7 @@ plotpair2 <- function (drv, left, right, tag, betafrom, startdate, enddate, beta
 
     pdf(paste(left,paste(right,collapse='.'),tag,'pdf',sep='.'), width=17.55, height=8.3)
 
-    ylim = c(min(s.zoo$elower2, s.zoo$lower2, na.rm=TRUE), max(s.zoo$eupper2, s.zoo$upper2, na.rm=TRUE))
+    ylim = c(min(s.zoo$elower2, s.zoo$lower2, s.zoo$sprd, na.rm=TRUE), max(s.zoo$eupper2, s.zoo$upper2, s.zoo$sprd, na.rm=TRUE))
     plot(ylim=ylim, sprd, type='o', pch='-')
     lines(s.zoo$upper, col='red')
     lines(s.zoo$lower, col='red')
@@ -54,7 +55,7 @@ plotpair2 <- function (drv, left, right, tag, betafrom, startdate, enddate, beta
 
     sprdunit = 50
     abline(v=as.Date(unique(as.yearmon(index(s.zoo)))),
-           h=seq(round(ylim[1],-2),round(ylim[2],-1),sprdunit),
+           h=seq(round(ylim[1]-sprdunit,-2),round(ylim[2]+sprdunit,-2),sprdunit),
            col='grey',lty='dashed',lwd=1)
 
     titlestr = sprintf('%s(in=%s) %s.%s\nbeta=(%s)\nalpha=%.2f decay=%d\nin.pvalue=%.2f in.hlife=%.2f\nout.pvalue=%.2f out.hlife=%.2f',
@@ -63,6 +64,35 @@ plotpair2 <- function (drv, left, right, tag, betafrom, startdate, enddate, beta
                         paste(round(beta,2), collapse=';'),
                         alpha, decay,
                         pvalue, hlife, newpvalue, newhlife)
+
+    if (usersi)
+    {
+        rsiline = RSI(sprd)
+        s.zoo = cbind(s.zoo, rsi=rsiline)
+        par(new=T)
+        plot(s.zoo$rsi, col='green', lty='dashed', axes=F, xlab='', ylab='')
+        axis(4, col.axis='black', col='black', padj=-4)
+    }
+
+    # add hurst exponent
+    if (!is.na(hurstdb))
+    {
+        tbname = paste('hurst', cpair, scale.max, scale.min, scale.ratio, sep='.')
+        if (dbExistsTable(hurstdb, tbname))
+        {
+            hline = dbReadTable(hurstdb, paste('[', tbname, ']', sep=''))
+            hline = window(zoo(hline$h, as.Date(hline$date, '%Y-%m-%d')), start=startdate, end=enddate)
+            havg = ema(hline, lambda=2.8854*hlife)
+            havg = zoo(havg, index(hline))
+            s.zoo = cbind(s.zoo, hmean=havg)
+            s.zoo = cbind(s.zoo, hurst=hline)
+
+            par(new=TRUE)
+            #plot(s.zoo$hurst, col='green', axes=F, bty='c', xlab='', ylab='')
+            plot(s.zoo$hmean, col=colors()[96], axes=F, bty='c', xlab='', ylab='')
+            axis(4, col.axis='black', col='black')
+        }
+    }
 
     if (dotrd)
     {
@@ -80,11 +110,45 @@ plotpair2 <- function (drv, left, right, tag, betafrom, startdate, enddate, beta
 
     title(titlestr, family='song', line=-4)
 
-    plot(density(sprd), main=paste('raw spread', round(mean(sprd),3), round(sd(sprd),3)))
+    #acf((as.vector(sprd)), lag.max=600, na.action=na.pass)
 
-    rrate = diff((sprd))
-    barplot(rrate, main='raw spread diff')
-    plot(density(rrate), main=paste('raw spread diff', round(mean(rrate),3), round(sd(rrate),3)))
+    if (sprddetail)
+    {
+        probs = c(quantilebound, 1-quantilebound)
+
+        # spread density
+        #q = quantile(sprd, probs=probs)
+        #plot(density(sprd), main=sprintf('raw spread mean: %.2f, sd: %.2f, %d%% quantile (%.2f, %.2f)', round(mean(sprd),3), round(sd(sprd),3), quantilebound*100, q[1], q[2]))
+        #abline(v=q)
+
+        # spread diff, barplot and density
+        rrate = diff((sprd))
+        #q = quantile(rrate, probs=probs)
+        #barplot(rrate, main=sprintf('spread diff mean: %.2f, sd: %.2f, %d%% quantile (%.2f, %.2f)', round(mean(rrate),3), round(sd(rrate),3), quantilebound*100, q[1], q[2]))
+        #abline(v=as.Date(unique(as.yearmon(index(rrate)))), h=q)
+
+        #plot(density(rrate), main=sprintf('spread diff mean: %.2f, sd: %.2f, %d%% quantile (%.2f, %.2f)', round(mean(rrate),3), round(sd(rrate),3), quantilebound*100, q[1], q[2]))
+        #abline(v=q)
+
+        # spread diff, its signs and absolute values
+        #rsign = sign(rrate)
+        #rvalue = abs(rrate)
+        #q = quantile(rvalue, probs=probs)
+        #toosmall = which(rvalue < q[1])
+        #toolarge = which(rvalue > q[2])
+        #rsign[toosmall] = 0
+        #rsign[toolarge] = 0
+        #plot(cumsum(rsign), main="up/down indicator")
+        #abline(v=as.Date(unique(as.yearmon(index(rsign)))), col='grey',lty='dashed',lwd=1)
+        #acf(cumsum(as.vector(rsign)), lag.max=600, na.action=na.pass)
+
+        #barplot(rvalue, main=sprintf('spread diff absvalue mean: %.2f, sd: %.2f, %d%% quantile (%.2f, %.2f)', round(mean(rvalue),3), round(sd(rvalue),3), quantilebound*100, q[1], q[2]))
+        #abline(v=as.Date(unique(as.yearmon(index(rvalue)))), h=q)
+
+        #plot(hist(rvalue, plot=F), main=sprintf('spread diff absvalue mean: %.2f, sd: %.2f, %d%% quantile (%.2f, %.2f)', round(mean(rvalue),3), round(sd(rvalue),3), quantilebound*100, q[1], q[2]))
+        #abline(v=q)
+
+    }
 
     if (normalized)
     {
@@ -93,7 +157,7 @@ plotpair2 <- function (drv, left, right, tag, betafrom, startdate, enddate, beta
         plot(ylim=ylim, nsprd, type='o', pch='-', main='normalized spread view')
         sprdunit = 0.2
         abline(v=as.Date(unique(as.yearmon(index(s.zoo)))),
-               h=seq(round(ylim[1],0),round(ylim[2],0),sprdunit),
+               h=seq(round(ylim[1]-sprdunit,0),round(ylim[2]+sprdunit,0),sprdunit),
                col='grey',lty='dashed',lwd=1)
         if (dotrd)
         {
@@ -106,16 +170,15 @@ plotpair2 <- function (drv, left, right, tag, betafrom, startdate, enddate, beta
                 lines(xy, col=color, lwd=2)
             }
         }
-        rrate = diff((nsprd))
-        barplot(rrate, main='normalized spread diff')
-        plot(density(rrate), main=paste('normalized spread diff', round(mean(rrate),3), round(sd(rrate),3)))
+        if (sprddetail)
+        {
+            rrate = diff((nsprd))
+            barplot(rrate, main='normalized spread diff')
+            plot(density(rrate), main=paste('normalized spread diff', round(mean(rrate),3), round(sd(rrate),3)))
+        }
+        acf((as.vector(nsprd)), lag.max=600, na.action=na.pass)
     }
 
-    # Hurst exponet using DFA
-    #hexp <- rollapply(sprd, 132, function(z){DFA(z)[[1]]}, by=5, align = "right")
-    #par(new=TRUE)
-    #plot(hexp, col='green', axes=FALSE, bty='c', xlab='', ylab='')
-    #axis(4, col.axis='black', col='black')
     dev.off()
 }
 
@@ -132,6 +195,8 @@ enddate = as.Date(plan['visualto', 1])
 tag = plan['tag', 1]
 decay = as.numeric(plan['decay', 1])
 normalized = as.logical(plan['normalized', 1])
+sprddetail = as.logical(plan['sprddetail', 1])
+quantilebound = as.numeric(plan['quantilebound', 1])
 
 drv = dbDriver('SQLite')
 con <- dbConnect(drv, dbname = plan['cointdb', 1])
@@ -142,6 +207,14 @@ betafrom <- plan['betafrom', 1]
 dotrd <- as.logical(plan['dotrd', 1])
 upper.default <- as.numeric(plan['upper.default', 1])
 lower.default <- as.numeric(plan['lower.default', 1])
+
+usehurst = as.logical(plan['usehurst', 1])
+if (usehurst) hurstdb = dbConnect(drv, dbname=plan['hurstdb', 1]) else hurstdb = NA
+scale.max = as.integer(plan['scale.max', 1])
+scale.min = as.integer(plan['scale.min', 1])
+scale.ratio = as.integer(plan['scale.ratio', 1])
+
+usersi = as.logical(plan['usersi', 1])
 
 pttest <- dbReadTable(con, betafrom)
 tovisual <- merge(tovisual, pttest, by='cpair', all=FALSE)
@@ -177,8 +250,9 @@ for (i in 1:nrow(tovisual))
         }
     }
 
-    plotpair2(drv, left, right, tag, betafrom, startdate, enddate, beta, alpha, pvalue, hlife, smean, ssd, decay, upper, lower, dotrd, normalized)
+    plotpair2(drv, left, right, tag, betafrom, startdate, enddate, beta, alpha, pvalue, hlife, smean, ssd, decay, upper, lower, hurstdb, scale.max, scale.min, scale.ratio, dotrd, normalized, sprddetail, quantilebound, usersi)
 }
+if (usehurst) dbDisconnect(hurstdb)
 dbDisconnect(con)
 dbUnloadDriver(drv)
 warnings()

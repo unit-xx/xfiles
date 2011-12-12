@@ -8,10 +8,11 @@ hurstdb=hs300index.hurst.db
 
 betafrom=large3
 
-visuallist="SELECT cpair from large3 where pvalue < 0.05 AND hlife < 25"
+#visuallist="SELECT cpair from large3 where pvalue < 0.05 AND hlife < 25"
+visuallist="SELECT cpair from large3 where pvalue < 0.06"
 #visuallist="select '000300.000908.000915.000917' as cpair"
 
-scale.max=256
+scale.max=512
 scale.min=2
 scale.ratio=2
 

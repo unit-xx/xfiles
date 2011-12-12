@@ -10,17 +10,27 @@ cointdb=hs300index.db
 
 # source of beta, NA for calc by lm, so don't use NA as tag
 betafrom=large3
-tmode='1v3'
-decay=132
+decay=-8
 
 dotrd=F
+upper.default=1.2
+lower.default=0.1
+
+normalized=F
+sprddetail=F
+
+usehurst=F
+hurstdb=hs300index.hurst.db
+scale.max=256
+scale.min=2
+scale.ratio=2
 
 # a list of pairs to visualize
-#visuallist="select cpair from large3 where pvalue <= 0.01"
-visuallist="select '000300.000908.000911.000950' as cpair"
+#visuallist="select cpair from large3 where pvalue <= 0.05"
+#visuallist="select '000300.000908.000915.000917' as cpair"
+#visuallist="select '000300.000908.000909.000910' as cpair"
+visuallist="SELECT cpair from large3 where pvalue < 0.05 AND hlife < 25"
 
 # visualbm start/end time
-visualfrom=2011-01-01
+visualfrom=2005-01-01
 visualto=2011-12-31
-
-
