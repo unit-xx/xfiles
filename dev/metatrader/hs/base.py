@@ -81,6 +81,8 @@ class request:
     # some required params are stored in sessionparams. If
     # needed, read by self.session['<key>']
     sessionparams = []
+    # NOTE: 1. param key is different with corresponded key in config
+    # 2. fill blank for unspecified keys? or just ignore
 
     def __init__(self, session):
         self.session = session
