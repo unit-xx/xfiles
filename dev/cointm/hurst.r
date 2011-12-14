@@ -39,6 +39,12 @@ drv = dbDriver('SQLite')
 con <- dbConnect(drv, dbname = plan['cointdb', 1])
 
 tovisual <- dbGetQuery(con, plan['visuallist', 1])
+if (!is.na(plan['visualfile', 1]))
+{
+    visualfile <- read.table(plan['visualfile', 1], col.names='cpair', stringsAsFactors=F, colClasses='character', strip.white=TRUE)
+    tovisual <- rbind(tovisual, visualfile)
+}
+
 betafrom <- plan['betafrom', 1]
 
 pttest <- dbReadTable(con, betafrom)

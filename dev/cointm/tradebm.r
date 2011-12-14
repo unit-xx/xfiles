@@ -51,6 +51,8 @@ pttest <- dbReadTable(con, betafrom)
 tovisual <- merge(tovisual, pttest, by='cpair', all=FALSE)
 rownames(tovisual) <- tovisual$cpair
 
+summary <- data.frame(stringsAsFactors=FALSE)
+
 setwd(plan['dbdir', 1])
 for (i in 1:nrow(tovisual))
 {
@@ -60,7 +62,7 @@ for (i in 1:nrow(tovisual))
     tmp <- unlist(strsplit(cpair, "\\."))
     left <- tmp[1]
     right <- tmp[2:length(tmp)]
-    print(c(left, right))
+    print(c(i, cpair))
 
     upper = upper.default
     lower = lower.default
@@ -77,10 +79,10 @@ for (i in 1:nrow(tovisual))
     ret = pairbm(drv, left, right, startdate, enddate, beta, upper, lower, hlife, decay)
     write.table(ret, paste(left,paste(right,collapse='.'),tag,'trdbm',sep='.'), row.names=FALSE)
 
-    summary = bmstat(ret)
-    write.table(summary, paste(left,paste(right,collapse='.'),tag,'trdstat',sep='.'), row.names=FALSE)
-
+    summary = rbind(summary, cbind(cpair=cpair, bmstat(ret)))
 }
+write.table(summary, paste(tag, format(startdate, format='%Y%m%d'), format(enddate, format='%Y%m%d'), 'trdstat',sep='.'), row.names=FALSE)
+
 dbDisconnect(con)
 dbUnloadDriver(drv)
 warnings()

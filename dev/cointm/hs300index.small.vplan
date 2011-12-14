@@ -11,7 +11,7 @@ cointdb=hs300index.db
 # source of beta, NA for calc by lm, so don't use NA as tag
 #betafrom=small3
 betafrom=large3
-decay=-1.5
+decay=-1
 
 dotrd=F
 upper.default=1.2
@@ -28,15 +28,21 @@ scale.max=512
 scale.min=2
 scale.ratio=2
 
+useacf=T
+
 usersi=T
 
 # a list of pairs to visualize
 #visuallist="select cpair from large3 where pvalue <= 0.06"
 #visuallist="select '000300.000908.000915.000917' as cpair"
-#visuallist="select '000300.000910.000918.000950' as cpair"
+#visuallist="select '000300.000915.000950.000952' as cpair"
 visuallist="SELECT cpair from large3 where pvalue < 0.05 AND hlife < 25"
+#visuallist="select '' as cpair"
 
-# visualbm start/end time
+#visualfile=visualfile
+visualfile=NA
+
+# visualbm start/end time, used as backtest period in tradebm.r
 visualfrom=2010-01-01
 visualto=2011-12-31
 

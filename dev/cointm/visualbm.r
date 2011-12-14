@@ -5,7 +5,7 @@ library(TTR)
 
 source('util.r')
 
-plotpair2 <- function (drv, left, right, tag, betafrom, startdate, enddate, beta, alpha, pvalue, hlife, smean, ssd, decay, upper, lower, hurstdb, scale.max, scale.min, scale.ratio, dotrd=FALSE, normalized=F, sprddetail=F, quantilebound=0.05, usersi=F)
+plotpair2 <- function (drv, left, right, tag, betafrom, startdate, enddate, beta, alpha, pvalue, hlife, smean, ssd, decay, upper, lower, hurstdb, scale.max, scale.min, scale.ratio, dotrd=FALSE, normalized=F, sprddetail=F, quantilebound=0.05, usersi=F, useacf=F)
 {
     s.zoo = getquote(dbdrv, c(left, right), startdate, enddate)
     snames = names(s.zoo)
@@ -65,12 +65,26 @@ plotpair2 <- function (drv, left, right, tag, betafrom, startdate, enddate, beta
                         alpha, decay,
                         pvalue, hlife, newpvalue, newhlife)
 
+    if (dotrd)
+    {
+        bmrst = read.table(paste(left,paste(right,collapse='.'),tag,'trdbm',sep='.'), header=T, stringsAsFactors=F)
+        for (i in 1:nrow(bmrst))
+        {
+            trd = bmrst[i,]
+            x = as.Date(c(trd$opent, trd$closet))
+            xy = sprd[x]
+            color = ifelse((bmrst[i,]$opendir == 1), 'red', 'green')
+            lines(xy, col=color, lwd=2)
+        }
+        titlestr = sprintf('%s\ntrades=%d upper=%.2f lower=%.2f\ntearns=%.2f trelearns=%.2f%%', titlestr, nrow(bmrst), upper, lower, sum(bmrst$earn), 100*sum(bmrst$earn/bmrst$holdcap))
+    }
+
     if (usersi)
     {
         rsiline = RSI(sprd)
         s.zoo = cbind(s.zoo, rsi=rsiline)
         par(new=T)
-        plot(s.zoo$rsi, col='green', lty='dashed', axes=F, xlab='', ylab='')
+        plot(s.zoo$rsi, col=colors()[30], lty='dashed', axes=F, xlab='', ylab='')
         axis(4, col.axis='black', col='black', padj=-4)
     }
 
@@ -94,23 +108,9 @@ plotpair2 <- function (drv, left, right, tag, betafrom, startdate, enddate, beta
         }
     }
 
-    if (dotrd)
-    {
-        bmrst = read.table(paste(left,paste(right,collapse='.'),tag,'trdbm',sep='.'), header=T, stringsAsFactors=F)
-        for (i in 1:nrow(bmrst))
-        {
-            trd = bmrst[i,]
-            x = as.Date(c(trd$opent, trd$closet))
-            xy = sprd[x]
-            color = ifelse((bmrst[i,]$opendir == 1), 'red', 'green')
-            lines(xy, col=color, lwd=2)
-        }
-        titlestr = sprintf('%s\ntrades=%d upper=%.2f lower=%.2f', titlestr, nrow(bmrst), upper, lower)
-    }
-
     title(titlestr, family='song', line=-4)
 
-    #acf((as.vector(sprd)), lag.max=600, na.action=na.pass)
+    if (useacf) acf((as.vector(sprd)), lag.max=600, na.action=na.pass)
 
     if (sprddetail)
     {
@@ -176,7 +176,7 @@ plotpair2 <- function (drv, left, right, tag, betafrom, startdate, enddate, beta
             barplot(rrate, main='normalized spread diff')
             plot(density(rrate), main=paste('normalized spread diff', round(mean(rrate),3), round(sd(rrate),3)))
         }
-        acf((as.vector(nsprd)), lag.max=600, na.action=na.pass)
+        if (useacf) acf((as.vector(nsprd)), lag.max=600, na.action=na.pass)
     }
 
     dev.off()
@@ -202,6 +202,12 @@ drv = dbDriver('SQLite')
 con <- dbConnect(drv, dbname = plan['cointdb', 1])
 
 tovisual <- dbGetQuery(con, plan['visuallist', 1])
+if (!is.na(plan['visualfile', 1]))
+{
+    visualfile <- read.table(plan['visualfile', 1], col.names='cpair', stringsAsFactors=F, colClasses='character', strip.white=TRUE)
+    tovisual <- rbind(tovisual, visualfile)
+}
+
 betafrom <- plan['betafrom', 1]
 
 dotrd <- as.logical(plan['dotrd', 1])
@@ -215,6 +221,7 @@ scale.min = as.integer(plan['scale.min', 1])
 scale.ratio = as.integer(plan['scale.ratio', 1])
 
 usersi = as.logical(plan['usersi', 1])
+useacf = as.logical(plan['useacf', 1])
 
 pttest <- dbReadTable(con, betafrom)
 tovisual <- merge(tovisual, pttest, by='cpair', all=FALSE)
@@ -250,7 +257,7 @@ for (i in 1:nrow(tovisual))
         }
     }
 
-    plotpair2(drv, left, right, tag, betafrom, startdate, enddate, beta, alpha, pvalue, hlife, smean, ssd, decay, upper, lower, hurstdb, scale.max, scale.min, scale.ratio, dotrd, normalized, sprddetail, quantilebound, usersi)
+    plotpair2(drv, left, right, tag, betafrom, startdate, enddate, beta, alpha, pvalue, hlife, smean, ssd, decay, upper, lower, hurstdb, scale.max, scale.min, scale.ratio, dotrd, normalized, sprddetail, quantilebound, usersi, useacf)
 }
 if (usehurst) dbDisconnect(hurstdb)
 dbDisconnect(con)

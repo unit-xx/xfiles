@@ -147,6 +147,10 @@ bmstat <- function(bmrst)
     avgearn = 0.0
     sdearn = 0.0
 
+    trelearn = 0.0
+    avgrelearn = 0.0
+    sdrelearn = 0.0
+
     tcost = 0.0
     avgcost = 0.0
     sdcost = 0.0
@@ -166,6 +170,11 @@ bmstat <- function(bmrst)
         avgearn = mean(earns)
         sdearn = sd(earns)
 
+        relearns = as.vector(bmrst$earn/bmrst$holdcap)
+        trelearn = sum(relearns)
+        avgrelearn = mean(relearns)
+        sdrelearn = sd(relearns)
+
         cost = as.vector(bmrst$tcost)
         tcost = sum(cost)
         avgcost = mean(cost)
@@ -183,6 +192,7 @@ bmstat <- function(bmrst)
     }
     as.data.frame(list(tcount=tcount,
                        tearn=tearn, avgearn = avgearn, sdearn=sdearn,
+                       trelearn=trelearn, avgrelearn = avgrelearn, sdrelearn=sdrelearn,
                        tcost=tcost, avgcost = avgcost, sdcost=sdcost,
                        ttxdur=ttxdur, avgtxdur=avgtxdur, sdtxdur=sdtxdur,
                        maxdd=maxdd, avgdd=avgdd, sddd=sddd
