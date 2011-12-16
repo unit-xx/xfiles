@@ -7,7 +7,7 @@ os.putenv('NLS_LANG', 'SIMPLIFIED CHINESE_CHINA.ZHS16GBK')
 import cx_Oracle
 
 c_quotedbdir='hs300indexout'
-c_codefn='hs300indexb'
+c_codefn='hs300indexa'
 
 c_ip = '172.18.18.67'
 c_port = 1521
@@ -59,14 +59,14 @@ for line in open(c_codefn):
         indexquote2 += cwt[c] * stkquote
     indexquote3 = float(curs.execute(quoteinx, {'code':index, 'day':stkday}).fetchall()[0][0])
 
-    #print "index quote for %s in %s is %.3f, the calculated quote in %s is %.3f (while the truth is %.3f), the diff ratio is %.3f%%" % (index, wtday, indexquote, stkday, indexquote2, indexquote3, ((indexquote2-indexquote3)*100/indexquote3))
-    print "%s weight accuracy is %.3f%% (%.3f vs. %.3f (est. from %s) in %s)" % (index, ((indexquote2-indexquote3)*100/indexquote3), indexquote3, indexquote2, wtday, stkday,)
+    print "%s weight accuracy is %.3f%% (%.3f (true data in %s) vs. %.3f (est. from %s))" % (index, ((indexquote2-indexquote3)*100/indexquote3), indexquote3, stkday, indexquote2, wtday)
 
     wtfn = os.path.join(c_quotedbdir, index+'.wt')
     wtf = open(wtfn, 'wb')
     csvwrter = csv.writer(wtf)
+    csvwrter.writerow([wtday,])
     for c in wt:
-        csvwrter.writerow([c, wt[c]])
+        csvwrter.writerow([c, wt[c], cwt[c]])
     wtf.close()
 
     wt = {}

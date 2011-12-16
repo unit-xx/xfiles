@@ -137,6 +137,126 @@ spreadbm <- function(spread, legquote, beta, upper, lower, dir=c('short','long',
     ttrace
 }
 
+nextbigger <- function(x, sortedseq, start)
+{
+# find the index in sortedseq that sortedseq[i]>x and i>=start
+    nseq = length(sortedseq)
+    i = start
+    while(T)
+    {
+        if (i > nseq) { i = -1; break }
+        if (sortedseq[i]>x) break else i = i + 1
+    }
+    i
+}
+
+matchtrade <-function(opens, exits)
+{
+# given possbile open and exit points, calculate matched open/close pairs
+    oepair = data.frame()
+
+    idopen = 1
+    idexit = 1
+
+    if (length(opens)==0 || length(exits)==0) return(oepair)
+
+    while (T)
+    {
+        otick = opens[idopen]
+        idexit = nextbigger(otick, exits, idexit)
+        if (idexit==-1) break
+
+        oepair = rbind(oepair, c(opens[idopen], exits[idexit]))
+
+        etick = exits[idexit]
+        idopen = nextbigger(etick, opens, idopen)
+        if (idopen==-1) break
+    }
+    oepair
+}
+
+spreadbm2 <- function(spread, legquote, beta, upper, lower, dir=c('short','long','both'), longbcost=0.5/1000, longscost=1.5/1000, shortbcost=0.6/10000, shortscost=0.6/10000, shortmargin=2.5*1/6)
+{
+# spread is a data.frame/zoo object with 3 columns: $sprd, $mean, $sd.
+# for simplicity, beta has the same number of columns as legquote and beta values are aligned in the same order as corresponding quote.
+# upper/lower is in unit of sd.
+
+    toopendir = match.arg(dir)
+    toopendir = switch(toopendir, long=1, short=-1, both=0)
+    ttrace = data.frame(stringsAsFactors=FALSE)
+    oepair = data.frame()
+
+    sprd = spread$sprd
+    nsprd = (sprd-spread$mean)/spread$sd
+
+    if (toopendir<=0)# seek for short opportunities
+    {
+        shorts = which(nsprd>upper)
+        exits = which(nsprd<lower)
+        shortoe = matchtrade(shorts, exits)
+        if (NROW(shortoe) > 0) shortoe = cbind(shortoe, -1)
+        oepair = rbind(oepair, shortoe)
+    }
+
+    if (toopendir>=0)# seek for long opportunities
+    {
+        longs = which(nsprd<-upper)
+        exits = which(nsprd>-lower)
+        longoe = matchtrade(longs, exits)
+        if (NROW(longoe) > 0) longoe = cbind(longoe, 1)
+        oepair = rbind(oepair, longoe)
+    }
+
+    if (NROW(oepair)==0) return(ttrace)
+
+    oeorder = order(oepair[1])
+    oepair = oepair[oeorder,] # sort by open ticks (first column)
+
+    dates = index(sprd)
+    for (i in 1:NROW(oepair))
+    {
+        opendir = oepair[i,][,3]
+        otick = oepair[i,][,1]
+        etick = oepair[i,][,2]
+        opent = dates[otick]
+        closet = dates[etick]
+        opensprd = sprd[[otick]]
+        closesprd = sprd[[etick]]
+
+        tcost = 0
+        holdcap = 0
+        shortcap = 0
+        longcap = 0
+
+        if (opendir == -1) b = -beta
+
+        shortindex = which(b<0)
+        longindex = which(b>0)
+
+        # open part
+        shortcap = sum(legquote[otick,][,shortindex] * b[shortindex])
+        longcap = sum(legquote[otick,][,longindex] * b[longindex])
+        holdcap = longcap + shortcap * shortmargin
+        tcost = shortcap * shortscost + longcap * longbcost
+
+        # close part
+        shortcap = sum(legquote[etick,][,shortindex] * b[shortindex])
+        longcap = sum(legquote[etick,][,longindex] * b[longindex])
+        tcost = tcost + shortcap * shortbcost + longcap * longscost
+        earn = (closesprd - opensprd) * opendir - tcost
+
+        ret = opendir * diff(window(sprd, start=opent, end=closet))/holdcap
+        maxdd = maxDrawdown(as.data.frame(ret), geometric=F)
+
+        ttrace = rbind(ttrace, as.data.frame(list(opendir=opendir,
+                                           opent=opent, closet=closet,
+                                           opensprd=opensprd, closesprd=closesprd,
+                                           holdcap=holdcap, maxdd=maxdd,
+                                           earn=earn, tcost=tcost)))
+    }
+    ttrace
+}
+
 bmstat <- function(bmrst)
 {
 # bmrst from spreadbm
@@ -230,7 +350,7 @@ getquote <- function(dbdrv, codes, startdate, enddate, pricetag='close')
     s.zoo
 }
 
-getbeta <- function(quote, bydates)
+fixstartbeta <- function(quote, bydates)
 {
 # beta is calculated by lm(left ~ right), as in getquote.
 # bydates is a vector of dates.
@@ -251,5 +371,9 @@ getbeta <- function(quote, bydates)
     names(alphabeta) <- c('alpha', paste('beta', 1:(ncol(quote)-1), sep=''))
     alphabeta
     #b = rbind(zoo(as.matrix(b[1,]), start(s.zoo)), b)
+}
 
+rollingbeta <- function(quote)
+{
+    
 }

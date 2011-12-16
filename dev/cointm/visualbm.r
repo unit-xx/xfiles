@@ -47,10 +47,10 @@ plotpair2 <- function (drv, left, right, tag, betafrom, startdate, enddate, beta
     lines(s.zoo$upper2, col='red')
     lines(s.zoo$lower2, col='red')
     lines(s.zoo$smean, col='red', type='p', pch='+')
-    lines(s.zoo$eupper, col='blue')
-    lines(s.zoo$elower, col='blue')
-    lines(s.zoo$eupper2, col='blue')
-    lines(s.zoo$elower2, col='blue')
+    lines(s.zoo$eupper, col='blue', lty='dashed')
+    lines(s.zoo$elower, col='blue', lty='dashed')
+    lines(s.zoo$eupper2, col='blue', lty='dashed')
+    lines(s.zoo$elower2, col='blue', lty='dashed')
     lines(s.zoo$emean, col='blue', type='p', pch='+')
 
     sprdunit = 50
@@ -84,7 +84,7 @@ plotpair2 <- function (drv, left, right, tag, betafrom, startdate, enddate, beta
         rsiline = RSI(sprd)
         s.zoo = cbind(s.zoo, rsi=rsiline)
         par(new=T)
-        plot(s.zoo$rsi, col=colors()[30], lty='dashed', axes=F, xlab='', ylab='')
+        plot(s.zoo$rsi, col=colors()[258], axes=F, xlab='', ylab='')
         axis(4, col.axis='black', col='black', padj=-4)
     }
 
@@ -205,7 +205,8 @@ tovisual <- dbGetQuery(con, plan['visuallist', 1])
 if (!is.na(plan['visualfile', 1]))
 {
     visualfile <- read.table(plan['visualfile', 1], col.names='cpair', stringsAsFactors=F, colClasses='character', strip.white=TRUE)
-    tovisual <- rbind(tovisual, visualfile)
+    tovisual <- as.data.frame(union(tovisual, visualfile))
+    names(tovisual) = 'cpair'
 }
 
 betafrom <- plan['betafrom', 1]

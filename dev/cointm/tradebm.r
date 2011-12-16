@@ -25,7 +25,7 @@ pairbm <- function (dbdrv, left, right, startdate, enddate, beta, upper, lower, 
     sprd = window(sprd, start=startdate, end=enddate)
     s.zoo = window(s.zoo, start=startdate, end=enddate)
 
-    ret = spreadbm(sprd, s.zoo, c(1, -beta), upper, lower, dir='short')
+    ret = spreadbm2(sprd, s.zoo, c(1, -beta), upper, lower, dir='short')
     ret
 }
 
