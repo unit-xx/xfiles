@@ -22,6 +22,7 @@ coint.test <- function (dbdrv, left, right, startdate, enddate, beta=NA, alpha=N
         beta <- coef(m)[-1]
         names(beta) <- paste('beta', right, sep='')
     }
+    if (any(beta<0)) return(NA)
 
     sprd <- apply(s.zoo, 1, function(x) {x[1] - sum(x[-1]*beta)})
 
@@ -91,7 +92,7 @@ for (i in 1:nrow(csa))
         alpha = betas[cpair,]$alpha
         ret <- coint.test(drv, s0, sa, startdate, enddate, beta, alpha)
     }
-    allret <- rbind(allret, ret)
+    if (!is.na(ret)) allret <- rbind(allret, ret)
 }
 
 setwd('..')
@@ -100,7 +101,7 @@ print(NCOL(allret))
 
 tag <- plan['tag',1]
 con <- dbConnect(drv, plan['cointdb',1])
-s1 <- dbWriteTable(con, paste(tag, choiceN, sep=''), allret, row.names=FALSE, overwrite=TRUE)
+s1 <- dbWriteTable(con, tag, allret, row.names=FALSE, overwrite=TRUE)
 dbCommit(con)
 dbDisconnect(con)
 dbUnloadDriver(drv)

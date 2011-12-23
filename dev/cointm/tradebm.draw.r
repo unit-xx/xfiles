@@ -8,7 +8,7 @@ source('util.r')
 # given a pair and its beta, trade benchmarking using upper/lower bound params,
 # and draw the returns figure
 
-pairbm.draw <- function (dbdrv, left, right, startdate, enddate, betafrom, beta, upper, lower, hlife, decay)
+pairbm.draw <- function (dbdrv, tag, left, right, startdate, enddate, betafrom, beta, upper, lower, hlife, decay)
 {
     s.zoo = getquote(dbdrv, c(left, right), startdate, enddate)
     snames = names(s.zoo)
@@ -106,43 +106,31 @@ plan <- read.table(args[1], row.names=1, sep='=', colClasses='character', strip.
 startdate = as.Date(plan['visualfrom', 1])
 enddate = as.Date(plan['visualto', 1])
 tag = plan['tag', 1]
+trdstatfn = paste(tag, format(startdate, format='%Y%m%d'), format(enddate, format='%Y%m%d'), 'trdstat',sep='.')
 
 drv = dbDriver('SQLite')
-con <- dbConnect(drv, dbname = plan['cointdb', 1])
-tovisual <- dbGetQuery(con, plan['visuallist', 1])
-upper.default <- as.numeric(plan['upper.default', 1])
-lower.default <- as.numeric(plan['lower.default', 1])
-betafrom <- plan['betafrom', 1]
-decay = as.numeric(plan['decay', 1])
-pttest <- dbReadTable(con, betafrom)
-
-tovisual <- merge(tovisual, pttest, by='cpair', all=FALSE)
 
 setwd(plan['dbdir', 1])
-for (i in 1:nrow(tovisual))
+trdstat = read.table(trdstatfn, header=T, stringsAsFactors=F)
+for (i in 1:nrow(trdstat))
 {
-    cpair <- tovisual[i,]$cpair
-    beta = as.numeric(unlist(strsplit(tovisual[i,]$beta, ';')))
-
-    upper = upper.default
-    lower = lower.default
-    q = sprintf('select upper, lower from tradeparam where cpair="%s"', cpair)
-    ul = dbGetQuery(con, q)
-    if (nrow(ul) > 0)
-    {
-        upper = ul$upper
-        lower = ul$lower
-    }
+    cpair = trdstat[i,]$cpair
 
     tmp <- unlist(strsplit(cpair, "\\."))
     left <- tmp[1]
     right <- tmp[2:length(tmp)]
-    print(c(left, right))
 
-    hlife <- as.numeric(tovisual[i,]$hlife)
-    pairbm.draw(drv, left, right, startdate, enddate, betafrom, beta, upper, lower, hlife, decay)
+    betafrom = trdstat[i,]$betafrom
+    beta = as.numeric(unlist(strsplit(trdstat[i,]$beta, ';')))
+    upper = trdstat[i,]$upper
+    lower = trdstat[i,]$lower
+    hlife = trdstat[i,]$hlife
+    decay = trdstat[i,]$decay
+
+    print(c(i, cpair))
+
+    pairbm.draw(drv, tag, left, right, startdate, enddate, betafrom, beta, upper, lower, hlife, decay)
 }
-dbDisconnect(con)
 dbUnloadDriver(drv)
 warnings()
 

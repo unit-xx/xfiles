@@ -1,12 +1,12 @@
 #tag, usually it's the table name to write coint result
-tag=large
+tag=y0511
 
 # data dir: 000300.db etc.
 dbdir=hs300indexout
 
 # code file name
 codefn=hs300indexa
-tmode='1v2'
+tmode='1v3'
 
 # coint test db, written by iscoint, read by visualbm
 cointdb=hs300index.db
@@ -16,4 +16,4 @@ betafrom=NA
 
 # coint test start/end time
 testfrom=2005-01-01
-testto=2010-12-31
+testto=2011-12-31

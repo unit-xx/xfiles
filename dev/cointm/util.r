@@ -213,6 +213,7 @@ spreadbm2 <- function(spread, legquote, beta, upper, lower, dir=c('short','long'
     oepair = oepair[oeorder,] # sort by open ticks (first column)
 
     dates = index(sprd)
+    allret = zoo(0, dates)
     for (i in 1:NROW(oepair))
     {
         opendir = oepair[i,][,3]
@@ -248,11 +249,18 @@ spreadbm2 <- function(spread, legquote, beta, upper, lower, dir=c('short','long'
         ret = opendir * diff(window(sprd, start=opent, end=closet))/holdcap
         maxdd = maxDrawdown(as.data.frame(ret), geometric=F)
 
+        window(allret, start=start(ret), end=end(ret)) <- coredata(ret)
+
         ttrace = rbind(ttrace, as.data.frame(list(opendir=opendir,
                                            opent=opent, closet=closet,
                                            opensprd=opensprd, closesprd=closesprd,
                                            holdcap=holdcap, maxdd=maxdd,
                                            earn=earn, tcost=tcost)))
+    }
+    if(NROW(ttrace)>0)
+    {
+        sharpeyear = sqrt(252)*mean(allret)/sd(allret)
+        ttrace = cbind(ttrace, sharpeyear=sharpeyear)
     }
     ttrace
 }
@@ -283,6 +291,8 @@ bmstat <- function(bmrst)
     avgdd = 0.0
     sddd = 0.0
 
+    sharpeyear = 0.0
+
     if (tcount > 0)
     {
         earns = as.vector(bmrst$earn)
@@ -309,13 +319,16 @@ bmstat <- function(bmrst)
         maxdd = max(maxdds)
         avgdd = mean(maxdds)
         sddd = sd(maxdds)
+
+        sharpeyear = bmrst[1,]$sharpeyear
     }
     as.data.frame(list(tcount=tcount,
                        tearn=tearn, avgearn = avgearn, sdearn=sdearn,
                        trelearn=trelearn, avgrelearn = avgrelearn, sdrelearn=sdrelearn,
                        tcost=tcost, avgcost = avgcost, sdcost=sdcost,
                        ttxdur=ttxdur, avgtxdur=avgtxdur, sdtxdur=sdtxdur,
-                       maxdd=maxdd, avgdd=avgdd, sddd=sddd
+                       maxdd=maxdd, avgdd=avgdd, sddd=sddd,
+                       sharpeyear=sharpeyear
                        ))
 }
 
@@ -373,7 +386,18 @@ fixstartbeta <- function(quote, bydates)
     #b = rbind(zoo(as.matrix(b[1,]), start(s.zoo)), b)
 }
 
-rollingbeta <- function(quote)
+rollingbeta <- function(quote, width, by)
 {
-    
+    dolm<-function(q)
+    {
+        q2 = as.data.frame(q)
+        snames = colnames(q2)
+        f = as.formula(paste(snames[1], '~', paste(snames[-1], collapse='+')))
+        m = lm(f, data=q2)
+        coef(m)
+    }
+
+    alphabeta = rollapply(quote, width, dolm, by=by, by.column=F, align='right')    
+    colnames(alphabeta) <- c('alpha', paste('beta', 1:(ncol(quote)-1), sep=''))
+    alphabeta
 }

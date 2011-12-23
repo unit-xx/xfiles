@@ -77,9 +77,10 @@ for (i in 1:nrow(tovisual))
     hlife <- as.numeric(tovisual[i,]$hlife)
 
     ret = pairbm(drv, left, right, startdate, enddate, beta, upper, lower, hlife, decay)
+    ret = cbind(ret, upper=upper, lower=lower, hlife=hlife, decay=decay, beta=tovisual[i,]$beta, betafrom=betafrom)
     write.table(ret, paste(left,paste(right,collapse='.'),tag,'trdbm',sep='.'), row.names=FALSE)
 
-    summary = rbind(summary, cbind(cpair=cpair, bmstat(ret)))
+    summary = rbind(summary, cbind(cpair=cpair, bmstat(ret), upper=upper, lower=lower, hlife=hlife, decay=decay, beta=tovisual[i,]$beta, betafrom=betafrom))
 }
 write.table(summary, paste(tag, format(startdate, format='%Y%m%d'), format(enddate, format='%Y%m%d'), 'trdstat',sep='.'), row.names=FALSE)
 

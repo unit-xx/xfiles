@@ -31,6 +31,7 @@ tablebm <- function (dbdrv, left, right, startdate, enddate, beta, uprange, lora
     {
         u = ul[i,][[1]]
         l = ul[i,][[2]]
+        if (u<=l) next
         bmrst = spreadbm2(sprd, s.zoo, c(1, -beta), u, l, dir='short')
         pstat = bmstat(bmrst)
         pstat = cbind(u=u, l=l, pstat)

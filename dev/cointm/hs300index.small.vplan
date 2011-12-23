@@ -10,22 +10,22 @@ cointdb=hs300index.db
 
 # source of beta, NA for calc by lm, so don't use NA as tag
 #betafrom=small3
-betafrom=large3
+betafrom=y0510
 decay=-1
 
 dotrd=F
-upper.default=9.2
+upper.default=1.2
 lower.default=0.3
 tparam=paramtable
-uprange=1.1:3:0.1
-lorange=0:1:0.1
+uprange=0:3:0.1
+lorange=-2:2:0.1
 
 normalized=F
 
 sprddetail=F
 quantilebound=0.1
 
-usehurst=T
+usehurst=F
 hurstdb=hs300index.hurst.db
 scale.max=512
 scale.min=2
@@ -36,17 +36,17 @@ useacf=T
 usersi=T
 
 # a list of pairs to visualize
-#visuallist="select cpair from large3 where pvalue <= 0.06"
+#visuallist="select cpair from y0510 where pvalue <= 0.06"
 #visuallist="select '000300.000908.000911.000917' as cpair"
-#visuallist="select '000300.000915.000950.000952' as cpair"
-visuallist="SELECT cpair from large3 where pvalue < 0.05 AND hlife < 25"
+#visuallist="select '000300.000908.000913.000969' as cpair"
+#visuallist="SELECT cpair from y0510 where pvalue < 0.05 AND hlife < 25"
+visuallist="select cpair from y0510 where pvalue < 0.05 and hlife < 25"
+#visuallist="select cpair from (select cpair, pvalue, ssd, hlife, ssd/hlife as ind from y0510 where pvalue < 0.05 and hlife < 50 order by ind desc limit 20)"
 #visuallist="select '' as cpair"
 
 #visualfile=visualfile
 visualfile=NA
 
 # visualbm start/end time, used as backtest period in tradebm.r
-visualfrom=2010-01-01
+visualfrom=2009-01-01
 visualto=2011-12-31
-
-

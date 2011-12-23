@@ -12,17 +12,25 @@ plotpair2 <- function (drv, left, right, tag, betafrom, startdate, enddate, beta
 
     sprd <- apply(s.zoo, 1, function(x) {x[1] - sum(x[-1]*beta)})
     sprd <- zoo(as.vector(sprd), index(s.zoo))
+    s.zoo <- cbind(s.zoo, sprd=sprd)
 
     newhlife = ouhlife(sprd)
     newpvalue = adf.test(as.vector(sprd), alternative="stationary")$p.value
 
     if (decay < 0) decay = round(hlife * -decay)
 
+    # moving average and sd line, i.e. Boilger line
     emeanline <- ema(sprd, lambda=2.8854*decay)
     emean2line <- ema(sprd**2, lambda=2.8854*decay)
     esdline <- sqrt(emean2line - emeanline**2)
 
-    s.zoo <- cbind(s.zoo, sprd=sprd)
+    # rolling pvalue and hlife
+
+    pvalueline = rollapplyr(s.zoo$sprd, hlife*2, function(x){adf.test(as.vector(x))$p.value}, by=hlife/2)
+    hlifeline = rollapplyr(s.zoo$sprd, hlife*2, function(x){ouhlife(x)}, by=hlife/2)
+
+    s.zoo <- cbind(s.zoo, pvalueline=pvalueline)
+    s.zoo <- cbind(s.zoo, hlifeline=hlifeline)
 
     s.zoo <- cbind(s.zoo, smean=smean)
     s.zoo <- cbind(s.zoo, ssd=ssd)
@@ -58,11 +66,11 @@ plotpair2 <- function (drv, left, right, tag, betafrom, startdate, enddate, beta
            h=seq(round(ylim[1]-sprdunit,-2),round(ylim[2]+sprdunit,-2),sprdunit),
            col='grey',lty='dashed',lwd=1)
 
-    titlestr = sprintf('%s(in=%s) %s.%s\nbeta=(%s)\nalpha=%.2f decay=%d\nin.pvalue=%.2f in.hlife=%.2f\nout.pvalue=%.2f out.hlife=%.2f',
+    titlestr = sprintf('%s(in=%s) %s.%s\nbeta=(%s) alpha=%.2f\nsprdutil=%.3f decay=%d\nin.pvalue=%.2f in.hlife=%.2f\nout.pvalue=%.2f out.hlife=%.2f',
                         tag, betafrom,
                         left, paste(right,collapse='.'),
-                        paste(round(beta,2), collapse=';'),
-                        alpha, decay,
+                        paste(round(beta,2), collapse=';'), alpha,
+                        ssd/hlife, decay,
                         pvalue, hlife, newpvalue, newhlife)
 
     if (dotrd)
@@ -84,7 +92,7 @@ plotpair2 <- function (drv, left, right, tag, betafrom, startdate, enddate, beta
         rsiline = RSI(sprd)
         s.zoo = cbind(s.zoo, rsi=rsiline)
         par(new=T)
-        plot(s.zoo$rsi, col=colors()[258], axes=F, xlab='', ylab='')
+        plot(s.zoo$rsi, col=colors()[258], axes=F, xlab='', ylab='', lty='dotdash')
         axis(4, col.axis='black', col='black', padj=-4)
     }
 
@@ -109,6 +117,13 @@ plotpair2 <- function (drv, left, right, tag, betafrom, startdate, enddate, beta
     }
 
     title(titlestr, family='song', line=-4)
+
+    plot(pvalueline, col='blue')
+    par(new=T)
+    plot(hlifeline, col='green', axes=F, bty='c', xlab='', ylab='', ylim=c(-300, 300))
+    axis(4, col.axis='black', col='black')
+    abline(v=as.Date(unique(as.yearmon(index(s.zoo)))),
+           col='grey',lty='dashed',lwd=1)
 
     if (useacf) acf((as.vector(sprd)), lag.max=600, na.action=na.pass)
 

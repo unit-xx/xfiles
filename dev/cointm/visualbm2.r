@@ -12,8 +12,20 @@ plotpair2 <- function (drv, left, right, tag, betafrom, startdate, enddate, beta
     s.zoo = getquote(dbdrv, c(left, right), startdate, enddate)
     snames = names(s.zoo)
 
-    sprd <- apply(s.zoo, 1, function(x) {x[1] - sum(x[-1]*beta)})
-    sprd <- zoo(as.vector(sprd), index(s.zoo))
+    ab = rollingbeta(s.zoo, 1400, 22)
+
+    ab2 = zoo(matrix(rep(NA, NCOL(ab)), nrow=1), index(s.zoo))
+    window(ab2, index=index(ab)) <- coredata(ab)
+    window(ab2, index=start(ab2)) <- ab[1,]
+    ab = na.locf(ab2)
+
+    sprd = ab[,2:NCOL(ab)] * s.zoo[,2:NCOL(s.zoo)]
+    sprd = apply(sprd, 1, sum)
+    sprd = zoo(as.vector(sprd), index(s.zoo))
+    sprd = s.zoo[,1] - sprd
+
+    sprd2 <- apply(s.zoo, 1, function(x) {x[1] - sum(x[-1]*beta)})
+    sprd2 <- zoo(as.vector(sprd2), index(s.zoo))
 
     newhlife = ouhlife(sprd)
     newpvalue = adf.test(as.vector(sprd), alternative="stationary")$p.value
@@ -25,6 +37,7 @@ plotpair2 <- function (drv, left, right, tag, betafrom, startdate, enddate, beta
     esdline <- sqrt(emean2line - emeanline**2)
 
     s.zoo <- cbind(s.zoo, sprd=sprd)
+    s.zoo <- cbind(s.zoo, sprd2=sprd2)
 
     s.zoo <- cbind(s.zoo, smean=smean)
     s.zoo <- cbind(s.zoo, ssd=ssd)
@@ -42,144 +55,22 @@ plotpair2 <- function (drv, left, right, tag, betafrom, startdate, enddate, beta
 
     pdf(paste(left,paste(right,collapse='.'),tag,'pdf',sep='.'), width=17.55, height=8.3)
 
-    ylim = c(min(s.zoo$elower2, s.zoo$lower2, s.zoo$sprd, na.rm=TRUE), max(s.zoo$eupper2, s.zoo$upper2, s.zoo$sprd, na.rm=TRUE))
-    plot(ylim=ylim, sprd, type='o', pch='-')
-    lines(s.zoo$upper, col='red')
-    lines(s.zoo$lower, col='red')
-    lines(s.zoo$upper2, col='red')
-    lines(s.zoo$lower2, col='red')
-    lines(s.zoo$smean, col='red', type='p', pch='+')
-    lines(s.zoo$eupper, col='blue')
-    lines(s.zoo$elower, col='blue')
-    lines(s.zoo$eupper2, col='blue')
-    lines(s.zoo$elower2, col='blue')
-    lines(s.zoo$emean, col='blue', type='p', pch='+')
+    #plot(ab)
 
-    sprdunit = 50
-    abline(v=as.Date(unique(as.yearmon(index(s.zoo)))),
-           h=seq(round(ylim[1]-sprdunit,-2),round(ylim[2]+sprdunit,-2),sprdunit),
-           col='grey',lty='dashed',lwd=1)
+    rb = ab[,seq(2, NCOL(ab))]
+    modrb = rollapply(rb, 1, function(x){sqrt(sum(x*x))}, by.column=F)
+    modbeta = sqrt(sum(beta*beta))
+    diffbeta = rollapply(rb, 1, function(x){x-beta}, by.column=F)
+    moddiff = rollapply(diffbeta, 1, function(x){sqrt(sum(x*x))}, by.column=F)
+    dotbeta = rollapply(rb, 1, function(x){sum(x*beta)}, by.column=F)
 
-    titlestr = sprintf('%s(in=%s) %s.%s\nbeta=(%s)\nalpha=%.2f decay=%d\nin.pvalue=%.2f in.hlife=%.2f\nout.pvalue=%.2f out.hlife=%.2f',
-                        tag, betafrom,
-                        left, paste(right,collapse='.'),
-                        paste(round(beta,2), collapse=';'),
-                        alpha, decay,
-                        pvalue, hlife, newpvalue, newhlife)
+    angle = acos(dotbeta/modrb/modbeta)/pi*180
+    diffratio = moddiff/modbeta
 
-    if (dotrd)
-    {
-        bmrst = read.table(paste(left,paste(right,collapse='.'),tag,'trdbm',sep='.'), header=T, stringsAsFactors=F)
-        for (i in 1:nrow(bmrst))
-        {
-            trd = bmrst[i,]
-            x = as.Date(c(trd$opent, trd$closet))
-            xy = sprd[x]
-            color = ifelse((bmrst[i,]$opendir == 1), 'red', 'green')
-            lines(xy, col=color, lwd=2)
-        }
-        titlestr = sprintf('%s\ntrades=%d upper=%.2f lower=%.2f\ntearns=%.2f trelearns=%.2f%%', titlestr, nrow(bmrst), upper, lower, sum(bmrst$earn), 100*sum(bmrst$earn/bmrst$holdcap))
-    }
+    plot(rb)
+    plot(angle)
+    plot(diffratio)
 
-    if (usersi)
-    {
-        rsiline = RSI(sprd)
-        s.zoo = cbind(s.zoo, rsi=rsiline)
-        par(new=T)
-        plot(s.zoo$rsi, col=colors()[30], lty='dashed', axes=F, xlab='', ylab='')
-        axis(4, col.axis='black', col='black', padj=-4)
-    }
-
-    # add hurst exponent
-    if (!is.na(hurstdb))
-    {
-        tbname = paste('hurst', cpair, scale.max, scale.min, scale.ratio, sep='.')
-        if (dbExistsTable(hurstdb, tbname))
-        {
-            hline = dbReadTable(hurstdb, paste('[', tbname, ']', sep=''))
-            hline = window(zoo(hline$h, as.Date(hline$date, '%Y-%m-%d')), start=startdate, end=enddate)
-            havg = ema(hline, lambda=2.8854*hlife)
-            havg = zoo(havg, index(hline))
-            s.zoo = cbind(s.zoo, hmean=havg)
-            s.zoo = cbind(s.zoo, hurst=hline)
-
-            par(new=TRUE)
-            #plot(s.zoo$hurst, col='green', axes=F, bty='c', xlab='', ylab='')
-            plot(s.zoo$hmean, col=colors()[96], axes=F, bty='c', xlab='', ylab='')
-            axis(4, col.axis='black', col='black')
-        }
-    }
-
-    title(titlestr, family='song', line=-4)
-
-    if (useacf) acf((as.vector(sprd)), lag.max=600, na.action=na.pass)
-
-    if (sprddetail)
-    {
-        probs = c(quantilebound, 1-quantilebound)
-
-        # spread density
-        #q = quantile(sprd, probs=probs)
-        #plot(density(sprd), main=sprintf('raw spread mean: %.2f, sd: %.2f, %d%% quantile (%.2f, %.2f)', round(mean(sprd),3), round(sd(sprd),3), quantilebound*100, q[1], q[2]))
-        #abline(v=q)
-
-        # spread diff, barplot and density
-        rrate = diff((sprd))
-        #q = quantile(rrate, probs=probs)
-        #barplot(rrate, main=sprintf('spread diff mean: %.2f, sd: %.2f, %d%% quantile (%.2f, %.2f)', round(mean(rrate),3), round(sd(rrate),3), quantilebound*100, q[1], q[2]))
-        #abline(v=as.Date(unique(as.yearmon(index(rrate)))), h=q)
-
-        #plot(density(rrate), main=sprintf('spread diff mean: %.2f, sd: %.2f, %d%% quantile (%.2f, %.2f)', round(mean(rrate),3), round(sd(rrate),3), quantilebound*100, q[1], q[2]))
-        #abline(v=q)
-
-        # spread diff, its signs and absolute values
-        #rsign = sign(rrate)
-        #rvalue = abs(rrate)
-        #q = quantile(rvalue, probs=probs)
-        #toosmall = which(rvalue < q[1])
-        #toolarge = which(rvalue > q[2])
-        #rsign[toosmall] = 0
-        #rsign[toolarge] = 0
-        #plot(cumsum(rsign), main="up/down indicator")
-        #abline(v=as.Date(unique(as.yearmon(index(rsign)))), col='grey',lty='dashed',lwd=1)
-        #acf(cumsum(as.vector(rsign)), lag.max=600, na.action=na.pass)
-
-        #barplot(rvalue, main=sprintf('spread diff absvalue mean: %.2f, sd: %.2f, %d%% quantile (%.2f, %.2f)', round(mean(rvalue),3), round(sd(rvalue),3), quantilebound*100, q[1], q[2]))
-        #abline(v=as.Date(unique(as.yearmon(index(rvalue)))), h=q)
-
-        #plot(hist(rvalue, plot=F), main=sprintf('spread diff absvalue mean: %.2f, sd: %.2f, %d%% quantile (%.2f, %.2f)', round(mean(rvalue),3), round(sd(rvalue),3), quantilebound*100, q[1], q[2]))
-        #abline(v=q)
-
-    }
-
-    if (normalized)
-    {
-        nsprd = (s.zoo$sprd-s.zoo$emean)/s.zoo$esd
-        ylim = c(min(nsprd), max(nsprd))
-        plot(ylim=ylim, nsprd, type='o', pch='-', main='normalized spread view')
-        sprdunit = 0.2
-        abline(v=as.Date(unique(as.yearmon(index(s.zoo)))),
-               h=seq(round(ylim[1]-sprdunit,0),round(ylim[2]+sprdunit,0),sprdunit),
-               col='grey',lty='dashed',lwd=1)
-        if (dotrd)
-        {
-            for (i in 1:nrow(bmrst))
-            {
-                trd = bmrst[i,]
-                x = as.Date(c(trd$opent, trd$closet))
-                xy = nsprd[x]
-                color = ifelse((bmrst[i,]$opendir == 1), 'red', 'green')
-                lines(xy, col=color, lwd=2)
-            }
-        }
-        if (sprddetail)
-        {
-            rrate = diff((nsprd))
-            barplot(rrate, main='normalized spread diff')
-            plot(density(rrate), main=paste('normalized spread diff', round(mean(rrate),3), round(sd(rrate),3)))
-        }
-        if (useacf) acf((as.vector(nsprd)), lag.max=600, na.action=na.pass)
-    }
 
     dev.off()
 }
@@ -207,7 +98,8 @@ tovisual <- dbGetQuery(con, plan['visuallist', 1])
 if (!is.na(plan['visualfile', 1]))
 {
     visualfile <- read.table(plan['visualfile', 1], col.names='cpair', stringsAsFactors=F, colClasses='character', strip.white=TRUE)
-    tovisual <- rbind(tovisual, visualfile)
+    tovisual <- as.data.frame(union(tovisual, visualfile))
+    names(tovisual) = 'cpair'
 }
 
 betafrom <- plan['betafrom', 1]
