@@ -58,6 +58,18 @@ loginparam = {
 print dosend(hs, 200, loginparam)
 print dorecv(hs)
 
+# login test
+loginparam = {
+'l_op_code':'8009',
+'vc_op_password':'0',
+'vc_station_address':'00226814A2AB;172.30.4.98',
+'vc_host_name':'gcn',
+'l_action_in':'1'
+}
+
+print dosend(hs, 6200, loginparam)
+print dorecv(hs)
+
 # buy test
 buyparam={
 'version':'1',
