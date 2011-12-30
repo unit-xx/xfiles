@@ -10,8 +10,11 @@ plotpair2 <- function (drv, left, right, tag, betafrom, startdate, enddate, beta
     s.zoo = getquote(dbdrv, c(left, right), startdate, enddate)
     snames = names(s.zoo)
 
-    sprd <- apply(s.zoo, 1, function(x) {x[1] - sum(x[-1]*beta)})
-    sprd <- zoo(as.vector(sprd), index(s.zoo))
+    longleg = s.zoo[,1]
+    shortleg = rollapply(s.zoo[,-1], 1, function(x) {sum(x*beta)}, by.column=F)
+    sprd = longleg - shortleg
+    #sprd <- apply(s.zoo, 1, function(x) {x[1] - sum(x[-1]*beta)})
+    #sprd <- zoo(as.vector(sprd), index(s.zoo))
     s.zoo <- cbind(s.zoo, sprd=sprd)
 
     newhlife = ouhlife(sprd)
@@ -25,12 +28,10 @@ plotpair2 <- function (drv, left, right, tag, betafrom, startdate, enddate, beta
     esdline <- sqrt(emean2line - emeanline**2)
 
     # rolling pvalue and hlife
-
-    pvalueline = rollapplyr(s.zoo$sprd, hlife*2, function(x){adf.test(as.vector(x))$p.value}, by=hlife/2)
-    hlifeline = rollapplyr(s.zoo$sprd, hlife*2, function(x){ouhlife(x)}, by=hlife/2)
-
-    s.zoo <- cbind(s.zoo, pvalueline=pvalueline)
-    s.zoo <- cbind(s.zoo, hlifeline=hlifeline)
+    #pvalueline = rollapplyr(s.zoo$sprd, hlife*2, function(x){adf.test(as.vector(x))$p.value}, by=hlife/2)
+    #hlifeline = rollapplyr(s.zoo$sprd, hlife*2, function(x){ouhlife(x)}, by=hlife/2)
+    #s.zoo <- cbind(s.zoo, pvalueline=pvalueline)
+    #s.zoo <- cbind(s.zoo, hlifeline=hlifeline)
 
     s.zoo <- cbind(s.zoo, smean=smean)
     s.zoo <- cbind(s.zoo, ssd=ssd)
@@ -48,30 +49,38 @@ plotpair2 <- function (drv, left, right, tag, betafrom, startdate, enddate, beta
 
     pdf(paste(left,paste(right,collapse='.'),tag,'pdf',sep='.'), width=17.55, height=8.3)
 
+    plot(shortleg, longleg)
+    abline(alpha,1, col='red')
+    plot(shortleg, col='blue')
+    lines(longleg-alpha, col='red')
+    abline(v=as.Date(unique(as.yearmon(index(s.zoo)))),
+           col='grey',lty='dashed',lwd=1)
+
     ylim = c(min(s.zoo$elower2, s.zoo$lower2, s.zoo$sprd, na.rm=TRUE), max(s.zoo$eupper2, s.zoo$upper2, s.zoo$sprd, na.rm=TRUE))
     plot(ylim=ylim, sprd, type='o', pch='-')
     lines(s.zoo$upper, col='red')
     lines(s.zoo$lower, col='red')
     lines(s.zoo$upper2, col='red')
     lines(s.zoo$lower2, col='red')
-    lines(s.zoo$smean, col='red', type='p', pch='+')
+    lines(s.zoo$smean, col='red', type='p', pch='.')
     lines(s.zoo$eupper, col='blue', lty='dashed')
     lines(s.zoo$elower, col='blue', lty='dashed')
     lines(s.zoo$eupper2, col='blue', lty='dashed')
     lines(s.zoo$elower2, col='blue', lty='dashed')
-    lines(s.zoo$emean, col='blue', type='p', pch='+')
+    lines(s.zoo$emean, col='blue', type='p', pch='.')
 
     sprdunit = 50
     abline(v=as.Date(unique(as.yearmon(index(s.zoo)))),
            h=seq(round(ylim[1]-sprdunit,-2),round(ylim[2]+sprdunit,-2),sprdunit),
            col='grey',lty='dashed',lwd=1)
 
-    titlestr = sprintf('%s(in=%s) %s.%s\nbeta=(%s) alpha=%.2f\nsprdutil=%.3f decay=%d\nin.pvalue=%.2f in.hlife=%.2f\nout.pvalue=%.2f out.hlife=%.2f',
+    titlestr = sprintf('%s(in=%s) %s.%s\nbeta=(%s) alpha=%.2f\nsprdutil=%.3f decay=%d\nin.pvalue=%.2f in.hlife=%.2f\nout.pvalue=%.2f out.hlife=%.2f\nlatest sprd=%.3f(%s)',
                         tag, betafrom,
                         left, paste(right,collapse='.'),
                         paste(round(beta,2), collapse=';'), alpha,
                         ssd/hlife, decay,
-                        pvalue, hlife, newpvalue, newhlife)
+                        pvalue, hlife, newpvalue, newhlife,
+                        s.zoo$sprd[end(s.zoo)], format(end(s.zoo)))
 
     if (dotrd)
     {
@@ -118,12 +127,16 @@ plotpair2 <- function (drv, left, right, tag, betafrom, startdate, enddate, beta
 
     title(titlestr, family='song', line=-4)
 
-    plot(pvalueline, col='blue')
-    par(new=T)
-    plot(hlifeline, col='green', axes=F, bty='c', xlab='', ylab='', ylim=c(-300, 300))
-    axis(4, col.axis='black', col='black')
-    abline(v=as.Date(unique(as.yearmon(index(s.zoo)))),
-           col='grey',lty='dashed',lwd=1)
+    #plot(pvalueline, col='blue')
+    #par(new=T)
+    #plot(hlifeline, col='green', axes=F, bty='c', xlab='', ylab='', ylim=c(-300, 300))
+    #axis(4, col.axis='black', col='black')
+    #abline(v=as.Date(unique(as.yearmon(index(s.zoo)))),
+    #       col='grey',lty='dashed',lwd=1)
+
+    #acf(diff(as.vector(sprd)), lag.max=600)
+
+    #plot(head(abs(fft(sprd)), 30), type='h')
 
     if (useacf) acf((as.vector(sprd)), lag.max=600, na.action=na.pass)
 
@@ -253,6 +266,8 @@ for (i in 1:nrow(tovisual))
 
     print(c(i, cpair))
     beta = as.numeric(unlist(strsplit(tovisual[i,]$beta, ';')))
+    #if(any(beta<0.1)) next
+    if(any(beta<0)) next
     #beta = rep(1, length(right)) / length(right)
     alpha <- as.numeric(tovisual[i,]$alpha)
     pvalue <- as.numeric(tovisual[i,]$pvalue)

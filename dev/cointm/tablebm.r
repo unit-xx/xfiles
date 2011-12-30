@@ -6,7 +6,7 @@ library(PerformanceAnalytics)
 
 source('util.r')
 
-tablebm <- function (dbdrv, left, right, startdate, enddate, beta, uprange, lorange, hlife, decay)
+tablebm <- function (dbdrv, left, right, startdate, enddate, beta, uprange, lorange, hlife, decay, smean, ssd, staticparam)
 {
     s.zoo = getquote(dbdrv, c(left, right), seq(startdate, length=2, by='-1 years')[2] , enddate)
     snames = names(s.zoo)
@@ -16,11 +16,15 @@ tablebm <- function (dbdrv, left, right, startdate, enddate, beta, uprange, lora
 
     if (decay < 0) decay = round(hlife * -decay)
 
-    emeanline <- ema(sprd, lambda=2.8854*decay)
-    emean2line <- ema(sprd**2, lambda=2.8854*decay)
-    esdline <- sqrt(emean2line - emeanline**2)
-    sprd = cbind(sprd=sprd, mean=emeanline, sd=esdline)
-
+    if (staticparam)
+    {
+        sprd = cbind(sprd=sprd, mean=smean, sd=ssd)
+    } else {
+        emeanline <- ema(sprd, lambda=2.8854*decay)
+        emean2line <- ema(sprd**2, lambda=2.8854*decay)
+        esdline <- sqrt(emean2line - emeanline**2)
+        sprd = cbind(sprd=sprd, mean=emeanline, sd=esdline)
+    }
     sprd = window(sprd, start=startdate, end=enddate)
     s.zoo = window(s.zoo, start=startdate, end=enddate)
 
@@ -49,6 +53,7 @@ plan <- read.table(args[1], row.names=1, sep='=', colClasses='character', strip.
 startdate = as.Date(plan['visualfrom', 1])
 enddate = as.Date(plan['visualto', 1])
 tag = plan['tag', 1]
+staticparam = plan['staticparam', 1]
 
 drv = dbDriver('SQLite')
 con <- dbConnect(drv, dbname = plan['cointdb', 1])
@@ -78,11 +83,14 @@ for (i in 1:nrow(tovisual))
     right <- tmp[2:length(tmp)]
 
     hlife <- as.numeric(tovisual[i,]$hlife)
+    smean <- as.numeric(tovisual[i,]$smean)
+    ssd <- as.numeric(tovisual[i,]$ssd)
 
+    writeLines(sprintf("tablebm (%d) %s in ... ", i, cpair), sep='')
     ts = Sys.time()
-    ret = tablebm(drv, left, right, startdate, enddate, beta, uprange, lorange, hlife, decay)
+    ret = tablebm(drv, left, right, startdate, enddate, beta, uprange, lorange, hlife, decay, smean, ssd, staticparam)
     te = Sys.time()
-    print(sprintf("tablebm (%d) %s in %s", i, cpair, format(te-ts)))
+    writeLines(sprintf("%s", format(te-ts)))
     write.table(ret, paste(cpair,tag,'tblbm',sep='.'), row.names=FALSE)
 }
 setwd('..')

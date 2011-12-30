@@ -17,8 +17,9 @@ dotrd=F
 upper.default=1.2
 lower.default=0.3
 tparam=paramtable
-uprange=0:3:0.1
-lorange=-2:2:0.1
+uprange=0:3:0.05
+lorange=-2:2:0.05
+staticparam=T
 
 normalized=F
 
@@ -31,17 +32,17 @@ scale.max=512
 scale.min=2
 scale.ratio=2
 
-useacf=T
+useacf=F
 
-usersi=T
+usersi=F
 
 # a list of pairs to visualize
 #visuallist="select cpair from y0510 where pvalue <= 0.06"
 #visuallist="select '000300.000908.000911.000917' as cpair"
 #visuallist="select '000300.000908.000913.000969' as cpair"
-#visuallist="SELECT cpair from y0510 where pvalue < 0.05 AND hlife < 25"
-visuallist="select cpair from y0510 where pvalue < 0.05 and hlife < 25"
-#visuallist="select cpair from (select cpair, pvalue, ssd, hlife, ssd/hlife as ind from y0510 where pvalue < 0.05 and hlife < 50 order by ind desc limit 20)"
+#visuallist="select cpair from y0510_1v4 where pvalue < 0.05 and hlife < 25"
+visuallist="SELECT cpair from y0510 where pvalue < 0.05 AND hlife < 25"
+#visuallist="select cpair from (select cpair, pvalue, ssd, hlife, ssd/hlife as ind from y0510 where pvalue < 0.05 and hlife < 30 and ind > 3 order by ind desc)"
 #visuallist="select '' as cpair"
 
 #visualfile=visualfile
