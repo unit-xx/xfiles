@@ -10,6 +10,42 @@ tablebm.draw <- function(tag, left, right)
     bmfn = paste(left, paste(right, collapse='.'), tag, 'tblbm', sep='.')
     d = read.table(bmfn, header=TRUE)
 
+    # find range for u and l where tx count > 0
+    urange = sort(unique(d$u))
+    umin = 0
+    umax = 0
+    for (uu in urange)
+    {
+        txcnt = d$tcount[which(d$u==uu)]
+        if (any(txcnt!=0)) {umin = uu; break}
+    }
+    urange = rev(urange)
+    for (uu in urange)
+    {
+        txcnt = d$tcount[which(d$u==uu)]
+        if (any(txcnt!=0)) {umax = uu; break}
+    }
+
+    lrange = sort(unique(d$l))
+    lmin = 0
+    lmax = 0
+    for (ll in lrange)
+    {
+        txcnt = d$tcount[which(d$l==ll)]
+        if (any(txcnt!=0)) {lmin = ll; break}
+    }
+    lrange = rev(lrange)
+    for (ll in lrange)
+    {
+        txcnt = d$tcount[which(d$l==ll)]
+        if (any(txcnt!=0)) {lmax = ll; break}
+    }
+    tmp = which(d$u>=umin)
+    tmp = intersect(tmp, which(d$u<=umax))
+    tmp = intersect(tmp, which(d$l>=lmin))
+    tmp = intersect(tmp, which(d$l<=lmax))
+    d = d[tmp,]
+
     pwidth = 17.55
     pheight = 8.3
     trellis.device(pdf, file=paste(bmfn, 'pdf', sep='.'), width=pwidth, height=pheight)
