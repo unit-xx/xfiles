@@ -49,12 +49,12 @@ plotpair2 <- function (drv, left, right, tag, betafrom, startdate, enddate, beta
 
     pdf(paste(left,paste(right,collapse='.'),tag,'pdf',sep='.'), width=17.55, height=8.3)
 
-    plot(shortleg, longleg)
-    abline(alpha,1, col='red')
-    plot(shortleg, col='blue')
-    lines(longleg-alpha, col='red')
-    abline(v=as.Date(unique(as.yearmon(index(s.zoo)))),
-           col='grey',lty='dashed',lwd=1)
+    #plot(shortleg, longleg)
+    #abline(alpha,1, col='red')
+    #plot(shortleg, col='blue')
+    #lines(longleg-alpha, col='red')
+    #abline(v=as.Date(unique(as.yearmon(index(s.zoo)))),
+    #       col='grey',lty='dashed',lwd=1)
 
     ylim = c(min(s.zoo$elower2, s.zoo$lower2, s.zoo$sprd, na.rm=TRUE), max(s.zoo$eupper2, s.zoo$upper2, s.zoo$sprd, na.rm=TRUE))
     plot(ylim=ylim, sprd, type='o', pch='-')

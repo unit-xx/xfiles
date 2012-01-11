@@ -15,7 +15,7 @@ c_cointdbn='hs300index.db'
 c_betafrom='large3'
 c_quotedbdir='hs300indexout'
 #c_visuallist="select '000300.000908.000911.000917' as cpair"
-c_visuallist="select cpair from large3 where pvalue < 0.05 AND hlife < 25"
+c_visuallist="select cpair from y0510 where pvalue < 0.05 AND hlife < 25"
 c_ifcode = 'IF1201'
 
 c_ip = '172.18.18.67'
