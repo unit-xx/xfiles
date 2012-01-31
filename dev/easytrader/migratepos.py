@@ -90,14 +90,14 @@ class Portfolio:
             "close",
             "short",
             self.data["long"]["code"],
-            "0.0",
+            self.data['long']['s1'],#"0.0",
             self.data["long"]["share"]))
 
         self.wqueue.put((
             "open",
             "short",
             self.data["short"]["code"],
-            "0.0",
+            self.data['short']['b1'],#"0.0",
             self.data["short"]["share"]))
 
     def domigrate_reverse(self):
@@ -105,14 +105,14 @@ class Portfolio:
             "open",
             "short",
             self.data["long"]["code"],
-            "0.0",
+            self.data['long']['b1'],#"0.0",
             self.data["long"]["share"]))
 
         self.wqueue.put((
             "close",
             "short",
             self.data["short"]["code"],
-            "0.0",
+            self.data['short']['s1'],#"0.0",
             self.data["short"]["share"]))
 
     def doclose(self):

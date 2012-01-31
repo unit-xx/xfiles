@@ -43,4 +43,4 @@ while 1:
     print >>sprdoutf, str(datetime.datetime.now()), "%.2f"%sprd
     sprdoutf.flush()
 
-    time.sleep(5)
+    time.sleep(10)
