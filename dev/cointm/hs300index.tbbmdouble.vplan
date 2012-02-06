@@ -1,5 +1,5 @@
 #tag, as mid-fix in graph filenames to differentiate vplans
-tag=small
+tag=tbbmdouble
 # view full range spread line using beta/pvalue/hlife from large test
 
 # data dir: 000300.db etc.
@@ -11,7 +11,7 @@ cointdb=hs300index.db
 # source of beta, NA for calc by lm, so don't use NA as tag
 #betafrom=small3
 betafrom=y0510
-decay=-1
+decay=-2
 
 dotrd=F
 upper.default=1.2
@@ -19,7 +19,7 @@ lower.default=0.3
 tparam=paramtable
 uprange=0:3:0.05
 lorange=-2:2:0.05
-staticparam=T
+staticparam=F
 
 normalized=F
 
@@ -43,12 +43,11 @@ usersi=F
 #visuallist="select cpair from y0510_1v4 where pvalue < 0.05 and hlife < 25"
 visuallist="SELECT cpair from y0510 where pvalue < 0.05 AND hlife < 25"
 #visuallist="select cpair from (select cpair, pvalue, ssd, hlife, ssd/hlife as ind from y0510 where pvalue < 0.05 and hlife < 60 order by ind desc limit 30)"
-#visuallist="select cpair from (select cpair, pvalue, ssd, hlife, ssd/hlife as ind from y0510 where ind>3)"
 #visuallist="select '' as cpair"
 
 #visualfile=visualfile
-#visualfile=ind3.vf
+visualfile=NA
 
 # visualbm start/end time, used as backtest period in tradebm.r
-visualfrom=2009-01-01
+visualfrom=2010-01-01
 visualto=2012-01-31

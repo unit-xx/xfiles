@@ -233,8 +233,7 @@ tovisual <- dbGetQuery(con, plan['visuallist', 1])
 if (!is.na(plan['visualfile', 1]))
 {
     visualfile <- read.table(plan['visualfile', 1], col.names='cpair', stringsAsFactors=F, colClasses='character', strip.white=TRUE)
-    tovisual <- as.data.frame(union(tovisual, visualfile))
-    names(tovisual) = 'cpair'
+    tovisual <- rbind(tovisual, visualfile)
 }
 
 betafrom <- plan['betafrom', 1]
@@ -266,7 +265,7 @@ for (i in 1:nrow(tovisual))
 
     print(c(i, cpair))
     beta = as.numeric(unlist(strsplit(tovisual[i,]$beta, ';')))
-    #if(any(beta<0.1)) next
+    if(any(beta<0.1)) next
     if(any(beta<0)) next
     #beta = rep(1, length(right)) / length(right)
     alpha <- as.numeric(tovisual[i,]$alpha)
