@@ -49,7 +49,7 @@ loginparam = {
 'l_op_code':'8009',
 'vc_op_password':'0',
 'op_entrust_way':'4',
-'project_id':'123321',
+#'project_id':'123321',
 'op_station':'00226814A2AB;172.30.4.98',
 'account_content':'85001135',
 'password':'121314'
@@ -58,17 +58,17 @@ loginparam = {
 print dosend(hs, 200, loginparam)
 print dorecv(hs)
 
-# login test
-loginparam = {
-'l_op_code':'8009',
-'vc_op_password':'0',
-'vc_station_address':'00226814A2AB;172.30.4.98',
-'vc_host_name':'gcn',
-'l_action_in':'1'
-}
-
-print dosend(hs, 6200, loginparam)
-print dorecv(hs)
+# another login test
+#loginparam = {
+#'l_op_code':'8009',
+#'vc_op_password':'0',
+#'vc_station_address':'00226814A2AB;172.30.4.98',
+#'vc_host_name':'gcn',
+#'l_action_in':'1'
+#}
+#
+#print dosend(hs, 6200, loginparam)
+#print dorecv(hs)
 
 # buy test
 buyparam={
@@ -88,8 +88,42 @@ buyparam={
 'entrust_bs':'1',
 'c_bs':''
         }
+#print dosend(hs, 302, buyparam)
+#print dorecv(hs)
 
-print dosend(hs, 302, buyparam)
+# query buy test
+queryparam={
+'version':'1',
+'l_op_code':'8009',
+'vc_op_password':'0',
+'op_entrust_way':'4',
+'op_station':'00226814A2AB;172.30.4.98',
+'fund_account':'85001135',
+'password':'121314',
+'locate_entrust_no':'2',
+'request_num':'1',
+'stock_code':'',
+'position_str':''
+        }
+
+print dosend(hs, 401, queryparam)
+print dorecv(hs)
+#print hs.errorno, '"'+hs.errormsg+'"'
+
+# cancel test
+cancelparam={
+'version':'1',
+'l_op_code':'8009',
+'vc_op_password':'0',
+'op_entrust_way':'4',
+'op_station':'00226814A2AB;172.30.4.98',
+'fund_account':'85001135',
+'password':'121314',
+'batch_flag':'0',
+'entrust_no':'2'
+        }
+
+print dosend(hs, 304, cancelparam)
 print dorecv(hs)
 
 print 'disconnect', hs.DisConnect()

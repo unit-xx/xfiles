@@ -9,7 +9,6 @@ import socket
 import pickle
 import Queue
 import ConfigParser
-#from mx import Queue
 import cProfile
 from threading import Thread, currentThread, Lock, Event
 from binascii import unhexlify
@@ -23,7 +22,8 @@ import sqlite3 as db
 import asyncore
 
 import util
-import jz, jsd
+#import jz, jsd
+import hs
 import jsdhq
 from dbfpy import dbf
 from PyQt4 import Qt
@@ -528,7 +528,7 @@ class Portfolio(object):
     def __init__(self, ptfn, sessioncfg, tqueue, updtlock, jsdcfg):
         # TODO: change to use jsdworker
         self.sessioncfg = sessioncfg
-        self.session = jz.session(sessioncfg)
+        self.session = hs.session(sessioncfg)
         self.ptfn = ptfn
         self.logfn = ""
         self.logger = logging.getLogger()

@@ -3,10 +3,19 @@ import logging
 import socket
 import sqlite3 as db
 import win32com.client
+import pywintypes
 
 HSVERSION = '3.13'
 
-#TODO: constant definitions here.
+# constant definitions here.
+# exchange type
+EXCH_SH = '1'
+EXCH_SZ = '2'
+EXCH_CFFEX = '5'
+
+# entrust_way
+ENTW_COUNTER = '4'
+
 #TODO: common fields vs. fields per request
 #TODO: fill interface in request
 #TODO: common field names, so that hs/jz switch is smooth.
@@ -16,9 +25,9 @@ Maintains connections, common fields in header.
 """
 class session:
     def __init__(self, config):
-        self.initheader()
         self.config = config
         self.logger = logging.getLogger()
+        self.initheader()
         self.tradedbconn = None
         self.hs = None
 
@@ -30,22 +39,46 @@ class session:
 
     def initheader(self):
         self.data = {}
+        # TODO: add project id
+        # TODO: diff between tested and official hs interface
         self.data["version"] = HSVERSION
-        self.data["branchno"] = self.config['branchno']
+        self.data["branch_no"] = self.config['branch_no']
+        self.data["l_op_code"] = self.config['l_op_code']
+        self.data["vc_op_password"] = self.config['vc_op_password']
+        self.data["op_entrust_way"] = self.config['op_entrust_way']
+        self.data["op_station"] = self.config['op_station']
+        self.data["fund_account"] = self.config['fund_account']
+        self.data["account_content"] = self.config['fund_account']
+        self.data["password"] = self.config['password']
 
     def setup(self):
         try:
             hs = win32com.client.Dispatch("HsCommX.Comm")
             hs.CreateX(0)
             ret = hs.ConnectX(self.config['protocol'],
-                    self.config['servaddr'],
-                    self.config['port'],
+                    self.config['hsserver'],
+                    self.config['hsport'],
                     self.config['keyciper'],
                     self.config['key'],
                     len(self.config['key']))
             if ret == 0:
                 self.hs = hs
-            return (ret == 0)
+            else:
+                return False
+
+            # try login and update account info
+            loginreq = LoginReq(self)
+            loginreq.send()
+            loginresp = LoginResp(self)
+            loginresp.recv()
+            if loginresp.errorno != 0:
+                self.logger.warning("Login failed: %s, %s" %
+                        (loginresp.errorno, loginresp.errormsg))
+                return False
+
+            loginresp.updatesession()
+            self.logger.info("Login ok")
+            return True
         except pywintypes.com_error:
             return False
 
@@ -78,11 +111,8 @@ class request:
     # controls what attributes to send and in what sequence, each 
     # request should set paramlist explicitly.
     paramlist = []
-    # some required params are stored in sessionparams. If
-    # needed, read by self.session['<key>']
-    sessionparams = []
-    # NOTE: 1. param key is different with corresponded key in config
-    # 2. fill blank for unspecified keys? or just ignore
+    headerfield = ['version', 'l_op_code', 'vc_op_password', 'op_entrust_way', 'op_station', 'fund_account', 'password']
+    headernum = len(headerfield)
 
     def __init__(self, session):
         self.session = session
@@ -104,18 +134,27 @@ class request:
     def serialize(self):
         hs = self.session.hs
 
-        hs.SetHead(self.session['branchno'], self.code)
-        hs.SetRange(len(self.paramlist), 1)
+        hs.SetHead(self.session['branch_no'], self.code)
+        hs.SetRange(len(self.paramlist)+self.headernum, 1)
 
-        pkeys = self.params.keys()
-        for p in self.pkeys:
+        self.addSessionSey()
+        pkeys = self.paramlist
+        for p in pkeys:
             hs.AddField(p)
 
-        for p in self.pkeys:
-            if p in self sessionparams:
-                hs.AddValue(self.session[k])
-            else:
-                hs.AddValue(self.params[k])
+        self.addSessionValue()
+        for p in pkeys:
+            hs.AddValue(self[p])
+
+    def addSessionSey(self):
+        hs = self.session.hs
+        for f in self.headerfield:
+            hs.AddField(f)
+
+    def addSessionValue(self):
+        hs = self.session.hs
+        for f in self.headerfield:
+            hs.AddValue(self.session[f])
 
     def send(self):
         hs = self.session.hs
@@ -131,6 +170,7 @@ class response:
         # TODO: define common field
         # NOTE: errorno/errorinfo is not listed in success responses
         self.session = session
+        self.fields = []
         self.records = []
         self.errorno = 0
         self.errormsg = ''
@@ -145,15 +185,14 @@ class response:
         if ret == 0:
             if hs.errorno == 0:
                 # normal deserialzie
-                fields = []
                 for i in range(hs.Fieldcount):
-                    fields.append(hs.GetFieldName(i))
+                    self.fields.append(hs.GetFieldName(i))
 
                 while 1:
                     if hs.Eof != 0:
                         break
                     tmp = {}
-                    for f in fields:
+                    for f in self.fields:
                         tmp[f] = hs.Fieldbyname(f)
                     self.records.append(tmp)
                     hs.Moveby(1)
@@ -165,22 +204,84 @@ class response:
 
 class LoginReq(request):
     code = 200
-    paramlist = ["idtype", "id", "passwd"]
+    paramlist = []
+    headerfield = ['version', 'l_op_code', 'vc_op_password', 'op_entrust_way', 'op_station', 'account_content', 'password']
+    headernum = len(headerfield)
 
 class LoginResp(response):
     def updatesession(self):
-        self.session["account"] = self.records[0][3]
-        self.session["user_code"] = self.records[0][4]
-        self.session["branch"] = self.records[0][6]
-        self.session["session"] = self.records[0][7]
-        assert len(self.records) >= 2
-        for r in self.records:
-            if r[0] == SZAMARKET:
-                self.session["secu_acc"]["SZ"] = r[1]
-            if r[0] == SHAMARKET:
-                self.session["secu_acc"]["SH"] = r[1]
-        assert(self.session["secu_acc"]["SZ"] != "")
-        assert(self.session["secu_acc"]["SH"] != "")
+        self.session["branch_no"] = self.records[0]['branch_no']
+        self.session["client_name"] = self.records[0]['client_name']
+        self.session["client_rights"] = self.records[0]['client_rights']
+
+class QueryHistOrderReq(request):
+    code = '421'
+    paramlist = ['start_date', 'end_date', 'stock_code', 'request_num', 'position_str']
+
+class QueryHistOrderResp(response):
+    pass
+
+class QueryTodayOrderReq(request):
+    code = '401'
+    paramlist = ['exchange_type', 'stock_code', 'locate_entrust_no', 'query_direction', 'sort_direction', 'request_num', 'position_str']
+
+    def qone(self, entrust_no):
+        self['locate_entrust_no'] = entrust_no
+        self['request_num'] = '1'
+        return self.send()
+
+    def qall(self):
+        return self.send()
+
+class QueryTodayOrderResp(response):
+    pass
+
+class OrderReq(request):
+    code = '302'
+    paramlist = ['exchange_type', 'stock_account', 'stock_code', 'entrust_amount', 'entrust_price', 'entrust_prop', 'entrust_bs', 'c_bs', 'external_no', 'batch_no']
+
+    def bsStock(self, exch, bs, scode, price, amount):
+        if exch == 'SH':
+            self['exchange_type'] = EXCH_SH
+        elif exch == 'SZ':
+            self['exchange_type'] = EXCH_SZ
+        else:
+            return -1
+
+        self['stock_code'] = scode
+        self['entrust_amount'] = amount
+        self['entrust_price'] = price
+        self['entrust_prop'] = '0'
+        if bs == 'BUY':
+            self['entrust_bs'] = '1'
+        elif bs == 'SELL':
+            self['entrust_bs'] = '2'
+        else:
+            return -1
+
+        return self.send()
+
+class OrderResp(response):
+    pass
+
+class TryBuyReq(request):
+    code = '301'
+    paramlist = ['exchange_type', 'stock_account', 'stock_code', 'entrust_price', 'entrust_prop', 'c_bs']
+
+    def dotry(self, exch, scode, price):
+        if exch == 'SH':
+            self['exchange_type'] = EXCH_SH
+        elif exch == 'SZ':
+            self['exchange_type'] = EXCH_SZ
+        else:
+            return -1
+        self['stock_code'] = scode
+        self['entrust_price'] = price
+        self['entrust_prop'] = '0'
+        return self.send()
+
+class TryBuyResp(response):
+    pass
 
 class CapitalQueryReq(request):
     code = "502"
