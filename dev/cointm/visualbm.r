@@ -265,7 +265,7 @@ for (i in 1:nrow(tovisual))
 
     print(c(i, cpair))
     beta = as.numeric(unlist(strsplit(tovisual[i,]$beta, ';')))
-    if(any(beta<0.1)) next
+    #if(any(beta<0.1)) next
     if(any(beta<0)) next
     #beta = rep(1, length(right)) / length(right)
     alpha <- as.numeric(tovisual[i,]$alpha)

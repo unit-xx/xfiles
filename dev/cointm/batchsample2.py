@@ -19,7 +19,8 @@ outdir = o['outdir']
 codefn = o['codefn']
 start = o['start']
 end = o['end']
-isindex = o['isindex']
+isindex = int(o['isindex'])
+isfund = int(o['isfund'])
 
 ip = o['ip']
 port = int(o['port'])
@@ -47,6 +48,7 @@ from center_admin.stk_dailyquote a, center_admin.stk_basicinfo b
 where 
     b.tradingcode=:code 
     and a.secucode=b.secucode 
+    and a.tradingstate=1
     and a.tradingday>=TO_DATE(:startdate, 'yyyymmdd')
     and a.tradingday<=TO_DATE(:enddate, 'yyyymmdd')
     """
@@ -68,6 +70,28 @@ from center_admin.inx_dailyquote a, center_admin.inx_basicinfo b
 where 
     b.tradingcode=:code
     and a.indexcode=b.secucode 
+    and a.tradingstate=1
+    and a.tradingday>=TO_DATE(:startdate, 'yyyymmdd')
+    and a.tradingday<=TO_DATE(:enddate, 'yyyymmdd')
+    """
+
+    qfund = """
+select
+    b.tradingcode as code, 
+    b.secuabbr as name, 
+    a.openingprice as open, 
+    a.closingprice as close, 
+    a.highestprice as high, 
+    a.lowestprice as low, 
+    TO_CHAR(a.tradingday, 'yyyymmdd') as "DATE", 
+    a.turnovervol as vol, 
+    a.turnoverval as turnover, 
+    a.adjustclosingprice/a.closingprice as factor
+from center_admin.fnd_dailyquote a, center_admin.fnd_basicinfo b 
+where 
+    b.tradingcode=:code
+    and a.secucode=b.secucode 
+    and a.tradingstate=1
     and a.tradingday>=TO_DATE(:startdate, 'yyyymmdd')
     and a.tradingday<=TO_DATE(:enddate, 'yyyymmdd')
     """
@@ -99,6 +123,10 @@ VALUES (?,?,?,?,?,?,?,?,?,?)
 
     if isindex:
         q = qinx
+        print 1
+    elif isfund:
+        q = qfund
+        print 2
     else:
         q = qstk
 

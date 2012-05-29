@@ -9,6 +9,7 @@ source('util.r')
 coint.test <- function (dbdrv, left, right, startdate, enddate, beta=NA, alpha=NA)
 {
     s.zoo = getquote(dbdrv, c(left, right), startdate, enddate)
+    if(0==NROW(s.zoo)) return(NA)
     snames = names(s.zoo)
 
     beta_isext = TRUE

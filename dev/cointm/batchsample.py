@@ -19,7 +19,7 @@ outdir = o['outdir']
 codefn = o['codefn']
 start = o['start']
 end = o['end']
-needex = o['needex']
+needex = int(o['needex'])
 market = o['market']
 
 ip = o['ip']

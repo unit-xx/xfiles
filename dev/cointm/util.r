@@ -344,7 +344,7 @@ getquote <- function(dbdrv, codes, startdate, enddate, pricetag='close')
     dbDisconnect(con)
     Encoding(s0$name) = 'UTF-8'
     s0_date <- as.Date(as.character(s0$date), '%Y%m%d')
-    s.zoo <- zoo(s0[,pricetag], s0_date)
+    s.zoo <- zoo(s0[,pricetag]*s0[,'factor'], s0_date)
 
     for(i in 1:length(right))
     {
@@ -353,7 +353,7 @@ getquote <- function(dbdrv, codes, startdate, enddate, pricetag='close')
         dbDisconnect(con)
         Encoding(sx$name) = 'UTF-8'
         sx_date <- as.Date(as.character(sx$date), '%Y%m%d')
-        sx <- zoo(sx[,pricetag], sx_date)
+        sx <- zoo(sx[,pricetag]*sx[,'factor'], sx_date)
         s.zoo <- merge(s.zoo, sx, all=FALSE)
     }
 
