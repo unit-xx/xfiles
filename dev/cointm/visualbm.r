@@ -29,7 +29,7 @@ plotpair2 <- function (drv, left, right, tag, betafrom, startdate, enddate, beta
 
     # rolling pvalue and hlife
     #pvalueline = rollapplyr(s.zoo$sprd, hlife*2, function(x){adf.test(as.vector(x))$p.value}, by=hlife/2)
-    #hlifeline = rollapplyr(s.zoo$sprd, hlife*2, function(x){ouhlife(x)}, by=hlife/2)
+    #hlifeline = rollapplyr(s.zoo$sprd, hlife*3, function(x){ouhlife(x)}, by=1)
     #s.zoo <- cbind(s.zoo, pvalueline=pvalueline)
     #s.zoo <- cbind(s.zoo, hlifeline=hlifeline)
 
@@ -49,8 +49,10 @@ plotpair2 <- function (drv, left, right, tag, betafrom, startdate, enddate, beta
 
     pdf(paste(left,paste(right,collapse='.'),tag,'pdf',sep='.'), width=17.55, height=8.3)
 
+    ## shortleg vs. longleg
     #plot(shortleg, longleg)
     #abline(alpha,1, col='red')
+    ## shortleg and longleg time series
     #plot(shortleg, col='blue')
     #lines(longleg-alpha, col='red')
     #abline(v=as.Date(unique(as.yearmon(index(s.zoo)))),
@@ -129,7 +131,9 @@ plotpair2 <- function (drv, left, right, tag, betafrom, startdate, enddate, beta
 
     #plot(pvalueline, col='blue')
     #par(new=T)
-    #plot(hlifeline, col='green', axes=F, bty='c', xlab='', ylab='', ylim=c(-300, 300))
+    #plot(s.zoo$esd/s.zoo$hlife, col='blue', type='o', pch='-', main='rolling sprdutil')
+    #plot(s.zoo$esd, col='blue', type='o', pch='-', main='esd')
+    #plot(s.zoo$hlifeline, col='blue', type='o', pch='-', main='hlife', ylim=c(0, 3*hlife))
     #axis(4, col.axis='black', col='black')
     #abline(v=as.Date(unique(as.yearmon(index(s.zoo)))),
     #       col='grey',lty='dashed',lwd=1)
@@ -187,6 +191,7 @@ plotpair2 <- function (drv, left, right, tag, betafrom, startdate, enddate, beta
         abline(v=as.Date(unique(as.yearmon(index(s.zoo)))),
                h=seq(round(ylim[1]-sprdunit,0),round(ylim[2]+sprdunit,0),sprdunit),
                col='grey',lty='dashed',lwd=1)
+        abline(h=c(-2,-1,0,1,2), col='red',lty='dashed',lwd=1)
         if (dotrd)
         {
             for (i in 1:nrow(bmrst))

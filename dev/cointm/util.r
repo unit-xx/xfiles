@@ -152,7 +152,7 @@ nextbigger <- function(x, sortedseq, start)
 
 matchtrade <-function(opens, exits)
 {
-# given possbile open and exit points, calculate matched open/close pairs
+# given possbile open and exit points (index of time series), calculate matched open/close pairs
     oepair = data.frame()
 
     idopen = 1
@@ -173,6 +173,13 @@ matchtrade <-function(opens, exits)
         if (idopen==-1) break
     }
     oepair
+}
+
+matchtrade2 <- function(trdsig, strat=c('proactive', 'lazy'))
+{
+# given trade signals (1,0,-1 for open/nop/close), find all
+# open/close pairs.
+    oepair = data.frame()
 }
 
 spreadbm2 <- function(spread, legquote, beta, upper, lower, dir=c('short','long','both'), longbcost=0.5/1000, longscost=1.5/1000, shortbcost=0.6/10000, shortscost=0.6/10000, shortmargin=2.5*1/6)
@@ -265,6 +272,45 @@ spreadbm2 <- function(spread, legquote, beta, upper, lower, dir=c('short','long'
     ttrace
 }
 
+spreadbm3 <- function(spread, legquote, beta, upper, lower, dir=c('short','long','both'), longbcost=0.5/1000, longscost=1.5/1000, shortbcost=0.6/10000, shortscost=0.6/10000, shortmargin=2.5*1/6)
+{
+# a third backtest function. algo: label spread time series as 1,0,-1
+# for openable, noaction and closable state. Go through the state series
+# and find suitable open/close point.
+
+    toopendir = match.arg(dir)
+    toopendir = switch(toopendir, long=1, short=-1, both=0)
+    ttrace = data.frame(stringsAsFactors=FALSE)
+    oepair = data.frame()
+
+    sprd = spread$sprd
+    nsprd = (sprd-spread$mean)/spread$sd
+
+    shorttrdsig = zoo(0, index(spread))
+    if (toopendir<=0) # short part
+    {
+        shorts = which(nsprd>upper)
+        exits = which(nsprd<lower)
+        shorttrdsig[shorts] = 1
+        shorttrdsig[exits] = -1
+        shortoe = matchtrade2(shorttrdsig)
+        if (NROW(shortoe) > 0) shortoe = cbind(shortoe, -1)
+        oepair = rbind(oepair, shortoe)
+    }
+
+    longtrdsig = zoo(0, index(spread))
+    if (toopendir>=0) # long part
+    {
+
+    }
+
+    if (NROW(oepair)==0) return(ttrace)
+
+    # TODO: copy spreadbm2 part
+
+
+}
+
 bmstat <- function(bmrst)
 {
 # bmrst from spreadbm
@@ -335,6 +381,7 @@ bmstat <- function(bmrst)
 getquote <- function(dbdrv, codes, startdate, enddate, pricetag='close')
 {
 # return quotes as columns, and column names are 's'+codes
+# returned quotes is after-fuquan.
 
     left = codes[1]
     right = codes[-1]
@@ -359,7 +406,7 @@ getquote <- function(dbdrv, codes, startdate, enddate, pricetag='close')
 
     s.zoo <- window(s.zoo, start=startdate, end=enddate)
     snames = c(paste('s',left,sep=''), paste('s',right,sep=''))
-    names(s.zoo) <- snames
+    if (NROW(s.zoo)>0) names(s.zoo) <- snames
     s.zoo
 }
 

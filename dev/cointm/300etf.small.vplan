@@ -1,0 +1,44 @@
+#tag
+tag=small
+# visualize 2011 data using large test params
+
+# data dir: 000300.db etc.
+dbdir=hs300etf
+
+# coint test db, written by iscoint, read by visualbm
+cointdb=hs300etf.db
+
+# source of beta
+betafrom=y0510_1v1
+decay=-1
+
+dotrd=F
+upper.default=1.2
+lower.default=0.3
+tparam=paramtable
+uprange=0:3:0.05
+lorange=-2:2:0.05
+staticparam=T
+
+normalized=F
+
+sprddetail=F
+quantilebound=0.1
+
+usehurst=F
+hurstdb=hs300etf.hurst.db
+scale.max=512
+scale.min=2
+scale.ratio=2
+
+useacf=F
+
+usersi=F
+
+# a list of pairs to visualize
+visuallist="select cpair from y0510_1v1 where pvalue < 1.2"
+#visuallist="select '000300.159912' as cpair"
+
+# visualbm start/end time
+visualfrom=2009-01-01
+visualto=2011-12-31

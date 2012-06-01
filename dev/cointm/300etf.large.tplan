@@ -1,0 +1,19 @@
+#tag, usually it's the table name to write coint result
+tag=y0510_1v3
+
+# data dir: 000300.db etc.
+dbdir=hs300etf
+
+# code file name
+codefn=300etf
+tmode='1v3'
+
+# coint test db, written by iscoint, read by visualbm
+cointdb=hs300etf.db
+
+# source of beta, NA for calc by lm, so don't use NA as tag
+betafrom=NA
+
+# coint test start/end time
+testfrom=2005-01-01
+testto=2011-12-31

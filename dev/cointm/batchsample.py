@@ -58,10 +58,10 @@ order by "DATE"
 select 
     F16_1090 as code
     ,ob_object_name_1090 as name
-    ,F4_1425 as open
-    ,F7_1425 as close
-    ,F5_1425 as high
-    ,F6_1425 as low
+    ,F4_1425/F10_1425 as open
+    ,F7_1425/F10_1425 as close
+    ,F5_1425/F10_1425 as high
+    ,F6_1425/F10_1425 as low
     ,F2_1425 as "DATE"
     ,F8_1425 as vol
     ,F9_1425 as turnover
