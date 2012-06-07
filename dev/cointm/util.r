@@ -175,11 +175,52 @@ matchtrade <-function(opens, exits)
     oepair
 }
 
-matchtrade2 <- function(trdsig, strat=c('proactive', 'lazy'))
+matchtradeLOAC <- function(trdsig)
+# lazy open, active close
 {
 # given trade signals (1,0,-1 for open/nop/close), find all
 # open/close pairs.
     oepair = data.frame()
+    allstates = c('closed', 'waitopen', 'opened', 'waitclose')
+    allactions = c('nop', 'doopen', 'doclose')
+    state = 'closed'
+    otick = 0
+    etick = 0
+
+    for (i in 1:NROW(trdsig))
+    {
+        sig = trdsig[i,]
+        if (sig==0)
+            csig='zero'
+        else
+        {
+            if(sig==1) csig='above' else csig='below'
+        }
+
+        # state transfer
+        newstate = switch(state, closed=switch(csig, zero='closed', above='waitopen', below='closed'),
+            waitopen=switch(csig, zero='opened', above='waitopen', below='closed'),
+            opened=switch(csig, zero='opened', above='opened', below='closed')
+            )
+
+        # action
+        action = switch(state, closed=switch(csig, 'nop'),
+            waitopen=switch(csig, zero='doopen', 'nop'),
+            opened=switch(csig, below='doclose', 'nop')
+            )
+        if (action=='doopen')
+        {
+            otick = i-1
+        }
+        else if (action=='doclose')
+        {
+            etick = i
+            oepair = rbind(oepair, c(otick, etick))
+        }
+
+        state = newstate
+    }
+    oepair
 }
 
 spreadbm2 <- function(spread, legquote, beta, upper, lower, dir=c('short','long','both'), longbcost=0.5/1000, longscost=1.5/1000, shortbcost=0.6/10000, shortscost=0.6/10000, shortmargin=2.5*1/6)
@@ -278,14 +319,19 @@ spreadbm3 <- function(spread, legquote, beta, upper, lower, dir=c('short','long'
 # for openable, noaction and closable state. Go through the state series
 # and find suitable open/close point.
 
+# an improvement upon spreadbm2: 1) can change matchtrade function, 
+#     2) 
+
     toopendir = match.arg(dir)
     toopendir = switch(toopendir, long=1, short=-1, both=0)
     ttrace = data.frame(stringsAsFactors=FALSE)
     oepair = data.frame()
 
+    # prepare spread
     sprd = spread$sprd
     nsprd = (sprd-spread$mean)/spread$sd
 
+    # generate signals and get all enter/exit points
     shorttrdsig = zoo(0, index(spread))
     if (toopendir<=0) # short part
     {
@@ -293,7 +339,7 @@ spreadbm3 <- function(spread, legquote, beta, upper, lower, dir=c('short','long'
         exits = which(nsprd<lower)
         shorttrdsig[shorts] = 1
         shorttrdsig[exits] = -1
-        shortoe = matchtrade2(shorttrdsig)
+        shortoe = matchtradeLOAC(shorttrdsig)
         if (NROW(shortoe) > 0) shortoe = cbind(shortoe, -1)
         oepair = rbind(oepair, shortoe)
     }
@@ -301,14 +347,75 @@ spreadbm3 <- function(spread, legquote, beta, upper, lower, dir=c('short','long'
     longtrdsig = zoo(0, index(spread))
     if (toopendir>=0) # long part
     {
-
+        longs = which(nsprd<-upper)
+        exits = which(nsprd>-lower)
+        longtrdsig[longs] = 1
+        longtrdsig[exits] = -1
+        longoe = matchtradeLOAC(longtrdsig)
+        if (NROW(longoe) >0) longoe = cbind(longoe, -1)
+        oepair = rbind(oepair, longoe)
     }
 
     if (NROW(oepair)==0) return(ttrace)
 
-    # TODO: copy spreadbm2 part
+    # calc PNL
+    oeorder = order(oepair[1])
+    oepair = oepair[oeorder,] # sort by open ticks (first column)
 
+    dates = index(sprd)
+    allret = zoo(0, dates)
+    for (i in 1:NROW(oepair))
+    {
+        opendir = oepair[i,][,3]
+        otick = oepair[i,][,1]
+        etick = oepair[i,][,2]
+        opent = dates[otick]
+        closet = dates[etick]
+        opensprd = sprd[[otick]]
+        closesprd = sprd[[etick]]
+        opennsprd = nsprd[[otick]]
+        closensprd = nsprd[[etick]]
 
+        tcost = 0
+        holdcap = 0
+        shortcap = 0
+        longcap = 0
+
+        if (opendir == -1) b = -beta
+
+        shortindex = which(b<0)
+        longindex = which(b>0)
+
+        # open part
+        shortcap = sum(legquote[otick,][,shortindex] * b[shortindex])
+        longcap = sum(legquote[otick,][,longindex] * b[longindex])
+        holdcap = longcap + shortcap * shortmargin
+        tcost = shortcap * shortscost + longcap * longbcost
+
+        # close part
+        shortcap = sum(legquote[etick,][,shortindex] * b[shortindex])
+        longcap = sum(legquote[etick,][,longindex] * b[longindex])
+        tcost = tcost + shortcap * shortbcost + longcap * longscost
+        earn = (closesprd - opensprd) * opendir - tcost
+
+        ret = opendir * diff(window(sprd, start=opent, end=closet))/holdcap
+        maxdd = maxDrawdown(as.data.frame(ret), geometric=F)
+
+        window(allret, start=start(ret), end=end(ret)) <- coredata(ret)
+
+        ttrace = rbind(ttrace, as.data.frame(list(opendir=opendir,
+                                           opent=opent, closet=closet,
+                                           opensprd=opensprd, closesprd=closesprd,
+                                           opennsprd=opennsprd, closensprd=closensprd,
+                                           holdcap=holdcap, maxdd=maxdd,
+                                           earn=earn, tcost=tcost)))
+    }
+    if(NROW(ttrace)>0)
+    {
+        sharpeyear = sqrt(252)*mean(allret)/sd(allret)
+        ttrace = cbind(ttrace, sharpeyear=sharpeyear)
+    }
+    ttrace
 }
 
 bmstat <- function(bmrst)

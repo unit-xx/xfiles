@@ -8,9 +8,9 @@ source('util.r')
 # given a pair and its beta, trade benchmarking using upper/lower bound params,
 # and draw the returns figure
 
-pairbm.draw <- function (dbdrv, tag, left, right, startdate, enddate, betafrom, beta, upper, lower, hlife, decay)
+pairbm.draw <- function (dbdrv, tag, left, right, startdate, enddate, betafrom, beta, smean, ssd, upper, lower, hlife, decay, staticparam)
 {
-    s.zoo = getquote(dbdrv, c(left, right), startdate, enddate)
+    s.zoo = getquote(dbdrv, c(left, right), as.Date(startdate), as.Date(enddate))
     snames = names(s.zoo)
 
     sprd <- apply(s.zoo, 1, function(x) {x[1] - sum(x[-1]*beta)})
@@ -63,10 +63,13 @@ pairbm.draw <- function (dbdrv, tag, left, right, startdate, enddate, betafrom, 
     }
 
     title('Relative Returns (with Tx cost)')
-    titlestr = sprintf('%s(in=%s) %s.%s\nupper=%.2f lower=%.2f\nabs.Txcost=%.2f rel.Txcost=%.2f\nabs.ret=%.2f rel.ret=%.4f',
+    titlestr = sprintf('%s(in=%s) %s.%s\nstart=%s end=%s\nsmean=%.2f ssd=%.2f\nupper=%.2f lower=%.2f using %s\nabs.Txcost=%.2f rel.Txcost=%.2f\nabs.ret=%.2f rel.ret=%.4f',
                         tag, betafrom,
                         left, paste(right,collapse='.'),
-                        upper, lower, abscost, relcost,
+                        startdate, enddate,
+                        smean, ssd,
+                        upper, lower, switch(as.numeric(staticparam)+1, 'dynamicparam', 'staticparam'),
+                        abscost, relcost,
                         absallret, relallret)
     mtext(titlestr, family='song', padj=1)
 
@@ -112,7 +115,7 @@ drv = dbDriver('SQLite')
 
 setwd(plan['dbdir', 1])
 trdstat = read.table(trdstatfn, header=T, stringsAsFactors=F)
-for (i in 1:nrow(trdstat))
+for (i in 1:NROW(trdstat))
 {
     cpair = trdstat[i,]$cpair
 
@@ -122,14 +125,19 @@ for (i in 1:nrow(trdstat))
 
     betafrom = trdstat[i,]$betafrom
     beta = as.numeric(unlist(strsplit(trdstat[i,]$beta, ';')))
+    smean = trdstat[i,]$smean
+    ssd = trdstat[i,]$ssd
     upper = trdstat[i,]$upper
     lower = trdstat[i,]$lower
     hlife = trdstat[i,]$hlife
     decay = trdstat[i,]$decay
+    startdate = trdstat[i,]$startdate
+    enddate = trdstat[i,]$enddate
+    staticparam = trdstat[i,]$staticparam
 
     print(c(i, cpair))
 
-    pairbm.draw(drv, tag, left, right, startdate, enddate, betafrom, beta, upper, lower, hlife, decay)
+    pairbm.draw(drv, tag, left, right, startdate, enddate, betafrom, beta, smean, ssd, upper, lower, hlife, decay, staticparam)
 }
 dbUnloadDriver(drv)
 warnings()
