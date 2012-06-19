@@ -29,9 +29,9 @@ plotpair2 <- function (drv, left, right, tag, betafrom, startdate, enddate, beta
 
     # rolling pvalue and hlife
     #pvalueline = rollapplyr(s.zoo$sprd, hlife*2, function(x){adf.test(as.vector(x))$p.value}, by=hlife/2)
-    #hlifeline = rollapplyr(s.zoo$sprd, hlife*3, function(x){ouhlife(x)}, by=1)
+    hlifeline = rollapplyr(s.zoo$sprd, hlife, function(x){ouhlife(x)}, by=1)
     #s.zoo <- cbind(s.zoo, pvalueline=pvalueline)
-    #s.zoo <- cbind(s.zoo, hlifeline=hlifeline)
+    s.zoo <- cbind(s.zoo, hlifeline=hlifeline)
 
     s.zoo <- cbind(s.zoo, smean=smean)
     s.zoo <- cbind(s.zoo, ssd=ssd)
@@ -100,10 +100,10 @@ plotpair2 <- function (drv, left, right, tag, betafrom, startdate, enddate, beta
 
     if (usersi)
     {
-        rsiline = RSI(sprd)
+        rsiline = RSI(sprd, n=decay)
         s.zoo = cbind(s.zoo, rsi=rsiline)
         par(new=T)
-        plot(s.zoo$rsi, col=colors()[258], axes=F, xlab='', ylab='', lty='dotdash')
+        plot(s.zoo$rsi, col=colors()[258], axes=F, xlab='', ylab='', lty='dotdash', type='o', pch='+')
         axis(4, col.axis='black', col='black', padj=-4)
     }
 
@@ -129,12 +129,35 @@ plotpair2 <- function (drv, left, right, tag, betafrom, startdate, enddate, beta
 
     title(titlestr, family='song', line=-4)
 
+    # temp code: view rrate of spread.
+    #rrate = diff(sprd)
+    #rmeanline <- ema(rrate, lambda=2.8854*decay)
+    #rmean2line <- ema(rrate**2, lambda=2.8854*decay)
+    #rsdline <- sqrt(rmean2line - rmeanline**2)
+    #rmeanline = c(0, rmeanline)
+    #rsdline = c(0, rsdline)
+
+    #s.zoo = cbind(s.zoo, rrate=rrate)
+    #s.zoo = cbind(s.zoo, rmean=rmeanline)
+    #s.zoo = cbind(s.zoo, rsd=rsdline)
+    ##par(new=T)
+    #plot(s.zoo$rsd, col='darkgreen', lty='dotdash', type='o', pch='+')
+    ##axis(4, col.axis='black', col='black', padj=-4)
+
+    # temp code: rolling hlife and sprdutil
+
     #plot(pvalueline, col='blue')
     #par(new=T)
-    #plot(s.zoo$esd/s.zoo$hlife, col='blue', type='o', pch='-', main='rolling sprdutil')
     #plot(s.zoo$esd, col='blue', type='o', pch='-', main='esd')
-    #plot(s.zoo$hlifeline, col='blue', type='o', pch='-', main='hlife', ylim=c(0, 3*hlife))
+    plot(s.zoo$hlifeline, col='blue', type='o', pch='-', main='hlife', ylim=c(0, 3*hlife))
+    hlifema = rollapplyr(s.zoo$hlifeline, 3, mean, by=1)
+    s.zoo = cbind(s.zoo, hlifema=hlifema)
+    lines(s.zoo$hlifema, col='red', type='p', pch='+')
     #axis(4, col.axis='black', col='black')
+    abline(v=as.Date(unique(as.yearmon(index(s.zoo)))),
+           col='grey',lty='dashed',lwd=1)
+
+    #plot(s.zoo$esd/s.zoo$hlifeline, col='blue', type='o', pch='-', main='rolling sprdutil')
     #abline(v=as.Date(unique(as.yearmon(index(s.zoo)))),
     #       col='grey',lty='dashed',lwd=1)
 
@@ -203,6 +226,16 @@ plotpair2 <- function (drv, left, right, tag, betafrom, startdate, enddate, beta
                 lines(xy, col=color, lwd=2)
             }
         }
+
+        if (usersi)
+        {
+            nrsiline = RSI(nsprd, n=decay)
+            s.zoo = cbind(s.zoo, nrsi=nrsiline)
+            par(new=T)
+            plot(s.zoo$nrsi, col=colors()[258], axes=F, xlab='', ylab='', lty='dotdash')
+            axis(4, col.axis='black', col='black', padj=-4)
+        }
+
         if (sprddetail)
         {
             rrate = diff((nsprd))

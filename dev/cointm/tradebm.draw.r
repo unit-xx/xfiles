@@ -44,10 +44,18 @@ pairbm.draw <- function (dbdrv, tag, left, right, startdate, enddate, betafrom, 
     pdf(paste(left,paste(right,collapse='.'),tag,'trdbm','pdf',sep='.'), width=17.55, height=8.3)
     ylim = c(min(relret), max(relret))
     plot(relret, ylim=ylim)
+
     abline(v=as.Date(unique(as.yearmon(index(relret)))),
            h=seq(round(ylim[1],2),ylim[2],0.01),
            col='grey',lty='dashed',lwd=1)
     abline(h=relallret, col='red', lty='dashed')
+
+    emeanline <- ema(sprd, lambda=2.8854*decay)
+    emean2line <- ema(sprd**2, lambda=2.8854*decay)
+    esdline <- sqrt(emean2line - emeanline**2)
+    s.zoo <- cbind(s.zoo, emean=emeanline)
+    s.zoo <- cbind(s.zoo, esd=esdline)
+
     for (i in 1:nrow(bmrst))
     {
         trd = bmrst[i,]
@@ -61,6 +69,18 @@ pairbm.draw <- function (dbdrv, tag, left, right, startdate, enddate, betafrom, 
         y = c(r, r-trd$tcost/trd$holdcap)
         lines(c(x,x), y, col='red', lwd=3)
     }
+
+    # add volatility line
+
+    rrate = diff(sprd)/sprd
+    vmeanline <- ema(rrate, lambda=2.8854*decay)
+    vmean2line <- ema(rrate**2, lambda=2.8854*decay)
+    vsdline <- sqrt(vmean2line - vmeanline**2)
+    vsdline <- c(0, vsdline)
+    s.zoo = cbind(s.zoo, vol=vsdline)
+    #par(new=T)
+    plot(s.zoo$vol, col=colors()[258], axes=F, xlab='', ylab='', lty='dotdash', type='o', pch='+')
+    axis(4, col.axis='black', col='black', padj=-4)
 
     title('Relative Returns (with Tx cost)')
     titlestr = sprintf('%s(in=%s) %s.%s\nstart=%s end=%s\nsmean=%.2f ssd=%.2f\nupper=%.2f lower=%.2f using %s\nabs.Txcost=%.2f rel.Txcost=%.2f\nabs.ret=%.2f rel.ret=%.4f',

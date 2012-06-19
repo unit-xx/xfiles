@@ -1,5 +1,5 @@
 #tag, usually it's the table name to write coint result
-tag=y0910
+tag=y1011
 
 # data dir: 000300.db etc.
 dbdir=hs300indexout
@@ -15,5 +15,5 @@ cointdb=hs300index.db
 betafrom=NA
 
 # coint test start/end time
-testfrom=2009-01-01
-testto=2010-12-31
+testfrom=2010-01-01
+testto=2011-12-31
