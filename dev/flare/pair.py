@@ -17,3 +17,4 @@ from TraderApi import TraderApi, TraderSpi
 # pair trading combos, in flare library
 
 # order book maintenance, order book impl in flare library
+# 1 big lock for order book, 1 fine lock for each order
