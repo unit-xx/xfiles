@@ -10,11 +10,13 @@ import UserApiType as utype
 from MdApi import MdApi, MdSpi
 from TraderApi import TraderApi, TraderSpi  
 
-# building blocks
+# start quote server
 
-# quotation receiving and signal generating
+# start orderman: a naive one
 
-# pair trading combos, in flare library
+# start accountman: only maintains positions and position limits
 
-# order book maintenance, order book impl in flare library
-# 1 big lock for order book, 1 fine lock for each order
+# start engine, with trading handler installed
+
+# start pair trading strategy signal
+

@@ -6,17 +6,23 @@ import logging
 import Queue
 from threading import Thread, currentThread, Lock, Event
 import uuid
+import pickle
 
 from MdApi import MdApi, MdSpi
 from TraderApi import TraderApi, TraderSpi  
 import UserApiStruct as ustruct
 import UserApiType as utype
 
+import redis
+
+from util import import BaseObject
+
 class qserver(MdSpi):
 
     def __init__(self,
             instruments,
-            mdcfg
+            mdcfg,
+            rediscfg
         ):
         self.instruments = instruments
         self.broker_id = mdcfg.broker_id
@@ -24,6 +30,13 @@ class qserver(MdSpi):
         self.passwd = mdcfg.passwd
         self.mdcfg = mdcfg
         self.reqid = 1
+
+        self.qrepo = redis.Redis(
+                host=rediscfg.host,
+                port=rediscfg.port,
+                db=rediscfg.qrepodb
+                )
+        self.qchannel = rediscfg.qchannel
 
         self.logger = logging.getLogger()
         self.name = self.__class__.__name__
@@ -54,10 +67,14 @@ class qserver(MdSpi):
             self.api.SubscribeMarketData(self.instruments)
 
     def OnRtnDepthMarketData(self, depth_market_data):
-        # TODO: save quotation here
-        self.qlock.acquire()
-        print depth_market_data.InstrumentID,depth_market_data.BidPrice1,depth_market_data.BidVolume1,depth_market_data.AskPrice1,depth_market_data.AskVolume1,depth_market_data.LastPrice,depth_market_data.Volume,depth_market_data.UpdateTime,depth_market_data.UpdateMillisec
-        self.qlock.release()
+        try:
+            self.qlock.acquire()
+            q = pickle.dumps(depth_market_data)
+            self.qrepo.publish(self.qchannel, q)
+            self.qrepo.set(depth_market_data.InstrumentID, q)
+            #print depth_market_data.InstrumentID,depth_market_data.BidPrice1,depth_market_data.BidVolume1,depth_market_data.AskPrice1,depth_market_data.AskVolume1,depth_market_data.LastPrice,depth_market_data.Volume,depth_market_data.UpdateTime,depth_market_data.UpdateMillisec
+        finally:
+            self.qlock.release()
 
     def getquote(self, inst):
         self.qlock.acquire()
@@ -142,18 +159,19 @@ class engine(TraderSpi):
         # put order into queue
         pass
 
-    def doorder(self, order):
+    def doorder(self, inst, direction, openclose, price, volume, ismktprice):
+        oref = self.inc_order_ref()
         req = ustruct.InputOrder(
-                InstrumentID = order.instrument,
-                Direction = order.direction,
-                OrderRef = str(order.order_ref),
-                LimitPrice = order.price,   #有个疑问，double类型如何保证舍入舍出，在服务器端取整?
-                VolumeTotalOriginal = order.volume,
-                OrderPriceType = utype.THOST_FTDC_OPT_LimitPrice,
+                InstrumentID = inst,
+                Direction = utype.THOST_FTDC_D_Buy if (direction=='buy') else utype.THOST_FTDC_OF_Close,
+                OrderRef = str(oref),
+                LimitPrice = 0 if ismktprice else price,
+                VolumeTotalOriginal = volume,
+                OrderPriceType = utype.THOST_FTDC_OPT_AnyPrice if ismktprice else utype.THOST_FTDC_OPT_LimitPrice,
                 
                 BrokerID = self.cuser.broker_id,
                 InvestorID = self.cuser.investor_id,
-                CombOffsetFlag = utype.THOST_FTDC_OF_Open,         #开仓 5位字符,但是只用到第0位
+                CombOffsetFlag = utype.THOST_FTDC_OF_Open if (openclose=='open') else utype.THOST_FTDC_OF_Close,         #开仓 5位字符,但是只用到第0位
                 CombHedgeFlag = utype.THOST_FTDC_HF_Speculation,   #投机 5位字符,但是只用到第0位
 
                 VolumeCondition = utype.THOST_FTDC_VC_AV,
@@ -169,8 +187,8 @@ class engine(TraderSpi):
         #       add virtual account, session mapping at connection
         #       should be enough (need conform).
 
-        logging.info(u'下单: instrument=%s,方向=%s,数量=%s,价格=%s,OrderRef=%d' % (order.instrument,u'多' if order.direction==utype.THOST_FTDC_D_Buy else u'空',order.volume,order.price,order.order_ref))
-        r = self.trader.ReqOrderInsert(req,self.inc_request_id())
+        logging.info(u'下单: instrument=%s,方向=%s,开平=%s,数量=%s,价格=%s,市价=%d,OrderRef=%d' % (order.instrument, direction, openclose, volume, price, str(ismktprice), oref))
+        r = self.trader.ReqOrderInsert(req, self.inc_request_id())
         return r
 
 class engine_worker(Thread):
@@ -257,3 +275,36 @@ class orderman:
             oid = uuid.uuid1().int
             self.ref2ordmap[oref] = oid
             # TODO: and save the order
+
+class accountman:
+    '''
+    1. maintains positions and cash account
+    2. set limitations
+    '''
+    def __init__(self):
+        pass
+
+    def getpos(inst, direction):
+        pass
+
+    def getcash():
+        pass
+
+    def getlimit(inst, direction):
+        pass
+
+class strategy:
+    '''
+    a interface for implementing strategies
+
+    1. strategy is a thread, which constantly receiving quotes and
+    update signal
+    2. strategy `instances' are record in the class and save in datastore.
+    '''
+    def __init__(self):
+        self.statemap = {}
+        pass
+
+    def onquote(self, q):
+        pass
+
