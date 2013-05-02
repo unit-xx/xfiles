@@ -17,8 +17,7 @@ import redis
 
 from util import import BaseObject
 
-class qserver(MdSpi):
-
+class qrepo(MdSpi):
     def __init__(self,
             instruments,
             mdcfg,
@@ -31,10 +30,10 @@ class qserver(MdSpi):
         self.mdcfg = mdcfg
         self.reqid = 1
 
-        self.qrepo = redis.Redis(
+        self.repo = redis.Redis(
                 host=rediscfg.host,
                 port=rediscfg.port,
-                db=rediscfg.qrepodb
+                db=rediscfg.repodb
                 )
         self.qchannel = rediscfg.qchannel
 
@@ -70,8 +69,8 @@ class qserver(MdSpi):
         try:
             self.qlock.acquire()
             q = pickle.dumps(depth_market_data)
-            self.qrepo.publish(self.qchannel, q)
-            self.qrepo.set(depth_market_data.InstrumentID, q)
+            self.repo.publish(self.qchannel, q)
+            self.repo.set(depth_market_data.InstrumentID, q)
             #print depth_market_data.InstrumentID,depth_market_data.BidPrice1,depth_market_data.BidVolume1,depth_market_data.AskPrice1,depth_market_data.AskVolume1,depth_market_data.LastPrice,depth_market_data.Volume,depth_market_data.UpdateTime,depth_market_data.UpdateMillisec
         finally:
             self.qlock.release()
@@ -80,16 +79,17 @@ class qserver(MdSpi):
         self.qlock.acquire()
         self.qlock.release()
 
-    def setup(self, name='qserver'):
+    def setup(self)
         # don't need to store mdapi, after calling
         # RegisterSpi, we have .api attribute automatically
-        mdapi = MdApi.CreateMdApi(name)
+        mdapi = MdApi.CreateMdApi(self.name)
         mdapi.RegisterSpi(self)
         mdapi.RegisterFront(self.mdcfg.port)
         mdapi.Init()
+        return True
 
 class engine(TraderSpi):
-    def __init__(self, tradercfg, tcap=10, orderman):
+    def __init__(self, tradercfg, tcap=10, orderman, qrepo):
         self.broker_id = tradercfg.broker_id
         self.investor_id = tradercfg.investor_id
         self.passwd = tradercfg.passwd
@@ -97,6 +97,10 @@ class engine(TraderSpi):
 
         self.logger = logging.getLogger()
         self.name = self.__class__.__name__
+
+        self.islogin = False
+        self.loginevent = Event()
+        self.loginevent.clear()
 
         self.tqueue = Queue.Queue()
         self.tqlock = Lock()
@@ -111,7 +115,7 @@ class engine(TraderSpi):
         self.oref = 0
 
         self.orderman = orderman
-
+        self.qrepo = qrepo
 
     def isRspSuccess(self, RspInfo):
         return RspInfo == None or RspInfo.ErrorID == 0
@@ -131,15 +135,27 @@ class engine(TraderSpi):
         self.logger.info(u'trader login, info:%s, rid:%s, is_last:%s' % (info, rid, is_last))
         if not self.isRspSuccess(info):
             self.logger.warning(u'trader login failed')
+            self.islogin = False
             return
         self.logger.info(u'TD:trader login success')
+        self.islogin = True
         self.front_id = userlogin.FrontID
         self.session_id = userlogin.SessionID
         self.order_ref = int(userlogin.MaxOrderRef)
+        self.loginevent.set()
+        # TODO: save this session for exporting orders.
 
-    def setup(self):
+    def setup(self)
         # start thread pool
         # start ctp api
+        trader = TraderApi.CreateTraderApi(self.name)
+        trader.RegisterSpi(self)
+        trader.SubscribePublicTopic(THOST_TERT_QUICK)
+        trader.SubscribePrivateTopic(THOST_TERT_QUICK)
+        trader.RegisterFront(cuser.port)
+        trader.Init()
+        self.loginevent.wait()
+        return self.islogin
 
     def inc_request_id(self):
         ret = 0 
@@ -241,6 +257,7 @@ class orderman:
     '''
     1. provide interface for order read/write
     2. order recovery on startup
+    3. also manages positions, combos
     '''
     def __init__(self):
         self.ref2ordmap = {}
