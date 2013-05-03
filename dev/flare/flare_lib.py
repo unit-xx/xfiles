@@ -6,7 +6,7 @@ import logging
 import Queue
 from threading import Thread, currentThread, Lock, Event
 import uuid
-import pickle
+import cPickle as pickle
 
 from MdApi import MdApi, MdSpi
 from TraderApi import TraderApi, TraderSpi  
@@ -14,8 +14,6 @@ import UserApiStruct as ustruct
 import UserApiType as utype
 
 import redis
-
-from util import import BaseObject
 
 class qrepo(MdSpi):
     def __init__(self,
@@ -179,19 +177,17 @@ class engine(TraderSpi):
         oref = self.inc_order_ref()
         req = ustruct.InputOrder(
                 InstrumentID = inst,
-                Direction = utype.THOST_FTDC_D_Buy if (direction=='buy') else utype.THOST_FTDC_OF_Close,
+                Direction = utype.THOST_FTDC_D_Buy if (direction=='buy') else utype.THOST_FTDC_D_Sell,
                 OrderRef = str(oref),
                 LimitPrice = 0 if ismktprice else price,
                 VolumeTotalOriginal = volume,
                 OrderPriceType = utype.THOST_FTDC_OPT_AnyPrice if ismktprice else utype.THOST_FTDC_OPT_LimitPrice,
-                
                 BrokerID = self.cuser.broker_id,
                 InvestorID = self.cuser.investor_id,
-                CombOffsetFlag = utype.THOST_FTDC_OF_Open if (openclose=='open') else utype.THOST_FTDC_OF_Close,         #开仓 5位字符,但是只用到第0位
-                CombHedgeFlag = utype.THOST_FTDC_HF_Speculation,   #投机 5位字符,但是只用到第0位
-
+                CombOffsetFlag = utype.THOST_FTDC_OF_Open if (openclose=='open') else utype.THOST_FTDC_OF_Close,
+                CombHedgeFlag = utype.THOST_FTDC_HF_Speculation,
                 VolumeCondition = utype.THOST_FTDC_VC_AV,
-                MinVolume = 1,  #这个作用有点不确定,有的文档设成0了
+                MinVolume = 1,
                 ForceCloseReason = utype.THOST_FTDC_FCC_NotForceClose,
                 IsAutoSuspend = 1,
                 UserForceClose = 0,
@@ -203,7 +199,7 @@ class engine(TraderSpi):
         #       add virtual account, session mapping at connection
         #       should be enough (need conform).
 
-        logging.info(u'下单: instrument=%s,方向=%s,开平=%s,数量=%s,价格=%s,市价=%d,OrderRef=%d' % (order.instrument, direction, openclose, volume, price, str(ismktprice), oref))
+        logging.info(u'下单: instrument=%s,direction=%s,openclose=%s,amount=%s,price=%s,ismktprice=%d,OrderRef=%d' % (order.instrument, direction, openclose, volume, price, str(ismktprice), oref))
         r = self.trader.ReqOrderInsert(req, self.inc_request_id())
         return r
 
@@ -283,6 +279,12 @@ class orderman:
             # TODO: get order
             pass
 
+    def insertorder(self, order):
+        # insert new order
+        # order fields may include time, order price, deal price, etc.
+        oid = uuid.uuid1().int
+        return oid
+
     def updateorder(self, order, oref):
         if oref in self.ref2ordmap:
             # existing order, just update
@@ -310,7 +312,7 @@ class accountman:
     def getlimit(inst, direction):
         pass
 
-class strategy:
+class strategy(Thread):
     '''
     a interface for implementing strategies
 
@@ -319,8 +321,36 @@ class strategy:
     2. strategy `instances' are record in the class and save in datastore.
     '''
     def __init__(self):
+        Thread.__init__(self, inst, rediscfg)
+
+        self.qrepo = redis.Redis(
+                host=rediscfg.host,
+                port=rediscfg.port,
+                db=rediscfg.repodb
+                )
+        self.qchannel = rediscfg.qchannel
+        self.qsub = self.qrepo.pubsub()
+
+        self.inst = set(inst) # a set of instruments the strategy works on
+        
         self.statemap = {}
-        pass
+
+        self.runflag = True
+        self.logger = logging.getLogger()
+        self.name = self.__class__.__name__
+
+
+    def stop(self):
+        self.runflag = False
+
+    def run(self):
+        self.qsub.subscribe(self.qchannel)
+        while self.runflag:
+            qmsg = next(self.pubsub.listen())
+            if qmsg['type'] == 'message':
+                qdata = pickle.loads(qmsg['data'])
+                if qdata.InstrumentID in self.inst:
+                    self.onquote(qdata)
 
     def onquote(self, q):
         pass
