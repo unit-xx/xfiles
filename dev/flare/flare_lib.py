@@ -5,6 +5,7 @@ import sys
 import logging
 import Queue
 from threading import Thread, currentThread, Lock, Event
+from datetime import datetime
 import uuid
 import cPickle as pickle
 
@@ -111,9 +112,12 @@ class engine(TraderSpi):
         self.frontid = 0
         self.sessionid = 0
         self.oref = 0
+        self.oreflock = Lock()
 
         self.orderman = orderman
         self.qrepo = qrepo
+
+        self.oref2objmap = {}
 
     def isRspSuccess(self, RspInfo):
         return RspInfo == None or RspInfo.ErrorID == 0
@@ -137,11 +141,14 @@ class engine(TraderSpi):
             return
         self.logger.info(u'TD:trader login success')
         self.islogin = True
-        self.front_id = userlogin.FrontID
-        self.session_id = userlogin.SessionID
-        self.order_ref = int(userlogin.MaxOrderRef)
+        self.frontid = userlogin.FrontID
+        self.sessionid = userlogin.SessionID
+        self.oref = int(userlogin.MaxOrderRef)
+        self.savesession(self.frontid, self.sessionid,
+                str(datetime.today().date()))
         self.loginevent.set()
-        # TODO: save this session for exporting orders.
+        # TODO: save the session (sessionid, frontid, etc.) in
+        # db for order booking and exporting.
 
     def setup(self)
         # start thread pool
@@ -154,6 +161,12 @@ class engine(TraderSpi):
         trader.Init()
         self.loginevent.wait()
         return self.islogin
+
+    def savesession(frontid, sessionid, date):
+        # a too simple logging
+        f = open('sessionlog.log'. 'a')
+        f.writelines(['%d, %d, %s' % (frontid, sessionid, date), '\n'])
+        f.close()
 
     def inc_request_id(self):
         ret = 0 
@@ -173,8 +186,17 @@ class engine(TraderSpi):
         # put order into queue
         pass
 
-    def doorder(self, inst, direction, openclose, price, volume, ismktprice):
+    def makeoreftp(self, oref):
+        return (self.frontid, self.sessionid, oref)
+
+    def doorder(self, inst, direction, openclose, price, volume, ismktprice, callobj=None):
         oref = self.inc_order_ref()
+        oreftp = self.makeoreftp(oref)
+        oid = self.orderman.insertorder(oreftp)
+        if callobj:
+            self.oref2objmap[oreftp] = callobj
+            # TODO: in callbacks, find callobj by oref and call its handler 
+
         req = ustruct.InputOrder(
                 InstrumentID = inst,
                 Direction = utype.THOST_FTDC_D_Buy if (direction=='buy') else utype.THOST_FTDC_D_Sell,
@@ -193,13 +215,11 @@ class engine(TraderSpi):
                 UserForceClose = 0,
                 TimeCondition = utype.THOST_FTDC_TC_GFD,
             )
-        # TODO: save order in meme for access in callbacks
-        #       add entry in ref2order map
-        #       seems no need to save every orders in db, 
-        #       add virtual account, session mapping at connection
-        #       should be enough (need conform).
 
-        logging.info(u'下单: instrument=%s,direction=%s,openclose=%s,amount=%s,price=%s,ismktprice=%d,OrderRef=%d' % (order.instrument, direction, openclose, volume, price, str(ismktprice), oref))
+        logging.info(
+        u'下单: instrument=%s,direction=%s,openclose=%s,amount=%s,price=%s,ismktprice=%d,OrderRef=%d,oid=%d'
+                % (order.instrument, direction, openclose,
+                    volume, price, str(ismktprice), oref, oid))
         r = self.trader.ReqOrderInsert(req, self.inc_request_id())
         return r
 
@@ -255,45 +275,46 @@ class orderman:
     2. order recovery on startup
     3. also manages positions, combos
     '''
-    def __init__(self):
-        self.ref2ordmap = {}
+    def __init__(self, omrediscfg):
+        # oref is a tuple of (frontid, sessionid, orderref)
+        self.oref2ordmap = {}
+        self.rediscfg = omrediscfg
 
     def setup(self):
         # setup connection to store server, i.e., db, redis, mongodb, etc.
-        pass
+        self.orderdb = redis.Redis(
+                host=rediscfg.host,
+                port=rediscfg.port,
+                db=rediscfg.odb
+                )
+        return True
 
     def close(self):
         # close connection to store server
-        pass
+        self.orderdb.bgsave()
 
-    def getorder(self, ref):
-        oid = None
-        try:
-            oid = self.ref2ordmap[ref]
-        except KeyError:
-            pass
-
-        if oid is None:
-            return None
+    def getorder(self, oref):
+        # oref is a tuple of (frontid, sessionid, orderref)
+        if oref in self.oref2ordmap:
+            oid = self.oref2ordmap[oref]
+            return self.orderdb.hgetall(oid)
         else:
-            # TODO: get order
-            pass
+            return None
 
-    def insertorder(self, order):
+    def insertorder(self, oref):
+        # oref is a tuple of (frontid, sessionid, orderref)
         # insert new order
         # order fields may include time, order price, deal price, etc.
         oid = uuid.uuid1().int
+        self.oref2ordmap[oref] = oid
         return oid
 
     def updateorder(self, order, oref):
-        if oref in self.ref2ordmap:
-            # existing order, just update
-            pass
-        else:
+        # oref is a tuple of (frontid, sessionid, orderref)
+        if oref not in self.ref2ordmap:
             # new order, create new oid and save
-            oid = uuid.uuid1().int
-            self.ref2ordmap[oref] = oid
-            # TODO: and save the order
+            oid = self.insertorder(oref)
+        self.orderdb.hmset(oid, order)
 
 class accountman:
     '''
