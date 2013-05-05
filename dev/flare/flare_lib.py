@@ -119,6 +119,9 @@ class engine(TraderSpi):
 
         self.oref2objmap = {}
 
+        # saved order field, read from config
+        self.sof = []
+
     def isRspSuccess(self, RspInfo):
         return RspInfo == None or RspInfo.ErrorID == 0
 
@@ -189,7 +192,9 @@ class engine(TraderSpi):
     def makeoreftp(self, oref):
         return (self.frontid, self.sessionid, oref)
 
-    def doorder(self, inst, direction, openclose, price, volume, ismktprice, callobj=None):
+    def doorder(self, inst, openclose, price, volume,
+            ismktprice=False, isIOC=False, callobj=None):
+        # minus volume as short
         oref = self.inc_order_ref()
         oreftp = self.makeoreftp(oref)
         oid = self.orderman.insertorder(oreftp)
@@ -199,10 +204,10 @@ class engine(TraderSpi):
 
         req = ustruct.InputOrder(
                 InstrumentID = inst,
-                Direction = utype.THOST_FTDC_D_Buy if (direction=='buy') else utype.THOST_FTDC_D_Sell,
+                Direction = utype.THOST_FTDC_D_Buy if (volume>0) else utype.THOST_FTDC_D_Sell,
                 OrderRef = str(oref),
                 LimitPrice = 0 if ismktprice else price,
-                VolumeTotalOriginal = volume,
+                VolumeTotalOriginal = volume if (volume>0) else -volume,
                 OrderPriceType = utype.THOST_FTDC_OPT_AnyPrice if ismktprice else utype.THOST_FTDC_OPT_LimitPrice,
                 BrokerID = self.cuser.broker_id,
                 InvestorID = self.cuser.investor_id,
@@ -211,17 +216,64 @@ class engine(TraderSpi):
                 VolumeCondition = utype.THOST_FTDC_VC_AV,
                 MinVolume = 1,
                 ForceCloseReason = utype.THOST_FTDC_FCC_NotForceClose,
-                IsAutoSuspend = 1,
-                UserForceClose = 0,
-                TimeCondition = utype.THOST_FTDC_TC_GFD,
+                IsAutoSuspend = 1, # 1 or 0?
+                #UserForceClose = 0, not a field in doc, a obsoleted parameter?
+                TimeCondition = utype.THOST_FTDC_TC_IOC if isIOC else utype.THOST_FTDC_TC_GFD,
             )
 
-        logging.info(
-        u'下单: instrument=%s,direction=%s,openclose=%s,amount=%s,price=%s,ismktprice=%d,OrderRef=%d,oid=%d'
-                % (order.instrument, direction, openclose,
+        logging.info(u'下单: instrument=%s,openclose=%s,amount=%s,price=%s,ismktprice=%d,OrderRef=%d,oid=%d'
+                % (order.instrument, openclose,
                     volume, price, str(ismktprice), oref, oid))
         r = self.trader.ReqOrderInsert(req, self.inc_request_id())
-        return r
+        return r, oid
+
+    # trade handlers, save orders and call object's handlers.
+    def OnRspOrderInsert(self, pInputOrder, pRspInfo, nRequestID, bIsLast):
+        '''
+            报单未通过参数校验,被CTP拒绝
+            正常情况后不应该出现
+        '''
+        # TODO: summarize common field of porder and ptrade
+        return
+
+    def OnErrRtnOrderInsert(self, pInputOrder, pRspInfo):
+        '''
+            交易所报单录入错误回报
+            正常情况后不应该出现
+            这个回报没有request_id
+        '''
+
+    def OnRtnOrder(self, pOrder):
+        ''' 报单通知
+            CTP、交易所接受报单
+            Agent中不区分，所得信息只用于撤单
+        '''
+        if pOrder.OrderStatus == utype.THOST_FTDC_OST_Unknown:
+            #CTP接受，但未发到交易所
+        elif pOrder.OrderStatus == utype.THOST_FTDC_OST_Canceled:
+            # order is cancelled
+        else:
+            # 交易所接受Order
+
+        return
+
+    def OnRtnTrade(self, pTrade):
+        '''
+        成交通知
+        '''
+
+    
+    def OnRspOrderAction(self, pInputOrderAction, pRspInfo, nRequestID, bIsLast):
+        '''
+            ctp撤单校验错误
+        '''
+
+    def OnErrRtnOrderAction(self, pOrderAction, pRspInfo):
+        ''' 
+            交易所撤单操作错误回报
+            正常情况后不应该出现
+        '''
+
 
 class engine_worker(Thread):
     def __init__(self, engine, qserv):
