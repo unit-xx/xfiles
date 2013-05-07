@@ -373,16 +373,24 @@ class orderman:
         # TODO: pickle loads/dumps may raise exceptions.
         frontidkey = self.omcfg.frontidkey
         sessionidkey = self.omcfg.sessionidkey
+
         frontids = self.orderdb.hget(frontidkey, date)
         if frontids is None:
             frontids = []
         else:
-            frontids = pickle.loads(frontids)
+            try:
+                frontids = pickle.loads(frontids)
+            except Exception:
+                frontids = []
+
         sessionids = self.orderdb.hget(sessionidkey, date)
         if sessionids is None:
             sessionids = []
         else:
-            sessionids = pickle.loads(sessionids)
+            try:
+                sessionids = pickle.loads(sessionids)
+            except Exception:
+                sessionids = []
 
         frontids.append(frontid)
         sessionids.append(sessionid)
