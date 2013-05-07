@@ -119,8 +119,9 @@ class engine(TraderSpi):
 
         self.oref2objmap = {}
 
-        # saved order field, read from config
-        self.sof = []
+        # to filter out orders from other clients
+        self.myorders = set()
+        # TODO: check oref and oreftp, should use oreftp everywhere
 
     def isRspSuccess(self, RspInfo):
         return RspInfo == None or RspInfo.ErrorID == 0
@@ -164,6 +165,11 @@ class engine(TraderSpi):
         trader.Init()
         self.loginevent.wait()
         return self.islogin
+
+    def close(self):
+        # stop ctp api
+        # stop thread pool
+        pass
 
     def savesession(frontid, sessionid, date):
         # a too simple logging
@@ -233,7 +239,8 @@ class engine(TraderSpi):
             报单未通过参数校验,被CTP拒绝
             正常情况后不应该出现
         '''
-        # TODO: summarize common field of porder and ptrade
+        # TODO: when pRspInfo is error
+        self.orderman.updateorder(pInputOrder, self.makeoreftp(pInputOrder.OrderRef))
         return
 
     def OnErrRtnOrderInsert(self, pInputOrder, pRspInfo):
@@ -242,12 +249,16 @@ class engine(TraderSpi):
             正常情况后不应该出现
             这个回报没有request_id
         '''
+        self.orderman.updateorder(pInputOrder, self.makeoreftp(pInputOrder.OrderRef))
+        return
 
     def OnRtnOrder(self, pOrder):
         ''' 报单通知
             CTP、交易所接受报单
             Agent中不区分，所得信息只用于撤单
         '''
+        self.orderman.updateorder(pOrder, self.makeoreftp(pOrder.OrderRef))
+
         if pOrder.OrderStatus == utype.THOST_FTDC_OST_Unknown:
             #CTP接受，但未发到交易所
         elif pOrder.OrderStatus == utype.THOST_FTDC_OST_Canceled:
@@ -261,19 +272,24 @@ class engine(TraderSpi):
         '''
         成交通知
         '''
+        self.orderman.updateorder(pTrade, self.makeoreftp(pTrade.OrderRef))
+        return
 
-    
-    def OnRspOrderAction(self, pInputOrderAction, pRspInfo, nRequestID, bIsLast):
+    def OnRspOrderAction(self, pOrderAction, pRspInfo, nRequestID, bIsLast):
         '''
             ctp撤单校验错误
         '''
+        self.orderman.updateorder(pOrderAction, self.makeoreftp(pOrderAction.OrderRef))
+        return
+
 
     def OnErrRtnOrderAction(self, pOrderAction, pRspInfo):
-        ''' 
+        '''
             交易所撤单操作错误回报
             正常情况后不应该出现
         '''
-
+        self.orderman.updateorder(pOrderAction, self.makeoreftp(pOrderAction.OrderRef))
+        return
 
 class engine_worker(Thread):
     def __init__(self, engine, qserv):
@@ -332,6 +348,9 @@ class orderman:
         self.oref2ordmap = {}
         self.rediscfg = omrediscfg
 
+        # saved order field, read from config
+        self.sof = set()
+
     def setup(self):
         # setup connection to store server, i.e., db, redis, mongodb, etc.
         self.orderdb = redis.Redis(
@@ -344,6 +363,14 @@ class orderman:
     def close(self):
         # close connection to store server
         self.orderdb.bgsave()
+
+    def getoid(self, oreftp):
+        oid = None
+        try:
+            oid = self.oref2ordmap[oreftp]
+        except KeyError:
+            pass
+        return oid
 
     def getorder(self, oref):
         # oref is a tuple of (frontid, sessionid, orderref)
@@ -366,7 +393,8 @@ class orderman:
         if oref not in self.ref2ordmap:
             # new order, create new oid and save
             oid = self.insertorder(oref)
-        self.orderdb.hmset(oid, order)
+        update = dict( [(k,order.__dict__[k]) for k in (self.sof & set(order.__dict__.keys()))] )
+        self.orderdb.hmset(oid, update)
 
 class accountman:
     '''

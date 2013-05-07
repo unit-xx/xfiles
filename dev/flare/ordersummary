@@ -1,0 +1,17 @@
+ReqOrderInsert CThostFtdcInputOrderField
+
+OnRspOrderInsert CThostFtdcInputOrderField
+
+OnErrRtnOrderInsert CThostFtdcInputOrderField
+
+OnRtnOrder CThostFtdcOrderField
+
+OnRtnTrade CThostFtdcTradeField
+
+
+
+ReqOrderAction CThostFtdcOrderActionField
+
+OnRspOrderAction CThostFtdcOrderActionField
+
+OnErrRtnOrderAction CThostFtdcOrderActionField
