@@ -144,15 +144,15 @@ class engine(TraderSpi):
 
     def OnRspUserLogin(self, userlogin, info, rid, is_last):
         self.logger.info(u'trader login, info:%s, rid:%s, is_last:%s' % (info, rid, is_last))
-        if not self.isRspSuccess(info):
-            self.logger.warning(u'trader login failed')
-            self.islogin = False
-        else:
+        if self.isRspSuccess(info):
             self.logger.info(u'TD:trader login success')
             self.islogin = True
             self.frontid = userlogin.FrontID
             self.sessionid = userlogin.SessionID
             self.oref = int(userlogin.MaxOrderRef)
+        else:
+            self.logger.warning(u'trader login failed')
+            self.islogin = False
         self.loginevent.set()
 
     def setup(self)
@@ -178,8 +178,9 @@ class engine(TraderSpi):
         # stop thread pool
         pass
 
-    def ismysession(frontid, sessionid):
-        return ((frontid, sessionid) in self.mysession)
+    def ismysession(oreftp):
+        # oreftp as (front, session, oref)
+        return ((oreftp[0], oreftp[1]) in self.mysession)
 
     def inc_request_id(self):
         ret = 0 
@@ -221,16 +222,14 @@ class engine(TraderSpi):
                 TimeCondition = utype.THOST_FTDC_TC_IOC if isIOC else utype.THOST_FTDC_TC_GFD,
             )
         r = self.trader.ReqOrderInsert(req, self.inc_request_id())
-        logging.info(u'下单: instrument=%s,openclose=%s,amount=%s,price=%s,ismktprice=%d,OrderRef=%d,oid=%d'
+        self.logger.info(u'下单: instrument=%s,openclose=%s,amount=%s,price=%s,ismktprice=%d,OrderRef=%d,oid=%d'
                 % (order.instrument, openclose,
                     volume, price, str(ismktprice), oref, oid))
 
-        oreftp = self.makeoreftp(oref)
-        self.myoreftp.add(oreftp)
-        self.oreftp2obj[oreftp] = callobj
-
         # submit before save record, better performance
         # but may lost recored on crash
+        oreftp = self.makeoreftp(oref)
+        self.oreftp2obj[oreftp] = callobj
         oid = self.orderman.insertorder(oreftp, req)
         return r, oid
 
@@ -240,8 +239,19 @@ class engine(TraderSpi):
             报单未通过参数校验,被CTP拒绝
             正常情况后不应该出现
         '''
-        # TODO: when pRspInfo is error
-        self.orderman.updateorder(pInputOrder, self.makeoreftp(pInputOrder.OrderRef))
+        # TODO: when pRspInfo is error, pRspInfo logging
+        oreftp = self.makeoreftp(pInputOrder.OrderRef)
+        if self.ismysession(oreftp):
+            try:
+                callobj = self.oreftp2obj[oreftp]
+            except KeyError:
+                self.logging.warning('oreftp (%s) is not recored.' % str(oreftp))
+            if callobj is not None:
+                try:
+                    callobj.onOrderInsertErr(pInputOrder)
+                except Exception:
+                    self.logger.exception('onOrderInsertErr')
+            self.orderman.updateorder(pInputOrder, oreftp)
         return
 
     def OnErrRtnOrderInsert(self, pInputOrder, pRspInfo):
@@ -250,7 +260,18 @@ class engine(TraderSpi):
             正常情况后不应该出现
             这个回报没有request_id
         '''
-        self.orderman.updateorder(pInputOrder, self.makeoreftp(pInputOrder.OrderRef))
+        oreftp = self.makeoreftp(pInputOrder.OrderRef)
+        if self.ismysession(oreftp):
+            try:
+                callobj = self.oreftp2obj[oreftp]
+            except KeyError:
+                self.logging.warning('oreftp (%s) is not recored.' % str(oreftp))
+            if callobj is not None:
+                try:
+                    callobj.onOrderInsertErr(pInputOrder)
+                except Exception:
+                    self.logger.exception('onOrderInsertErr')
+            self.orderman.updateorder(pInputOrder, oreftp)
         return
 
     def OnRtnOrder(self, pOrder):
@@ -258,29 +279,93 @@ class engine(TraderSpi):
             CTP、交易所接受报单
             Agent中不区分，所得信息只用于撤单
         '''
-        self.orderman.updateorder(pOrder, self.makeoreftp(pOrder.OrderRef))
-
-        if pOrder.OrderStatus == utype.THOST_FTDC_OST_Unknown:
-            #CTP接受，但未发到交易所
-        elif pOrder.OrderStatus == utype.THOST_FTDC_OST_Canceled:
-            # order is cancelled
-        else:
-            # 交易所接受Order
-
+        # TODO: which state indicates partial cancel?
+        oreftp = self.makeoreftp(pOrder.OrderRef)
+        if self.ismysession(oreftp):
+            try:
+                callobj = self.oreftp2obj[oreftp]
+            except KeyError:
+                self.logging.warning('oreftp (%s) is not recored.' % str(oreftp))
+            if callobj is not None:
+                if pOrder.OrderStatus in (utype.THOST_FTDC_OST_Unknown, utype.THOST_FTDC_OST_NotTouched):
+                    #CTP接受，但未发到交易所
+                    try:
+                        self.callobj.onOrderAccepted(pOrder)
+                    except Exception:
+                        self.logger.exception('onOrderAccepted')
+                elif pOrder.OrderStatus in (utype.THOST_FTDC_OST_Canceled,):
+                    # order is cancelled
+                    try:
+                        self.callobj.onOrderCancelled(pOrder)
+                    except Exception:
+                        self.logger.exception('onOrderCancelled')
+                elif pOrder.OrderStatus in (utype.THOST_FTDC_OST_PartTradedQueueing,
+                        utype.THOST_FTDC_OST_PartTradedNotQueueing,
+                        utype.THOST_FTDC_OST_NoTradeQueueing,
+                        utype.THOST_FTDC_OST_NoTradeNotQueueing):
+                    # order is partially traded
+                    try:
+                        self.callobj.onOrderPartialTrade(pOrder)
+                    except Exception:
+                        self.logger.exception('onOrderPartialTrade')
+                elif pOrder.OrderStatus in (utype.THOST_FTDC_OST_AllTraded,):
+                    try:
+                        self.callobj.onOrderFullyTrade(pOrder)
+                    except Exception:
+                        self.logger.exception('onOrderFullyTrade')
+                else:
+                    self.logging.warning('unknown order %s status: %s'
+                            %(str(oreftp), pOrder.OrderStatus))
+            self.orderman.updateorder(pOrder, oreftp)
         return
 
     def OnRtnTrade(self, pTrade):
         '''
         成交通知
         '''
-        self.orderman.updateorder(pTrade, self.makeoreftp(pTrade.OrderRef))
+        oreftp = self.makeoreftp(pTrade.OrderRef)
+        if self.ismysession(oreftp):
+            try:
+                callobj = self.oreftp2obj[oreftp]
+            except KeyError:
+                self.logging.warning('oreftp (%s) is not recored.' % str(oreftp))
+            if callobj is not None:
+                if pTrade.OrderStatus in (utype.THOST_FTDC_OST_PartTradedQueueing,
+                        utype.THOST_FTDC_OST_PartTradedNotQueueing,
+                        utype.THOST_FTDC_OST_NoTradeQueueing,
+                        utype.THOST_FTDC_OST_NoTradeNotQueueing):
+                    # order is partially traded
+                    try:
+                        self.callobj.onOrderPartialTrade(pTrade)
+                    except Exception:
+                        self.logger.exception('onOrderPartialTrade')
+                elif pTrade.OrderStatus in (utype.THOST_FTDC_OST_AllTraded,):
+                    try:
+                        self.callobj.onOrderFullyTrade(pTrade)
+                    except Exception:
+                        self.logger.exception('onOrderFullyTrade')
+                else:
+                    self.logging.warning('unknown order %s status: %s'
+                            %(str(oreftp), pTrade.OrderStatus))
+            self.orderman.updateorder(pTrade, oreftp)
         return
 
     def OnRspOrderAction(self, pOrderAction, pRspInfo, nRequestID, bIsLast):
         '''
             ctp撤单校验错误
         '''
-        self.orderman.updateorder(pOrderAction, self.makeoreftp(pOrderAction.OrderRef))
+        oreftp = self.makeoreftp(pOrderAction.OrderRef)
+        if self.ismysession(oreftp):
+            try:
+                callobj = self.oreftp2obj[oreftp]
+            except KeyError:
+                self.logging.warning('oreftp (%s) is not recored.' % str(oreftp))
+            if callobj is not None:
+                try:
+                    callobj.onOrderCancelErr(pOrderAction)
+                except Exception:
+                    self.logger.exception('onOrderCancelErr')
+            self.orderman.updateorder(pOrderAction, oreftp)
         return
 
 
@@ -289,7 +374,18 @@ class engine(TraderSpi):
             交易所撤单操作错误回报
             正常情况后不应该出现
         '''
-        self.orderman.updateorder(pOrderAction, self.makeoreftp(pOrderAction.OrderRef))
+        oreftp = self.makeoreftp(pOrderAction.OrderRef)
+        if self.ismysession(oreftp):
+            try:
+                callobj = self.oreftp2obj[oreftp]
+            except KeyError:
+                self.logging.warning('oreftp (%s) is not recored.' % str(oreftp))
+            if callobj is not None:
+                try:
+                    callobj.onOrderCancelErr(pOrderAction)
+                except Exception:
+                    self.logger.exception('onOrderCancelErr')
+            self.orderman.updateorder(pOrderAction, oreftp)
         return
 
 class engine_worker(Thread):
@@ -370,32 +466,13 @@ class orderman:
         # get today's previous sessionid and frontid from redis
         # append this session in db for order booking and exporting.
         # return two list: session ids and fromids for date
-        # TODO: pickle loads/dumps may raise exceptions.
-        frontidkey = self.omcfg.frontidkey
-        sessionidkey = self.omcfg.sessionidkey
+        frontidkey = ':'.join(self.omcfg.frontidkeybase, date)
+        sessionidkey = ':'.join(self.omcfg.sessionidkeybase, date)
 
-        frontids = self.orderdb.hget(frontidkey, date)
-        if frontids is None:
-            frontids = []
-        else:
-            try:
-                frontids = pickle.loads(frontids)
-            except Exception:
-                frontids = []
-
-        sessionids = self.orderdb.hget(sessionidkey, date)
-        if sessionids is None:
-            sessionids = []
-        else:
-            try:
-                sessionids = pickle.loads(sessionids)
-            except Exception:
-                sessionids = []
-
-        frontids.append(frontid)
-        sessionids.append(sessionid)
-        self.orderdb.hset(frontidkey, date, pickle.dumps(frontids))
-        self.orderdb.hset(sessionids, date, pickle.dumps(sessionids))
+        self.orderdb.rpush(frontidkey, frontid)
+        self.orderdb.rpush(sessionidkey, sessionid)
+        frontids = [int(x) for x in self.orderdb.lrange(frontidkey, 0, -1)]
+        sessionids = [int(x) for x in self.orderdb.lrange(sessionidkey, 0, -1)]
 
         return frontids, sessionids
 
@@ -412,20 +489,22 @@ class orderman:
         return oid
 
     def getorder(self, oreftp):
-        # TODO: getorder by oreftp?
         # oreftp is a tuple of (frontid, sessionid, orderref)
         oid = self.getoid(oreftp)
         if oid is not None:
+            # NOTE: redis store everything in string, so the returned
+            # order dict may be different in fields types.
             return self.orderdb.hgetall(oid)
 
     def updateorder(self, oreftp, order):
         try:
             self.oreflock.acquire()
-            if oreftp in self.oreftp2ordmap:
-                oid = self.oreftp2ordmap[oref]
+            if oreftp in self.oreftp2oid:
+                oid = self.oreftp2oid[oref]
             else:
                 # new order, create new oid and save
-                oid = uuid.uuid1().int
+                # TODO: define better oid
+                oid = ':'.join('oid', uuid.uuid1().hex)
                 self.oreftp2oid[oreftp] = oid
         finally:
             self.oreflock.release()

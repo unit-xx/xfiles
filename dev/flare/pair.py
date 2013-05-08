@@ -72,7 +72,7 @@ class mmstrat(Thread):
     def onquote(self, q):
         pass
 
-    def onOrderErr(self, order):
+    def onOrderInsertErr(self, order):
         pass
 
     def onOrderAccepted(self, order):
