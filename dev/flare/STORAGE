@@ -4,6 +4,10 @@ store and publish quote
 
 2. orders
 
-per 'account'
+per 'account', or per 'installation'
+
+one account many strats?
 
 3. strategy trading postions
+
+4. a batch of orders: a portfolio realization

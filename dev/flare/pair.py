@@ -72,6 +72,7 @@ class mmstrat(Thread):
     def onquote(self, q):
         pass
 
+    # TODO: multiple invocation of handlers by ctp
     def onOrderInsertErr(self, order):
         pass
 
@@ -79,6 +80,7 @@ class mmstrat(Thread):
         pass
 
     def onOrderPartialTrade(self, order):
+        # TODO: update position, ptf status
         pass
 
     def OnOrderFullyTrade(self, order):

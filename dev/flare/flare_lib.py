@@ -280,6 +280,7 @@ class engine(TraderSpi):
             Agent中不区分，所得信息只用于撤单
         '''
         # TODO: which state indicates partial cancel?
+        # TODO: update position and order trading status
         oreftp = self.makeoreftp(pOrder.OrderRef)
         if self.ismysession(oreftp):
             try:
@@ -330,23 +331,11 @@ class engine(TraderSpi):
             except KeyError:
                 self.logging.warning('oreftp (%s) is not recored.' % str(oreftp))
             if callobj is not None:
-                if pTrade.OrderStatus in (utype.THOST_FTDC_OST_PartTradedQueueing,
-                        utype.THOST_FTDC_OST_PartTradedNotQueueing,
-                        utype.THOST_FTDC_OST_NoTradeQueueing,
-                        utype.THOST_FTDC_OST_NoTradeNotQueueing):
-                    # order is partially traded
-                    try:
-                        self.callobj.onOrderPartialTrade(pTrade)
-                    except Exception:
-                        self.logger.exception('onOrderPartialTrade')
-                elif pTrade.OrderStatus in (utype.THOST_FTDC_OST_AllTraded,):
-                    try:
-                        self.callobj.onOrderFullyTrade(pTrade)
-                    except Exception:
-                        self.logger.exception('onOrderFullyTrade')
-                else:
-                    self.logging.warning('unknown order %s status: %s'
-                            %(str(oreftp), pTrade.OrderStatus))
+                # pTrade has not OrderStatus field and this callback
+                # is totally dedicated to notice on traded (volume, price)
+                # TODO: change (simplify) orderman storing field, use this
+                # callback to record 'trades'
+                pass
             self.orderman.updateorder(pTrade, oreftp)
         return
 
