@@ -2,12 +2,18 @@
 
 store and publish quote 
 
-2. orders
+2. orders and portfolios
 
 per 'account', or per 'installation'
 
 one account many strats?
 
-3. strategy trading postions
+oid -> IDS, status, ptfid, strat, accid
+ptfid -> oids
 
-4. a batch of orders: a portfolio realization
+3. account and position
+
+cash:
+postion amount, avg price
+limitations
+
