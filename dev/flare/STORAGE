@@ -8,8 +8,7 @@ per 'account', or per 'installation'
 
 one account many strats?
 
-oid -> IDS, status, ptfid, strat, accid
-ptfid -> oids
+
 
 3. account and position
 
@@ -17,3 +16,24 @@ cash:
 postion amount, avg price
 limitations
 
+*TABLES*
+
+// <x>id has prefix, e.g., oid:deadface for oid
+
+// an account has a separate db to store its orders,
+// trades, postions, portfolios and cash, etc.
+
+order: oid -> ctpIDS, orderstatus, tradevolume, _ptfid, _strat
+
+order2trade: oid -> list of tid
+
+trade: tradeid -> ctptradeid, price, volume, inst, direction, time, exchange, _oid
+
+(portfolio here means a realization of portfolio definition)
+portfolio order: ptfid -> _oids, by inst
+portfolio progress: ptfid -> inst trade amount / avgprice
+
+(portfolio is a subset of orders, trades and postions, or a sub-account)
+
+position: inst+direction: volume, avgprice, margin, pnl(a property)
+(position is an aggreation of trades)
