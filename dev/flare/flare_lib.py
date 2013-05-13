@@ -14,6 +14,8 @@ import UserApiType as utype
 
 import redis
 
+import flaredef
+
 class qrepo(MdSpi):
     def __init__(self,
             instruments,
@@ -63,6 +65,7 @@ class qrepo(MdSpi):
             self.api.SubscribeMarketData(self.instruments)
 
     def OnRtnDepthMarketData(self, depth_market_data):
+        # TODO: is the locking redundant?, use dict instead of redis?
         try:
             q = pickle.dumps(depth_market_data)
             self.repo.publish(self.qchannel, q)

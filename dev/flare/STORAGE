@@ -24,29 +24,64 @@ strat is a series of tradings, controlled by signals.
 
 // <x>id has prefix, e.g., oid:deadface for oid
 
+// namespace schema
+
 // an account has a separate db to store its orders,
 // trades, postions, portfolios and cash, etc.
 
 1. quote
+// only store the latest
 
-// only the latest
-code -> quote (also published)
+as table:
+code(key), updatetime, price, volume, bid1, ask1, ...
+
+in redis:
+quote index = 'quote':inst
+qidx -> quote (also published)
 
 2. orders and portfolios
 
-order: oid -> ctpIDS, orderstatus, tradevolume, _ptfid, _strat
+as table:
+(order) orderuuid(key), order attributes
+(trade) tradeuuid(key), trade attributes
+(ptf def) ptfname, code, amount (no key, just rows of tuples)
+(ptf realization) prid, code1's oids, code2's oids, ... _pname
 
-order2trade: oid -> list of tid
+in redis:
 
-trade: tradeid -> ctptradeid, price, volume, inst, direction, time, exchange, _oid
+oid = 'order:':uuid
+tid = 'trade:':uuid
+pname = 'pdef':unique_ptf_name
+prid = 'pr':uuid // pr for portfolio realization
 
-(portfolio here means a realization of portfolio definition)
-portfolio order: ptfid -> _oids, by inst
-portfolio progress: ptfid -> inst trade amount / avgprice
+order, a redis hash
+oid -> ctpIDS, orderstatus, tradevolume, _pname, _prid, _strat, _cancelid
+cancel order, a redis hash
+cancelid -> ..., _oid
+
+order2trade, a redis list, used for fast lookup
+oid -> list of tid
+
+trade, a redis hash
+tradeid -> ctptradeid, price, volume, inst, direction, time, exchange, _oid
+
+portfolio definition, a redis hash
+pdefname -> code1 amount, code2 amount, ... (minus for short)
+
+portfolio realization, a redis hash
+prid -> code1 oids, code2 oids, ...(oids are pickled as strings), _pname, _strat
+
+(progress and other stats can be summrized from portfolio orders)
+portfolio progress: prid -> inst trade amount / avgprice
 
 3. account and postion
 
-position: inst+direction: volume, avgprice, margin, pnl(a property)
+// stat1: avg open and close in day
+// stat2: avg open and close as time goes
+
+position index = 'pos':inst:('long', 'short')
+
+posidx: volume, avgprice, margin, pnl(a property)
 (position is an aggreation of trades)
 
 4. strats
