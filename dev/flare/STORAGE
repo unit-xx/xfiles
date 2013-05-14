@@ -1,3 +1,5 @@
+=== SEMANTICS ===
+
 1. quote
 
 store and publish quote 
@@ -20,16 +22,22 @@ limitations
 
 strat is a series of tradings, controlled by signals.
 
-*TABLES*
+=== DATA MODELS ===
 
-// <x>id has prefix, e.g., oid:deadface for oid
+0. DESIGN NOTES
+
+// <x>id has namespace prefix, e.g., ORDERNS:deadface for oid
 
 // namespace schema
 
 // an account has a separate db to store its orders,
 // trades, postions, portfolios and cash, etc.
 
-1. quote
+// there's no FrontID + SessionID + OrderRef in OnRtnTrade
+
+// (future work) fields mapping from CTP response to flare names.
+
+1. QUOTE
 // only store the latest
 
 as table:
@@ -39,13 +47,14 @@ in redis:
 quote index = 'quote':inst
 qidx -> quote (also published)
 
-2. orders and portfolios
+2. ORDERS AND PORTFOLIOS
+// store what filed? in what name? 
 
 as table:
 (order) orderuuid(key), order attributes
 (trade) tradeuuid(key), trade attributes
 (ptf def) ptfname, code, amount (no key, just rows of tuples)
-(ptf realization) prid, code1's oids, code2's oids, ... _pname
+(ptf realization) prid, code1's oids, code2's oids, ...
 
 in redis:
 
@@ -55,7 +64,7 @@ pname = 'pdef':unique_ptf_name
 prid = 'pr':uuid // pr for portfolio realization
 
 order, a redis hash
-oid -> ctpIDS, orderstatus, tradevolume, _pname, _prid, _strat, _cancelid
+oid -> ctpIDS, orderstatus, tradevolume, _oreftp, _prid, _strat, _cancelid
 cancel order, a redis hash
 cancelid -> ..., _oid
 
@@ -74,7 +83,7 @@ prid -> code1 oids, code2 oids, ...(oids are pickled as strings), _pname, _strat
 (progress and other stats can be summrized from portfolio orders)
 portfolio progress: prid -> inst trade amount / avgprice
 
-3. account and postion
+3. ACCOUNT AND POSTION
 
 // stat1: avg open and close in day
 // stat2: avg open and close as time goes
@@ -84,5 +93,5 @@ position index = 'pos':inst:('long', 'short')
 posidx: volume, avgprice, margin, pnl(a property)
 (position is an aggreation of trades)
 
-4. strats
+4. STRATS
 

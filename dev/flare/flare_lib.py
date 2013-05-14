@@ -14,7 +14,7 @@ import UserApiType as utype
 
 import redis
 
-import flaredef
+import flaredef as fdef
 
 class qrepo(MdSpi):
     def __init__(self,
@@ -123,7 +123,10 @@ class engine(TraderSpi):
         self.orderman = orderman
         self.qrepo = qrepo
 
+        # TODO: use strats instead of oreftp2oid
         self.oreftp2obj = {}
+        # get strats object from name
+        self.strats = {}
 
         # mysession is set of tuples (front, session)
         # and is stored in redis (by orderman) in two list
@@ -131,11 +134,14 @@ class engine(TraderSpi):
         # so that we can filter out orders from other clients
         self.mysession = set()
 
+    # helpers
     def isRspSuccess(self, RspInfo):
         return RspInfo == None or RspInfo.ErrorID == 0
 
+    # login and setup
     def OnFrontDisConnected(self, reason):
         self.logger.info(u'front disconnected, reason:%s' % (reason,))
+        self.islogin = False
 
     def OnFrontConnected(self):
         self.logger.info(u'front connected')
@@ -149,10 +155,10 @@ class engine(TraderSpi):
         self.logger.info(u'trader login, info:%s, rid:%s, is_last:%s' % (info, rid, is_last))
         if self.isRspSuccess(info):
             self.logger.info(u'TD:trader login success')
-            self.islogin = True
             self.frontid = userlogin.FrontID
             self.sessionid = userlogin.SessionID
             self.oref = int(userlogin.MaxOrderRef)
+            self.islogin = True
         else:
             self.logger.warning(u'trader login failed')
             self.islogin = False
@@ -165,14 +171,13 @@ class engine(TraderSpi):
         trader.RegisterSpi(self)
         trader.SubscribePublicTopic(THOST_TERT_QUICK)
         trader.SubscribePrivateTopic(THOST_TERT_QUICK)
-        trader.RegisterFront(cuser.port)
+        trader.RegisterFront(self.cuser.port)
         trader.Init()
         self.loginevent.wait()
 
         if self.islogin:
-            frontids, sessionids = self.orderman.updatesession(self.frontid,
+            self.orderman.addlogin(self.frontid,
                     self.sessionid, self.GetTradingDay())
-            self.mysession = zip(frontids, sessionids)
 
         return self.islogin
 
@@ -181,10 +186,7 @@ class engine(TraderSpi):
         # stop thread pool
         pass
 
-    def ismysession(oreftp):
-        # oreftp as (front, session, oref)
-        return ((oreftp[0], oreftp[1]) in self.mysession)
-
+    # order helpers
     def inc_request_id(self):
         ret = 0 
         with self.reqlock:
@@ -202,9 +204,16 @@ class engine(TraderSpi):
     def makeoreftp(self, oref):
         return (self.frontid, self.sessionid, oref)
 
-    def doorder(self, inst, openclose, price, volume,
+    # orders and trades
+    def doorder(self, inst, openclose, price, volume, prid, strat,
             ismktprice=False, isIOC=False, callobj=None):
         # minus volume as short
+
+        # first we insert order quickly to store some key fields
+        oreftp = self.makeoreftp(oref)
+        oid = self.orderman.insertorder(oreftp, prid, strat)
+
+        # then we submit order
         oref = self.inc_order_ref()
         req = ustruct.InputOrder(
                 InstrumentID = inst,
@@ -229,14 +238,12 @@ class engine(TraderSpi):
                 % (order.instrument, openclose,
                     volume, price, str(ismktprice), oref, oid))
 
+        # finnaly, store orders completely in db
         # submit before save record, better performance
         # but may lost recored on crash
-        oreftp = self.makeoreftp(oref)
-        self.oreftp2obj[oreftp] = callobj
-        oid = self.orderman.insertorder(oreftp, req)
+        self.orderman.updateorder(oreftp, req)
         return r, oid
 
-    # trade handlers, save orders and call object's handlers.
     def OnRspOrderInsert(self, pInputOrder, pRspInfo, nRequestID, bIsLast):
         '''
             报单未通过参数校验,被CTP拒绝
@@ -244,7 +251,7 @@ class engine(TraderSpi):
         '''
         # TODO: when pRspInfo is error, pRspInfo logging
         oreftp = self.makeoreftp(pInputOrder.OrderRef)
-        if self.ismysession(oreftp):
+        if self.orderman.ismysession(oreftp):
             try:
                 callobj = self.oreftp2obj[oreftp]
             except KeyError:
@@ -264,7 +271,7 @@ class engine(TraderSpi):
             这个回报没有request_id
         '''
         oreftp = self.makeoreftp(pInputOrder.OrderRef)
-        if self.ismysession(oreftp):
+        if self.orderman.ismysession(oreftp):
             try:
                 callobj = self.oreftp2obj[oreftp]
             except KeyError:
@@ -285,7 +292,7 @@ class engine(TraderSpi):
         # TODO: which state indicates partial cancel?
         # TODO: update position and order trading status
         oreftp = self.makeoreftp(pOrder.OrderRef)
-        if self.ismysession(oreftp):
+        if self.orderman.ismysession(oreftp):
             try:
                 callobj = self.oreftp2obj[oreftp]
             except KeyError:
@@ -328,7 +335,7 @@ class engine(TraderSpi):
         成交通知
         '''
         oreftp = self.makeoreftp(pTrade.OrderRef)
-        if self.ismysession(oreftp):
+        if self.orderman.ismysession(oreftp):
             try:
                 callobj = self.oreftp2obj[oreftp]
             except KeyError:
@@ -347,7 +354,7 @@ class engine(TraderSpi):
             ctp撤单校验错误
         '''
         oreftp = self.makeoreftp(pOrderAction.OrderRef)
-        if self.ismysession(oreftp):
+        if self.orderman.ismysession(oreftp):
             try:
                 callobj = self.oreftp2obj[oreftp]
             except KeyError:
@@ -367,7 +374,7 @@ class engine(TraderSpi):
             正常情况后不应该出现
         '''
         oreftp = self.makeoreftp(pOrderAction.OrderRef)
-        if self.ismysession(oreftp):
+        if self.orderman.ismysession(oreftp):
             try:
                 callobj = self.oreftp2obj[oreftp]
             except KeyError:
@@ -428,18 +435,21 @@ class engine_worker(Thread):
 
 class orderman:
     '''
-    1. provide interface for order read/write
+    1. provide interface for access order, trade, ptf, etc.
     2. order recovery on startup
-    3. also manages positions, combos
     '''
     def __init__(self, omcfg):
         # oref is a tuple of (frontid, sessionid, orderref)
-        self.oreftp2oid = {}
         self.omcfg = omcfg
+
+        self.oreftp2oid = {}
         self.oreflock = Lock()
 
         # saved order field, read from config
         self.sof = set()
+
+        # lookup cache by oreftp, actually only use front and session
+        self.alloreftp = set()
 
     def setup(self):
         # setup connection to store server, i.e., db, redis, mongodb, etc.
@@ -448,24 +458,30 @@ class orderman:
                 port=self.omcfg.redisport,
                 db=self.omcfg.odb
                 )
+
+        # TODO: build alloreftp and other caches
         return True
 
     def close(self):
         # close connection to store server
         self.orderdb.bgsave()
 
-    def updatesession(frontid, sessionid, date):
+    def ismysession(oreftp):
+        # oreftp as (front, session, oref)
+        return ((oreftp[0], oreftp[1]) in self.alloreftp)
+
+    def addlogin(frontid, sessionid, date):
         # get today's previous sessionid and frontid from redis
         # append this session in db for order booking and exporting.
         # return two list: session ids and fromids for date
-        frontidkey = ':'.join(self.omcfg.frontidkeybase, date)
-        sessionidkey = ':'.join(self.omcfg.sessionidkeybase, date)
+        frontidkey = ':'.join(fdef.FRONTIDKB, date)
+        sessionidkey = ':'.join(fdef.SESSIONIDKB, date)
 
         self.orderdb.rpush(frontidkey, frontid)
         self.orderdb.rpush(sessionidkey, sessionid)
         frontids = [int(x) for x in self.orderdb.lrange(frontidkey, 0, -1)]
         sessionids = [int(x) for x in self.orderdb.lrange(sessionidkey, 0, -1)]
-
+        self.alloreftp = zip(frontids, sessionids)
         return frontids, sessionids
 
     def getoid(self, oreftp):
@@ -496,7 +512,7 @@ class orderman:
             else:
                 # new order, create new oid and save
                 # TODO: define better oid
-                oid = ':'.join('oid', uuid.uuid1().hex)
+                oid = ':'.join(fdef.ORDERNS, uuid.uuid1().hex)
                 self.oreftp2oid[oreftp] = oid
         finally:
             self.oreflock.release()
@@ -505,7 +521,10 @@ class orderman:
         self.orderdb.hmset(oid, update)
         return oid
 
-    insertorder = updateorder
+    def insertorder(self, oreftp, prid, strat):
+        # insert order's key IDs in db
+        pass
+
 
 class accountman:
     '''
