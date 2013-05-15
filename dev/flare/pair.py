@@ -92,6 +92,9 @@ class mmstrat(Thread):
     def onOrderCancelled(self, order):
         pass
 
+    def onTrade(self, trade):
+        pass
+
 
 # start quote server
 
