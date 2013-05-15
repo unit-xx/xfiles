@@ -1,0 +1,13 @@
+=== first things first ===
+
+strategy design and implementation
+
+(V) publish quote update
+
+save portfolio definition in db and load in memeory.
+
+save portfolio realization in memory, and db if doesn't hurt performance
+
+save current session and only handle orders of current session
+
+orders and trades from older sessions can be recovered.
