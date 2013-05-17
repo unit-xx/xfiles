@@ -12,13 +12,14 @@ class BaseObject:
     def __repr__(self):
         return str(self.__dict__)
 
-def parse_config(name='config.ini', root='base', configpath = '.'):
+def parse_config(app, name='config.ini', root='base', configpath = '.'):
     cfg = ConfigParser.ConfigParser()
     cfgfn = os.path.join(configpath, name)
     cfg.read(cfgfn)
-    config = BaseObject(mduser={},trader={})
+    config = BaseObject(mduser={},trader={},redis={})
     usersec = cfg.get(root,'mduser')
     tradersec = cfg.get(root,'trader')
+    redissec = cfg.get(root, 'redis')
 
     mduser = BaseObject()
     mduser.port = cfg.get(usersec,'port')
@@ -34,7 +35,15 @@ def parse_config(name='config.ini', root='base', configpath = '.'):
     trader.passwd = cfg.get(tradersec,'passwd')
     config.trader = trader
 
-    logging.config.fileConfig(cfgfn, {"logfn":'test.log'})
+    redis = BaseObject()
+    redis.host = cfg.get(redissec, 'host')
+    redis.port = cfg.getint(redissec, 'port')
+    redis.repodb = cfg.getint(redissec, 'repodb')
+    redis.accountdb = cfg.getint(redissec, 'accountdb')
+    redis.qchannel = cfg.get(redissec, 'qchannel')
+    config.redis = redis
+
+    logging.config.fileConfig(cfgfn, {"logfn":app+'.log'})
     logger = logging.getLogger()
     msg = "i'm started"
     logger.info("========================")

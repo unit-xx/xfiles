@@ -7,6 +7,9 @@ from threading import Thread
 
 import redis
 
+import util
+import flare_lib as flib
+
 class mmstrat(Thread):
     '''
     qmax, current positions
@@ -72,37 +75,66 @@ class mmstrat(Thread):
     def onquote(self, q):
         pass
 
-    # TODO: multiple invocation of handlers by ctp
-    def onOrderInsertErr(self, order):
+    # invoked by ctp callbacks
+    def onOrderInsertErr(self, oid):
         pass
 
-    def onOrderAccepted(self, order):
+    def onOrderAccepted(self, oid):
         pass
 
-    def onOrderPartialTrade(self, order):
-        # TODO: update position, ptf status
+    def onOrderPartialTrade(self, oid):
         pass
 
-    def OnOrderFullyTrade(self, order):
+    def OnOrderFullyTrade(self, oid):
         pass
 
-    def onOrderCancelErr(self, order):
+    def onOrderCancelErr(self, oid):
         pass
 
-    def onOrderCancelled(self, order):
+    def onOrderCancelled(self, oid):
         pass
 
-    def onTrade(self, trade):
+    def onOrderTrade(self, oid, price, volume):
         pass
 
 
-# start quote server
+def main():
 
-# start orderman: a naive one
+    # read config
+    cfg = util.parse_config()
 
-# start accountman: only maintains positions and position limits
+    # start quote server
+    INST = ['IF1306', 'IF1307', 'IF1309', 'IF1312']
+    q = flib.qrepo(INSTS, cfg.mduser, cfg.redis)
+    q.setup()
 
-# start engine, with trading handler installed
+    # start orderman
+    ordman = flib.orderman(cfg.redis)
+    ordman.setup()
 
-# start pair trading strategy signal
+    # start accountman: only maintains positions and position limits
 
+    # start engine, with trading handler installed
+    engine = flib.engine(cfg.trader, ordman, q)
+    engine.setup()
+
+    # start pair trading strategy signal
+    ptf = {}
+    mm = mmstrat(ptf, cfg.redis, engine)
+    mm.start()
+
+    # run untile Ctrl-C
+    while 1:
+        time.sleep(1)
+
+    mm.stop()
+    mm.join()
+
+    engine.stop()
+
+    orderman.stop()
+
+    q.stop()
+
+if __name__=='__main__':
+    main()
