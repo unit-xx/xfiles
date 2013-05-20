@@ -434,9 +434,10 @@ class TraderSpiDelegate(TraderSpi):
         r = self.api.ReqQryInstrumentMarginRate(req,self.inc_request_id())
         logging.info(u'A:查询保证金率, 函数发出返回值:%s' % r)
 
-    def fetch_instrument(self,instrument_id):
+    def fetch_instrument(self,instrument_id='', exchid=''):
         req = ustruct.QryInstrument(
                         InstrumentID=instrument_id,
+                        ExchangeID=exchid
                 )
         r = self.api.ReqQryInstrument(req,self.inc_request_id())
         logging.info(u'A:查询合约, 函数发出返回值:%s' % r)
@@ -487,14 +488,14 @@ def main():
     #myspi.fetch_instrument_marginrate(u'IF1305')
     #time.sleep(1)
 
-    #myspi.fetch_instrument(u'IF1305')
-    #time.sleep(1)
+    myspi.fetch_instrument(exchid=u'CFFEX')
+    time.sleep(1)
 
     #myspi.fetch_investor_position_detail(u'IF1305')
     #time.sleep(1)
 
-    myspi.fetch_orders(u'IF1305')
-    time.sleep(1)
+    #myspi.fetch_orders(u'IF1305')
+    #time.sleep(1)
 
     while 1:
         time.sleep(1)

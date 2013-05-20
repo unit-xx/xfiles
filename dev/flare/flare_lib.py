@@ -326,7 +326,7 @@ class engine(TraderSpi):
                     self.orderman.updateorder(oid, pOrder, ['OrderStatus'])
                     if pOrder.OrderSysID!='' and pOrder.ExchangeID!='':
                         # it's a special order update here
-                        self.orderman.updateexchid[oid, (pOrder.ExchangeID, pOrder.OrderSysID)]
+                        self.orderman.updateidmap[oid, (pOrder.ExchangeID, pOrder.OrderSysID), by='exchid']
                     try:
                         self.callobj.onOrderAccepted(oid)
                     except Exception:
@@ -492,19 +492,23 @@ class engine_worker(Thread):
 
 class orderman:
     '''
-    1. provide interface for access order, trade, ptf, etc.
+    1. provide interface for access session, order, trade, ptf, etc.
     2. order recovery on startup
     '''
     def __init__(self, omcfg):
         self.omcfg = omcfg
 
         self.ordercc = defaultdict(dict)
+        self.orderlk = dict(Lock)
+        self.orderblk = Lock()
+
         self.tradecc = defaultdict(list)
+        self.tradelk = dict(Lock)
+        self.tradeblk = Lock()
 
         self.oreftp2oid = {}
         self.exchid2oid = {}
-
-        self.oreflock = Lock()
+        self.maplk = Lock()
 
         # lookup cache by oreftp, actually only use front and session
         self.alloreftp = set()
@@ -525,12 +529,17 @@ class orderman:
         #self.orderdb.bgsave()
         pass
 
+    # session
     def ismysession(self, oreftp):
         # oreftp as (front, session, oref)
-        return ((oreftp[0], oreftp[1]) in self.alloreftp)
+        ret = False
+        with self.maplk:
+            ret = ((oreftp[0], oreftp[1]) in self.alloreftp)
+        return ret
 
     def addlogin(self, frontid, sessionid, date):
         # append new session in db for order booking and exporting.
+        # don't need lock, redis will take care of atomicy.
         frontidkey = ':'.join(fdef.FRONTIDKB, date)
         sessionidkey = ':'.join(fdef.SESSIONIDKB, date)
 
@@ -545,60 +554,99 @@ class orderman:
         sessionids = [int(x) for x in self.orderdb.lrange(sessionidkey, 0, -1)]
         return frontids, sessionids
 
+    # orders
     def getoid(self, someid, by='oreftp'):
         oid = None
-        try:
-            if by == 'oreftp':
-                oid = self.oreftp2oid[someid]
-            elif by == 'exchid':
-                oid = self.exchid2oid[someid]
-        except KeyError:
-            pass
+        with self.maplk:
+            try:
+                if by == 'oreftp':
+                    oid = self.oreftp2oid[someid]
+                elif by == 'exchid':
+                    oid = self.exchid2oid[someid]
+            except KeyError:
+                pass
         return oid
+
+    def updateidmap(self, oid, someid, by='exchid'):
+        with self.maplk:
+            if by=='exchid':
+                self.exchid2oid[someid] = oid
+            elif by=='oreftp':
+                self.oreftp2oid[someid] = oid
 
     def getorder(self, oid):
         #return self.orderdb.hgetall(oid)
         o = None
-        try:
-            o = self.ordercc[oid]
-        except KeyError:
-            pass
-        return  o
-
-    def updateexchid(self, oid, exchid):
-        self.exchid2oid[exchid] = oid
+        olk = None
+        with self.orderblk:
+            try:
+                o = self.ordercc[oid]
+                olk = self.orderlk[oid]
+            except KeyError:
+                pass
+        return  o, olk
 
     def updateorder(self, oid, inorder, field):
         # update order with oid, using input inorder and field
-        try:
-            self.oreflock.acquire()
+        o, olk = self.getorder(oid)
+        if o is not None:
             if field is None:
                 toupdate = inorder
             else:
+                # assume inorder is a CTP response object
                 toupdate = dict( [(k,getattr(inorder, k)) for k in field] )
+
             #self.orderdb.hmset(oid, update)
-            self.ordercc[oid].update(toupdate)
-        finally:
-            self.oreflock.release()
+            with olk:
+                o.update(toupdate)
 
     def insertorder(self, oreftp, prid=None, strat=None):
         # insert order's key IDs in db
-        try:
-            self.oreflock.acquire()
-            if oreftp in self.oreftp2oid:
-                oid = self.oreftp2oid[oref]
-            else:
-                # new order, create new oid and save
-                oid = ':'.join(fdef.ORDERNS, uuid.uuid1().hex)
-                self.oreftp2oid[oreftp] = oid
+        ret = False
 
-            self.ordercc[oid]['_prid'] = prid
-            self.ordercc[oid]['_strat'] = strat
-        finally:
-            self.oreflock.release()
+        oid = self.getoid(oreftp)
+        if oid is None: # non-exist order
+            ret = True
+            oid = ':'.join(fdef.ORDERNS, uuid.uuid1().hex)
+            with self.orderblk:
+                olk = Lock()
+                o = {}
+                self.ordercc[oid] = o
+                self.orderlk[oid] = olk
 
-        return oid
+            # also insert order's trade
+            with self.tradeblk:
+                tlk = Lock()
+                self.tradecc[oid] = []
+                self.tradelk[oid] = tlk
 
+            with olk:
+                o['_prid'] = prid
+                o['_strat'] = strat
+
+            self.updateidmap(oid, oreftp, by='oreftp')
+
+        return ret
+
+    def gettrade(self, oid):
+        t = None
+        tlk = None
+        with self.tradeblk:
+            try:
+                t = self.tradecc[oid]
+                tlk = self.tradelk[oid]
+            except KeyError:
+                pass
+        return t, tlk
+
+    def addtrade(self, oid, price, volume):
+        ret = False
+        t, tlk = self.gettrade(oid)
+        if t is not None:
+            ret = True
+            with tlk:
+                t.append((price, volume))
+        return ret
 
 class accountman:
     '''
