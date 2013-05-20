@@ -59,6 +59,7 @@ class mmstrat(Thread):
 
     def run(self):
         self.qsub.subscribe(self.qchannel)
+        self.engine.regstrat('sprd', self)
         while self.runflag:
             qmsg = next(self.pubsub.listen())
             if qmsg['type'] == 'message':
