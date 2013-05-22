@@ -116,10 +116,10 @@ class engine(TraderSpi):
         self.orderman = orderman
         self.qrepo = qrepo
 
-        self.oreftp2strat = {}
-
         # get strats object from name
+        self.oreftp2strat = {}
         self.strats = {}
+        self.stratlk = Lock()
 
         # mysession a tuple of (front, session)
         # so that we can filter out orders from other clients
@@ -128,13 +128,40 @@ class engine(TraderSpi):
 
     # helpers
     def isRspSuccess(self, RspInfo):
-        return RspInfo == None or RspInfo.ErrorID == 0
+        return RspInfo is None or RspInfo.ErrorID == 0
 
     def ismysession(self, oreftp):
         return ((oreftp[0], oreftp[1]) == self.mysession)
 
+    # from stratname to strat object
     def regstrat(self, stratname, stratobj):
-        self.strats[stratname] = stratobj
+        with self.stratlk:
+            self.strats[stratname] = stratobj
+
+    # from oreftp to stratname
+    def mapstrat(self, oreftp, stratname):
+        with self.stratlk:
+            self.oreftp2strat[oreftp] = stratname
+
+    # from oreftp or stratname to stratobj
+    def getstrat(self, someid, by='oreftp'):
+        ret = None
+        stratname = None
+        with self.stratlk:
+            if by == 'oreftp':
+                try:
+                    stratname = self.oreftp2strat[someid]
+                except KeyError:
+                    pass
+            elif by == 'name':
+                stratname = someid
+
+            if stratname is not None:
+                try:
+                    ret = self.strats[stratname]
+                except KeyError:
+                    pass
+        return ret
 
     # login and setup
     def OnFrontDisConnected(self, reason):
@@ -234,19 +261,34 @@ class engine(TraderSpi):
             )
         r = self.trader.ReqOrderInsert(req, self.inc_request_id())
 
-        # logging may hurt performance
-        self.logger.info(u'下单: instrument=%s,openclose=%s,amount=%s,price=%s,ismktprice=%d,OrderRef=%d,oid=%d'
-                % (order.instrument, openclose,
-                    volume, price, str(ismktprice), oref, oid))
-
         # save order by orderman
-        # TODO: update order here
         oreftp = self.myoreftp(oref)
-        self.oreftp2strat[oreftp] = strat
+        self.mapstrat(oreftp, strat)
         oid = self.orderman.insertorder(oreftp, prid, strat)
-        self.orderman.updateorder(oreftp, req)
+        self.orderman.updateorder(oid, self.transorder(req))
+
+        # logging may hurt performance
+        self.logger.info(u'下单: instrument=%s,openclose=%s,amount=%d,price=%0.3f,ismktprice=%s,isIOC=%s,OrderRef=%d,oid=%d'
+                % (order.instrument, openclose,
+                    volume, price, str(ismktprice), isIOC, oref, oid))
 
         return r, oid
+
+    def transorder(self, order):
+        # translate a ctp inputorder object to a flare order dict
+        ret = {}
+        ret['inst'] = order.InstrumentID
+        ret['direction'] = 'buy' if order.Direction==utype.THOST_FTDC_D_Buy else 'sell'
+        ret['orderref'] = order.OrderRef
+        ret['frontid'] = self.frontid
+        ret['sessionid'] = self.sessionid
+        ret['price'] = order.LimitPrice
+        ret['ismktprice'] = 1 if order.OrderPriceType==utype.THOST_FTDC_OPT_AnyPrice else 0
+        ret['isioc'] = 1 if order.TimeCondition==utype.THOST_FTDC_TC_IOC else 0
+        ret['volume'] = order.VolumeTotalOriginal
+        ret['openclose'] = 'open' if order.CombOffsetFlag==utype.THOST_FTDC_OF_Open else 'close'
+
+        return ret
 
     def OnRspOrderInsert(self, pInputOrder, pRspInfo, nRequestID, bIsLast):
         '''
@@ -261,17 +303,15 @@ class engine(TraderSpi):
             oid = self.orderman.getoid(oreftp)
             self.orderman.updateorder(oid, pRspInfo, ['ErrorID', 'ErrorMsg'])
 
-            callobj = None
-            try:
-                callobj = self.strats[self.oreftp2strat[oreftp]]
-            except KeyError:
-                self.logging.warning('oreftp (%s) has no mom.' % str(oreftp))
+            callobj = self.getstrat(oreftp)
 
             if callobj is not None:
                 try:
                     callobj.onOrderInsertErr(oid)
                 except Exception:
                     self.logger.exception('onOrderInsertErr')
+            else:
+                self.logging.warning('oreftp (%s) has no mom.' % str(oreftp))
         return
 
     def OnErrRtnOrderInsert(self, pInputOrder, pRspInfo):
@@ -288,17 +328,15 @@ class engine(TraderSpi):
             oid = self.orderman.getoid(oreftp)
             self.orderman.updateorder(oid, pRspInfo, ['ErrorID', 'ErrorMsg'])
 
-            callobj = None
-            try:
-                callobj = self.strats[self.oreftp2strat[oreftp]]
-            except KeyError:
-                self.logging.warning('oreftp (%s) has no mom.' % str(oreftp))
+            callobj = self.getstrat(oreftp)
 
             if callobj is not None:
                 try:
                     callobj.onOrderInsertErr(oid)
                 except Exception:
                     self.logger.exception('onOrderInsertErr')
+            else:
+                self.logging.warning('oreftp (%s) has no mom.' % str(oreftp))
         return
 
     def OnRtnOrder(self, pOrder):
@@ -313,17 +351,13 @@ class engine(TraderSpi):
         oreftp = self.makeoreftp(pOrder)
         if self.ismysession(oreftp):
             oid = self.orderman.getoid(oreftp)
+            self.orderman.updateorder(oid, pOrder, ['OrderStatus'])
 
-            callobj = None
-            try:
-                callobj = self.strats[self.oreftp2strat[oreftp]]
-            except KeyError:
-                self.logging.warning('oreftp (%s) has no mom.' % str(oreftp))
+            callobj = self.getstrat(oreftp)
 
             if callobj is not None:
                 if pOrder.OrderStatus in (utype.THOST_FTDC_OST_Unknown, utype.THOST_FTDC_OST_NotTouched):
                     # accepted by ctp or exchange
-                    self.orderman.updateorder(oid, pOrder, ['OrderStatus'])
                     if pOrder.OrderSysID!='' and pOrder.ExchangeID!='':
                         # it's a special order update here
                         self.orderman.updateidmap[oid, (pOrder.ExchangeID, pOrder.OrderSysID), by='exchid']
@@ -332,7 +366,6 @@ class engine(TraderSpi):
                     except Exception:
                         self.logger.exception('onOrderAccepted')
                 elif pOrder.OrderStatus in (utype.THOST_FTDC_OST_Canceled,):
-                    self.orderman.updateorder(oid, pOrder, ['OrderStatus'])
                     # order is cancelled
                     try:
                         self.callobj.onOrderCancelled(oid)
@@ -343,13 +376,11 @@ class engine(TraderSpi):
                         utype.THOST_FTDC_OST_PartTradedNotQueueing,
                         utype.THOST_FTDC_OST_NoTradeNotQueueing):
                     # order is partially traded
-                    self.orderman.updateorder(oid, pOrder, ['OrderStatus'])
                     try:
                         self.callobj.onOrderPartialTrade(oid)
                     except Exception:
                         self.logger.exception('onOrderPartialTrade')
                 elif pOrder.OrderStatus in (utype.THOST_FTDC_OST_AllTraded,):
-                    self.orderman.updateorder(oid, pOrder, ['OrderStatus'])
                     try:
                         self.callobj.onOrderFullyTrade(oid)
                     except Exception:
@@ -357,6 +388,9 @@ class engine(TraderSpi):
                 else:
                     self.logging.warning('unknown order %s status: %s'
                             %(str(oreftp), pOrder.OrderStatus))
+            else:
+                self.logging.warning('oreftp (%s) has no mom.' % str(oreftp))
+                
         return
 
     def OnRtnTrade(self, pTrade):
@@ -371,22 +405,21 @@ class engine(TraderSpi):
         if oid is None:
             return
 
-        # TODO: check the three elements type
-        order = self.orderman.getorder(oid)
-        oreftp = (order['FrontID'], order['SessionID'], str(order['OrderRef']))
-        # a redundant check
-        if self.ismysession(oreftp):
-            callobj = None
-            try:
-                callobj = self.strats[order['_strat']]
-            except KeyError:
-                self.logging.warning('oreftp (%s) has no mom.' % str(oreftp))
+        self.orderman.addtrade(oid, pTrade.Price, pTrade.Volume)
 
-            if callobj is not None:
-                try:
-                    callobj.onOrderTrade(oid, pTrade.Price, pTrade.Volume)
-                except Exception:
-                    self.logger.exception('onOrderInsertErr')
+        order, olk = self.orderman.getorder(oid)
+        with olk:
+            stratname = order['_strat']
+
+        callobj = self.getstrat(stratname, by='name')
+
+        if callobj is not None:
+            try:
+                callobj.onOrderTrade(oid, pTrade.Price, pTrade.Volume)
+            except Exception:
+                self.logger.exception('onOrderInsertErr')
+        else:
+            self.logging.warning('oreftp (%s) has no mom.' % str(oreftp))
         return
 
     def OnRspOrderAction(self, pOrderAction, pRspInfo, nRequestID, bIsLast):
@@ -402,18 +435,15 @@ class engine(TraderSpi):
             self.orderman.updateorder(oid, pRspInfo, ['ErrorID', 'ErrorMsg'])
             self.orderman.updateorder(oid, pRspInfo, ['OrderActionStatus', 'StatusMsg'])
 
-            callobj = None
-            try:
-                callobj = self.strats[self.oreftp2strat[oreftp]]
-            except KeyError:
-                self.logging.warning('oreftp (%s) has no mom.' % str(oreftp))
+            callobj = self.getstrat(oreftp)
 
             if callobj is not None:
                 try:
                     callobj.onOrderCancelErr(oid)
                 except Exception:
                     self.logger.exception('onOrderCancelErr')
-            self.orderman.updateorder(pOrderAction, oreftp)
+            else:
+                self.logging.warning('oreftp (%s) has no mom.' % str(oreftp))
         return
 
 
@@ -431,17 +461,15 @@ class engine(TraderSpi):
             self.orderman.updateorder(oid, pRspInfo, ['ErrorID', 'ErrorMsg'])
             self.orderman.updateorder(oid, pRspInfo, ['OrderActionStatus', 'StatusMsg'])
 
-            callobj = None
-            try:
-                callobj = self.strats[self.oreftp2strat[oreftp]]
-            except KeyError:
-                self.logging.warning('oreftp (%s) has no mon.' % str(oreftp))
 
+            callobj = self.getstrat(oreftp)
             if callobj is not None:
                 try:
                     callobj.onOrderCancelErr(oid)
                 except Exception:
                     self.logger.exception('onOrderCancelErr')
+            else:
+                self.logging.warning('oreftp (%s) has no mom.' % str(oreftp))
         return
 
 class engine_worker(Thread):
