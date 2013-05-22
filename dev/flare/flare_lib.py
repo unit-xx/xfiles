@@ -1,3 +1,5 @@
+#-*- coding:utf-8 -*-
+
 import sys
 
 import logging
@@ -6,7 +8,7 @@ from threading import Thread, currentThread, Lock, Event
 from datetime import datetime
 import uuid
 import cPickle as pickle
-from colllections import defaultdict
+from collections import defaultdict
 
 from MdApi import MdApi, MdSpi
 from TraderApi import TraderApi, TraderSpi  
@@ -16,6 +18,10 @@ import UserApiType as utype
 import redis
 
 import flaredef as fdef
+
+THOST_TERT_RESTART  = 0
+THOST_TERT_RESUME   = 1
+THOST_TERT_QUICK    = 2
 
 class qrepo(MdSpi):
     def __init__(self,
@@ -44,10 +50,10 @@ class qrepo(MdSpi):
         return RspInfo == None or RspInfo.ErrorID == 0
 
     def OnFrontDisConnected(self, reason):
-        self.logger.info(u'front disconnected, reason:%s' % (reason,))
+        self.logger.info(u'md front disconnected, reason:%s' % (reason,))
 
     def OnFrontConnected(self):
-        self.logger.info(u'front connected')
+        self.logger.info(u'md front connected')
         self.user_login(self.broker_id, self.investor_id, self.passwd)
 
     def user_login(self, broker_id, investor_id, passwd):
@@ -55,7 +61,7 @@ class qrepo(MdSpi):
         r=self.api.ReqUserLogin(req, self.inc_request_id())
 
     def OnRspUserLogin(self, userlogin, info, rid, is_last):
-        self.logger.info(u'user login, info:%s, rid:%s, is_last:%s' % (info, rid, is_last))
+        self.logger.info(u'md user login, info:%s, rid:%s, is_last:%s' % (info, rid, is_last))
         if is_last and self.isRspSuccess(info):
             self.api.SubscribeMarketData(self.instruments)
 
@@ -70,7 +76,7 @@ class qrepo(MdSpi):
         #ret = self.repo.get(inst)
         return ret
 
-    def setup(self)
+    def setup(self):
         # don't need to store mdapi, after calling
         # RegisterSpi, we have .api attribute automatically
         self.repo = redis.Redis(
@@ -85,6 +91,9 @@ class qrepo(MdSpi):
         mdapi.RegisterFront(self.mdcfg.port)
         mdapi.Init()
         return True
+
+    def stop(self):
+        self.api.Release()
 
 class engine(TraderSpi):
     def __init__(self, tradercfg, orderman, qrepo):
@@ -175,6 +184,7 @@ class engine(TraderSpi):
     def user_login(self, broker_id, investor_id, passwd):
         req = ustruct.ReqUserLogin(BrokerID=broker_id, UserID=investor_id, Password=passwd)
         r=self.api.ReqUserLogin(req, self.inc_request_id())
+        self.logger.info('req login')
 
     def OnRspUserLogin(self, userlogin, info, rid, is_last):
         self.logger.info(u'trader login, info:%s, rid:%s, is_last:%s' % (info, rid, is_last))
@@ -189,7 +199,7 @@ class engine(TraderSpi):
             self.islogin = False
         self.loginevent.set()
 
-    def setup(self)
+    def setup(self):
         # start thread pool
         # start ctp api
         trader = TraderApi.CreateTraderApi(self.name)
@@ -207,8 +217,9 @@ class engine(TraderSpi):
 
         return self.islogin
 
-    def close(self):
+    def stop(self):
         # stop ctp api
+        self.api.Release()
         # stop thread pool
         pass
 
@@ -231,7 +242,7 @@ class engine(TraderSpi):
         # oref tuple for current session
         return (order.FrontID, order.SessionID, order.OrderRef)
 
-    def myoreftp(self.oref):
+    def myoreftp(self, oref):
         return (self.frontid, self.sessionid, oref)
 
     # orders and trades
@@ -360,7 +371,7 @@ class engine(TraderSpi):
                     # accepted by ctp or exchange
                     if pOrder.OrderSysID!='' and pOrder.ExchangeID!='':
                         # it's a special order update here
-                        self.orderman.updateidmap[oid, (pOrder.ExchangeID, pOrder.OrderSysID), by='exchid']
+                        self.orderman.updateidmap(oid, (pOrder.ExchangeID, pOrder.OrderSysID), by='exchid')
                     try:
                         self.callobj.onOrderAccepted(oid)
                     except Exception:
@@ -527,11 +538,11 @@ class orderman:
         self.omcfg = omcfg
 
         self.ordercc = defaultdict(dict)
-        self.orderlk = dict(Lock)
+        self.orderlk = defaultdict(Lock)
         self.orderblk = Lock()
 
         self.tradecc = defaultdict(list)
-        self.tradelk = dict(Lock)
+        self.tradelk = defaultdict(Lock)
         self.tradeblk = Lock()
 
         self.oreftp2oid = {}
@@ -552,7 +563,7 @@ class orderman:
         # TODO: build alloreftp and other caches
         return True
 
-    def close(self):
+    def stop(self):
         # close connection to store server
         #self.orderdb.bgsave()
         pass

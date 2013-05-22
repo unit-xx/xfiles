@@ -1,9 +1,10 @@
 # paired arbitrage between IF futures
 
 import sys
-import config
 import logging
+import time
 from threading import Thread
+import cPickle as pickle
 
 import redis
 
@@ -14,8 +15,8 @@ class mmstrat(Thread):
     '''
     qmax, current positions
     '''
-    def __init__(self):
-        Thread.__init__(self, ptf, qrediscfg, engine)
+    def __init__(self, ptf, rediscfg, engine):
+        Thread.__init__(self)
 
         self.qrepo = redis.Redis(
                 host=rediscfg.host,
@@ -24,12 +25,13 @@ class mmstrat(Thread):
                 )
         self.qchannel = rediscfg.qchannel
         self.qsub = self.qrepo.pubsub()
+        self.engine = engine
 
         # a set of instruments the strategy works on
         # portfolio is a dict of code->amount, with minus
         # amount as shorting.
         self.ptf = ptf
-        self.inst = set(pft.keys())
+        self.inst = set(ptf.keys())
 
         # current order in going
         self.curorder = []
@@ -46,8 +48,10 @@ class mmstrat(Thread):
 
     def stop(self):
         self.runflag = False
+        self.qrepo.publish(self.qchannel, 'stop')
 
     def submitptf(self, openclose):
+        return
         for inst in self.inst:
             r, oid = self.engine.doorder(inst, openclose, 0, self.ptf[inst],
                     ismktprice=True, isIOC=True, callobj=self)
@@ -61,7 +65,10 @@ class mmstrat(Thread):
         self.qsub.subscribe(self.qchannel)
         self.engine.regstrat('sprd', self)
         while self.runflag:
-            qmsg = next(self.pubsub.listen())
+            qmsg = next(self.qsub.listen())
+            if len(qmsg['data'])==4 and qmsg['data']=='stop':
+                continue
+
             if qmsg['type'] == 'message':
                 qdata = pickle.loads(qmsg['data'])
                 if qdata.InstrumentID in self.inst:
@@ -102,10 +109,10 @@ class mmstrat(Thread):
 def main():
 
     # read config
-    cfg = util.parse_config()
+    cfg = util.parse_config('pair')
 
     # start quote server
-    INST = ['IF1306', 'IF1307', 'IF1309', 'IF1312']
+    INSTS = ['IF1306', 'IF1307', 'IF1309', 'IF1312']
     q = flib.qrepo(INSTS, cfg.mduser, cfg.redis)
     q.setup()
 
@@ -125,15 +132,19 @@ def main():
     mm.start()
 
     # run untile Ctrl-C
-    while 1:
-        time.sleep(1)
+    try:
+        while 1:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        pass
 
+    print 'stopping...'
     mm.stop()
     mm.join()
 
     engine.stop()
 
-    orderman.stop()
+    ordman.stop()
 
     q.stop()
 

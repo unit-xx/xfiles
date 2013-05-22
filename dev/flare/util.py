@@ -33,6 +33,7 @@ def parse_config(app, name='config.ini', root='base', configpath = '.'):
     trader.broker_id = cfg.get(tradersec,'broker_id')
     trader.investor_id = cfg.get(tradersec,'investor_id')
     trader.passwd = cfg.get(tradersec,'passwd')
+    trader.tpoolcap = cfg.get(tradersec, 'tpoolcap')
     config.trader = trader
 
     redis = BaseObject()
