@@ -64,6 +64,7 @@ class qrepo(MdSpi):
         self.logger.info(u'md user login, info:%s, rid:%s, is_last:%s' % (info, rid, is_last))
         if is_last and self.isRspSuccess(info):
             self.api.SubscribeMarketData(self.instruments)
+            self.logger.info('sub md: %s' % self.instruments)
 
     def OnRtnDepthMarketData(self, depth_market_data):
         q = pickle.dumps(depth_market_data)
@@ -146,6 +147,8 @@ class engine(TraderSpi):
     def regstrat(self, stratname, stratobj):
         with self.stratlk:
             self.strats[stratname] = stratobj
+        self.logger.info('reg strats: %s => %s' % 
+                (stratname, stratobj.__class__.__name__))
 
     # from oreftp to stratname
     def mapstrat(self, oreftp, stratname):
@@ -189,7 +192,7 @@ class engine(TraderSpi):
     def OnRspUserLogin(self, userlogin, info, rid, is_last):
         self.logger.info(u'trader login, info:%s, rid:%s, is_last:%s' % (info, rid, is_last))
         if self.isRspSuccess(info):
-            self.logger.info(u'TD:trader login success')
+            self.logger.info(u'TD:trader login success, session: %s, front: %s' % (userlogin.SessionID, userlogin.FrontID))
             self.frontid = userlogin.FrontID
             self.sessionid = userlogin.SessionID
             self.oref = int(userlogin.MaxOrderRef)
@@ -212,7 +215,7 @@ class engine(TraderSpi):
 
         if self.islogin:
             self.orderman.addlogin(self.frontid,
-                    self.sessionid, self.GetTradingDay())
+                    self.sessionid, self.api.GetTradingDay())
             self.mysession = (self.frontid, self.sessionid)
 
         return self.islogin
@@ -240,7 +243,7 @@ class engine(TraderSpi):
 
     def makeoreftp(self, order):
         # oref tuple for current session
-        return (order.FrontID, order.SessionID, order.OrderRef)
+        return (order.FrontID, order.SessionID, int(order.OrderRef))
 
     def myoreftp(self, oref):
         return (self.frontid, self.sessionid, oref)
@@ -256,7 +259,7 @@ class engine(TraderSpi):
                 InstrumentID = inst,
                 Direction = utype.THOST_FTDC_D_Buy if (volume>0) else utype.THOST_FTDC_D_Sell,
                 OrderRef = str(oref),
-                LimitPrice = 0 if ismktprice else price,
+                LimitPrice = 0.0 if ismktprice else price,
                 VolumeTotalOriginal = volume if (volume>0) else -volume,
                 OrderPriceType = utype.THOST_FTDC_OPT_AnyPrice if ismktprice else utype.THOST_FTDC_OPT_LimitPrice,
                 BrokerID = self.broker_id,
@@ -270,7 +273,7 @@ class engine(TraderSpi):
                 #UserForceClose = 0, not a field in doc, a obsoleted parameter?
                 TimeCondition = utype.THOST_FTDC_TC_IOC if isIOC else utype.THOST_FTDC_TC_GFD,
             )
-        r = self.trader.ReqOrderInsert(req, self.inc_request_id())
+        r = self.api.ReqOrderInsert(req, self.inc_request_id())
 
         # save order by orderman
         oreftp = self.myoreftp(oref)
@@ -279,8 +282,8 @@ class engine(TraderSpi):
         self.orderman.updateorder(oid, self.transorder(req))
 
         # logging may hurt performance
-        self.logger.info(u'下单: instrument=%s,openclose=%s,amount=%d,price=%0.3f,ismktprice=%s,isIOC=%s,OrderRef=%d,oid=%d'
-                % (order.instrument, openclose,
+        self.logger.info(u'下单: instrument=%s,openclose=%s,amount=%d,price=%0.3f,ismktprice=%s,isIOC=%s,OrderRef=%d,oid=%s'
+                % (inst, openclose,
                     volume, price, str(ismktprice), isIOC, oref, oid))
 
         return r, oid
@@ -306,6 +309,7 @@ class engine(TraderSpi):
             报单未通过参数校验,被CTP拒绝
             正常情况后不应该出现
         '''
+        self.logger.info('OnRspOrderInsert')
         if pInputOrder is None or pRspInfo is None:
             return
 
@@ -322,7 +326,7 @@ class engine(TraderSpi):
                 except Exception:
                     self.logger.exception('onOrderInsertErr')
             else:
-                self.logging.warning('oreftp (%s) has no mom.' % str(oreftp))
+                self.logger.warning('oreftp (%s) has no mom.' % str(oreftp))
         return
 
     def OnErrRtnOrderInsert(self, pInputOrder, pRspInfo):
@@ -331,6 +335,7 @@ class engine(TraderSpi):
             正常情况后不应该出现
             这个回报没有request_id
         '''
+        self.logger.info('OnErrRtnOrderInsert')
         if pInputOrder is None or pRspInfo is None:
             return
 
@@ -347,7 +352,7 @@ class engine(TraderSpi):
                 except Exception:
                     self.logger.exception('onOrderInsertErr')
             else:
-                self.logging.warning('oreftp (%s) has no mom.' % str(oreftp))
+                self.logger.warning('oreftp (%s) has no mom.' % str(oreftp))
         return
 
     def OnRtnOrder(self, pOrder):
@@ -362,45 +367,46 @@ class engine(TraderSpi):
         oreftp = self.makeoreftp(pOrder)
         if self.ismysession(oreftp):
             oid = self.orderman.getoid(oreftp)
-            self.orderman.updateorder(oid, pOrder, ['OrderStatus'])
+            self.orderman.updateorder(oid, pOrder, ['OrderStatus', 'StatusMsg', 'OrderSubmitStatus'])
 
             callobj = self.getstrat(oreftp)
 
             if callobj is not None:
-                if pOrder.OrderStatus in (utype.THOST_FTDC_OST_Unknown, utype.THOST_FTDC_OST_NotTouched):
+                if pOrder.OrderStatus in (utype.THOST_FTDC_OST_Unknown,
+                        utype.THOST_FTDC_OST_NotTouched,
+                        utype.THOST_FTDC_OST_NoTradeQueueing,
+                        utype.THOST_FTDC_OST_NoTradeNotQueueing):
                     # accepted by ctp or exchange
                     if pOrder.OrderSysID!='' and pOrder.ExchangeID!='':
                         # it's a special order update here
                         self.orderman.updateidmap(oid, (pOrder.ExchangeID, pOrder.OrderSysID), by='exchid')
+                        # TODO: when to update exchid map
                     try:
-                        self.callobj.onOrderAccepted(oid)
+                        callobj.onOrderAccepted(oid)
                     except Exception:
                         self.logger.exception('onOrderAccepted')
                 elif pOrder.OrderStatus in (utype.THOST_FTDC_OST_Canceled,):
                     # order is cancelled
                     try:
-                        self.callobj.onOrderCancelled(oid)
+                        callobj.onOrderCancelled(oid)
                     except Exception:
                         self.logger.exception('onOrderCancelled')
-                elif pOrder.OrderStatus in (utype.THOST_FTDC_OST_PartTradedQueueing,
-                        utype.THOST_FTDC_OST_NoTradeQueueing,
-                        utype.THOST_FTDC_OST_PartTradedNotQueueing,
-                        utype.THOST_FTDC_OST_NoTradeNotQueueing):
+                elif pOrder.OrderStatus in (utype.THOST_FTDC_OST_PartTradedQueueing, utype.THOST_FTDC_OST_PartTradedNotQueueing,):
                     # order is partially traded
                     try:
-                        self.callobj.onOrderPartialTrade(oid)
+                        callobj.onOrderPartialTrade(oid)
                     except Exception:
                         self.logger.exception('onOrderPartialTrade')
                 elif pOrder.OrderStatus in (utype.THOST_FTDC_OST_AllTraded,):
                     try:
-                        self.callobj.onOrderFullyTrade(oid)
+                        callobj.onOrderFullyTrade(oid)
                     except Exception:
                         self.logger.exception('onOrderFullyTrade')
                 else:
-                    self.logging.warning('unknown order %s status: %s'
+                    self.logger.warning('unknown order %s status: %s'
                             %(str(oreftp), pOrder.OrderStatus))
             else:
-                self.logging.warning('oreftp (%s) has no mom.' % str(oreftp))
+                self.logger.warning('oreftp (%s) has no mom.' % str(oreftp))
                 
         return
 
@@ -409,11 +415,13 @@ class engine(TraderSpi):
         成交通知
         '''
         if pTrade is None:
+            self.logger.info('but without info')
             return
 
         exchid = (pTrade.ExchangeID, pTrade.OrderSysID)
         oid = self.orderman.getoid(exchid, 'exchid')
         if oid is None:
+            self.logger.info('but no oid')
             return
 
         self.orderman.addtrade(oid, pTrade.Price, pTrade.Volume)
@@ -430,7 +438,7 @@ class engine(TraderSpi):
             except Exception:
                 self.logger.exception('onOrderInsertErr')
         else:
-            self.logging.warning('oreftp (%s) has no mom.' % str(oreftp))
+            self.logger.warning('oreftp (%s) has no mom.' % str(oreftp))
         return
 
     def OnRspOrderAction(self, pOrderAction, pRspInfo, nRequestID, bIsLast):
@@ -454,7 +462,7 @@ class engine(TraderSpi):
                 except Exception:
                     self.logger.exception('onOrderCancelErr')
             else:
-                self.logging.warning('oreftp (%s) has no mom.' % str(oreftp))
+                self.logger.warning('oreftp (%s) has no mom.' % str(oreftp))
         return
 
 
@@ -480,7 +488,7 @@ class engine(TraderSpi):
                 except Exception:
                     self.logger.exception('onOrderCancelErr')
             else:
-                self.logging.warning('oreftp (%s) has no mom.' % str(oreftp))
+                self.logger.warning('oreftp (%s) has no mom.' % str(oreftp))
         return
 
 class engine_worker(Thread):
@@ -552,6 +560,8 @@ class orderman:
         # lookup cache by oreftp, actually only use front and session
         self.alloreftp = set()
 
+        self.logger = logging.getLogger()
+
     def setup(self):
         # setup connection to store server, i.e., db, redis, mongodb, etc.
         self.orderdb = redis.Redis(
@@ -579,15 +589,15 @@ class orderman:
     def addlogin(self, frontid, sessionid, date):
         # append new session in db for order booking and exporting.
         # don't need lock, redis will take care of atomicy.
-        frontidkey = ':'.join(fdef.FRONTIDKB, date)
-        sessionidkey = ':'.join(fdef.SESSIONIDKB, date)
+        frontidkey = ':'.join((fdef.FRONTIDKB, date))
+        sessionidkey = ':'.join((fdef.SESSIONIDKB, date))
 
         self.orderdb.rpush(frontidkey, frontid)
         self.orderdb.rpush(sessionidkey, sessionid)
 
     def getlogins(self, date):
-        frontidkey = ':'.join(fdef.FRONTIDKB, date)
-        sessionidkey = ':'.join(fdef.SESSIONIDKB, date)
+        frontidkey = ':'.join((fdef.FRONTIDKB, date))
+        sessionidkey = ':'.join((fdef.SESSIONIDKB, date))
 
         frontids = [int(x) for x in self.orderdb.lrange(frontidkey, 0, -1)]
         sessionids = [int(x) for x in self.orderdb.lrange(sessionidkey, 0, -1)]
@@ -601,6 +611,7 @@ class orderman:
                 if by == 'oreftp':
                     oid = self.oreftp2oid[someid]
                 elif by == 'exchid':
+                    self.logger.info(self.exchid2oid)
                     oid = self.exchid2oid[someid]
             except KeyError:
                 pass
@@ -625,7 +636,7 @@ class orderman:
                 pass
         return  o, olk
 
-    def updateorder(self, oid, inorder, field):
+    def updateorder(self, oid, inorder, field=None):
         # update order with oid, using input inorder and field
         o, olk = self.getorder(oid)
         if o is not None:
@@ -646,7 +657,7 @@ class orderman:
         oid = self.getoid(oreftp)
         if oid is None: # non-exist order
             ret = True
-            oid = ':'.join(fdef.ORDERNS, uuid.uuid1().hex)
+            oid = ':'.join((fdef.ORDERNS, uuid.uuid1().hex))
             with self.orderblk:
                 olk = Lock()
                 o = {}
@@ -665,7 +676,7 @@ class orderman:
 
             self.updateidmap(oid, oreftp, by='oreftp')
 
-        return ret
+        return oid
 
     def gettrade(self, oid):
         t = None

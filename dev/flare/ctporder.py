@@ -330,14 +330,7 @@ class TraderSpiDelegate(TraderSpi):
         '''
         #print repr(pOrder)
         #self.logger.info(u'报单响应,Order=%s' % str(pOrder))
-        if pOrder.OrderStatus == 'a':
-            #CTP接受，但未发到交易所
-            #print u'CTP接受Order，但未发到交易所, BrokerID=%s,BrokerOrderSeq = %s,TraderID=%s, OrderLocalID=%s' % (pOrder.BrokerID,pOrder.BrokerOrderSeq,pOrder.TraderID,pOrder.OrderLocalID)
-            self.logger.info(u'TD:CTP接受Order，但未发到交易所, BrokerID=%s,BrokerOrderSeq = %s,TraderID=%s, OrderLocalID=%s, status=%s' % (pOrder.BrokerID,pOrder.BrokerOrderSeq,pOrder.TraderID,pOrder.OrderLocalID, pOrder.OrderStatus))
-        else:
-            #print u'交易所接受Order,exchangeID=%s,OrderSysID=%s,TraderID=%s, OrderLocalID=%s' % (pOrder.ExchangeID,pOrder.OrderSysID,pOrder.TraderID,pOrder.OrderLocalID)
-            self.logger.info(u'TD:交易所接受Order,exchangeID=%s,OrderSysID=%s,TraderID=%s, OrderLocalID=%s, status=%s' % (pOrder.ExchangeID,pOrder.OrderSysID,pOrder.TraderID,pOrder.OrderLocalID, pOrder.OrderStatus))
-            #self.agent.rtn_order_exchange(pOrder)
+        self.logger.info('price:%.2f, pricetype:%s, orderstatus: %s, ordersubmitstatus: %s, exchid: %s, ordersysid: %s, ntfyseq = %s, ordertype=%s, statusmsg=%s' % (pOrder.LimitPrice, pOrder.OrderPriceType, pOrder.OrderStatus, pOrder.OrderSubmitStatus, pOrder.ExchangeID, pOrder.OrderSysID, pOrder.NotifySequence, pOrder.OrderType, pOrder.StatusMsg) )
 
     def OnRtnTrade(self, pTrade):
         '''成交通知'''
@@ -462,7 +455,7 @@ def main():
     myspi = TraderSpiDelegate(instruments=INSTS, 
                              broker_id='1021',
                              investor_id= "00000062",
-                             passwd= "4617011",
+                             passwd= "888888",
                              trader=trader
                        )
     trader.RegisterSpi(myspi)
@@ -475,8 +468,8 @@ def main():
 
     time.sleep(1)
 
-    morder = BaseObject(instrument='IF1305',direction='0',order_ref=myspi.inc_order_ref(),price=2550,volume=1)
-    myspi.open_position(morder)
+    #morder = BaseObject(instrument='IF1305',direction='0',order_ref=myspi.inc_order_ref(),price=2550,volume=1)
+    #myspi.open_position(morder)
 
     #myspi.fetch_trading_account()
     #time.sleep(1)

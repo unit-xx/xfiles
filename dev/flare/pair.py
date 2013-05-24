@@ -15,7 +15,7 @@ class mmstrat(Thread):
     '''
     qmax, current positions
     '''
-    def __init__(self, ptf, rediscfg, engine):
+    def __init__(self, ptf, rediscfg, engine, orderman):
         Thread.__init__(self)
 
         self.qrepo = redis.Redis(
@@ -26,6 +26,7 @@ class mmstrat(Thread):
         self.qchannel = rediscfg.qchannel
         self.qsub = self.qrepo.pubsub()
         self.engine = engine
+        self.orderman = orderman
 
         # a set of instruments the strategy works on
         # portfolio is a dict of code->amount, with minus
@@ -46,6 +47,8 @@ class mmstrat(Thread):
         self.logger = logging.getLogger()
         self.name = self.__class__.__name__
 
+        self.did = False
+
     def stop(self):
         self.runflag = False
         self.qrepo.publish(self.qchannel, 'stop')
@@ -63,53 +66,64 @@ class mmstrat(Thread):
 
     def run(self):
         self.qsub.subscribe(self.qchannel)
-        self.engine.regstrat('sprd', self)
+        self.stratname = 'sprd'
+        self.engine.regstrat(self.stratname, self)
         while self.runflag:
             qmsg = next(self.qsub.listen())
-            if len(qmsg['data'])==4 and qmsg['data']=='stop':
-                continue
 
             if qmsg['type'] == 'message':
+
+                if len(qmsg['data'])==4 and qmsg['data']=='stop':
+                    continue
+
                 qdata = pickle.loads(qmsg['data'])
                 if qdata.InstrumentID in self.inst:
-                    act = self.onquote(qdata)
-                    if act == 'open':
-                        self.submitptf('open')
-                    elif act == 'close':
-                        self.submitptf('close')
-                    else:
-                        pass
+                    self.onquote(qdata)
 
     def onquote(self, q):
-        pass
+
+        if not self.did:
+            self.engine.doorder(q.InstrumentID, 'open', q.LastPrice, -1, strat=self.stratname)
+            self.did = True
 
     # invoked by ctp callbacks
     def onOrderInsertErr(self, oid):
-        pass
+        order, olk = self.orderman.getorder(oid)
+        with olk:
+            self.logger.info(str(order))
 
     def onOrderAccepted(self, oid):
-        pass
+        order, olk = self.orderman.getorder(oid)
+        with olk:
+            self.logger.info(str(order))
 
     def onOrderPartialTrade(self, oid):
         pass
 
-    def OnOrderFullyTrade(self, oid):
-        pass
+    def onOrderFullyTrade(self, oid):
+        order, olk = self.orderman.getorder(oid)
+        with olk:
+            self.logger.info(str(order))
 
     def onOrderCancelErr(self, oid):
         pass
 
     def onOrderCancelled(self, oid):
-        pass
+        order, olk = self.orderman.getorder(oid)
+        with olk:
+            self.logger.info(str(order))
 
     def onOrderTrade(self, oid, price, volume):
-        pass
+        t, tlk = self.orderman.gettrade(oid)
+        with tlk:
+            self.logger.info(t)
 
 
 def main():
 
     # read config
     cfg = util.parse_config('pair')
+    logger = logging.getLogger()
 
     # start quote server
     INSTS = ['IF1306', 'IF1307', 'IF1309', 'IF1312']
@@ -127,8 +141,8 @@ def main():
     engine.setup()
 
     # start pair trading strategy signal
-    ptf = {}
-    mm = mmstrat(ptf, cfg.redis, engine)
+    ptf = {'IF1306':1, 'IF1307':1}
+    mm = mmstrat(ptf, cfg.redis, engine, ordman)
     mm.start()
 
     # run untile Ctrl-C
@@ -138,14 +152,18 @@ def main():
     except KeyboardInterrupt:
         pass
 
-    print 'stopping...'
+    logger.info('stopping...')
+    logger.info('\tmm...')
     mm.stop()
     mm.join()
 
+    logger.info('\tengine...')
     engine.stop()
 
+    logger.info('\torderman...')
     ordman.stop()
 
+    logger.info('\tqrepo...')
     q.stop()
 
 if __name__=='__main__':
