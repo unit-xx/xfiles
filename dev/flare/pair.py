@@ -15,7 +15,7 @@ class mmstrat(Thread):
     '''
     qmax, current positions
     '''
-    def __init__(self, ptf, rediscfg, engine, orderman):
+    def __init__(self, ptf, mmparam, rediscfg, engine, orderman):
         Thread.__init__(self)
 
         self.qrepo = redis.Redis(
@@ -32,7 +32,10 @@ class mmstrat(Thread):
         # portfolio is a dict of code->amount, with minus
         # amount as shorting.
         self.ptf = ptf
-        self.inst = set(ptf.keys())
+        self.inst = set([x['code'] for x in ptf])
+
+        self.mmparam = mmparam
+
 
         # current order in going
         self.curorder = []
@@ -53,17 +56,6 @@ class mmstrat(Thread):
         self.runflag = False
         self.qrepo.publish(self.qchannel, 'stop')
 
-    def submitptf(self, openclose):
-        return
-        for inst in self.inst:
-            r, oid = self.engine.doorder(inst, openclose, 0, self.ptf[inst],
-                    ismktprice=True, isIOC=True, callobj=self)
-            if 0 == r:
-                self.curorder.append(oid)
-            else:
-                # TODO: submit error!
-                pass
-
     def run(self):
         self.qsub.subscribe(self.qchannel)
         self.stratname = 'sprd'
@@ -81,10 +73,11 @@ class mmstrat(Thread):
                     self.onquote(qdata)
 
     def onquote(self, q):
+        self.logger.info('%s %s %s %s', q.InstrumentID, q.LastPrice, q.UpdateTime, q.UpdateMillisec)
 
-        if not self.did:
-            self.engine.doorder(q.InstrumentID, 'open', q.LastPrice, -1, strat=self.stratname)
-            self.did = True
+        #if not self.did:
+        #    self.engine.doorder(q.InstrumentID, 'open', q.LastPrice, -1, strat=self.stratname)
+        #    self.did = True
 
     # invoked by ctp callbacks
     def onOrderInsertErr(self, oid):
@@ -141,7 +134,10 @@ def main():
     engine.setup()
 
     # start pair trading strategy signal
-    ptf = {'IF1306':1, 'IF1307':1}
+    ptf = [
+            #{'code':'IF1307', 'amount':-1},
+            {'code':'IF1306', 'amount':1},
+            ]
     mm = mmstrat(ptf, cfg.redis, engine, ordman)
     mm.start()
 

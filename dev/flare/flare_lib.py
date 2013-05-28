@@ -66,15 +66,28 @@ class qrepo(MdSpi):
             self.api.SubscribeMarketData(self.instruments)
             self.logger.info('sub md: %s' % self.instruments)
 
-    def OnRtnDepthMarketData(self, depth_market_data):
-        q = pickle.dumps(depth_market_data)
-        self.repo.publish(self.qchannel, q)
+    def OnRtnDepthMarketData(self, q):
+        #q = pickle.dumps(q)
+        #self.repo.publish(self.qchannel, q)
+        with self.qlock:
+            self.quote[q.InstrumentID] = {
+                    'bid1':q.BidPrice1,
+                    'bidvol1':q.BidVolume1,
+                    'ask1':q.AskPrice1,
+                    'askvol1':q.AskVolume1,
+                    'last':q.LastPrice,
+                    'time':q.UpdateTime,
+                    'msec':q.UpdateMillisec
+                    }
         #self.repo.set(depth_market_data.InstrumentID, q)
-        #print depth_market_data.InstrumentID,depth_market_data.BidPrice1,depth_market_data.BidVolume1,depth_market_data.AskPrice1,depth_market_data.AskVolume1,depth_market_data.LastPrice,depth_market_data.Volume,depth_market_data.UpdateTime,depth_market_data.UpdateMillisec
 
     def getquote(self, inst):
         ret = None
-        #ret = self.repo.get(inst)
+        with self.qlock:
+            try:
+                ret = self.quote[inst]
+            except KeyError:
+                pass
         return ret
 
     def setup(self):
@@ -287,6 +300,12 @@ class engine(TraderSpi):
                     volume, price, str(ismktprice), isIOC, oref, oid))
 
         return r, oid
+
+    def multiorder(self, inst, openclose, price, volume,
+            prid=None, strat=None, ismktprice=False, isIOC=False):
+        # minus volume as short
+        # all arguments are arrays in correspondant orders
+        pass
 
     def transorder(self, order):
         # translate a ctp inputorder object to a flare order dict
