@@ -24,6 +24,7 @@ class mmstrat(Thread):
                 db=rediscfg.repodb
                 )
         self.qchannel = rediscfg.qchannel
+        self.machannel = rediscfg.machannel
         self.qsub = self.qrepo.pubsub()
         self.engine = engine
         self.orderman = orderman
@@ -54,10 +55,10 @@ class mmstrat(Thread):
 
     def stop(self):
         self.runflag = False
-        self.qrepo.publish(self.qchannel, 'stop')
+        self.qrepo.publish(self.machannel, 'stop')
 
     def run(self):
-        self.qsub.subscribe(self.qchannel)
+        self.qsub.subscribe(self.machannel)
         self.stratname = 'sprd'
         self.engine.regstrat(self.stratname, self)
         while self.runflag:
@@ -69,15 +70,9 @@ class mmstrat(Thread):
                     continue
 
                 qdata = pickle.loads(qmsg['data'])
-                if qdata.InstrumentID in self.inst:
+                if qdata[0] in self.inst:
                     self.onquote(qdata)
-
-    def onquote(self, q):
-        self.logger.info('%s %s %s %s', q.InstrumentID, q.LastPrice, q.UpdateTime, q.UpdateMillisec)
-
-        #if not self.did:
-        #    self.engine.doorder(q.InstrumentID, 'open', q.LastPrice, -1, strat=self.stratname)
-        #    self.did = True
+                    # TODO: calc ma diff and submit order
 
     # invoked by ctp callbacks
     def onOrderInsertErr(self, oid):

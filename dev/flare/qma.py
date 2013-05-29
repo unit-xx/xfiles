@@ -1,9 +1,9 @@
 # a standalone MA calculator which publish the results (through redis).
 
 from collections import defaultdict, OrderedDict
+import cPickle as pickle
 
 from MdApi import MdApi, MdSpi
-from TraderApi import TraderApi, TraderSpi  
 import UserApiStruct as ustruct
 import UserApiType as utype
 
@@ -15,8 +15,8 @@ class qMA(MdSpi):
     def __init__(self,
             instruments,
             mdcfg,
-            rediscfg,
-            qmaparam
+            rediscfge
+            maparam
         ):
         self.instruments = instruments
         self.broker_id = mdcfg.broker_id
@@ -24,17 +24,16 @@ class qMA(MdSpi):
         self.passwd = mdcfg.passwd
         self.mdcfg = mdcfg
         self.rediscfg = rediscfg
-        self.qmaparam = qmaparam
+        self.maparam = maparam
         self.reqid = 1
 
         # code -> lastest MA, using mid-price
         self.ma = {}
         # code -> buffer unit
-        self.buf = defaultdict(OrderedDict)
         self.buflen = defaultdict(defaultdict(float))
         self.bufsum = defaultdict(defaultdict(float))
         # code -> current buffer tick unit
-        self.curbufunit = {}
+        self.curbuf = {}
 
         self.logger = logging.getLogger()
         self.name = self.__class__.__name__
@@ -76,26 +75,29 @@ class qMA(MdSpi):
         except IndexError:
             return
 
-        # tick unit: which chuck does this tick belongs.
+        # tick unit: which chunck does this tick belongs.
         inst = q.InstrumentID
-        tu = int(tick/self.qmaparam.step)
-        if tu != self.curbufunit[inst]
-            for i in range(self.curbufunit[inst]+1, tu+1):
+        tu = int(tick/self.maparam.step)
+        try:
+            cbuf = self.curbuf[inst]
+        except KeyError:
+            self.curbuf[inst] = tu
+            cbuf = tu
+
+        if tu != cbuf
+            for i in range(cbuf+1, tu+1):
                 # add and padding new buffer until the latest tick unit
-                self.buf[inst].setdefault(i, [])
-                # update unit lengths
-                self.buflen[inst][i] = length(self.buf[inst][i])
-                self.bufsum[inst][i] = sum(self.buf[inst][i])
+                self.buflen[inst][i] = 0.0
+                self.bufsum[inst][i] = 0.0
 
             # update current buffer unit
-            shift = tu - self.curbufunit[inst]
-            self.curbufunit[inst] = tu
+            self.curbuf[inst] = tu
 
             # update MA value
             tsum = 0.0
             tlen = 0.0
-            if tu > self.qmaparam.wsize:
-                for i in range():
+            if len(self.buflen[inst]) >= self.maparam.wsize:
+                for i in range(tu-wsize, tu):
                     tsum += self.bufsum[inst][i]
                     tlen += self.buflen[inst][i]
                 try:
@@ -104,12 +106,12 @@ class qMA(MdSpi):
                     maval = None
 
             # publish MA value
-            self.r.publish(xxchannel, maval)
+            self.repo.publish(machannel, pickle.dumps((inst, tu, maval)))
+            self.logger.info('new MA: %s %d %.2f' % (inst, tu, maval))
 
         # insert new quotes
-        self.buf[inst][tu].append((q.BidPrice1+q.AskPrice1)/2)
-
-        #print depth_market_data.InstrumentID,depth_market_data.BidPrice1,depth_market_data.BidVolume1,depth_market_data.AskPrice1,depth_market_data.AskVolume1,depth_market_data.LastPrice,depth_market_data.Volume,depth_market_data.UpdateTime,depth_market_data.UpdateMillisec
+        self.bufsum[inst][tu] += (q.BidPrice1+q.AskPrice1)/2
+        self.buflen[inst][tu] += 1
 
     def setup(self):
         # don't need to store mdapi, after calling
@@ -119,7 +121,7 @@ class qMA(MdSpi):
                 port=self.rediscfg.port,
                 db=self.rediscfg.repodb
                 )
-        self.qmachannel = self.rediscfg.qmachannel
+        self.machannel = self.rediscfg.machannel
 
         mdapi = MdApi.CreateMdApi(self.name)
         mdapi.RegisterSpi(self)

@@ -20,6 +20,7 @@ def parse_config(app, name='config.ini', root='base', configpath = '.'):
     usersec = cfg.get(root,'mduser')
     tradersec = cfg.get(root,'trader')
     redissec = cfg.get(root, 'redis')
+    maparamsec = cfg.get(root, 'maparam')
 
     mduser = BaseObject()
     mduser.port = cfg.get(usersec,'port')
@@ -42,7 +43,13 @@ def parse_config(app, name='config.ini', root='base', configpath = '.'):
     redis.repodb = cfg.getint(redissec, 'repodb')
     redis.accountdb = cfg.getint(redissec, 'accountdb')
     redis.qchannel = cfg.get(redissec, 'qchannel')
+    redis.machannel = cfg.get(redissec, 'machannel')
     config.redis = redis
+
+    maparam = BaseObject()
+    maparam.step = cfg.getint(maparamsec, 'step')
+    maparam.wsize = cfg.getint(maparamsec, 'wsize')
+    cfg.maparam = maparam
 
     logging.config.fileConfig(cfgfn, {"logfn":app+'.log'})
     logger = logging.getLogger()
