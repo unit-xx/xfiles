@@ -5,6 +5,7 @@ import logging
 import time
 from threading import Thread
 import cPickle as pickle
+from collections import defaultdict
 
 import redis
 
@@ -37,7 +38,6 @@ class mmstrat(Thread):
 
         self.mmparam = mmparam
 
-
         # current order in going
         self.curorder = []
 
@@ -55,24 +55,65 @@ class mmstrat(Thread):
 
     def stop(self):
         self.runflag = False
-        self.qrepo.publish(self.machannel, 'stop')
+        self.qrepo.publish(self.qchannel, 'stop')
 
     def run(self):
-        self.qsub.subscribe(self.machannel)
+        self.qsub.subscribe([self.machannel, self.qchannel])
         self.stratname = 'sprd'
         self.engine.regstrat(self.stratname, self)
+
+        ma = defaultdict(dict)
+        madiff = 0.0
+        quote = defaultdict(dict)
+        sprdbid = 0.0
+        sprdask = 0.0
+        c1 = self.ptf[0]['code']
+        c2 = self.ptf[1]['code']
+        if self.ptf[0]['volume'] > 0 or self.ptf[1]['volume'] < 0:
+            # first entry should be the short leg and the next one
+            # is the long leg.
+            self.logger.error('Portfolio mismatch.')
+            return
+
         while self.runflag:
             qmsg = next(self.qsub.listen())
 
             if qmsg['type'] == 'message':
 
+                # stop message
                 if len(qmsg['data'])==4 and qmsg['data']=='stop':
                     continue
 
-                qdata = pickle.loads(qmsg['data'])
-                if qdata[0] in self.inst:
-                    self.onquote(qdata)
-                    # TODO: calc ma diff and submit order
+                if qmsg['channel'] == self.qchannel:
+                    # receving a quotation update
+                    q = pickle.loads(qmsg['data'])
+                    c = q['code']
+                    if c in self.inst:
+                        quote[c] = q
+
+                    try:
+                        if (quote[c1]['tic']-quote[c2]['tic']) < 1e-6:
+                            sprdbid = quote[c1]['bid1'] - quote[c2]['ask1']
+                            sprdask = quote[c1]['ask1'] - quote[c2]['bid1']
+                            self.logger.info('%.2f %.2f %.2f %.2f %.2f %.2f', sprdask-madiff, sprdbid-madiff, sprdask-sprdbid, madiff, sprdask, sprdbid)
+                    except KeyError:
+                        pass
+
+                elif qmsg['channel'] == self.machannel:
+                    # a MA update
+                    qma = pickle.loads(qmsg['data'])
+                    if qma[0] in self.inst:
+                        ma[qma[0]]['tick'] = qma[1]
+                        ma[qma[0]]['val'] = qma[2]
+
+                    try:
+                        if ma[c1]['tick']==ma[c2]['tick']:
+                            madiff = ma[c1]['val']-ma[c2]['val']
+                            #self.logger.info('madiff: %.2f', madiff)
+                    except KeyError:
+                        pass
+                    except TypeError:
+                        pass
 
     # invoked by ctp callbacks
     def onOrderInsertErr(self, oid):
@@ -130,10 +171,10 @@ def main():
 
     # start pair trading strategy signal
     ptf = [
-            #{'code':'IF1307', 'amount':-1},
-            {'code':'IF1306', 'amount':1},
+            {'code':'IF1307', 'volume':-1},
+            {'code':'IF1306', 'volume':1},
             ]
-    mm = mmstrat(ptf, cfg.redis, engine, ordman)
+    mm = mmstrat(ptf, None, cfg.redis, engine, ordman)
     mm.start()
 
     # run untile Ctrl-C

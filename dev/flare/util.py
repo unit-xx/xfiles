@@ -49,7 +49,7 @@ def parse_config(app, name='config.ini', root='base', configpath = '.'):
     maparam = BaseObject()
     maparam.step = cfg.getint(maparamsec, 'step')
     maparam.wsize = cfg.getint(maparamsec, 'wsize')
-    cfg.maparam = maparam
+    config.maparam = maparam
 
     logging.config.fileConfig(cfgfn, {"logfn":app+'.log'})
     logger = logging.getLogger()

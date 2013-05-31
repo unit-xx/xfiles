@@ -2,6 +2,8 @@
 
 from collections import defaultdict, OrderedDict
 import cPickle as pickle
+import logging
+import time
 
 from MdApi import MdApi, MdSpi
 import UserApiStruct as ustruct
@@ -9,13 +11,13 @@ import UserApiType as utype
 
 import redis
 
-import flaredef as fdef
+import util
 
 class qMA(MdSpi):
     def __init__(self,
             instruments,
             mdcfg,
-            rediscfge
+            rediscfg,
             maparam
         ):
         self.instruments = instruments
@@ -30,15 +32,14 @@ class qMA(MdSpi):
         # code -> lastest MA, using mid-price
         self.ma = {}
         # code -> buffer unit
-        self.buflen = defaultdict(defaultdict(float))
-        self.bufsum = defaultdict(defaultdict(float))
+        self.buflen = defaultdict(dict)
+        self.bufsum = defaultdict(dict)
         # code -> current buffer tick unit
         self.curbuf = {}
+        self.lastvol = 0
 
         self.logger = logging.getLogger()
         self.name = self.__class__.__name__
-        self.quote = {}
-        self.qlock = Lock()
 
     def inc_request_id(self):
         self.reqid += 1
@@ -68,23 +69,29 @@ class qMA(MdSpi):
         if q is None:
             return
 
+        #self.logger.info('%s %s %s', q.InstrumentID, q.LastPrice, q.Volume-self.lastvol)
+        #self.lastvol = q.Volume
         # calc q's time
         try:
             ticktp = [int(x) for x in q.UpdateTime.split(':')]
-            tick = ticktp[0] * 3600 + ticktp[1] * 60 + ticktp[2] + q.UpdateMillisec/1000
+            tick = ticktp[0] * 3600 + ticktp[1] * 60 + ticktp[2] + q.UpdateMillisec/1000.0
         except IndexError:
             return
 
         # tick unit: which chunck does this tick belongs.
         inst = q.InstrumentID
         tu = int(tick/self.maparam.step)
+
+        # initialize
         try:
             cbuf = self.curbuf[inst]
         except KeyError:
             self.curbuf[inst] = tu
+            self.buflen[inst][tu] = 0.0
+            self.bufsum[inst][tu] = 0.0
             cbuf = tu
 
-        if tu != cbuf
+        if tu != cbuf:
             for i in range(cbuf+1, tu+1):
                 # add and padding new buffer until the latest tick unit
                 self.buflen[inst][i] = 0.0
@@ -96,18 +103,24 @@ class qMA(MdSpi):
             # update MA value
             tsum = 0.0
             tlen = 0.0
-            if len(self.buflen[inst]) >= self.maparam.wsize:
-                for i in range(tu-wsize, tu):
+            maval = None
+            if len(self.buflen[inst]) > self.maparam.wsize:
+                #self.logger.info(self.bufsum[inst].keys())
+                #self.logger.info(self.buflen[inst].keys())
+                #self.logger.info(tu)
+                #self.logger.info(self.maparam.wsize)
+
+                for i in range(tu-self.maparam.wsize, tu):
                     tsum += self.bufsum[inst][i]
                     tlen += self.buflen[inst][i]
                 try:
                     maval = tsum/tlen
                 except ZeroDivisionError:
-                    maval = None
+                    pass
 
             # publish MA value
-            self.repo.publish(machannel, pickle.dumps((inst, tu, maval)))
-            self.logger.info('new MA: %s %d %.2f' % (inst, tu, maval))
+            self.repo.publish(self.machannel, pickle.dumps((inst, tu, maval)))
+            self.logger.info('new MA: %s %d %s' % (inst, tu, maval))
 
         # insert new quotes
         self.bufsum[inst][tu] += (q.BidPrice1+q.AskPrice1)/2
@@ -132,3 +145,18 @@ class qMA(MdSpi):
 
     def stop(self):
         self.api.Release()
+
+def main():
+    cfg = util.parse_config('qma')
+    logger = logging.getLogger()
+
+    # start quote server
+    INSTS = ['IF1306', 'IF1307']#, 'IF1309', 'IF1312']
+    q = qMA(INSTS, cfg.mduser, cfg.redis, cfg.maparam)
+    q.setup()
+
+    while 1:
+        time.sleep(1)
+
+if __name__=='__main__':
+    main()

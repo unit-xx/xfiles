@@ -67,19 +67,21 @@ class qrepo(MdSpi):
             self.logger.info('sub md: %s' % self.instruments)
 
     def OnRtnDepthMarketData(self, q):
-        #q = pickle.dumps(q)
-        #self.repo.publish(self.qchannel, q)
-        with self.qlock:
-            self.quote[q.InstrumentID] = {
-                    'bid1':q.BidPrice1,
-                    'bidvol1':q.BidVolume1,
-                    'ask1':q.AskPrice1,
-                    'askvol1':q.AskVolume1,
-                    'last':q.LastPrice,
-                    'time':q.UpdateTime,
-                    'msec':q.UpdateMillisec
+        tic = float(q.UpdateTime[-2:]) + float(q.UpdateTime[-5:-3])*60 + q.UpdateMillisec/1000.0
+        qq = {
+                'bid1':q.BidPrice1,
+                'bidvol1':q.BidVolume1,
+                'ask1':q.AskPrice1,
+                'askvol1':q.AskVolume1,
+                'last':q.LastPrice,
+                'time':q.UpdateTime,
+                'msec':q.UpdateMillisec,
+                'code':q.InstrumentID,
+                'tic':tic
                     }
-        #self.repo.set(depth_market_data.InstrumentID, q)
+        self.repo.publish(self.qchannel, pickle.dumps(qq))
+        with self.qlock:
+            self.quote[q.InstrumentID] = qq
 
     def getquote(self, inst):
         ret = None
@@ -235,7 +237,7 @@ class engine(TraderSpi):
 
     def stop(self):
         # stop ctp api
-        self.api.Release()
+        # self.api.Release()
         # stop thread pool
         pass
 
