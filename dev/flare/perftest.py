@@ -12,3 +12,9 @@ for i in range(1,10000):
 t2 = datetime.now()
 print t2-t1, seconds(t2-t1)/n, n/seconds(t2-t1)
 
+t1 = datetime.now()
+for i in range(1,10000):
+    a = random.random()
+    c = (a > n)
+t2 = datetime.now()
+print t2-t1, seconds(t2-t1)/n, n/seconds(t2-t1)
