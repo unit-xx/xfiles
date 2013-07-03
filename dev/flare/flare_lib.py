@@ -125,6 +125,7 @@ class engine(TraderSpi):
         self.loginevent = Event()
         self.loginevent.clear()
 
+        # task queue
         self.tqueue = Queue.Queue()
         self.tqlock = Lock()
         self.tcap = tradercfg.tpoolcap
@@ -162,6 +163,7 @@ class engine(TraderSpi):
     def regstrat(self, stratname, stratobj):
         with self.stratlk:
             self.strats[stratname] = stratobj
+
         self.logger.info('reg strats: %s => %s' % 
                 (stratname, stratobj.__class__.__name__))
 
@@ -174,20 +176,22 @@ class engine(TraderSpi):
     def getstrat(self, someid, by='oreftp'):
         ret = None
         stratname = None
-        with self.stratlk:
-            if by == 'oreftp':
-                try:
-                    stratname = self.oreftp2strat[someid]
-                except KeyError:
-                    pass
-            elif by == 'name':
-                stratname = someid
 
-            if stratname is not None:
-                try:
+        if by == 'oreftp':
+            try:
+                with self.stratlk:
+                    stratname = self.oreftp2strat[someid]
+            except KeyError:
+                pass
+        elif by == 'name':
+            stratname = someid
+
+        if stratname is not None:
+            try:
+                with self.stratlk:
                     ret = self.strats[stratname]
-                except KeyError:
-                    pass
+            except KeyError:
+                pass
         return ret
 
     # login and setup
@@ -314,14 +318,16 @@ class engine(TraderSpi):
         ret = {}
         ret['inst'] = order.InstrumentID
         ret['direction'] = 'buy' if order.Direction==utype.THOST_FTDC_D_Buy else 'sell'
-        ret['orderref'] = order.OrderRef
-        ret['frontid'] = self.frontid
-        ret['sessionid'] = self.sessionid
+        ret['openclose'] = 'open' if order.CombOffsetFlag==utype.THOST_FTDC_OF_Open else 'close'
         ret['price'] = order.LimitPrice
+        ret['volume'] = order.VolumeTotalOriginal
         ret['ismktprice'] = 1 if order.OrderPriceType==utype.THOST_FTDC_OPT_AnyPrice else 0
         ret['isioc'] = 1 if order.TimeCondition==utype.THOST_FTDC_TC_IOC else 0
-        ret['volume'] = order.VolumeTotalOriginal
-        ret['openclose'] = 'open' if order.CombOffsetFlag==utype.THOST_FTDC_OF_Open else 'close'
+        ret['orderref'] = order.OrderRef
+        # using data from self is intended for frontid and sessionid
+        ret['frontid'] = self.frontid
+        ret['sessionid'] = self.sessionid
+        # ExchangeID and OrderSysID is not available when calling the function.
 
         return ret
 
@@ -501,8 +507,8 @@ class engine(TraderSpi):
             self.orderman.updateorder(oid, pRspInfo, ['ErrorID', 'ErrorMsg'])
             self.orderman.updateorder(oid, pRspInfo, ['OrderActionStatus', 'StatusMsg'])
 
-
             callobj = self.getstrat(oreftp)
+
             if callobj is not None:
                 try:
                     callobj.onOrderCancelErr(oid)
@@ -566,14 +572,19 @@ class orderman:
     def __init__(self, omcfg):
         self.omcfg = omcfg
 
+        # cc for cache
         self.ordercc = defaultdict(dict)
+        # blk (big lock) for read/write items in ordercc
+        # orderlk stores a lock for each order
         self.orderlk = defaultdict(Lock)
         self.orderblk = Lock()
 
+        # tradecc and its lock schema is similar with ordercc
         self.tradecc = defaultdict(list)
         self.tradelk = defaultdict(Lock)
         self.tradeblk = Lock()
 
+        # auxiliary mapping. from oreftp/exchid to oid.
         self.oreftp2oid = {}
         self.exchid2oid = {}
         self.maplk = Lock()
@@ -598,14 +609,6 @@ class orderman:
         # close connection to store server
         #self.orderdb.bgsave()
         pass
-
-    # session
-    def ismysession(self, oreftp):
-        # oreftp as (front, session, oref)
-        ret = False
-        with self.maplk:
-            ret = ((oreftp[0], oreftp[1]) in self.alloreftp)
-        return ret
 
     def addlogin(self, frontid, sessionid, date):
         # append new session in db for order booking and exporting.
@@ -672,23 +675,25 @@ class orderman:
                 o.update(toupdate)
 
     def insertorder(self, oreftp, prid=None, strat=None):
-        # insert order's key IDs in db
+        # insert order in ordercc, tradecc and updates its metadata
         ret = False
 
         oid = self.getoid(oreftp)
         if oid is None: # non-exist order
             ret = True
             oid = ':'.join((fdef.ORDERNS, uuid.uuid1().hex))
+
+            olk = Lock()
+            o = {}
             with self.orderblk:
-                olk = Lock()
-                o = {}
                 self.ordercc[oid] = o
                 self.orderlk[oid] = olk
 
             # also insert order's trade
+            tlk = Lock()
+            t = []
             with self.tradeblk:
-                tlk = Lock()
-                self.tradecc[oid] = []
+                self.tradecc[oid] = t
                 self.tradelk[oid] = tlk
 
             with olk:

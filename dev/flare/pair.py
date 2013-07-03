@@ -96,6 +96,12 @@ class mmstrat(Thread):
                             sprdbid = quote[c1]['bid1'] - quote[c2]['ask1']
                             sprdask = quote[c1]['ask1'] - quote[c2]['bid1']
                             self.logger.info('%.2f %.2f %.2f %.2f %.2f %.2f', sprdask-madiff, sprdbid-madiff, sprdask-sprdbid, madiff, sprdask, sprdbid)
+
+                            # TODO: send order if sprd is large enough
+                            # record what we see and what we get on trade
+                            # don't go on next order before the current is fully traded.
+                            # stat to maintain: q, oid/progress for two legs.
+                            # warning when dangling leg exists long enough.
                     except KeyError:
                         pass
 
@@ -111,8 +117,10 @@ class mmstrat(Thread):
                             madiff = ma[c1]['val']-ma[c2]['val']
                             #self.logger.info('madiff: %.2f', madiff)
                     except KeyError:
+                        # no ma has been received
                         pass
                     except TypeError:
+                        # ma is none since not enough quotes is accumulated to calc ma
                         pass
 
     # invoked by ctp callbacks
