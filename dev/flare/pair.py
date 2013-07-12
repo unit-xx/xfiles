@@ -63,10 +63,24 @@ class mmstrat(Thread):
         self.engine.regstrat(self.stratname, self)
 
         ma = defaultdict(dict)
-        madiff = 0.0
         quote = defaultdict(dict)
+        madiff = None
+        madiffR = None
+
         sprdbid = 0.0
         sprdask = 0.0
+
+        sigma = self.mmparam.sigma
+        t = self.mmparam.t
+        threshold = t + sigma/2
+        qmax = self.mmparam.qmax
+        qhold = 0
+
+        # sim-trade
+        wealth = 0.0
+        txcost = 0.2
+        ntrd = 0
+
         c1 = self.ptf[0]['code']
         c2 = self.ptf[1]['code']
         if self.ptf[0]['volume'] > 0 or self.ptf[1]['volume'] < 0:
@@ -95,7 +109,62 @@ class mmstrat(Thread):
                         if (quote[c1]['tic']-quote[c2]['tic']) < 1e-6:
                             sprdbid = quote[c1]['bid1'] - quote[c2]['ask1']
                             sprdask = quote[c1]['ask1'] - quote[c2]['bid1']
-                            self.logger.info('%.2f %.2f %.2f %.2f %.2f %.2f', sprdask-madiff, sprdbid-madiff, sprdask-sprdbid, madiff, sprdask, sprdbid)
+                            deltaA = sprdbid - madiffR
+                            deltaB = madiffR - sprdask
+
+                            tdir = 0
+                            if deltaA > threshold:
+                                # suitable for short
+                                if qhold > -qmax:
+                                    tdir = -1
+
+                                    wealth = wealth + sprdbid
+                                    ntrd = ntrd + 1
+
+                                    if qhold > 0:
+                                        # do close long
+                                        pass
+                                    else:
+                                        pass 
+                                        # do open short
+                                        # short if2, long if1
+
+                                    qhold += -1
+
+                                    if qhold==0:
+                                        self.logger.info('w=%.2f (%.2f), ntrd=%d',
+                                                wealth, wealth-ntrd*txcost, ntrd)
+
+                            elif deltaB > threshold:
+                                # suitable for long
+                                if qhold < qmax:
+                                    tdir = 1
+
+                                    wealth = wealth - sprdask
+                                    ntrd = ntrd + 1
+
+                                    if qhold < 0:
+                                        pass
+                                        # do close short
+                                    else:
+                                        pass
+                                        # do open long
+                                        # long if2, short if1
+
+                                    qhold += 1
+
+                                    if qhold==0:
+                                        self.logger.info('w=%.2f (%.2f), ntrd=%d',
+                                                wealth, wealth-ntrd*txcost, ntrd)
+
+                            else:
+                                # nop
+                                pass
+
+                            if tdir != 0:
+                                self.logger.info('(%+d) %+d %.2f %.2f %.2f %.2f %.2f %.2f %.2f',
+                                        tdir, qhold, threshold, deltaA, deltaB,
+                                        madiff, madiffR, sprdask, sprdbid)
 
                             # TODO: send order if sprd is large enough
                             # record what we see and what we get on trade
@@ -103,6 +172,8 @@ class mmstrat(Thread):
                             # stat to maintain: q, oid/progress for two legs.
                             # warning when dangling leg exists long enough.
                     except KeyError:
+                        pass
+                    except TypeError:
                         pass
 
                 elif qmsg['channel'] == self.machannel:
@@ -115,6 +186,7 @@ class mmstrat(Thread):
                     try:
                         if ma[c1]['tick']==ma[c2]['tick']:
                             madiff = ma[c1]['val']-ma[c2]['val']
+                            madiffR = madiff - qhold * sigma
                             #self.logger.info('madiff: %.2f', madiff)
                     except KeyError:
                         # no ma has been received
@@ -163,7 +235,7 @@ def main():
     logger = logging.getLogger()
 
     # start quote server
-    INSTS = ['IF1306', 'IF1307', 'IF1309', 'IF1312']
+    INSTS = ['IF1307', 'IF1308']
     q = flib.qrepo(INSTS, cfg.mduser, cfg.redis)
     q.setup()
 
@@ -179,10 +251,10 @@ def main():
 
     # start pair trading strategy signal
     ptf = [
-            {'code':'IF1307', 'volume':-1},
-            {'code':'IF1306', 'volume':1},
+            {'code':'IF1308', 'volume':-1},
+            {'code':'IF1307', 'volume':1},
             ]
-    mm = mmstrat(ptf, None, cfg.redis, engine, ordman)
+    mm = mmstrat(ptf, cfg.mmparam, cfg.redis, engine, ordman)
     mm.start()
 
     # run untile Ctrl-C

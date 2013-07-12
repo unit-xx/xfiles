@@ -151,7 +151,7 @@ def main():
     logger = logging.getLogger()
 
     # start quote server
-    INSTS = ['IF1306', 'IF1307']#, 'IF1309', 'IF1312']
+    INSTS = ['IF1307', 'IF1308']#, 'IF1309', 'IF1312']
     q = qMA(INSTS, cfg.mduser, cfg.redis, cfg.maparam)
     q.setup()
 

@@ -21,6 +21,7 @@ def parse_config(app, name='config.ini', root='base', configpath = '.'):
     tradersec = cfg.get(root,'trader')
     redissec = cfg.get(root, 'redis')
     maparamsec = cfg.get(root, 'maparam')
+    mmparamsec = cfg.get(root, 'mmparam')
 
     mduser = BaseObject()
     mduser.port = cfg.get(usersec,'port')
@@ -50,6 +51,12 @@ def parse_config(app, name='config.ini', root='base', configpath = '.'):
     maparam.step = cfg.getint(maparamsec, 'step')
     maparam.wsize = cfg.getint(maparamsec, 'wsize')
     config.maparam = maparam
+
+    mmparam = BaseObject()
+    mmparam.sigma = cfg.getfloat(mmparamsec, 'sigma')
+    mmparam.t = cfg.getfloat(mmparamsec, 't')
+    mmparam.qmax = cfg.getint(mmparamsec, 'qmax')
+    config.mmparam = mmparam
 
     logging.config.fileConfig(cfgfn, {"logfn":app+'.log'})
     logger = logging.getLogger()
