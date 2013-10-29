@@ -129,12 +129,6 @@ class mmstrat(Thread):
                                         # do open short
                                         # short if2, long if1
 
-                                    qhold += -1
-
-                                    if qhold==0:
-                                        self.logger.info('w=%.2f (%.2f), ntrd=%d',
-                                                wealth, wealth-ntrd*txcost, ntrd)
-
                             elif deltaB > threshold:
                                 # suitable for long
                                 if qhold < qmax:
@@ -151,20 +145,30 @@ class mmstrat(Thread):
                                         # do open long
                                         # long if2, short if1
 
-                                    qhold += 1
-
-                                    if qhold==0:
-                                        self.logger.info('w=%.2f (%.2f), ntrd=%d',
-                                                wealth, wealth-ntrd*txcost, ntrd)
-
                             else:
                                 # nop
                                 pass
 
                             if tdir != 0:
-                                self.logger.info('(%+d) %+d %.2f %.2f %.2f %.2f %.2f %.2f %.2f',
+                                # logging. qhold/madiff/madiffR etc. are values 
+                                # before trading. 
+                                self.logger.info('[%s.%03d] (%+d) %+d %.2f %.2f %.2f %.2f %.2f %.2f %.2f %s %.2f %.2f %s %.2f %.2f',
+                                        q['time'], q['msec'],
                                         tdir, qhold, threshold, deltaA, deltaB,
-                                        madiff, madiffR, sprdask, sprdbid)
+                                        madiff, madiffR, sprdask, sprdbid,
+                                        c1, quote[c1]['ask1'], quote[c1]['bid1'],
+                                        c2, quote[c2]['ask1'], quote[c2]['bid1'],
+                                        )
+
+                                # make changes
+                                qhold += tdir
+                                madiffR = madiff - qhold * sigma
+
+                                # wealth are after trading
+                                if qhold==0:
+                                    self.logger.info('w=%.2f (%.2f), ntrd=%d',
+                                            wealth, wealth-ntrd*txcost, ntrd)
+
 
                             # TODO: send order if sprd is large enough
                             # record what we see and what we get on trade
@@ -235,7 +239,11 @@ def main():
     logger = logging.getLogger()
 
     # start quote server
-    INSTS = ['IF1307', 'IF1308']
+    ptf = [
+            {'code':'IF1309', 'volume':-1},
+            {'code':'IF1308', 'volume':1},
+            ]
+    INSTS = [x['code'] for x in ptf]
     q = flib.qrepo(INSTS, cfg.mduser, cfg.redis)
     q.setup()
 
@@ -250,10 +258,6 @@ def main():
     engine.setup()
 
     # start pair trading strategy signal
-    ptf = [
-            {'code':'IF1308', 'volume':-1},
-            {'code':'IF1307', 'volume':1},
-            ]
     mm = mmstrat(ptf, cfg.mmparam, cfg.redis, engine, ordman)
     mm.start()
 

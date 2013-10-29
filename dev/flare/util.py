@@ -50,6 +50,7 @@ def parse_config(app, name='config.ini', root='base', configpath = '.'):
     maparam = BaseObject()
     maparam.step = cfg.getint(maparamsec, 'step')
     maparam.wsize = cfg.getint(maparamsec, 'wsize')
+    maparam.bufmax = cfg.getint(maparamsec, 'bufmax')
     config.maparam = maparam
 
     mmparam = BaseObject()

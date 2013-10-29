@@ -32,8 +32,8 @@ class qMA(MdSpi):
         # code -> lastest MA, using mid-price
         self.ma = {}
         # code -> buffer unit
-        self.buflen = defaultdict(dict)
-        self.bufsum = defaultdict(dict)
+        self.buflen = defaultdict(list)
+        self.bufsum = defaultdict(list)
         # code -> current buffer tick unit
         self.curbuf = {}
         self.lastvol = 0
@@ -65,13 +65,7 @@ class qMA(MdSpi):
             self.api.SubscribeMarketData(self.instruments)
             self.logger.info('sub md: %s' % self.instruments)
 
-    def OnRtnDepthMarketData(self, q):
-        if q is None:
-            return
-
-        #self.logger.info('%s %s %s', q.InstrumentID, q.LastPrice, q.Volume-self.lastvol)
-        #self.lastvol = q.Volume
-        # calc q's time
+    def qma1(self, q):
         try:
             ticktp = [int(x) for x in q.UpdateTime.split(':')]
             tick = ticktp[0] * 3600 + ticktp[1] * 60 + ticktp[2] + q.UpdateMillisec/1000.0
@@ -126,6 +120,60 @@ class qMA(MdSpi):
         self.bufsum[inst][tu] += (q.BidPrice1+q.AskPrice1)/2
         self.buflen[inst][tu] += 1
 
+    def qma2(self, q):
+        inst = q.InstrumentID
+
+        if len(self.buflen[inst]) == 0:
+            # fully empty buffer
+            self.buflen[inst].append(0.0)
+            self.bufsum[inst].append(0.0)
+
+        if self.buflen[inst][-1] < self.maparam.bufmax:
+            # accumulate in current buffer
+            self.buflen[inst][-1] +=1
+            self.bufsum[inst][-1] += (q.BidPrice1+q.AskPrice1)/2
+        else:
+            # current buffer is long enough, so...
+            # publish new MA
+            blen = len(self.buflen[inst])
+            tsum = 0.0
+            tlen = 0.0
+            maval = 0.0
+            tu = blen # backward compatible with qma1
+            if blen > self.maparam.wsize:
+                for i in range(blen-self.maparam.wsize, blen):
+                    tlen += self.buflen[inst][i]
+                    tsum += self.bufsum[inst][i]
+                maval = tsum/tlen
+                self.repo.publish(self.machannel, pickle.dumps((inst, tu, maval)))
+                self.logger.info('new MA: %s %d %s' % (inst, tu, maval))
+
+            # add new entry in buflen/bufsum
+            self.buflen[inst].append(1.0)
+            self.bufsum[inst].append((q.BidPrice1+q.AskPrice1)/2)
+
+        #self.logger.info(self.buflen[inst])
+        #self.logger.info(self.bufsum[inst])
+        #self.logger.info(len(self.buflen[inst]))
+        #self.logger.info('======')
+
+    def OnRtnDepthMarketData(self, q):
+        if q is None:
+            return
+
+        if q.BidPrice1 > q.UpperLimitPrice or q.BidPrice1 < q.LowerLimitPrice:
+            return
+
+        if q.AskPrice1 > q.UpperLimitPrice or q.AskPrice1 < q.LowerLimitPrice:
+            return
+
+        self.qma2(q)
+
+        #self.logger.info('%s %s %s', q.InstrumentID, q.LastPrice, q.Volume-self.lastvol)
+        #self.lastvol = q.Volume
+        # calc q's time
+
+
     def setup(self):
         # don't need to store mdapi, after calling
         # RegisterSpi, we have .api attribute automatically
@@ -151,7 +199,7 @@ def main():
     logger = logging.getLogger()
 
     # start quote server
-    INSTS = ['IF1307', 'IF1308']#, 'IF1309', 'IF1312']
+    INSTS = ['IF1308', 'IF1309']#, 'IF1309', 'IF1312']
     q = qMA(INSTS, cfg.mduser, cfg.redis, cfg.maparam)
     q.setup()
 
