@@ -24,6 +24,13 @@ THOST_TERT_RESUME   = 1
 THOST_TERT_QUICK    = 2
 
 class qrepo(MdSpi):
+    '''
+    Publish and store quotes in realtime.
+
+    Currently implementation:
+    - Publish in redis
+    - store in memory.
+    '''
     def __init__(self,
             instruments,
             mdcfg,
@@ -112,6 +119,9 @@ class qrepo(MdSpi):
         self.api.Release()
 
 class engine(TraderSpi):
+    '''
+    Execution engine handles orders, cancels, etc.
+    '''
     def __init__(self, tradercfg, orderman, qrepo):
         self.broker_id = tradercfg.broker_id
         self.investor_id = tradercfg.investor_id
@@ -519,6 +529,9 @@ class engine(TraderSpi):
         return
 
 class engine_worker(Thread):
+    '''
+    Worker executes orders in async mode.
+    '''
     def __init__(self, engine, qserv):
         Thread.__init__(self)
         self.tqueue = engine.tqueue
@@ -566,7 +579,7 @@ class engine_worker(Thread):
 
 class orderman:
     '''
-    1. provide interface for access session, order, trade, ptf, etc.
+    1. provide interface for read/write session, order, trade, ptf, etc.
     2. order recovery on startup
     '''
     def __init__(self, omcfg):
