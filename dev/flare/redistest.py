@@ -7,7 +7,7 @@ def seconds(dt):
 
 n = 10000
 
-r = redis.Redis()
+r = redis.Redis(host='127.0.0.1')
 a = 0
 
 print 'inc using add operator'
@@ -24,6 +24,22 @@ r.set('test', 1)
 t1 = datetime.now()
 for i in range(n):
     r.incr('test')
+t2 = datetime.now()
+print t2-t1, seconds(t2-t1)/n, n/seconds(t2-t1)
+
+print 'set in redis'
+
+t1 = datetime.now()
+for i in range(n):
+    r.set('test', 1)
+t2 = datetime.now()
+print t2-t1, seconds(t2-t1)/n, n/seconds(t2-t1)
+
+print 'get in redis'
+
+t1 = datetime.now()
+for i in range(n):
+    a = r.get('test')
 t2 = datetime.now()
 print t2-t1, seconds(t2-t1)/n, n/seconds(t2-t1)
 

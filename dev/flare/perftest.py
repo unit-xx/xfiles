@@ -21,6 +21,16 @@ for i in range(1,n):
 t2 = datetime.now()
 print t2-t1, seconds(t2-t1)/n, n/seconds(t2-t1)
 
+n = 1000000
+a = {}
+t1 = datetime.now()
+for i in range(1,n):
+    a['a'] = 2
+    b = a['a']
+
+t2 = datetime.now()
+print t2-t1, seconds(t2-t1)/n, n/seconds(t2-t1)
+
 n = 10000
 logging.config.fileConfig('config.ini', {"logfn":'perftest.log'})
 logger = logging.getLogger()
