@@ -2,6 +2,9 @@ import os
 import ConfigParser
 import logging, logging.config
 
+# a global config variable.
+gconfig = None
+
 class BaseObject:
     def __init__(self, **kwargs):
         self.__dict__.update(kwargs)
@@ -13,6 +16,8 @@ class BaseObject:
         return str(self.__dict__)
 
 def parse_config(app, name='config.ini', root='base', configpath = '.'):
+    global gconfig
+
     cfg = ConfigParser.ConfigParser()
     cfgfn = os.path.join(configpath, name)
     cfg.read(cfgfn)
@@ -65,6 +70,4 @@ def parse_config(app, name='config.ini', root='base', configpath = '.'):
     logger.info("========================")
     logger.info(msg)
 
-    return config
-
-
+    gconfig = config

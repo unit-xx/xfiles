@@ -287,3 +287,63 @@ class engine(Thread):
             正常情况后不应该出现
         '''
         pass
+
+'''
+A strategy is splitted into top and bottom parts. The top part listens for
+quotes and other input data streams, then generates trading signals to engine
+through pubsub. The bottom part listens for order responses from engine through
+pubsub and invoke strategy callbacks.
+'''
+class stratbottom(Thread):
+    def __init__(self):
+        Thread.__init__(self, pubsub, wsize)
+        self.queue = Queue.Queue()
+        self.wset = []
+        self.wsize = wsize
+        self.pubsub = pubsub
+        self.runflag = True
+
+    def run(self):
+        # start workers
+        for i in range(self.wsize):
+            w = stratworker(self.queue)
+            self.wsize.append(w)
+            w.start()
+
+        while self.runflag:
+            t = self.pubsub.listen()
+            self.queue.put(t)
+
+        self.close()
+
+    def stop(self):
+        self.runflag = False
+
+    def close(self):
+        pass
+
+    def addstrat(self, strat):
+        pass
+
+class stratworker(Thread):
+    def __init__(self, queue):
+        Thread.__init__(self)
+        self.queue = queue
+        self.runflag = True
+
+    def run(self):
+        while self.runflag:
+            try:
+                t = self.queue.get(True, 2)
+                self.process_resp(t)
+            except Queue.Empty:
+                pass
+
+    def stop(self):
+        self.runflag = False
+
+    def process_resp(self, t):
+        try:
+            pass
+        except:
+            pass
