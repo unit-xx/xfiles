@@ -5,6 +5,8 @@ import logging, logging.config
 # a global config variable.
 gconfig = None
 
+OrderRec = dict
+
 class BaseObject:
     def __init__(self, **kwargs):
         self.__dict__.update(kwargs)

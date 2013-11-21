@@ -147,9 +147,15 @@ class engine(Thread):
         self.oreflock = Lock()
         self.reqlock = Lock()
 
+        # reverse map from exchangeID/OrderRef to oid
+        self.exch2oid = {}
+        self.oref2oid = {}
+        self.maplock = Lock()
+
     # threading routines.
 
     def run(self):
+        # TODO: exception handling
         if not self.setup():
             self.logger.warning('Engine setup failed.')
             self.close()
@@ -192,15 +198,39 @@ class engine(Thread):
         self.runflag = False
 
     def reqorder(self, t):
-        # make ctp request and submit
-        # publish the request in pubsub
-        # save the request
+        # make ctp request
+        # update reverse map
+        # and submit
         pass
 
     # CTP handlers and helpers
 
     def isRspSuccess(self, RspInfo):
         return RspInfo is None or RspInfo.ErrorID == 0
+
+    def ismysession(self, oref, order):
+        # use oref or order?
+        ret = False
+        if self.islogin:
+            # TODO: add other conditions
+            ret = True
+        return ret
+
+    def getoid(refid, by='oref'):
+        oid = None
+        with self.maplock:
+            try:
+                if by == 'oref':
+                    oid = self.oref2oid[refid]
+                elif by == 'exch':
+                    oid = self.exch2oid[refid]
+            except KeyError:
+                pass
+        return oid
+
+    def makeoreftp(self, order):
+        # oref tuple for current session
+        return (order.FrontID, order.SessionID, int(order.OrderRef))
 
     def inc_request_id(self):
         ret = 0 
@@ -243,7 +273,7 @@ class engine(Thread):
 
     # handlers for order response.
     # These handlers just publish responses in pubsub, while strats handlers,
-    # orderman, tbooker and monitors will do their jobs on receiving responses.
+    # orderman, tbook and monitors will do their jobs on receiving responses.
 
     # TODO: add settlement confirmation handlers?
     def OnRspOrderInsert(self, pInputOrder, pRspInfo, nRequestID, bIsLast):
@@ -251,7 +281,16 @@ class engine(Thread):
             报单未通过参数校验,被CTP拒绝
             正常情况后不应该出现
         '''
-        pass
+        if pInputOrder is None or pRspInfo is None:
+            return
+
+        oreftp = self.makeoreftp(pInputOrder)
+        if self.ismysession(oreftp):
+            oid = self.getoid(oreftp)
+            # TODO: make CTP neutral order: pInputOrder, pOrderAction and pTrade
+            # NOTE: should include callback name such as OnRspOrderInsert
+
+            self.pubsub.publish(order)
 
     def OnErrRtnOrderInsert(self, pInputOrder, pRspInfo):
         '''
@@ -344,6 +383,9 @@ class stratworker(Thread):
 
     def process_resp(self, t):
         try:
+            # get strategy object
+            # get t's callback
+            # call strategy's corresponding callback.
             pass
         except:
             pass
