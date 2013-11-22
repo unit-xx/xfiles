@@ -389,3 +389,16 @@ class stratworker(Thread):
             pass
         except:
             pass
+
+class TBook:
+    '''
+    TBook serves as trading book for one or more strategies.
+    '''
+    def __init__(self):
+
+class strattop:
+    '''
+    1. a defined strategy task has only one instance at any time.
+    2. when a strategy task is restarted, it has to recover from previous run, including orders, positions, margins, cash account, etc.
+    3. 
+    '''
