@@ -1,3 +1,3 @@
-2013-11-21
-
 OrderRec definition, translation from/to CTP order, and storage in OrderCache and OrderMan.
+
+ORDER transfered from/to engine: essentially a RPC, so it includes FUNC and PARAM.
