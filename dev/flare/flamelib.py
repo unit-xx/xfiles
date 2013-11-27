@@ -10,8 +10,10 @@ from TraderApi import TraderApi, TraderSpi
 import UserApiStruct as ustruct
 import UserApiType as utype
 
-# TODO: when multi threaded...
+# TODO: thread safe checking.
+# TODO: exception checking.
 
+# STATUS: code ready.
 class redispubsub:
     def __init__(self, rconfig):
         self.rconfig = rconfig
@@ -40,6 +42,7 @@ class redispubsub:
 KVstore = redis.Redis
 PubSub = redispubsub
 
+# STATUS: code ready
 class qrepo(MdSpi):
     '''
     Receive quotes from CTP and 1) publish, 2) store quotes.
@@ -340,6 +343,7 @@ class stratbottom(Thread):
         self.wset = []
         self.wsize = wsize
         self.pubsub = pubsub
+        self.strats = {}
         self.runflag = True
 
     def run(self):
@@ -351,7 +355,8 @@ class stratbottom(Thread):
 
         while self.runflag:
             t = self.pubsub.listen()
-            self.queue.put(t)
+            if(self.hasstrat(t)):
+                self.queue.put(t)
 
         self.close()
 
@@ -361,8 +366,32 @@ class stratbottom(Thread):
     def close(self):
         pass
 
-    def addstrat(self, strat):
+    def addstrat(self, sname, strat):
         pass
+
+    def hasstrat(self, sname):
+        pass
+
+    def getstrat(self, sname):
+        pass
+
+    def handleOpenResp(self):
+        if resp=='ok':
+            self.pubsub.publish(Tbook, Update, oid)
+            self.pubsub.publish(Tbook, Confirm, oid)
+        elif resp=='error':
+            self.pubsub.publish(Tbook, Update, oid)
+            self.pubsub.publish(Tbook, Release, oid)
+
+    def handleCloseResp(self):
+        pass
+
+    def handleCancelResp(self):
+        if resp=='ok':
+            self.pubsub.publish(Tbook, Update, oid)
+            self.pubsub.publish(Tbook, Release, oid)
+        elif resp=='error':
+            self.pubsub.publish(Tbook, Update, oid)
 
 class stratworker(Thread):
     def __init__(self, queue):
@@ -374,31 +403,78 @@ class stratworker(Thread):
         while self.runflag:
             try:
                 t = self.queue.get(True, 2)
-                self.process_resp(t)
+                self.process(t)
             except Queue.Empty:
                 pass
 
     def stop(self):
         self.runflag = False
 
-    def process_resp(self, t):
+    def process(self, t):
         try:
             # get strategy object
             # get t's callback
             # call strategy's corresponding callback.
-            pass
+            strat = self.getstrat()
+            strat.handleresp(t)
         except:
             pass
 
-class TBook:
-    '''
-    TBook serves as trading book for one or more strategies.
-    '''
-    def __init__(self):
-
-class strattop:
+# STATUS: just shows concepts.
+class strattop(Thread):
     '''
     1. a defined strategy task has only one instance at any time.
     2. when a strategy task is restarted, it has to recover from previous run, including orders, positions, margins, cash account, etc.
     3. 
     '''
+    def __init__(self, pubsub):
+        Thread.__init__(self)
+        self.runflag = True
+        self.tbook = tbook
+        self.pubsub = pubsub
+
+    def run(self):
+        while self.runflag:
+            try:
+                q = self.queue.get(True, 2)
+                self.process(q)
+            except Queue.Empty:
+                pass
+
+    def stop(self):
+        self.runflag = False
+
+    def process(self, q):
+        # q is a quote, or any other inputs to generate trading signals.
+        if q == 'open':
+            self.pubsub.publish(Tbook, Reserve, oid)
+            self.pubsub.publish(Engine, OpenOrder, oid)
+        elif q == 'close':
+            self.pubsub.publish(Engine, CloseOrder, oid)
+        elif q == 'cancel':
+            self.pubsub.publish(Tbook, Release, oid)
+            self.pubsub.publish(Engine, Cancel, oid)
+
+
+class TBook(Thread):
+    '''
+    TBook serves as trading book for one or more strategies.
+    '''
+    def __init__(self, pubsub):
+        Thread.__init__(self)
+        self.pubsub = pubsub
+        self.runflag = True
+
+    def run(self):
+        while self.runflag:
+            try:
+                br = self.queue.get(True, 2)
+                self.process(br)
+            except Queue.Empty:
+                pass
+
+    def stop(self):
+        self.runflag = False
+
+    def process(self, br):
+        pass

@@ -48,17 +48,21 @@ print
 print 'publish perf'
 
 def publisher(n, r, ch):
+    t1 = datetime.now()
     for i in range(n):
-        print 'pub %d %s' % (i, datetime.now())
-        r.publish(ch, '%d Hello world!'%i)
+        r.publish(ch, '%d'%i)
+    t2 = datetime.now()
+    print 'publish %.3f' % n/seconds(t2-t1)
 
 
 def listener(n, r, ch):
     sub = r.pubsub()
     sub.subscribe(ch)
+    t1 = datetime.now()
     for i in range(n):
         msg = next(sub.listen())
-        print 'sub %d %s' % (i, datetime.now())
+    t2 = datetime.now()
+    print 'subscribe %.3f' % n/seconds(t2-t1)
 
 Thread(target=listener, args=(10, r, 'test')).start()
 Thread(target=publisher, args=(10, r, 'test')).start()
