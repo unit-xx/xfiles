@@ -115,11 +115,22 @@ class qrepo(MdSpi):
     def stop(self):
         self.api.Release()
 
-class engine(Thread):
+class EngineClient:
+    pass
+
+class Engine(Thread):
     '''
-    engine works as a separate thread or process.
-    It listens for order requests and provides handlers
-    for CTP responses.
+    Engine is a proxy for CTP. It
+    1. receives request from strats, and send the request to CTP
+    2. receives response from CTP and send back to strats
+    3. maintains Tbook at request/order level, while the
+    portfolio semantic is maintained by strats.
+
+    Engnine communicate with strats and Tbook using pubsub queue.
+
+    Engine should be stateless from strat perspect.
+
+    Engine works as a separate thread or process.
     '''
     def __init__(self, tradercfg, pubsub, store):
         Thread.__init__(self)
@@ -455,6 +466,16 @@ class strattop(Thread):
             self.pubsub.publish(Tbook, Release, oid)
             self.pubsub.publish(Engine, Cancel, oid)
 
+class TBookClient:
+    '''
+    TBookClient wraps commands to TBook as a set of functions.
+    '''
+    pass
+
+class TBookClientCache:
+    '''
+    Cached version of TBookClient
+    '''
 
 class TBook(Thread):
     '''
