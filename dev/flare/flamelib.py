@@ -1,7 +1,10 @@
+#-*- coding:utf-8 -*-
+
 # flare library in message passing style.
 # flame = flare in message
 
 import logging
+import cPickle as pickle
 
 import redis
 
@@ -9,6 +12,8 @@ from MdApi import MdApi, MdSpi
 from TraderApi import TraderApi, TraderSpi  
 import UserApiStruct as ustruct
 import UserApiType as utype
+
+from util import Record
 
 # TODO: thread safe checking.
 # TODO: exception checking.
@@ -120,17 +125,22 @@ class EngineClient:
 
 class Engine(Thread):
     '''
-    Engine is a proxy for CTP. It
+    Engine is a router for CTP orders. It
     1. receives request from strats, and send the request to CTP
     2. receives response from CTP and send back to strats
-    3. maintains Tbook at request/order level, while the
+    3. (dropped) maintains Tbook at request/order level, while the
     portfolio semantic is maintained by strats.
 
-    Engnine communicate with strats and Tbook using pubsub queue.
+    Engnine communicate with strats using pubsub queue.
 
-    Engine should be stateless from strat perspect.
+    Engine should be stateless on order states. It only maintains maps which
+    enables routing requests and responses, e.g., CTP ID to oid, oid to
+    stratname
 
     Engine works as a separate thread or process.
+
+    Engine can be extended to routing orders to more than one
+    account.
     '''
     def __init__(self, tradercfg, pubsub, store):
         Thread.__init__(self)
@@ -157,14 +167,22 @@ class Engine(Thread):
         self.frontid = 0
         self.sessionid = 0
         self.oref = 0
+        self.loginsession = ()
 
+        # locks for increase OrderRef and RequestID
         self.oreflock = Lock()
         self.reqlock = Lock()
 
+
+        # strat => (many) oid => (one) oreftp/exchid
         # reverse map from exchangeID/OrderRef to oid
         self.exch2oid = {}
         self.oref2oid = {}
-        self.maplock = Lock()
+        self.idmaplock = Lock()
+
+        # map from oid to strat name
+        self.oid2strat = {}
+        self.stratlock = Lock()
 
     # threading routines.
 
@@ -178,13 +196,20 @@ class Engine(Thread):
         self.logger.info('Engine setup ok.')
         while self.runflag:
             # get one order and make it
-            t = self.pubsub.listen()
-            self.reqorder(t)
+            m = self.pubsub.listen()
+            # TODO: check m type and channel
+            try:
+                req = pickle.loads(m.data)
+                self.reqorder(req)
+            except Exception:
+                pass
         self.close()
 
     def setup(self):
         # start thread pool
         # start ctp api
+        # TODO: ctp settlement.
+        # TODO: Engine restart and recovery.
         trader = TraderApi.CreateTraderApi(self.name)
         trader.RegisterSpi(self)
         trader.SubscribePublicTopic(THOST_TERT_QUICK)
@@ -195,9 +220,7 @@ class Engine(Thread):
         self.loginevent.wait()
 
         if self.islogin:
-            #self.orderman.addlogin(self.frontid,
-            #        self.sessionid, self.api.GetTradingDay())
-            #self.mysession = (self.frontid, self.sessionid)
+            self.loginsession = (self.frontid, self.sessionid)
             # TODO: check orderchannel
             self.pubsub.subscribe(orderchannel)
 
@@ -211,36 +234,113 @@ class Engine(Thread):
     def stop(self):
         self.runflag = False
 
-    def reqorder(self, t):
+    # Request and helpers.
+
+    def makereq(self, req):
+        '''
+        Send CTP request. 
+        req is a Record object.
+
+        Required fields:
+        oid, strat,
+        inst, volume(minus for sell), price(-1 for mkt price), openclose
+
+        Optional:
+        FAK, FOK, etc.
+        '''
         # make ctp request
         # update reverse map
         # and submit
-        pass
+        oref = self.inc_order_ref()
+        ismktprice = True if req.price<0 else False
 
-    # CTP handlers and helpers
+        ctpreq = ustruct.InputOrder(
+                InstrumentID = req.inst,
+                Direction = utype.THOST_FTDC_D_Buy if (volume>0) else utype.THOST_FTDC_D_Sell,
+                OrderRef = str(oref),
+                LimitPrice = 0.0 if ismktprice else price,
+                VolumeTotalOriginal = volume if (volume>0) else -volume,
+                OrderPriceType = utype.THOST_FTDC_OPT_AnyPrice if ismktprice else utype.THOST_FTDC_OPT_LimitPrice,
+                BrokerID = self.broker_id,
+                InvestorID = self.investor_id,
+                CombOffsetFlag = utype.THOST_FTDC_OF_Open if (openclose=='open') else utype.THOST_FTDC_OF_Close,
+                CombHedgeFlag = utype.THOST_FTDC_HF_Speculation,
+                VolumeCondition = utype.THOST_FTDC_VC_AV,
+                MinVolume = 1,
+                ForceCloseReason = utype.THOST_FTDC_FCC_NotForceClose,
+                IsAutoSuspend = 1, # 1 or 0?
+                #UserForceClose = 0, not a field in doc, a obsoleted parameter?
+                TimeCondition = utype.THOST_FTDC_TC_IOC if isIOC else utype.THOST_FTDC_TC_GFD,
+            )
+        # NOTE: what if ReqOrderInsert return false?
+        r = self.api.ReqOrderInsert(ctpreq, self.inc_request_id())
 
-    def isRspSuccess(self, RspInfo):
-        return RspInfo is None or RspInfo.ErrorID == 0
+        # save order by orderman
+        oreftp = self.myoreftp(oref)
+        oid = req.oid
+        strat = req.strat
 
-    def ismysession(self, oref, order):
-        # use oref or order?
-        ret = False
-        if self.islogin:
-            # TODO: add other conditions
-            ret = True
-        return ret
+        self.setoidmap(oid, oreftp)
+        self.setstratmap(oid, strat)
 
-    def getoid(refid, by='oref'):
+        # logging may hurt performance
+        #self.logger.info(u'下单: instrument=%s,openclose=%s,amount=%d,price=%0.3f,ismktprice=%s,isIOC=%s,OrderRef=%d,oid=%s'
+        #        % (inst, openclose,
+        #            volume, price, str(ismktprice), isIOC, oref, oid))
+
+        return
+
+    def setoidmap(self, oid, someid, by='oref'):
+        '''
+        update reverse map oreftp/exchid => oid
+        '''
+        with self.idmaplock:
+            if by=='exchid':
+                self.exch2oid[someid] = oid
+            elif by=='oref':
+                self.oref2oid[someid] = oid
+
+    def getoid(self, someid, type='oref'):
+        '''
+        get oid by oref/exchid
+        '''
         oid = None
-        with self.maplock:
+        with self.idmaplock:
             try:
                 if by == 'oref':
-                    oid = self.oref2oid[refid]
-                elif by == 'exch':
-                    oid = self.exch2oid[refid]
+                    oid = self.oref2oid[someid]
+                elif by == 'exchid':
+                    #self.logger.info(self.exchid2oid)
+                    oid = self.exch2oid[someid]
             except KeyError:
                 pass
         return oid
+
+    def setstratmap(self, oid, strat):
+        '''
+        update map oid => stratname
+        '''
+        with self.stratlock:
+            self.oid2strat[oid] = strat
+
+    def getstrat(self, oid):
+        strat = None
+        with self.stratlock:
+            try:
+                strat = self.oid2strat[oid]
+            except KeyError:
+                pass
+        return strat
+
+    def ismysession(self, oreftp)
+        # use oref or order?
+        ret = False
+        if self.islogin:
+            ret = ((oreftp[0], oreftp[1]) == self.mysession)
+        return ret
+
+    def myoreftp(self, oref):
+        return (self.frontid, self.sessionid, oref)
 
     def makeoreftp(self, order):
         # oref tuple for current session
@@ -259,6 +359,11 @@ class Engine(Thread):
             self.oref += 1
             ret = self.oref
         return ret
+
+    # Response handlers for login.
+
+    def isRspSuccess(self, RspInfo):
+        return RspInfo is None or RspInfo.ErrorID == 0
 
     def OnFrontDisConnected(self, reason):
         self.logger.info(u'Engine disconnected, reason:%s' % (reason,))
@@ -285,26 +390,31 @@ class Engine(Thread):
             self.islogin = False
         self.loginevent.set()
 
-    # handlers for order response.
+    # Handlers for order response.
     # These handlers just publish responses in pubsub, while strats handlers,
     # orderman, tbook and monitors will do their jobs on receiving responses.
 
     # TODO: add settlement confirmation handlers?
+
+    def makerecord(self, order):
+        '''
+        oid, strat, state, etc.
+        '''
+        pass
+
     def OnRspOrderInsert(self, pInputOrder, pRspInfo, nRequestID, bIsLast):
         '''
             报单未通过参数校验,被CTP拒绝
             正常情况后不应该出现
         '''
+        # TODO: what if isRspSuccess returns False.
         if pInputOrder is None or pRspInfo is None:
             return
 
         oreftp = self.makeoreftp(pInputOrder)
         if self.ismysession(oreftp):
-            oid = self.getoid(oreftp)
-            # TODO: make CTP neutral order: pInputOrder, pOrderAction and pTrade
-            # NOTE: should include callback name such as OnRspOrderInsert
-
-            self.pubsub.publish(order)
+            rec = self.makerecord(pInputOrder)
+            self.pubsub.publish(channel, rec)
 
     def OnErrRtnOrderInsert(self, pInputOrder, pRspInfo):
         '''

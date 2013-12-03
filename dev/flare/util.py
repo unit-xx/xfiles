@@ -5,7 +5,9 @@ import logging, logging.config
 # a global config variable.
 gconfig = None
 
-OrderRec = dict
+class Record(dict):
+    __getattr__ = dict.__getitem__
+    __setattr__ = dict.__setitem__
 
 class BaseObject:
     def __init__(self, **kwargs):
