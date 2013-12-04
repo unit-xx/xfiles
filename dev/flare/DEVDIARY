@@ -1,3 +1,38 @@
-OrderRec definition, translation from/to CTP order, and storage in OrderCache and OrderMan.
+tbook N<=>1 real account: a tbook is bound to only one real account, or to say, a tbook is a sub/virtual-account.
+strat 1<=>N tbook: a strat may linked to many tbooks, e.g., a strat involving both futures and stocks. But a tbook can be only linked to one strat.
 
-ORDER transfered from/to engine: essentially a RPC, so it includes FUNC and PARAM.
+In CONFIG file:
+
+logging (separated config file)
+
+=== in one config file ===
+real account: ctp accounts, stock accounts, ...
+redis
+namespace prefix/suffix, order/trade/ptf/loginsession, ...
+=== ===
+
+risk measures(not sure)
+
+In DB:
+
+strats-tbook mapping
+tbook-account mapping
+
+STRAT data
+
+tbooks
+portfolios, definition and realization
+
+TBOOK data
+
+linked strat
+orders and trades
+positions and margin rate
+cash
+
+(derived)
+PNL
+balance
+margin
+available cash
+
