@@ -1,26 +1,25 @@
 import os
-import ConfigParser
 import logging, logging.config
+import configparser
 from collections import defaultdict
 
+from util import Record
+
 # a global config variable.
-gconfig = defaultdict(defaultdict)
+gconfig = None
 
 # gconfig is defaultdict of defaultdict
 # CATALOG is defaultdict of dict
 # NAME is dict
 
-def parse_config(app, name='config.ini', configpath = '.'):
+def parseconfig(name='config.ini', configpath = '.'):
     '''
     section name has the format CATALOG:NAME, parsed result is accessed
     by gconfig.CATALOG.NAME.property
     '''
 
-    global gconfig
-    if gconfig is not None:
-        return False
-
-    cfg = ConfigParser.ConfigParser()
+    cfg = configparser.ConfigParser(dict_type=Record,
+            interpolation=configparser.ExtendedInterpolation())
     cfgfn = os.path.join(configpath, name)
     cfg.read(cfgfn)
 
@@ -28,12 +27,15 @@ def parse_config(app, name='config.ini', configpath = '.'):
         # use 'account.mduser1' as key or two-dim dict as ['account']['mduser1']
         pass
 
+    return cfg
+
+
+def setuplogger(app, name='logger.ini', configpath = '.'):
+    cfgfn = os.path.join(configpath, name)
     logging.config.fileConfig(cfgfn, {"logfn":app+'.log'})
     logger = logging.getLogger()
-    msg = "i'm started"
     logger.info("========================")
-    logger.info(msg)
+    logger.info('%s is started!', app)
 
-    gconfig = config
-
-    return True
+if gconfig is None:
+    gconfig 
