@@ -41,7 +41,6 @@ for iter in range(200):
     Bpath = []
     EDpath = []
 
-    # one single path for A, B and ED
     for i in range(int(N)):
 
         # exclude divident for today
