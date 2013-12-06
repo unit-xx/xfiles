@@ -576,20 +576,25 @@ class strattop(Thread):
             self.pubsub.publish(Tbook, Release, oid)
             self.pubsub.publish(Engine, Cancel, oid)
 
-class TBookClient:
+class TBook:
     '''
-    TBookClient wraps commands to TBook as a set of functions.
+    TBook APIs are invoked to update orders/trades, etc. to redis.
+
+    --(func)-->TBook API--(redis api)-->redis
     '''
     pass
 
-class TBookClientCache:
+class TBookCache:
     '''
-    Cached version of TBookClient
+    TBookCache has the similar interface with TBook, but it caches updates in
+    memory. It broadcasts the updates to external entities for persistence.
     '''
+    pass
 
-class TBook(Thread):
+
+class TBookProxy(Thread):
     '''
-    TBook serves as trading book for one or more strategies.
+    Receive Tbook updates and ...
     '''
     def __init__(self, pubsub):
         Thread.__init__(self)

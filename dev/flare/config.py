@@ -1,16 +1,20 @@
 import os
 import logging, logging.config
-import configparser
-from collections import defaultdict
+import ConfigParser
 
 from util import Record
+import flaredef as fdef
 
 # a global config variable.
+# gconfig[NS:SECTION][KEY] = VALUE
 gconfig = None
 
 # gconfig is defaultdict of defaultdict
 # CATALOG is defaultdict of dict
 # NAME is dict
+
+# namespace prefix: NS:xxx
+# setting in a namespace: NS:xxx:yyy
 
 def parseconfig(name='config.ini', configpath = '.'):
     '''
@@ -18,17 +22,23 @@ def parseconfig(name='config.ini', configpath = '.'):
     by gconfig.CATALOG.NAME.property
     '''
 
-    cfg = configparser.ConfigParser(dict_type=Record,
-            interpolation=configparser.ExtendedInterpolation())
+    cfg = ConfigParser.ConfigParser()
     cfgfn = os.path.join(configpath, name)
     cfg.read(cfgfn)
 
+    config = dict()
+
     for sec in cfg.sections():
-        # use 'account.mduser1' as key or two-dim dict as ['account']['mduser1']
-        pass
+        if cfg.has_option(sec, fdef.NSPREFIX):
+            namespace = getattr(fdef, cfg.get(sec, fdef.NSPREFIX))
+            cfg.set(sec, fdef.NSPREFIX, namespace)
+            csec = fdef.NSSEP.join((namespace, sec))
+        else:
+            csec = sec
 
-    return cfg
+        config[csec] = dict(cfg.items(sec))
 
+    return config
 
 def setuplogger(app, name='logger.ini', configpath = '.'):
     cfgfn = os.path.join(configpath, name)
