@@ -9,13 +9,13 @@ import csv
 # 3. discount to NPV.
 
 mu = 4.0/100
-sig = 24.0/100
+sig = 25.0/100
 dt = 0.01
 N = 100.1 * 1/dt
 
 EDsample = []
 npvsample = []
-for iter in range(200):
+for iter in range(100):
     # 1a. sim 399001
 
     szczrpath = []
@@ -29,12 +29,12 @@ for iter in range(200):
 
     #open('path.dat', 'w').writelines([str(x)+'\n' for x in szczrpath])
 
-    today = date(2013, 9, 24)
-    A = 1.0439
-    B = 0.1327
+    today = date(2013, 1, 1)
+    A = 1.0
+    B = 0.4
     t0 = round(((today-date(today.year,1,1)).days + 1) / 365.0, 2)
     r = 0.06
-    R = 0.064
+    R = 0.065
     Amax = 1.0 + t0 * r
     EPS = 1e-6
     Apath = []
@@ -100,8 +100,5 @@ for iter in range(200):
     #print NPV
     npvsample.append(NPV)
 
-sample = zip(EDsample, npvsample)
-with open('sample.csv', 'wb') as f:
-    writer = csv.writer(f)
-    writer.writerow(('EDsum', 'NPV'))
-    writer.writerows(sample)
+value = sum(npvsample)/len(npvsample)
+print value
