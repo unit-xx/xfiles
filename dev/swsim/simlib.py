@@ -67,7 +67,7 @@ def NPV(edpath, R, t0):
     ret = ret * (1+R*t0)
     return ret
 
-def swsyvalue(t0, s0, dt, T, rf, sig, r, R, N=100):
+def swsyvalue(t0, s0, dt, T, rf, sig, r, R, N=200):
     ret = 0.0
     for i in xrange(N):
         edp = swEDpath(t0, s0, dt, T, rf, sig, r)
@@ -79,8 +79,10 @@ def swsyvalue(t0, s0, dt, T, rf, sig, r, R, N=100):
 
 def frange(start, stop, step):
     eps = 1e-8
+    ret = []
     r = start
     while stop-r >= eps:
         # TODO: better inequation.
-    	yield r
+        ret.append(r)
     	r += step
+    return ret

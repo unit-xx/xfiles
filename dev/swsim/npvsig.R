@@ -1,21 +1,19 @@
 library(ggplot2)
 library(directlabels)
 
-a = read.csv('npv3a.csv', header=T)
-b = read.csv('npv3b.csv', header=T)
-ab = rbind(a, b)
+ab = read.csv('s0sig.csv', header=T)
 
-npvsig = aggregate(NPV~sig+B0, data=ab, FUN=mean)
+valuesig = aggregate(value~sig+s0, data=ab, FUN=mean)
 
-plt = ggplot(data=npvsig, aes(x=B0, y=NPV, group=sig, col=sig)) + geom_smooth(se=F) + scale_color_continuous()
+plt = ggplot(data=valuesig, aes(x=s0, y=value, group=sig, col=sig)) + geom_smooth(se=F) + scale_color_continuous()
 plt
 
-a = ggplot(data=npvsig, aes(x=B0, y=sig, z=NPV)) + geom_smooth(se=F) + stat_contour(aes(colour = ..level..))
+a = ggplot(data=valuesig, aes(x=s0, y=sig, z=value)) + geom_smooth(se=F) + stat_contour(aes(colour = ..level..))
 
-a = ggplot(data=npvsig, aes(x=B0, y=NPV, group=sig, col=sig)) + geom_line()
+a = ggplot(data=valuesig, aes(x=s0, y=value, group=sig, col=sig)) + geom_line()
 
-a = ggplot(data=npvsig, aes(x=B0, y=sig, z=NPV)) + stat_contour(aes(colour = ..level..))
+a = ggplot(data=valuesig, aes(x=s0, y=sig, z=value)) + stat_contour(aes(colour = ..level..))
 
 direct.label(a)
 
-a = ggplot(data=npvsig, aes(x=B0, y=NPV, z=sig)) + stat_contour(aes(colour = ..level..))
+a = ggplot(data=valuesig, aes(x=s0, y=value, z=sig)) + stat_contour(aes(colour = ..level..))
