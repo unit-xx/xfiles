@@ -5,6 +5,7 @@
 
 import logging
 import cPickle as pickle
+from Queue import Queue
 
 import redis
 
@@ -119,9 +120,6 @@ class qrepo(MdSpi):
 
     def stop(self):
         self.api.Release()
-
-class EngineClient:
-    pass
 
 class Engine(Thread):
     '''
@@ -548,57 +546,65 @@ class strattop(Thread):
     2. when a strategy task is restarted, it has to recover from previous run, including orders, positions, margins, cash account, etc.
     3. 
     '''
-    def __init__(self, pubsub):
+    def __init__(self):
         Thread.__init__(self)
         self.runflag = True
-        self.tbook = tbook
-        self.pubsub = pubsub
+        self.logger = logging.getLogger()
+        self.name = self.__class__.__name__
+
+    def setup(self):
+        pass
+
+    def signal(self):
+        # listen for input streams and generate trading signals, or call stop() to quit strategy.
+        pass
 
     def run(self):
+        try:
+            if False == self.setup():
+                return
+        except:
+            return
+
         while self.runflag:
-            try:
-                q = self.queue.get(True, 2)
-                self.process(q)
-            except Queue.Empty:
-                pass
+            self.signal()
 
     def stop(self):
         self.runflag = False
 
-    def process(self, q):
-        # q is a quote, or any other inputs to generate trading signals.
-        if q == 'open':
-            self.pubsub.publish(Tbook, Reserve, oid)
-            self.pubsub.publish(Engine, OpenOrder, oid)
-        elif q == 'close':
-            self.pubsub.publish(Engine, CloseOrder, oid)
-        elif q == 'cancel':
-            self.pubsub.publish(Tbook, Release, oid)
-            self.pubsub.publish(Engine, Cancel, oid)
-
-class TBook:
+class TBookLib:
     '''
-    TBook APIs are invoked to update orders/trades, etc. to redis.
+    TBookLib APIs are invoked to update orders/trades, etc. to redis.
 
-    --(func)-->TBook API--(redis api)-->redis
+    --(invoke)-->TBook API--(redis api)-->redis
     '''
-    pass
+    def update(self, store, t):
+        # update t in store
 
 class TBookCache:
     '''
-    TBookCache has the similar interface with TBook, but it caches updates in
-    memory. It broadcasts the updates to external entities for persistence.
+    TBookCache has the similar interface with TBookLib, but it caches updates in
+    memory. It may also queues updates to TBookProxy for persistence.
     '''
-    pass
+    def __init__(self, tbproxy=None):
+        self.qproxy = tbproxy.getqueue()
+
+    def update(self, t):
+        # some cache work here
+        if self.tbproxy is not None:
+            self.qproxy.put(t)
 
 
 class TBookProxy(Thread):
     '''
-    Receive Tbook updates and ...
+    Receive queueed Tbook updates and 1. store updates in redis using TBookLib, 2. breadcasts update through pubsub.
     '''
-    def __init__(self, pubsub):
+    def __init__(self, pubsub, store):
         Thread.__init__(self)
         self.pubsub = pubsub
+        self.store = store
+        self.tb = TBookLib()
+        self.queue = Queue()
         self.runflag = True
 
     def run(self):
@@ -606,6 +612,7 @@ class TBookProxy(Thread):
             try:
                 br = self.queue.get(True, 2)
                 self.process(br)
+                self.queue.task_done()
             except Queue.Empty:
                 pass
 
@@ -613,4 +620,11 @@ class TBookProxy(Thread):
         self.runflag = False
 
     def process(self, br):
-        pass
+        try:
+            self.tb.update(self.store, br)
+            self.pubsub.publish(br)
+        except:
+            pass
+
+    def getqueue(self):
+        return self.queue
