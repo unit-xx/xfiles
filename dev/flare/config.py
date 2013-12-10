@@ -47,5 +47,10 @@ def setuplogger(app, name='logger.ini', configpath = '.'):
     logger.info("========================")
     logger.info('%s is started!', app)
 
-if gconfig is None:
-    gconfig 
+def init_gconfig(config):
+    global gconfig
+    if gconfig is None:
+        gconfig = config
+        return True
+    else:
+        return False

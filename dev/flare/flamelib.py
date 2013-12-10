@@ -6,6 +6,8 @@
 import logging
 import cPickle as pickle
 from Queue import Queue
+from collections import defaultdict
+from copy import deepcopy
 
 import redis
 
@@ -556,7 +558,8 @@ class strattop(Thread):
         pass
 
     def signal(self):
-        # listen for input streams and generate trading signals, or call stop() to quit strategy.
+        # listen for input streams and generate trading signals, or
+        # call stop() to quit strategy.
         pass
 
     def run(self):
@@ -572,15 +575,6 @@ class strattop(Thread):
     def stop(self):
         self.runflag = False
 
-class TBookLib:
-    '''
-    TBookLib APIs are invoked to update orders/trades, etc. to redis.
-
-    --(invoke)-->TBook API--(redis api)-->redis
-    '''
-    def update(self, store, t):
-        # update t in store
-
 class TBookCache:
     '''
     TBookCache has the similar interface with TBookLib, but it caches updates in
@@ -588,12 +582,133 @@ class TBookCache:
     '''
     def __init__(self, tbproxy=None):
         self.qproxy = tbproxy.getqueue()
+        self.tbproxy = tbproxy
 
-    def update(self, t):
-        # some cache work here
-        if self.tbproxy is not None:
-            self.qproxy.put(t)
+        # cc for cache
+        # ordercc is mapped to redis directly.
+        self.ordercc = defaultdict(dict)
+        # blk (big lock) for read/write items in ordercc
+        # orderlk stores a lock for each order
+        self.orderlk = defaultdict(Lock)
+        self.orderblk = Lock()
 
+        # tradecc and its lock schema is similar with ordercc
+        # tradecc can be mapped to redis as pickled string
+        self.tradecc = defaultdict(list)
+        self.tradelk = defaultdict(Lock)
+        self.tradeblk = Lock()
+
+        # ptf cache
+        # a ptf instance is a list of dict, it can be mapped to redis as
+        # pickled string.
+        self.ptfinstcc = defaultdict(list)
+        self.ptfdefcc = defaultdict(list)
+        self.ptfblk = Lock()
+
+        self.logger = logging.getLogger()
+
+    def getorder(self, oid):
+        o = None
+        olk = None
+        with self.orderblk:
+            try:
+                o = self.ordercc[oid]
+                olk = self.orderlk[oid]
+            except KeyError:
+                pass
+        return  o, olk
+
+    def updateorder(self, oid, inorder, field=None):
+        # update order with oid, using input inorder and field
+        o, olk = self.getorder(oid)
+        if o is not None:
+            if field is None:
+                toupdate = inorder
+            else:
+                # assume inorder is a Record object
+                toupdate = dict( [(k, inorder[k])) for k in field] )
+            with olk:
+                o.update(toupdate)
+
+    def hasorder(self, oid):
+        ret = False
+        with self.orderblk:
+            if oid in self.ordercc:
+                ret = True
+        return ret
+
+    def neworder(self, oid):
+        # insert order in ordercc, tradecc and updates its metadata
+        ret = False
+
+        if not self.hasorder(oid):
+            ret = True
+            oidlocal = fdef.localoid()
+            oid = fdef.makename(fdef.ORDERNS, oidlocal)
+
+            olk = Lock()
+            o = {}
+            with self.orderblk:
+                self.ordercc[oid] = o
+                self.orderlk[oid] = olk
+
+            # also insert order's trade
+            tlk = Lock()
+            t = []
+            with self.tradeblk:
+                self.tradecc[oid] = t
+                self.tradelk[oid] = tlk
+
+        return ret
+
+    def gettrade(self, oid):
+        t = None
+        tlk = None
+        with self.tradeblk:
+            try:
+                t = self.tradecc[oid]
+                tlk = self.tradelk[oid]
+            except KeyError:
+                pass
+        return t, tlk
+
+    def addtrade(self, oid, price, volume):
+        ret = False
+        t, tlk = self.gettrade(oid)
+        if t is not None:
+            ret = True
+            with tlk:
+                t.append((price, volume))
+        return ret
+
+    def loadptfdef(self, ptfdefid):
+        ret = False
+        pdef = self.tbproxy.getptfdef(ptfdefid)
+        if pdef is not None:
+            ret = True
+            with self.ptfblk:
+                self.ptfdefcc[ptfdefid] = pdef
+
+        return ret
+
+    def newptf(self, ptfdefid):
+        '''
+        ptfdef is a list of dict, or to say several rows.
+        Keys are defined in flaredef, and they are:
+        code, shares(minus for short), and tag.
+
+        A ptf instance is a ptfdef with oid for each code... :)
+
+        like neworder, insert records in ptfinstcc, add oid, insert new orders,
+        and return ptfid
+        '''
+        return None
+
+    def getptf(self, ptfid):
+        '''
+        like getorder
+        '''
+        pass
 
 class TBookProxy(Thread):
     '''
@@ -628,3 +743,19 @@ class TBookProxy(Thread):
 
     def getqueue(self):
         return self.queue
+
+    def getptfdef(self, ptfdefid):
+        ret = self.tb.getptfdef(ptfdefid)
+        return ret
+
+class TBookLib:
+    '''
+    TBookLib APIs are invoked to update orders/trades, etc. to redis.
+
+    --(invoke)-->TBook API--(redis api)-->redis
+    '''
+    def update(self, store, t):
+        # update t in store
+
+    def getptfdef(self, ptfdefid):
+        return None
