@@ -33,6 +33,7 @@ class mmpair(strattop):
 
         # TODO: define tbook and checks link with strat
         # TODO: name schema
+        # TODO: engine, mmbottom
 
         # other param/variable initialization.
 

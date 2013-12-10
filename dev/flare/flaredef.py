@@ -7,11 +7,12 @@ NSSEP = ':'
 # namespaces
 ORDERNS = 'ORDER'
 TRADENS = 'TRADE'
-PTFNOMNS = 'PTFNOM'
-PTFRENS = 'PTFRE'
-ORD2TRDNS = 'ORD2TRD'
+PDEFNS = 'PTFDEF'
+PINSTNS = 'PTFINST'
+
+# channel prefix
 QUOTE = 'QUOTE'
-ACCOUNT = 'ACCOUNTxxx'
+ACCOUNT = 'ACCOUNT'
 
 # ptf definition keys
 CODE = 'code'
@@ -28,5 +29,8 @@ ALLPTFNOM = 'ALLPTFNOM'
 FRONTIDKB = 'ALLFRONT'
 SESSIONIDKB = 'ALLSESSION'
 
-def fullname(name, prefix, suffix):
-    return NSSEP.join( (prefix, name, suffix) )
+def fullname(name, ns)
+    return NSSEP.join( (ns, name) )
+
+def splitname(name):
+    return name.split(NSSEP)
