@@ -34,9 +34,9 @@ class mmpair(strattop):
         # TODO: define tbook and checks link with strat
         # TODO: name schema
         # TODO: engine, mmbottom
+        # TODO: need to reserve? and how?
 
         # other param/variable initialization.
-
 
     def signal(self):
         msg = self.pubsub.listen()
@@ -45,7 +45,37 @@ class mmpair(strattop):
             # check risk condition
             # submit order
             # update tbook
-            pass
+            if action == openclose:
+                # TODO: self.risk.check()
+                self.reqorder()
+            elif action == cancel:
+                self.cancelorder()
+
+    def reqorder(self, o):
+        '''
+        o is a order of type Record
+
+        order keys defined in flaredef:
+
+        oid, strat, ptfid, 
+        longshort, openclose, price, volume,
+
+        sequence is important: publish first, or booking first?
+        Rules: 1) orders who cut margin from cash need booking first
+        2) orders who free margin to cash need orders first.
+
+        '''
+        if o.KTYPE == VOPEN:
+            self.tbook.updateorder(o)
+            self.pubsub.publish(fdef.CHOREQ, o)
+        elif o.KTYPE = VCLOSE:
+            self.pubsub.publish(fdef.CHOREQ, o)
+            self.tbook.updateorder(o)
+
+
+    def cancelorder(self):
+        pass
+
 
 class mmpairbtm(stratbottom):
     pass

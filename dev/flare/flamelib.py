@@ -37,10 +37,10 @@ class redispubsub:
 
         self.pubsub = self.redis.pubsub()
 
-    def pub(self, channel, msg):
+    def publish(self, channel, msg):
         self.redis.publish(channel, msg)
 
-    def sub(self, channel):
+    def subscribe(self, channel):
         self.pubsub.subscribe(channel)
 
     def listen(self):
@@ -236,7 +236,7 @@ class Engine(Thread):
 
     # Request and helpers.
 
-    def makereq(self, req):
+    def reqorder(self, req):
         '''
         Send CTP request. 
         req is a Record object.
@@ -289,6 +289,9 @@ class Engine(Thread):
         #            volume, price, str(ismktprice), isIOC, oref, oid))
 
         return
+
+    def cancelorder(self, req):
+        pass
 
     def setoidmap(self, oid, someid, by='oref'):
         '''
@@ -577,8 +580,8 @@ class strattop(Thread):
 
 class TBookCache:
     '''
-    TBookCache has the similar interface with TBookLib, but it caches updates in
-    memory. It may also queues updates to TBookProxy for persistence.
+    TBookCache has the similar interface with TBookLib, but it caches updates
+    in memory. It may also queues updates to TBookProxy for persistence.
     '''
     def __init__(self, tbproxy=None):
         self.qproxy = tbproxy.getqueue()
@@ -619,7 +622,35 @@ class TBookCache:
         return  o, olk
 
     def updateorder(self, oid, inorder, field=None):
-        # update order with oid, using input inorder and field
+        '''
+        update order with oid, using input inorder and field
+
+        Order has states:
+
+        init, requested, rejected,
+        accepted, partial trade, full trade.
+
+        cancel states:
+        init, canceling, canceled, cancel failed.
+
+        Margin calculation:
+
+        init: 0
+        requested: based on ordered price,
+        rejected: 0
+        accepted: based on ordered price,
+        partial trade: ordered price + traded price
+        full traded: traded price
+
+        (cancel state implication)
+        cancel init: no effect
+        canceling: no effect
+        canceled: only traded price
+        cancel failed: no effect
+
+
+        '''
+
         o, olk = self.getorder(oid)
         if o is not None:
             if field is None:
@@ -629,6 +660,7 @@ class TBookCache:
                 toupdate = dict( [(k, inorder[k])) for k in field] )
             with olk:
                 o.update(toupdate)
+
 
     def hasorder(self, oid):
         ret = False

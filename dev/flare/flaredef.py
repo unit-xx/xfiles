@@ -10,14 +10,30 @@ TRADENS = 'TRADE'
 PDEFNS = 'PTFDEF'
 PINSTNS = 'PTFINST'
 
-# channel prefix
-QUOTE = 'QUOTE'
-ACCOUNT = 'ACCOUNT'
+# channels
+CHQUOTE = 'CH:QUOTE'
+CHOREQ = 'CH:OREQ'
+CHORESP = 'CH:ORESP'
+
+# order/ptf keys and constants, OK for order key, OV for order value
+KTYPE = 'KTYPE'
+VOPEN  = 'VOPEN'
+VCLOSE = 'VCLOSE'
+VCANCEL = 'VCANCEL'
+
+KDIR = 'KDIR'
+VLONG = 'VLONG'
+VSHORT = 'VSHORT'
+
+KOID = 'KOID'
+KSTRAT = 'KSTRAT'
+KPTFID = 'KPTFID'
+
+KCODE = 'code'
+KSHARE = 'share'
+KTAG = 'tag'
 
 # ptf definition keys
-CODE = 'code'
-SHARE = 'share'
-TAG = 'tag'
 
 # global keys
 ALLORDERS = 'ALLORDERS'
