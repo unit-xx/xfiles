@@ -17,6 +17,7 @@ import UserApiStruct as ustruct
 import UserApiType as utype
 
 from util import Record
+import flaredef as fdef
 
 # TODO: thread safe checking.
 # TODO: exception checking.
@@ -43,7 +44,11 @@ class redispubsub:
     def subscribe(self, channel):
         self.pubsub.subscribe(channel)
 
+    def unsubscribe(self, channel):
+        self.pubsub.unsubscribe(channel)
+
     def listen(self):
+        # XXX: next()?
         return self.pubsub.listen()
 
 # KVstore and PubSub is the impost important infrastructure.
@@ -200,7 +205,10 @@ class Engine(Thread):
             # TODO: check m type and channel
             try:
                 req = pickle.loads(m.data)
-                self.reqorder(req)
+                if req[fdef.KACTION] = fdef.VINSERT:
+                    self.reqorder(req)
+                elif req[fdef.KACTION] = fdef.VCANCEL:
+                    self.cancelorder(req)
             except Exception:
                 pass
         self.close()
@@ -221,12 +229,12 @@ class Engine(Thread):
 
         if self.islogin:
             self.loginsession = (self.frontid, self.sessionid)
-            # TODO: check orderchannel
-            self.pubsub.subscribe(orderchannel)
+            self.pubsub.subscribe(fdef.CHOREQ)
 
         return self.islogin
 
     def close(self):
+        self.pubsub.unsubscribe(fdef.CHOREQ)
         if self.trader:
             self.trader.Release()
             self.trader = None

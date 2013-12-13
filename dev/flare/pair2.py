@@ -66,7 +66,7 @@ class mmpair(strattop):
 
         '''
         o[fdef.KACTION] = fdef.VINSERT
-        self.pubsub.publish(fdef.CHOREQ, o)
+        self.pubsub.publish(fdef.CHOREQ, o.dump())
         o[fdef.KOSTATE] = fdef.VORDERREQED
         self.tbook.updateorder(o)
 
@@ -77,7 +77,7 @@ class mmpair(strattop):
         self.tbook.updateorder(o)
 
 
-class mmpairbtm(stratbottom):
+class mmpairbottom(stratbottom):
     pass
 
 def main():

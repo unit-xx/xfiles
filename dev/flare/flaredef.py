@@ -16,7 +16,7 @@ CHOREQ = 'CHOREQ'
 CHORESP = 'CHORESP'
 
 # order keys and constants, K for order key, V for order value
-KTYPE = 'KTYPE'
+KOPNCLS = 'KOPNCLS'
 VOPEN  = 'VOPEN'
 VCLOSE = 'VCLOSE'
 
