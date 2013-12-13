@@ -65,11 +65,13 @@ class mmpair(strattop):
         2) orders who free margin to cash need orders first.
 
         '''
+        o[fdef.KACTION] = fdef.VINSERT
         self.pubsub.publish(fdef.CHOREQ, o)
         o[fdef.KOSTATE] = fdef.VORDERREQED
         self.tbook.updateorder(o)
 
     def cancelorder(self):
+        o[fdef.KACTION] = fdef.VCANCEL
         self.pubsub.publish(fdef.CHOREQ, o)
         o[fdef.KOSTATE] = fdef.VORDERREQED
         self.tbook.updateorder(o)

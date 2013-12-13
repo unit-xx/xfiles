@@ -66,3 +66,5 @@ def fullname(name, ns)
 
 def splitname(name):
     return name.split(NSSEP)
+
+
