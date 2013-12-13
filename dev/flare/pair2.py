@@ -58,23 +58,21 @@ class mmpair(strattop):
         order keys defined in flaredef:
 
         oid, strat, ptfid, 
-        longshort, openclose, price, volume,
+        code, longshort, openclose, price, volume,
 
         sequence is important: publish first, or booking first?
         Rules: 1) orders who cut margin from cash need booking first
         2) orders who free margin to cash need orders first.
 
         '''
-        if o.KTYPE == VOPEN:
-            self.tbook.updateorder(o)
-            self.pubsub.publish(fdef.CHOREQ, o)
-        elif o.KTYPE = VCLOSE:
-            self.pubsub.publish(fdef.CHOREQ, o)
-            self.tbook.updateorder(o)
-
+        self.pubsub.publish(fdef.CHOREQ, o)
+        o[fdef.KOSTATE] = fdef.VORDERREQED
+        self.tbook.updateorder(o)
 
     def cancelorder(self):
-        pass
+        self.pubsub.publish(fdef.CHOREQ, o)
+        o[fdef.KOSTATE] = fdef.VORDERREQED
+        self.tbook.updateorder(o)
 
 
 class mmpairbtm(stratbottom):

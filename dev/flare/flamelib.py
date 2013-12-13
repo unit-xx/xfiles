@@ -631,7 +631,7 @@ class TBookCache:
         accepted, partial trade, full trade.
 
         cancel states:
-        init, canceling, canceled, cancel failed.
+        init, requested, canceled, cancel rejected.
 
         Margin calculation:
 

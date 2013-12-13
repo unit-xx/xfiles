@@ -11,14 +11,17 @@ PDEFNS = 'PTFDEF'
 PINSTNS = 'PTFINST'
 
 # channels
-CHQUOTE = 'CH:QUOTE'
-CHOREQ = 'CH:OREQ'
-CHORESP = 'CH:ORESP'
+CHQUOTE = 'CHQUOTE'
+CHOREQ = 'CHOREQ'
+CHORESP = 'CHORESP'
 
-# order/ptf keys and constants, OK for order key, OV for order value
+# order keys and constants, K for order key, V for order value
 KTYPE = 'KTYPE'
 VOPEN  = 'VOPEN'
 VCLOSE = 'VCLOSE'
+
+KACTION
+VINSERT
 VCANCEL = 'VCANCEL'
 
 KDIR = 'KDIR'
@@ -29,11 +32,24 @@ KOID = 'KOID'
 KSTRAT = 'KSTRAT'
 KPTFID = 'KPTFID'
 
+KOSTATE
+VORDERREQED
+VORDERREJECTED
+VORDERACCEPTED
+VORDERPTRADE
+VORDERFTRADE
+
+KCANCELSTATE
+VCANCELREQED
+VCANCELREJECTED
+VCANCELLED
+
+# ptf keys
 KCODE = 'code'
 KSHARE = 'share'
 KTAG = 'tag'
-
-# ptf definition keys
+KACTIVEOID
+KINACTIVEOIDS
 
 # global keys
 ALLORDERS = 'ALLORDERS'
