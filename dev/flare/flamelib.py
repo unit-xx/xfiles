@@ -48,8 +48,17 @@ class redispubsub:
         self.pubsub.unsubscribe(channel)
 
     def listen(self):
-        # XXX: next()?
-        return self.pubsub.listen()
+        '''
+        return message is a dictonary like:
+        {'pattern': None, 'type': 'message', 'channel': 'xxx', 'data': '123'}
+        {'pattern': None, 'type': 'subscribe', 'channel': 'xxx', 'data': 1L}
+        should filter by type, pattern and channel.
+        '''
+        while 1:
+            ret = next(self.pubsub.listen())
+            if 'message' == ret['type']:
+                break
+        return ret
 
 # KVstore and PubSub is the impost important infrastructure.
 KVstore = redis.Redis
@@ -189,30 +198,6 @@ class Engine(Thread):
         self.oid2strat = {}
         self.stratlock = Lock()
 
-    # threading routines.
-
-    def run(self):
-        # TODO: exception handling
-        if not self.setup():
-            self.logger.warning('Engine setup failed.')
-            self.close()
-            return
-
-        self.logger.info('Engine setup ok.')
-        while self.runflag:
-            # get one order and make it
-            m = self.pubsub.listen()
-            # TODO: check m type and channel
-            try:
-                req = pickle.loads(m.data)
-                if req[fdef.KACTION] = fdef.VINSERT:
-                    self.reqorder(req)
-                elif req[fdef.KACTION] = fdef.VCANCEL:
-                    self.cancelorder(req)
-            except Exception:
-                pass
-        self.close()
-
     def setup(self):
         # start thread pool
         # start ctp api
@@ -242,7 +227,26 @@ class Engine(Thread):
     def stop(self):
         self.runflag = False
 
-    # Request and helpers.
+    def run(self):
+        # TODO: exception handling
+        if not self.setup():
+            self.logger.warning('Engine setup failed.')
+            self.close()
+            return
+
+        self.logger.info('Engine setup ok.')
+        while self.runflag:
+            # get one order and make it
+            m = self.pubsub.listen()
+            try:
+                req = Record.load(t['data'])
+                if req[fdef.KACTION] = fdef.VINSERT:
+                    self.reqorder(req)
+                elif req[fdef.KACTION] = fdef.VCANCEL:
+                    self.cancelorder(req)
+            except Exception:
+                self.logger.exception('handling req error')
+        self.close()
 
     def reqorder(self, req):
         '''
@@ -260,18 +264,23 @@ class Engine(Thread):
         # update reverse map
         # and submit
         oref = self.inc_order_ref()
-        ismktprice = True if req.price<0 else False
+        code = req[fdef.KCODE]
+        ismktprice = True if req[fdef.KPRICE]<0 else False
+        share = req[fdef.KSHARE]
+        price = req[fdef.KPRICE]
+        otype = req[fdef.OTYPE]
+        isIOC = (fdef.KISIOC in req) and req[fdef.KISIOC]
 
         ctpreq = ustruct.InputOrder(
-                InstrumentID = req.inst,
-                Direction = utype.THOST_FTDC_D_Buy if (volume>0) else utype.THOST_FTDC_D_Sell,
+                InstrumentID = code,
+                Direction = utype.THOST_FTDC_D_Buy if (share>0) else utype.THOST_FTDC_D_Sell,
                 OrderRef = str(oref),
                 LimitPrice = 0.0 if ismktprice else price,
-                VolumeTotalOriginal = volume if (volume>0) else -volume,
+                VolumeTotalOriginal = share if (share>0) else -share,
                 OrderPriceType = utype.THOST_FTDC_OPT_AnyPrice if ismktprice else utype.THOST_FTDC_OPT_LimitPrice,
                 BrokerID = self.broker_id,
                 InvestorID = self.investor_id,
-                CombOffsetFlag = utype.THOST_FTDC_OF_Open if (openclose=='open') else utype.THOST_FTDC_OF_Close,
+                CombOffsetFlag = utype.THOST_FTDC_OF_Open if (otype==fdef.VOPEN) else utype.THOST_FTDC_OF_Close,
                 CombHedgeFlag = utype.THOST_FTDC_HF_Speculation,
                 VolumeCondition = utype.THOST_FTDC_VC_AV,
                 MinVolume = 1,
@@ -285,8 +294,8 @@ class Engine(Thread):
 
         # save order by orderman
         oreftp = self.myoreftp(oref)
-        oid = req.oid
-        strat = req.strat
+        oid = req[fdef.KOID]
+        strat = req[fdef.KSTRAT]
 
         self.setoidmap(oid, oreftp)
         self.setstratmap(oid, strat)
@@ -407,11 +416,15 @@ class Engine(Thread):
 
     # TODO: add settlement confirmation handlers?
 
-    def makerecord(self, order):
+    def makerecord(self, ctporder, oid, strat, fields=[]):
         '''
         oid, strat, state, etc.
         '''
-        pass
+        ret = Record()
+        ret[fdef.KOID] = oid
+        ret[fdef.KSTRAT] = strat
+        for k in fields:
+            ret[k] = getattr(ctporder, k)
 
     def OnRspOrderInsert(self, pInputOrder, pRspInfo, nRequestID, bIsLast):
         '''
@@ -424,8 +437,14 @@ class Engine(Thread):
 
         oreftp = self.makeoreftp(pInputOrder)
         if self.ismysession(oreftp):
-            rec = self.makerecord(pInputOrder)
-            self.pubsub.publish(channel, rec)
+            oid = self.getoid(oreftp)
+            strat = self.getstrat(oid)
+            rec = self.makerecord(pInputOrder, oid, strat)
+            rec[fdef.KOSTATE] = fdef.VORDERREJECTED
+            rec.update(pRspInfo)
+            channel = fdef.fullname(fdef.CHORESP, strat)
+
+            self.pubsub.publish(channel, rec.dump())
 
     def OnErrRtnOrderInsert(self, pInputOrder, pRspInfo):
         '''
@@ -433,7 +452,19 @@ class Engine(Thread):
             正常情况后不应该出现
             这个回报没有request_id
         '''
-        pass
+        if pInputOrder is None or pRspInfo is None:
+            return
+
+        oreftp = self.makeoreftp(pInputOrder)
+        if self.ismysession(oreftp):
+            oid = self.getoid(oreftp)
+            strat = self.getstrat(oid)
+            rec = self.makerecord(pInputOrder, oid, strat)
+            rec.update(pRspInfo)
+            rec[fdef.KOSTATE] = fdef.VORDERREJECTED
+            channel = fdef.fullname(fdef.CHORESP, strat)
+
+            self.pubsub.publish(channel, rec.dump())
 
     def OnRtnOrder(self, pOrder):
         ''' 
@@ -441,26 +472,104 @@ class Engine(Thread):
             CTP、交易所接受报单
             Agent中不区分，所得信息只用于撤单
         '''
-        pass
+        if pOrder is None:
+            return
+
+        oreftp = self.makeoreftp(pOrder)
+        if self.ismysession(oreftp):
+            oid = self.getoid(oreftp)
+            strat = self.getstrat(oid)
+            rec = self.makerecord(pInputOrder, oid, strat, ['OrderStatus', 'StatusMsg', 'OrderSubmitStatus', 'OrderActionStatus'])
+            channel = fdef.fullname(fdef.CHORESP, strat)
+
+            if pOrder.OrderStatus in (utype.THOST_FTDC_OST_Unknown,
+                    utype.THOST_FTDC_OST_NotTouched,
+                    utype.THOST_FTDC_OST_NoTradeQueueing,
+                    utype.THOST_FTDC_OST_NoTradeNotQueueing):
+                # accepted by ctp or exchange
+                rec[fdef.KOSTATE] = fdef.VORDERACCEPTED
+
+                if pOrder.OrderSysID!='' and pOrder.ExchangeID!='':
+                    # it's a special order update here
+                    # TODO: when to update exchid map
+                    self.setoidmap(oid, (pOrder.ExchangeID, pOrder.OrderSysID), by='exchid')
+                    rec['ExchangeID'] = pOrder.ExchangeID
+                    rec['OrderSysID'] = pOrder.OrderSysID
+            elif pOrder.OrderStatus in (utype.THOST_FTDC_OST_Canceled,):
+                rec[fdef.KCANCELSTATE] = fdef.VCANCELLED
+            elif pOrder.OrderStatus in (utype.THOST_FTDC_OST_PartTradedQueueing, utype.THOST_FTDC_OST_PartTradedNotQueueing,):
+                rec[fdef.KOSTATE] = fdef.VORDERPTRADE
+            elif pOrder.OrderStatus in (utype.THOST_FTDC_OST_AllTraded,):
+                rec[fdef.KOSTATE] = fdef.VORDERFTRADE
+            else:
+                self.logger.warning('unknown order status: strat=%s, oid=%s, status=%s' %(strat, oid, pOrder.OrderStatus))
+
+            self.pubsub.publish(channel, rec.dump())
+
+        return
 
     def OnRtnTrade(self, pTrade):
         '''
         成交通知
         '''
-        pass
+        if pTrade is None:
+            return
+
+        exchid = (pTrade.ExchangeID, pTrade.OrderSysID)
+        oid = self.orderman.getoid(exchid, 'exchid')
+        if oid is None:
+            self.logger.info('trade with no oid')
+            return
+
+        strat = self.getstrat(oid)
+        rec = self.makerecord(pTrade, oid, strat)
+        rec[fdef.KTRADESTATE] = fdef.VTRADENEW
+        rec[fdef.KCODE] = pTrade.InstrumentID
+        rec[fdef.KSHARE] = pTrade.Volume
+        rec[fdef.KPRICE] = pTrade.Price
+        rec[fdef.KOTYPE] = fdef.VOPEN if (utype.THOST_FTDC_OF_Open==pTrade.OffsetFlag) else fdef.VCLOSE
+        rec[fdef.KDIR] = fdef.VLONG if (utype.THOST_FTDC_D_Buy==pTrade.Direction) else fdef.VSHORT
+
+        channel = fdef.fullname(fdef.CHORESP, strat)
+
+        self.pubsub.publish(channel, rec.dump())
 
     def OnRspOrderAction(self, pOrderAction, pRspInfo, nRequestID, bIsLast):
         '''
             ctp撤单校验错误
         '''
-        pass
+        if pOrderAction is None or pRspInfo is None:
+            return
+
+        oreftp = self.makeoreftp(pOrderAction)
+        if self.ismysession(oreftp):
+            oid = self.getoid(oreftp)
+            strat = self.getstrat(oid)
+            rec = self.makerecord(pOrderAction, oid, strat, ['OrderActionStatus', 'StatusMsg'])
+            rec.update(pRspInfo)
+            rec[fdef.KCANCELSTATE] = fdef.VCANCELREJECTED
+            channel = fdef.fullname(fdef.CHORESP, strat)
+
+            self.pubsub.publish(channel, rec.dump())
 
     def OnErrRtnOrderAction(self, pOrderAction, pRspInfo):
         '''
             交易所撤单操作错误回报
             正常情况后不应该出现
         '''
-        pass
+        if pOrderAction is None or pRspInfo is None:
+            return
+
+        oreftp = self.makeoreftp(pOrderAction)
+        if self.ismysession(oreftp):
+            oid = self.getoid(oreftp)
+            strat = self.getstrat(oid)
+            rec = self.makerecord(pOrderAction, oid, strat, ['OrderActionStatus', 'StatusMsg'])
+            rec.update(pRspInfo)
+            rec[fdef.KCANCELSTATE] = fdef.VCANCELREJECTED
+            channel = fdef.fullname(fdef.CHORESP, strat)
+
+            self.pubsub.publish(channel, rec.dump())
 
 '''
 A strategy is splitted into top and bottom parts. The top part listens for
@@ -468,9 +577,131 @@ quotes and other input data streams, then generates trading signals to engine
 through pubsub. The bottom part listens for order responses from engine through
 pubsub and invoke strategy callbacks.
 '''
-class stratbottom(Thread):
+
+# STATUS: just shows concepts.
+class strattop(Thread):
+    '''
+    1. a defined strategy task has only one instance at any time.
+    2. when a strategy task is restarted, it has to recover from previous run, including orders, positions, margins, cash account, etc.
+    3. 
+    '''
     def __init__(self):
-        Thread.__init__(self, pubsub, wsize)
+        Thread.__init__(self)
+        self.runflag = True
+        self.logger = logging.getLogger()
+        self.name = self.__class__.__name__
+
+    def setup(self):
+        pass
+
+    def signal(self):
+        # listen for input streams and generate trading signals, or
+        # call stop() to quit strategy.
+        pass
+
+    def run(self):
+        try:
+            if False == self.setup():
+                return
+        except:
+            return
+
+        while self.runflag:
+            self.signal()
+
+    def stop(self):
+        self.runflag = False
+
+    def getstrat(self):
+        pass
+
+    def onOrderState(self, oid, resp):
+        self.tbook.updateorder(oid, resp)
+        state = resp[fdef.KOSTATE]
+        if state == fdef.VORDERREJECTED:
+            self.onOrderRejected(oid, resp)
+        elif state == fdef.VORDERACCEPTED:
+            self.onOrderAccepted(oid, resp)
+        elif state == fdef.VORDERPTRADE:
+            self.onOrderPartialTrade(oid, resp)
+        elif state == fdef.VORDERFTRADE:
+            self.OnOrderFullyTrade(oid, resp)
+
+    def onOrderRejected(self, oid, resp):
+        pass
+
+    def onOrderAccepted(self, oid, resp):
+        pass
+
+    def onOrderPartialTrade(self, oid, resp):
+        pass
+
+    def OnOrderFullyTrade(self, oid, resp):
+        pass
+
+    def onTradeState(self, oid, resp):
+        # arrive here only when new trade is informed.
+        self.tbook.addtrade(oid, resp)
+        self.onNewTrade(oid, resp)
+
+    def onNewTrade(self, oid, trade):
+        pass
+
+    def onCancelState(self, oid, resp):
+        self.tbook.updateorder(oid, resp)
+        state = resp[fdef.KCANCELSTATE]
+        if state == fdef.VCANCELREJECTED:
+            self.onCancelRejected(self, oid, resp)
+        elif state == fdef.VCANCELLED:
+            self.onCancelled(self, oid, resp)
+
+    def onCancelRejected(self, oid, resp):
+        pass
+
+    def onCancelled(self, oid, resp):
+        pass
+
+    def riskcheck(self, order):
+        '''
+        return True for ok to submit order.
+        '''
+        return False
+
+class stratbottom(Thread):
+    def __init__(self, pubsub, top):
+        Thread.__init__(self)
+        self.pubsub = pubsub
+        self.top = top
+        self.strat = None
+
+    def run(self):
+        chname = fdef.fullname(fdef.CHORESP, self.strat)
+        self.strat = top.getstrat()
+        self.pubsub.subscribe(chname)
+
+        while self.runflag:
+            t = self.pubsub.listen()
+            resp = Record.load(t['data'])
+            oid = resp[fdef.KOID]
+            resp.pop(fdef.KOID])
+            try:
+                if fdef.KOSTATE in resp.keys():
+                    self.top.onOrderState(oid, resp)
+                elif fdef.KTRADESTATE in resp.keys():
+                    self.top.onTradeState(oid, resp)
+                elif fdef.KCANCELSTATE in resp.keys():
+                    self.top.onCancelState(oid, resp)
+                else:
+                    self.logger.error('Unknown state.')
+            except:
+                self.logger.exception('On handling engine response.')
+
+    def stop(self):
+        self.runflag = False
+
+class stratdispatch(Thread):
+    def __init__(self):
+        Thread.__init__(self)
         self.queue = Queue.Queue()
         self.wset = []
         self.wsize = wsize
@@ -552,44 +783,14 @@ class stratworker(Thread):
         except:
             pass
 
-# STATUS: just shows concepts.
-class strattop(Thread):
-    '''
-    1. a defined strategy task has only one instance at any time.
-    2. when a strategy task is restarted, it has to recover from previous run, including orders, positions, margins, cash account, etc.
-    3. 
-    '''
-    def __init__(self):
-        Thread.__init__(self)
-        self.runflag = True
-        self.logger = logging.getLogger()
-        self.name = self.__class__.__name__
-
-    def setup(self):
-        pass
-
-    def signal(self):
-        # listen for input streams and generate trading signals, or
-        # call stop() to quit strategy.
-        pass
-
-    def run(self):
-        try:
-            if False == self.setup():
-                return
-        except:
-            return
-
-        while self.runflag:
-            self.signal()
-
-    def stop(self):
-        self.runflag = False
-
 class TBookCache:
     '''
     TBookCache has the similar interface with TBookLib, but it caches updates
     in memory. It may also queues updates to TBookProxy for persistence.
+
+    What TBook should do and know:
+    1. update orders, positions, cash, margin, tcost, etc
+    2. 
     '''
     def __init__(self, tbproxy=None):
         self.qproxy = tbproxy.getqueue()
@@ -616,6 +817,9 @@ class TBookCache:
         self.ptfdefcc = defaultdict(list)
         self.ptfblk = Lock()
 
+        self.poscc = {}
+        self.posblk = Lock()
+
         self.logger = logging.getLogger()
 
     def getorder(self, oid):
@@ -631,9 +835,9 @@ class TBookCache:
 
     def updateorder(self, oid, inorder, field=None):
         '''
-        update order with oid, using input inorder and field
+        - update order with oid, using input inorder and field
 
-        Order has states:
+        - Order has states:
 
         init, requested, rejected,
         accepted, partial trade, full trade.
@@ -641,7 +845,7 @@ class TBookCache:
         cancel states:
         init, requested, canceled, cancel rejected.
 
-        Margin calculation:
+        - Margin calculation:
 
         init: 0
         requested: based on ordered price,
@@ -656,9 +860,13 @@ class TBookCache:
         canceled: only traded price
         cancel failed: no effect
 
+        - Positions:
+        contract, direction, position, trade price, margin, PNL
 
         '''
 
+        # TODO: check oid, strat is the same as already stored.
+        # update order, cash, margin, etc.
         o, olk = self.getorder(oid)
         if o is not None:
             if field is None:
@@ -712,7 +920,8 @@ class TBookCache:
                 pass
         return t, tlk
 
-    def addtrade(self, oid, price, volume):
+    def addtrade(self, oid, trade):
+        # TODO: update postion, cash, margin, etc.
         ret = False
         t, tlk = self.gettrade(oid)
         if t is not None:
@@ -749,6 +958,11 @@ class TBookCache:
         like getorder
         '''
         pass
+
+    def getposition(self, codes):
+        pass
+
+    def 
 
 class TBookProxy(Thread):
     '''
