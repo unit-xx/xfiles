@@ -573,12 +573,9 @@ class Engine(Thread):
 
 '''
 A strategy is splitted into top and bottom parts. The top part listens for
-quotes and other input data streams, then generates trading signals to engine
-through pubsub. The bottom part listens for order responses from engine through
-pubsub and invoke strategy callbacks.
+quotes and other input streams, and generates trading signals. The bottom part
+listens for order responses from engine and invoke strategy callbacks.
 '''
-
-# STATUS: just shows concepts.
 class strattop(Thread):
     '''
     1. a defined strategy task has only one instance at any time.
@@ -675,8 +672,8 @@ class stratbottom(Thread):
         self.strat = None
 
     def run(self):
-        chname = fdef.fullname(fdef.CHORESP, self.strat)
         self.strat = top.getstrat()
+        chname = fdef.fullname(fdef.CHORESP, self.strat)
         self.pubsub.subscribe(chname)
 
         while self.runflag:
@@ -786,15 +783,25 @@ class stratworker(Thread):
 class TBookCache:
     '''
     TBookCache has the similar interface with TBookLib, but it caches updates
-    in memory. It may also queues updates to TBookProxy for persistence.
+    in memory. It syncs updates updates to TBookProxy for persistence. To
+    initialize cache it read data from store using TBookLib interface.
 
     What TBook should do and know:
-    1. update orders, positions, cash, margin, tcost, etc
-    2. 
+    1. static balance, dynamic balance, total margins, available cash
+    2. positions: code+direction: position, avg price, margins, PNL
+    3. orders, trades
+    4. check and update cash/margins/PNL/balance before order submission,
+    after order submission(reject, accept, new trade), after cancel
+    confirmatin and new quotes.
+    5. daily settlement.
     '''
     def __init__(self, tbproxy=None):
         self.qproxy = tbproxy.getqueue()
         self.tbproxy = tbproxy
+
+        self.name = None
+        self.strat = None
+        self.cash = 0.0
 
         # cc for cache
         # ordercc is mapped to redis directly.
@@ -821,6 +828,11 @@ class TBookCache:
         self.posblk = Lock()
 
         self.logger = logging.getLogger()
+
+    def setup(self):
+        '''
+        initialize by reading from redis.
+        '''
 
     def getorder(self, oid):
         o = None
@@ -964,9 +976,24 @@ class TBookCache:
 
     def 
 
+class TBookLib:
+    '''
+    TBook talks directly with redis to read/write tbook.
+
+    Currently a tbook is assigned to one strategy.
+
+    --(invoke)-->TBook API--(redis api)-->redis
+    '''
+    def update(self, store, t):
+        # update t in store
+
+    def getptfdef(self, ptfdefid):
+
 class TBookProxy(Thread):
     '''
-    Receive queueed Tbook updates and 1. store updates in redis using TBookLib, 2. breadcasts update through pubsub.
+    Receive queueed Tbook updates and
+    1. store updates in redis using TBookLib,
+    2. breadcasts update through pubsub.
     '''
     def __init__(self, pubsub, store):
         Thread.__init__(self)
@@ -985,8 +1012,10 @@ class TBookProxy(Thread):
             except Queue.Empty:
                 pass
 
-    def stop(self):
+    def stop(self, dojoin=True):
         self.runflag = False
+        if dojoin:
+            self.queue.join()
 
     def process(self, br):
         try:
@@ -1002,14 +1031,4 @@ class TBookProxy(Thread):
         ret = self.tb.getptfdef(ptfdefid)
         return ret
 
-class TBookLib:
-    '''
-    TBookLib APIs are invoked to update orders/trades, etc. to redis.
-
-    --(invoke)-->TBook API--(redis api)-->redis
-    '''
-    def update(self, store, t):
-        # update t in store
-
-    def getptfdef(self, ptfdefid):
         return None
