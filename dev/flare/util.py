@@ -16,3 +16,5 @@ class Record(dict):
     @staticmethod
     def load(str):
         return pickle.loads(str)
+
+

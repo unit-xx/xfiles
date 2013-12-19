@@ -889,7 +889,6 @@ class TBookCache:
             with olk:
                 o.update(toupdate)
 
-
     def hasorder(self, oid):
         ret = False
         with self.orderblk:
@@ -974,7 +973,8 @@ class TBookCache:
     def getposition(self, codes):
         pass
 
-    def 
+    def updateposition(self, pos):
+        pass
 
 class TBookLib:
     '''
