@@ -266,17 +266,17 @@ class Engine(Thread):
         oref = self.inc_order_ref()
         code = req[fdef.KCODE]
         ismktprice = True if req[fdef.KPRICE]<0 else False
-        share = req[fdef.KSHARE]
+        volume = req[fdef.KVOLUME]
         price = req[fdef.KPRICE]
         otype = req[fdef.OTYPE]
         isIOC = (fdef.KISIOC in req) and req[fdef.KISIOC]
 
         ctpreq = ustruct.InputOrder(
                 InstrumentID = code,
-                Direction = utype.THOST_FTDC_D_Buy if (share>0) else utype.THOST_FTDC_D_Sell,
+                Direction = utype.THOST_FTDC_D_Buy if (volume>0) else utype.THOST_FTDC_D_Sell,
                 OrderRef = str(oref),
                 LimitPrice = 0.0 if ismktprice else price,
-                VolumeTotalOriginal = share if (share>0) else -share,
+                VolumeTotalOriginal = volume if (volume>0) else -volume,
                 OrderPriceType = utype.THOST_FTDC_OPT_AnyPrice if ismktprice else utype.THOST_FTDC_OPT_LimitPrice,
                 BrokerID = self.broker_id,
                 InvestorID = self.investor_id,
@@ -480,6 +480,8 @@ class Engine(Thread):
             oid = self.getoid(oreftp)
             strat = self.getstrat(oid)
             rec = self.makerecord(pInputOrder, oid, strat, ['OrderStatus', 'StatusMsg', 'OrderSubmitStatus', 'OrderActionStatus'])
+            rec[fdef.KTRADEVOL] = pInputOrder.VolumeTraded
+            rec[fdef.KUNTRADEVOL] = pInputOrder.VolumeTotal
             channel = fdef.fullname(fdef.CHORESP, strat)
 
             if pOrder.OrderStatus in (utype.THOST_FTDC_OST_Unknown,
@@ -525,7 +527,7 @@ class Engine(Thread):
         rec = self.makerecord(pTrade, oid, strat)
         rec[fdef.KTRADESTATE] = fdef.VTRADENEW
         rec[fdef.KCODE] = pTrade.InstrumentID
-        rec[fdef.KSHARE] = pTrade.Volume
+        rec[fdef.KVOLUME] = pTrade.Volume
         rec[fdef.KPRICE] = pTrade.Price
         rec[fdef.KOTYPE] = fdef.VOPEN if (utype.THOST_FTDC_OF_Open==pTrade.OffsetFlag) else fdef.VCLOSE
         rec[fdef.KDIR] = fdef.VLONG if (utype.THOST_FTDC_D_Buy==pTrade.Direction) else fdef.VSHORT
@@ -680,7 +682,7 @@ class stratbottom(Thread):
             t = self.pubsub.listen()
             resp = Record.load(t['data'])
             oid = resp[fdef.KOID]
-            resp.pop(fdef.KOID])
+            #resp.pop(fdef.KOID])
             try:
                 if fdef.KOSTATE in resp.keys():
                     self.top.onOrderState(oid, resp)
@@ -801,7 +803,9 @@ class TBookCache:
 
         self.name = None
         self.strat = None
+
         self.cash = 0.0
+        self.cashlk = Lock()
 
         # cc for cache
         # ordercc is mapped to redis directly.
@@ -817,15 +821,17 @@ class TBookCache:
         self.tradelk = defaultdict(Lock)
         self.tradeblk = Lock()
 
+        # postion key is a namedtuple(code, dir), value
+        # is a dict recording volumes, avg price, etc
+        self.poscc = defaultdict(dict)
+        self.posblk = Lock()
+
         # ptf cache
         # a ptf instance is a list of dict, it can be mapped to redis as
         # pickled string.
         self.ptfinstcc = defaultdict(list)
         self.ptfdefcc = defaultdict(list)
         self.ptfblk = Lock()
-
-        self.poscc = {}
-        self.posblk = Lock()
 
         self.logger = logging.getLogger()
 
@@ -938,7 +944,7 @@ class TBookCache:
         if t is not None:
             ret = True
             with tlk:
-                t.append((price, volume))
+                t.append(trade)
         return ret
 
     def loadptfdef(self, ptfdefid):
@@ -955,7 +961,7 @@ class TBookCache:
         '''
         ptfdef is a list of dict, or to say several rows.
         Keys are defined in flaredef, and they are:
-        code, shares(minus for short), and tag.
+        code, volumes(minus for short), and tag.
 
         A ptf instance is a ptfdef with oid for each code... :)
 
@@ -983,6 +989,8 @@ class TBookLib:
     Currently a tbook is assigned to one strategy.
 
     --(invoke)-->TBook API--(redis api)-->redis
+
+    NOTE: redis stores values as string.
     '''
     def update(self, store, t):
         # update t in store
