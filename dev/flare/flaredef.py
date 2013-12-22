@@ -3,6 +3,7 @@
 # namespace prefix, used in config parsing.
 NSPREFIX = 'NS'
 NSSEP = ':'
+POSKEYSEP = '|'
 
 # namespaces
 ORDERNS = 'ORDER'
@@ -57,6 +58,8 @@ KPRICE = 'PRICE'
 KISIOC = 'isIOC'
 KTAG = 'TAG'
 KTXCOST = 'TXCOST'
+KISRESERVE = 'ISRESERVE'
+KTRADE = 'TRADE'
 
 # ptf keys
 KACTIVEOID = 'KACTIVEOID'
@@ -65,6 +68,8 @@ KINACTIVEOIDS = 'KINACTIVEOIDS'
 # position keys
 KLONG = 'LONG'
 KSHORT = 'SHORT'
+KPOSITION = 'KPOSITION'
+KRESERVED = 'KRESERVED'
 
 # global keys
 ALLORDERS = 'ALLORDERS'
@@ -85,3 +90,5 @@ def splitname(name):
 def localoid():
     return ''
 
+def poskey(code, dir):
+    return POSKEYSEP.join( (code, dir) )

@@ -627,15 +627,27 @@ class strattop(Thread):
             self.OnOrderFullyTrade(oid, resp)
 
     def onOrderRejected(self, oid, resp):
+        '''
+        interface
+        '''
         pass
 
     def onOrderAccepted(self, oid, resp):
+        '''
+        interface
+        '''
         pass
 
     def onOrderPartialTrade(self, oid, resp):
+        '''
+        interface
+        '''
         pass
 
     def OnOrderFullyTrade(self, oid, resp):
+        '''
+        interface
+        '''
         pass
 
     def onTradeState(self, oid, resp):
@@ -644,6 +656,9 @@ class strattop(Thread):
         self.onNewTrade(oid, resp)
 
     def onNewTrade(self, oid, trade):
+        '''
+        interface
+        '''
         pass
 
     def onCancelState(self, oid, resp):
@@ -655,9 +670,15 @@ class strattop(Thread):
             self.onCancelled(self, oid, resp)
 
     def onCancelRejected(self, oid, resp):
+        '''
+        interface
+        '''
         pass
 
     def onCancelled(self, oid, resp):
+        '''
+        interface
+        '''
         pass
 
     def riskcheck(self, order):
@@ -817,12 +838,12 @@ class TBookCache:
 
         # tradecc and its lock schema is similar with ordercc
         # tradecc can be mapped to redis as pickled string
-        self.tradecc = defaultdict(list)
-        self.tradelk = defaultdict(Lock)
-        self.tradeblk = Lock()
+        #self.tradecc = defaultdict(list)
+        #self.tradelk = defaultdict(Lock)
+        #self.tradeblk = Lock()
 
         # postion key is a namedtuple(code, dir), value
-        # is a dict recording volumes, avg price, etc
+        # is a dict recording volumes, avg price, quota etc
         self.poscc = defaultdict(dict)
         self.posblk = Lock()
 
@@ -879,7 +900,7 @@ class TBookCache:
         cancel failed: no effect
 
         - Positions:
-        contract, direction, position, trade price, margin, PNL
+        contract+direction: position, reserved, trade price, margin, PNL
 
         '''
 
@@ -895,6 +916,33 @@ class TBookCache:
             with olk:
                 o.update(toupdate)
 
+    def reserve(self, oid):
+        '''
+        check risk measures and reserve order in position.
+        only reserve `insert open long/short order'
+        '''
+        ret = False
+
+        order, olk = self.getorder(oid)
+
+        action = order[fdef.KACTION]
+        otype = order[fdef.OTYPE]
+        code = order[fdef.KCODE]
+        direction = order[fdef.KDIR]
+        volume = order[fdef.KVOLUME]
+        if action != fdef.VINSERT or OTYPE != fdef.VOPEN:
+            return ret
+
+        # TODO: check risk measures
+        if ret == True:
+            poskey = fdef.poskey(code, direction)
+            p, plk = self.getposition(poskey)
+            with plk:
+                p[fdef.KRESERVED] += volume
+
+            with olk:
+                order[fdef.KISRESERVE] = True
+
     def hasorder(self, oid):
         ret = False
         with self.orderblk:
@@ -902,49 +950,44 @@ class TBookCache:
                 ret = True
         return ret
 
-    def neworder(self, oid):
+    def neworder(self):
         # insert order in ordercc, tradecc and updates its metadata
-        ret = False
+        oidlocal = fdef.localoid()
+        oid = fdef.makename(fdef.ORDERNS, oidlocal)
 
-        if not self.hasorder(oid):
-            ret = True
-            oidlocal = fdef.localoid()
-            oid = fdef.makename(fdef.ORDERNS, oidlocal)
+        olk = Lock()
+        o = {}
+        with self.orderblk:
+            self.ordercc[oid] = o
+            self.orderlk[oid] = olk
 
-            olk = Lock()
-            o = {}
-            with self.orderblk:
-                self.ordercc[oid] = o
-                self.orderlk[oid] = olk
+        with olk:
+            o[fdef.KTRADE] = []
 
-            # also insert order's trade
-            tlk = Lock()
-            t = []
-            with self.tradeblk:
-                self.tradecc[oid] = t
-                self.tradelk[oid] = tlk
+        return o, olk
 
-        return ret
-
-    def gettrade(self, oid):
-        t = None
-        tlk = None
-        with self.tradeblk:
-            try:
-                t = self.tradecc[oid]
-                tlk = self.tradelk[oid]
-            except KeyError:
-                pass
-        return t, tlk
+    #def gettrade(self, oid):
+    #    t = None
+    #    tlk = None
+    #    with self.tradeblk:
+    #        try:
+    #            t = self.tradecc[oid]
+    #            tlk = self.tradelk[oid]
+    #        except KeyError:
+    #            pass
+    #    return t, tlk
 
     def addtrade(self, oid, trade):
         # TODO: update postion, cash, margin, etc.
         ret = False
-        t, tlk = self.gettrade(oid)
-        if t is not None:
+        o, olk = self.getorder(oid)
+        if o is not None:
             ret = True
-            with tlk:
-                t.append(trade)
+            with olk:
+                o[fdef.KTRADE].append(trade)
+
+        # TODO: minus reserved count. also at cancellation.
+
         return ret
 
     def loadptfdef(self, ptfdefid):
