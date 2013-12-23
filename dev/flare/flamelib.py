@@ -526,11 +526,11 @@ class Engine(Thread):
         strat = self.getstrat(oid)
         rec = self.makerecord(pTrade, oid, strat)
         rec[fdef.KTRADESTATE] = fdef.VTRADENEW
-        rec[fdef.KCODE] = pTrade.InstrumentID
         rec[fdef.KVOLUME] = pTrade.Volume
         rec[fdef.KPRICE] = pTrade.Price
-        rec[fdef.KOTYPE] = fdef.VOPEN if (utype.THOST_FTDC_OF_Open==pTrade.OffsetFlag) else fdef.VCLOSE
-        rec[fdef.KDIR] = fdef.VLONG if (utype.THOST_FTDC_D_Buy==pTrade.Direction) else fdef.VSHORT
+        #rec[fdef.KCODE] = pTrade.InstrumentID
+        #rec[fdef.KOTYPE] = fdef.VOPEN if (utype.THOST_FTDC_OF_Open==pTrade.OffsetFlag) else fdef.VCLOSE
+        #rec[fdef.KDIR] = fdef.VLONG if (utype.THOST_FTDC_D_Buy==pTrade.Direction) else fdef.VSHORT
 
         channel = fdef.fullname(fdef.CHORESP, strat)
 
@@ -614,6 +614,21 @@ class strattop(Thread):
     def getstrat(self):
         pass
 
+    def reqorder(self):
+        '''
+        neworder
+        riskcheck
+        reserve
+        submit
+        '''
+        pass
+
+    def riskcheck(self, order):
+        '''
+        return True for ok to submit order.
+        '''
+        return False
+
     def onOrderState(self, oid, resp):
         self.tbook.updateorder(oid, resp)
         state = resp[fdef.KOSTATE]
@@ -680,12 +695,6 @@ class strattop(Thread):
         interface
         '''
         pass
-
-    def riskcheck(self, order):
-        '''
-        return True for ok to submit order.
-        '''
-        return False
 
 class stratbottom(Thread):
     def __init__(self, pubsub, top):
@@ -819,21 +828,21 @@ class TBookCache:
     5. daily settlement.
     '''
     def __init__(self, tbproxy=None):
-        self.qproxy = tbproxy.getqueue()
         self.tbproxy = tbproxy
+        self.qproxy = tbproxy.getqueue()
 
-        self.name = None
+        self.bkname = None
         self.strat = None
 
-        self.cash = 0.0
-        self.cashlk = Lock()
+        # to be updated according to linked strategy and readonly.
+        self.posmax = {}
 
         # cc for cache
         # ordercc is mapped to redis directly.
-        self.ordercc = defaultdict(dict)
+        self.ordercc = {}
         # blk (big lock) for read/write items in ordercc
         # orderlk stores a lock for each order
-        self.orderlk = defaultdict(Lock)
+        self.orderlk = {}
         self.orderblk = Lock()
 
         # tradecc and its lock schema is similar with ordercc
@@ -844,14 +853,15 @@ class TBookCache:
 
         # postion key is a namedtuple(code, dir), value
         # is a dict recording volumes, avg price, quota etc
-        self.poscc = defaultdict(dict)
+        self.poscc = {}
+        self.poslk = {}
         self.posblk = Lock()
 
         # ptf cache
         # a ptf instance is a list of dict, it can be mapped to redis as
         # pickled string.
-        self.ptfinstcc = defaultdict(list)
-        self.ptfdefcc = defaultdict(list)
+        self.ptfinstcc = {}
+        self.ptfdefcc = {}
         self.ptfblk = Lock()
 
         self.logger = logging.getLogger()
@@ -865,25 +875,187 @@ class TBookCache:
         o = None
         olk = None
         with self.orderblk:
-            try:
+            if oid in self.ordercc:
                 o = self.ordercc[oid]
                 olk = self.orderlk[oid]
-            except KeyError:
-                pass
         return  o, olk
 
-    def updateorder(self, oid, inorder, field=None):
+    def updateorder(self, oid, order, field=[]):
         '''
-        - update order with oid, using input inorder and field
+        - update order with oid, using input order and field
 
-        - Order has states:
+        Readonly Keys after reserved/requested:
 
-        init, requested, rejected,
-        accepted, partial trade, full trade.
+        KOID
+        KSTRAT
+        KACTION
+        KOTYPE
+        KDIR
+        KCODE
+        KVOLUME
+        KPRICE
+        KISIOC
+        KISRESERVED
 
-        cancel states:
-        init, requested, canceled, cancel rejected.
+        KTAG?
 
+        Mostly updated:
+
+        KOSTATE
+        KCANCELSTATE
+        (ctp attributes)
+
+        '''
+
+        # TODO: check that only updatable keys are updated
+        o, olk = self.getorder(oid)
+        if o is not None:
+            toupdate = { k:order[k] for k in field }
+            with olk:
+                o.update(toupdate)
+
+            # update reserve if order is cancelled, and order is reserved
+            if fdef.KCANCELSTATE in order and order[fdef.KISRESERVED]==True:
+                otype = order[fdef.OTYPE]
+                if otype == fdef.VOPEN:
+                    if order[fdef.KCANCELSTATE]==fdef.VCANCELLED:
+                        code = order[fdef.KCODE]
+                        direction = order[fdef.KDIR]
+                        # NOTE: assume that all untraded volume is cancelled.
+                        untrade = order[fdef.KUNTRADEVOL]
+                        poskey = fdef.poskey(code, direction)
+                        p, plk = self.getposition(poskey)
+                        with plk:
+                            p[fdef.KRESERVED] -= untrade
+
+    def doreserve(self, oid):
+        '''
+        check risk measures and reserve order in position.
+        only reserve `insert open long/short order'
+        '''
+        ret = False
+
+        order, olk = self.getorder(oid)
+
+        action = order[fdef.KACTION]
+        otype = order[fdef.OTYPE]
+        code = order[fdef.KCODE]
+        direction = order[fdef.KDIR]
+        volume = order[fdef.KVOLUME]
+        if action != fdef.VINSERT or OTYPE != fdef.VOPEN:
+            return ret
+
+        poskey = fdef.poskey(code, direction)
+        p, plk = self.getposition(poskey)
+        with plk:
+            if p[fdef.MAXLIMIT] >= (volume+p[fdef.KPOSITION]):
+                p[fdef.KRESERVED] += volume
+                ret = True
+
+        if ret:
+            with olk:
+                order[fdef.KISRESERVED] = True
+
+        return ret
+
+    def freereserve(self, oid, count):
+        '''
+        Need this function?
+        '''
+        pass
+
+    def hasorder(self, oid):
+        ret = False
+        with self.orderblk:
+            if oid in self.ordercc:
+                ret = True
+        return ret
+
+    def neworder(self, order):
+        # insert order in ordercc, tradecc and updates its metadata
+        oidlocal = fdef.localoid()
+        oid = fdef.makename(fdef.ORDERNS, oidlocal)
+
+        olk = Lock()
+        o = deepcopy(order)
+        with self.orderblk:
+            self.ordercc[oid] = o
+            self.orderlk[oid] = olk
+
+        with olk:
+            o[fdef.KOID] = oid
+            o[fdef.KTRADE] = []
+            o[fdef.KISRESERVED] = False
+            o[fdef.KOSTATE] = fdef.VORDERINIT
+            o[fdef.KCANCELSTATE] = fdef.VCANCELINIT
+
+        return o, olk
+
+    #def gettrade(self, oid):
+    #    t = None
+    #    tlk = None
+    #    with self.tradeblk:
+    #        try:
+    #            t = self.tradecc[oid]
+    #            tlk = self.tradelk[oid]
+    #        except KeyError:
+    #            pass
+    #    return t, tlk
+
+    def addtrade(self, oid, trade):
+        # update postion, reserve, margin, etc.
+        ret = False
+        o, olk = self.getorder(oid)
+        if o is not None:
+            ret = True
+            price = trade[fdef.KPRICE]
+            volume = trade[fdef.KVOLUME]
+            with olk:
+                o[fdef.KTRADE].append((price, volume))
+
+            # update position
+            code = order[fdef.KCODE]
+            direction = order[fdef.KDIR]
+            otype = order[fdef.KOTYPE]
+            poskey = fdef.poskey(code, direction)
+            p, plk = self.getposition(poskey)
+            with plk:
+                if otype == fdef.VOPEN:
+                    # average trade price
+                    cpos = p[fdef.KPOSITION]
+                    cprice = p[fdef.KAVGPRICE]
+                    p[fdef.KAVGPRICE] = (cpos*cprice + volume*price)/(cpos+volume)
+                    # total position
+                    p[fdef.KPOSITION] += volume
+                    # reserved count
+                    p[fdef.KRESERVED] -= volume
+                elif otype == fdef.VCLOSE:
+                    p[fdef.KPOSITION] -= volume
+
+        return ret
+
+    def getposition(self, poskey):
+        p = None
+        plk = None
+        with self.posblk:
+            try:
+                p = self.poscc[poskey]
+                plk = self.poslk[poskey]
+            except KeyError:
+                # Ok, a postion entry hasn't been added, but is needed.
+                p = {}
+                plk = Lock()
+                self.poscc[poskey] = p
+                self.poslk[poskey] = plk
+                p[fdef.KPOSITION] = 0
+                p[fdef.KRESERVED] = 0
+                p[fdef.KAVGPRICE] = 0.0
+                p[fdef.KMAXLIMIT] = self.posmax[poskey]
+
+        return p, plk
+
+    def updateposition(self, pos):
+        '''
         - Margin calculation:
 
         init: 0
@@ -901,94 +1073,8 @@ class TBookCache:
 
         - Positions:
         contract+direction: position, reserved, trade price, margin, PNL
-
         '''
-
-        # TODO: check oid, strat is the same as already stored.
-        # update order, cash, margin, etc.
-        o, olk = self.getorder(oid)
-        if o is not None:
-            if field is None:
-                toupdate = inorder
-            else:
-                # assume inorder is a Record object
-                toupdate = dict( [(k, inorder[k])) for k in field] )
-            with olk:
-                o.update(toupdate)
-
-    def reserve(self, oid):
-        '''
-        check risk measures and reserve order in position.
-        only reserve `insert open long/short order'
-        '''
-        ret = False
-
-        order, olk = self.getorder(oid)
-
-        action = order[fdef.KACTION]
-        otype = order[fdef.OTYPE]
-        code = order[fdef.KCODE]
-        direction = order[fdef.KDIR]
-        volume = order[fdef.KVOLUME]
-        if action != fdef.VINSERT or OTYPE != fdef.VOPEN:
-            return ret
-
-        # TODO: check risk measures
-        if ret == True:
-            poskey = fdef.poskey(code, direction)
-            p, plk = self.getposition(poskey)
-            with plk:
-                p[fdef.KRESERVED] += volume
-
-            with olk:
-                order[fdef.KISRESERVE] = True
-
-    def hasorder(self, oid):
-        ret = False
-        with self.orderblk:
-            if oid in self.ordercc:
-                ret = True
-        return ret
-
-    def neworder(self):
-        # insert order in ordercc, tradecc and updates its metadata
-        oidlocal = fdef.localoid()
-        oid = fdef.makename(fdef.ORDERNS, oidlocal)
-
-        olk = Lock()
-        o = {}
-        with self.orderblk:
-            self.ordercc[oid] = o
-            self.orderlk[oid] = olk
-
-        with olk:
-            o[fdef.KTRADE] = []
-
-        return o, olk
-
-    #def gettrade(self, oid):
-    #    t = None
-    #    tlk = None
-    #    with self.tradeblk:
-    #        try:
-    #            t = self.tradecc[oid]
-    #            tlk = self.tradelk[oid]
-    #        except KeyError:
-    #            pass
-    #    return t, tlk
-
-    def addtrade(self, oid, trade):
-        # TODO: update postion, cash, margin, etc.
-        ret = False
-        o, olk = self.getorder(oid)
-        if o is not None:
-            ret = True
-            with olk:
-                o[fdef.KTRADE].append(trade)
-
-        # TODO: minus reserved count. also at cancellation.
-
-        return ret
+        pass
 
     def loadptfdef(self, ptfdefid):
         ret = False
@@ -1017,12 +1103,6 @@ class TBookCache:
         '''
         like getorder
         '''
-        pass
-
-    def getposition(self, codes):
-        pass
-
-    def updateposition(self, pos):
         pass
 
 class TBookLib:
