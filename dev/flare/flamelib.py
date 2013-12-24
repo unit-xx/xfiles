@@ -18,6 +18,7 @@ import UserApiType as utype
 
 from util import Record
 import flaredef as fdef
+import cPickle as pickle
 
 # TODO: thread safe checking.
 # TODO: exception checking.
@@ -827,12 +828,12 @@ class TBookCache:
     confirmatin and new quotes.
     5. daily settlement.
     '''
-    def __init__(self, tbproxy=None):
+    def __init__(self, strat, tbproxy=None):
         self.tbproxy = tbproxy
         self.qproxy = tbproxy.getqueue()
+        self.strat = strat
 
         self.bkname = None
-        self.strat = None
 
         # to be updated according to linked strategy and readonly.
         self.posmax = {}
@@ -864,12 +865,35 @@ class TBookCache:
         self.ptfdefcc = {}
         self.ptfblk = Lock()
 
+        self.name = self.__class__.__name__
         self.logger = logging.getLogger()
 
     def setup(self):
         '''
         initialize by reading from redis.
+
+        check strat-tbook mapping
+        read all orders/positions
+
         '''
+        tblib = self.tbproxy.gettblib()
+        if self.strat != tblib.strat:
+            return False
+
+        self.bkname = tblib.tbname
+
+        # init all orders. in setup it may not need xxxblk.
+        oids = tblib.getalloid()
+        for oid in oids:
+            order = tblib.getorder(oid)
+            self.ordercc[oid] = order
+            self.orderlk[oid] = Lock()
+
+        poskeys = tblib.getallposkey()
+        for poskey in poskeys:
+            pos = tblib.getposition(poskey)
+            self.poscc[poskey] = pos
+            self.poslk[poskey] = Lock()
 
     def getorder(self, oid):
         o = None
@@ -1114,11 +1138,119 @@ class TBookLib:
     --(invoke)-->TBook API--(redis api)-->redis
 
     NOTE: redis stores values as string.
-    '''
-    def update(self, store, t):
-        # update t in store
 
-    def getptfdef(self, ptfdefid):
+    A TBook in redis is stored as:
+
+    bkname (id)
+    linked strat name
+    orders
+    trades
+    positions
+
+    A TBook is linked with only one strat, and a strat stores infomation:
+
+    position max limit
+
+    '''
+    def __init__(self, store, tbname):
+        self.store = store
+        self.tbname = tbname
+        self.strat = None
+        self.stratposmax = None
+        self.otypeconv = {
+                fdef.KVOLUME:int,
+                fdef.KPRICE:float,
+                fdef.KISIOC:lambda x: x=='True'
+                fdef.ISRESERVED:lambda x: x=='True'
+                }
+
+        self.ttypeconv = {
+                fdef.KPOSITION:int,
+                fdef.KRESERVED:int,
+                fdef.KAVGPRICE:float,
+                fdef.KMAXLIMIT:int
+                }
+
+
+        self.logger = logging.getLogger()
+        self.name = self.__class__.__name__
+
+    def setup(self):
+        # read linked strat
+        self.strat = self.store.hget(fdef.STRATTBMAP, self.tbname)
+        # read strat's position limit
+        pmaxkey = fdef.fullname(fdef.POSMAXNS, self.strat)
+        self.stratposmax = self.store.hgetall(pmaxkey)
+        self.stratposmax = [int(x) for x in self.stratposmax]
+        return True
+
+    def getalloid(self):
+        rkey = fdef.fullname(fdef.ALLORDER, self.tbname)
+        alloids = self.store.smembers(rkey)
+        return alloids
+
+    def getorder(self, oid):
+        '''
+        order and trade are stored separately in redis
+        '''
+        okey = fdef.fullname(fdef.ORDERNS, self.tbname, oid)
+        tkey = fdef.fullname(fdef.TRADENS, self.tbname, oid)
+        p = self.store.pipeline()
+        p.hgetall(okey)
+        p.lrange(tkey, 0, -1)
+        order, traderaw = p.execute()
+
+        try:
+            trade = [Record.load(t) for t in traderaw]
+        except:
+            trade = []
+            self.logger.exception('Load trade error.')
+        for k in self.otypeconv:
+            if k in order.keys():
+                order[k] = self.otypeconv[k](order[k])
+        order[fdef.KTRADE] = trade
+        return order
+
+    def updateorder(self, oid, toupdate):
+        okey = fdef.fullname(fdef.ORDERNS, self.tbname, oid)
+        self.store.hmset(okey, toupdate)
+
+    def hasorder(self, oid):
+        okey = fdef.fullname(fdef.ORDERNS, self.tbname, oid)
+        aokey = fdef.fullname(fdef.ALLORDER, self.tbname)
+        return self.store.sismember(aokey, okey)
+
+    def neworder(self, oid, order):
+        '''
+        store order, trade is empty now, add oid in alloid
+        '''
+        o = deepcopy(order)
+        if fdef.KTRADE in o:
+            o.pop(fdef.KTRADE)
+
+        okey = fdef.fullname(fdef.ORDERNS, self.tbname, oid)
+        aokey = fdef.fullname(fdef.ALLORDER, self.tbname)
+        p = self.store.pipeline()
+        p.hmset(okey, o)
+        p.sadd(aokey, okey)
+        p.execute()
+
+    def addtrade(self, oid, trade):
+        # TODO: update position at the same time.
+        pass
+
+    def getallposkey(self):
+        rkey = fdef.fullname(fdef.ALLTRADE, self.tbname)
+        allposkey = self.store.smembers(rkey)
+        return allposkey
+
+    def getposition(self, poskey):
+        pkey = fdef.fullname(fdef.POSITIONNS, self.tbname, poskey)
+        pos = self.store.hgetall(pkey)
+        for k in pos.keys():
+            if k in self.ttypeconv:
+                pos[k] = self.ttypeconv[k](pos[k])
+        return pos
 
 class TBookProxy(Thread):
     '''
