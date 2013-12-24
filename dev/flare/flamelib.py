@@ -8,6 +8,8 @@ import cPickle as pickle
 from Queue import Queue
 from collections import defaultdict
 from copy import deepcopy
+import cPickle as pickle
+from threading import Thread, Lock, Event
 
 import redis
 
@@ -18,8 +20,10 @@ import UserApiType as utype
 
 from util import Record
 import flaredef as fdef
-import cPickle as pickle
 
+THOST_TERT_RESTART  = 0
+THOST_TERT_RESUME   = 1
+THOST_TERT_QUICK    = 2
 # TODO: thread safe checking.
 # TODO: exception checking.
 
@@ -240,10 +244,10 @@ class Engine(Thread):
             # get one order and make it
             m = self.pubsub.listen()
             try:
-                req = Record.load(t['data'])
-                if req[fdef.KACTION] = fdef.VINSERT:
+                req = Record.load(m['data'])
+                if req[fdef.KACTION] == fdef.VINSERT:
                     self.reqorder(req)
-                elif req[fdef.KACTION] = fdef.VCANCEL:
+                elif req[fdef.KACTION] == fdef.VCANCEL:
                     self.cancelorder(req)
             except Exception:
                 self.logger.exception('handling req error')
@@ -301,6 +305,13 @@ class Engine(Thread):
         self.setoidmap(oid, oreftp)
         self.setstratmap(oid, strat)
 
+        # XXX: why strat here?
+        channel = fdef.fullname(fdef.CHORESP, strat)
+        rec = self.makerecord(ctpreq, oid, strat,
+                ['FrontID', 'SessionID', 'OrderRef'])
+        rec[fdef.KOSTATE] = fdef.VORDERREQED
+        self.pubsub.publish(channel, rec.dump())
+
         # logging may hurt performance
         #self.logger.info(u'下单: instrument=%s,openclose=%s,amount=%d,price=%0.3f,ismktprice=%s,isIOC=%s,OrderRef=%d,oid=%s'
         #        % (inst, openclose,
@@ -309,7 +320,19 @@ class Engine(Thread):
         return
 
     def cancelorder(self, req):
-        pass
+        code = req[fdef.KCODE]
+        oref = req['OrderRef']
+
+        ctpreq = ustruct.InputOrderAction(
+                ActionFlag = utype.THOST_FTDC_AF_Delete,
+                BrokerID = self.broker_id,
+                InvestorID = self.investor_id,
+                InstrumentID = code,
+                SessionID = self.sessionid,
+                FrontID = self.frontid,
+                OrderRef = oref
+                )
+        r = self.api.ReqOrderAction(ctpreq, self.inc_request_id())
 
     def setoidmap(self, oid, someid, by='oref'):
         '''
@@ -321,7 +344,7 @@ class Engine(Thread):
             elif by=='oref':
                 self.oref2oid[someid] = oid
 
-    def getoid(self, someid, type='oref'):
+    def getoid(self, someid, by='oref'):
         '''
         get oid by oref/exchid
         '''
@@ -353,11 +376,11 @@ class Engine(Thread):
                 pass
         return strat
 
-    def ismysession(self, oreftp)
+    def ismysession(self, oreftp):
         # use oref or order?
         ret = False
         if self.islogin:
-            ret = ((oreftp[0], oreftp[1]) == self.mysession)
+            ret = ((oreftp[0], oreftp[1]) == (self.frontid, self.sessionid))
         return ret
 
     def myoreftp(self, oref):
@@ -480,9 +503,9 @@ class Engine(Thread):
         if self.ismysession(oreftp):
             oid = self.getoid(oreftp)
             strat = self.getstrat(oid)
-            rec = self.makerecord(pInputOrder, oid, strat, ['OrderStatus', 'StatusMsg', 'OrderSubmitStatus', 'OrderActionStatus'])
-            rec[fdef.KTRADEVOL] = pInputOrder.VolumeTraded
-            rec[fdef.KUNTRADEVOL] = pInputOrder.VolumeTotal
+            rec = self.makerecord(pOrder, oid, strat, ['OrderStatus', 'StatusMsg', 'OrderSubmitStatus', 'OrderActionStatus'])
+            rec[fdef.KTRADEVOL] = pOrder.VolumeTraded
+            rec[fdef.KUNTRADEVOL] = pOrder.VolumeTotal
             channel = fdef.fullname(fdef.CHORESP, strat)
 
             if pOrder.OrderStatus in (utype.THOST_FTDC_OST_Unknown,
@@ -519,7 +542,7 @@ class Engine(Thread):
             return
 
         exchid = (pTrade.ExchangeID, pTrade.OrderSysID)
-        oid = self.orderman.getoid(exchid, 'exchid')
+        oid = self.getoid(exchid, 'exchid')
         if oid is None:
             self.logger.info('trade with no oid')
             return
@@ -1160,7 +1183,7 @@ class TBookLib:
         self.otypeconv = {
                 fdef.KVOLUME:int,
                 fdef.KPRICE:float,
-                fdef.KISIOC:lambda x: x=='True'
+                fdef.KISIOC:lambda x: x=='True',
                 fdef.ISRESERVED:lambda x: x=='True'
                 }
 
