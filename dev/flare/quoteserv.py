@@ -1,7 +1,7 @@
 import time
 import sys
 
-from flamelib import qrepo, getstore, redispubsub
+from flamelib import qrepo, getstore, getpubsub
 import util
 import config
 
@@ -18,8 +18,7 @@ if __name__=='__main__':
     config.setuplogger(mysec)
 
     store = getstore(storecfg)
-    pubsub = redispubsub(storecfg)
-    pubsub.setup()
+    pubsub = getpubsub(storecfg)
 
     qserv = qrepo(['IF1401', 'IF1402'], mdcfg, pubsub, store)
     qserv.setup()
@@ -28,9 +27,12 @@ if __name__=='__main__':
         try:
             time.sleep(1)
         except KeyboardInterrupt:
-            ret = raw_input('Stop quote server? ')
-            if ret[0] == 'y':
-                break
+            try:
+                ret = raw_input('Stop quote server? ')
+                if ret[0] == 'y':
+                    break
+            except KeyboardInterrupt:
+                print 'Continue'
 
     qserv.stop()
 

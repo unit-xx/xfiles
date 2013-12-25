@@ -68,8 +68,24 @@ def getstore(cfg):
     '''
     cfg is a dict, like {'host': 'localhost', 'port': 1234}
     '''
-    r = KVstore(**cfg)
+    r = None
+    try:
+        r = KVstore(**cfg)
+        r.info()
+    except:
+        pass
     return r
+
+def getpubsub(cfg):
+    p = None
+    try:
+        p = redispubsub(cfg)
+        p.setup()
+        # a warmup, redis-py connect to redis only at the first command
+        p.redis.info()
+    except:
+        pass
+    return p
 
 # STATUS: code ready
 class qrepo(MdSpi):
