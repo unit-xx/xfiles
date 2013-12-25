@@ -17,4 +17,3 @@ class Record(dict):
     def load(str):
         return pickle.loads(str)
 
-

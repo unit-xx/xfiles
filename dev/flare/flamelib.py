@@ -5,7 +5,7 @@
 
 import logging
 import cPickle as pickle
-from Queue import Queue
+from Queue import Queue, Empty
 from collections import defaultdict
 from copy import deepcopy
 import cPickle as pickle
@@ -21,9 +21,9 @@ import UserApiType as utype
 from util import Record
 import flaredef as fdef
 
-THOST_TERT_RESTART  = 0
-THOST_TERT_RESUME   = 1
-THOST_TERT_QUICK    = 2
+THOST_TERT_RESTART = 0
+THOST_TERT_RESUME = 1
+THOST_TERT_QUICK = 2
 # TODO: thread safe checking.
 # TODO: exception checking.
 
@@ -32,15 +32,10 @@ class redispubsub:
     def __init__(self, rconfig):
         self.rconfig = rconfig
         self.pubsub = None
-        return
+        self.redis = None
 
     def setup(self):
-        self.redis = redis.Redis(
-                host=self.rconfig.host,
-                port=self.rconfig.port,
-                db=self.rconfig.repodb
-                )
-
+        self.redis = redis.Redis(**self.rconfig)
         self.pubsub = self.redis.pubsub()
 
     def publish(self, channel, msg):
@@ -65,9 +60,16 @@ class redispubsub:
                 break
         return ret
 
-# KVstore and PubSub is the impost important infrastructure.
+# KVstore and PubSub is the most important infrastructure.
 KVstore = redis.Redis
 PubSub = redispubsub
+
+def getstore(cfg):
+    '''
+    cfg is a dict, like {'host': 'localhost', 'port': 1234}
+    '''
+    r = KVstore(**cfg)
+    return r
 
 # STATUS: code ready
 class qrepo(MdSpi):
@@ -77,12 +79,13 @@ class qrepo(MdSpi):
     '''
     def __init__(self, instruments, mdconfig, pubsub, store):
         self.instruments = instruments
-        self.broker_id = mdconfig.broker_id
-        self.investor_id = mdconfig.investor_id
-        self.passwd = mdconfig.passwd
+        self.broker_id = mdconfig['broker_id']
+        self.investor_id = mdconfig['investor_id']
+        self.passwd = mdconfig['passwd']
         self.mdcfg = mdconfig
         self.store = store
         self.pubsub = pubsub
+        self.qchannel = fdef.CHQUOTE
         self.reqid = 1
 
         self.logger = logging.getLogger()
@@ -99,6 +102,7 @@ class qrepo(MdSpi):
         self.logger.info('Disconnected to CTP quote server (%s).' % (reason,))
 
     def OnFrontConnected(self):
+        self.logger.info('Connected to CTP quote server.')
         self.user_login(self.broker_id, self.investor_id, self.passwd)
 
     def user_login(self, broker_id, investor_id, passwd):
@@ -109,7 +113,7 @@ class qrepo(MdSpi):
         if self.isRspSuccess(info):
             if is_last:
                 self.api.SubscribeMarketData(self.instruments)
-                self.logger.info('sub md: %s' % self.instruments)
+                self.logger.info('subscribe quote for: %s' % self.instruments)
         else:
             self.logger.info('Login failed: %s.', info)
 
@@ -126,16 +130,20 @@ class qrepo(MdSpi):
                 'code':q.InstrumentID,
                 'tic':tic
                     }
-        # TODO: how to set qchannel
-        self.pubsub.publish(self.qchannel, pickle.dumps(qq))
-        self.store.xxx()
+        try:
+            qd = pickle.dumps(qq, -1)
+            self.pubsub.publish(self.qchannel, qd)
+            qkey = fdef.fullname(fdef.QUOTENS, q.InstrumentID)
+            self.store.hmset(qkey, qq)
+        except pickle.PickleError:
+            pass
 
     def setup(self):
         # don't need to store mdapi, after calling
         # RegisterSpi, we have .api attribute automatically
         mdapi = MdApi.CreateMdApi(self.name)
         mdapi.RegisterSpi(self)
-        mdapi.RegisterFront(self.mdcfg.port)
+        mdapi.RegisterFront(self.mdcfg['port'])
         mdapi.Init()
         return True
 
@@ -608,7 +616,9 @@ class strattop(Thread):
     2. when a strategy task is restarted, it has to recover from previous run, including orders, positions, margins, cash account, etc.
     3. 
     '''
-    def __init__(self):
+    def __init__(self, tbook):
+        self.tbook = tbook
+
         Thread.__init__(self)
         self.runflag = True
         self.logger = logging.getLogger()
@@ -704,9 +714,9 @@ class strattop(Thread):
         self.tbook.updateorder(oid, resp)
         state = resp[fdef.KCANCELSTATE]
         if state == fdef.VCANCELREJECTED:
-            self.onCancelRejected(self, oid, resp)
+            self.onCancelRejected(oid, resp)
         elif state == fdef.VCANCELLED:
-            self.onCancelled(self, oid, resp)
+            self.onCancelled(oid, resp)
 
     def onCancelRejected(self, oid, resp):
         '''
@@ -726,9 +736,10 @@ class stratbottom(Thread):
         self.pubsub = pubsub
         self.top = top
         self.strat = None
+        self.logger = logging.getLogger()
 
     def run(self):
-        self.strat = top.getstrat()
+        self.strat = self.top.getstrat()
         chname = fdef.fullname(fdef.CHORESP, self.strat)
         self.pubsub.subscribe(chname)
 
@@ -752,6 +763,7 @@ class stratbottom(Thread):
     def stop(self):
         self.runflag = False
 
+'''
 class stratdispatch(Thread):
     def __init__(self):
         Thread.__init__(self)
@@ -835,6 +847,7 @@ class stratworker(Thread):
             strat.handleresp(t)
         except:
             pass
+'''
 
 class TBookCache:
     '''
@@ -970,7 +983,7 @@ class TBookCache:
                         direction = order[fdef.KDIR]
                         # NOTE: assume that all untraded volume is cancelled.
                         untrade = order[fdef.KUNTRADEVOL]
-                        poskey = fdef.poskey(code, direction)
+                        poskey = fdef.genposkey(code, direction)
                         p, plk = self.getposition(poskey)
                         with plk:
                             p[fdef.KRESERVED] -= untrade
@@ -989,10 +1002,10 @@ class TBookCache:
         code = order[fdef.KCODE]
         direction = order[fdef.KDIR]
         volume = order[fdef.KVOLUME]
-        if action != fdef.VINSERT or OTYPE != fdef.VOPEN:
+        if action != fdef.VINSERT or otype != fdef.VOPEN:
             return ret
 
-        poskey = fdef.poskey(code, direction)
+        poskey = fdef.genposkey(code, direction)
         p, plk = self.getposition(poskey)
         with plk:
             if p[fdef.MAXLIMIT] >= (volume+p[fdef.KPOSITION]):
@@ -1052,19 +1065,19 @@ class TBookCache:
     def addtrade(self, oid, trade):
         # update postion, reserve, margin, etc.
         ret = False
-        o, olk = self.getorder(oid)
-        if o is not None:
+        order, olk = self.getorder(oid)
+        if order is not None:
             ret = True
             price = trade[fdef.KPRICE]
             volume = trade[fdef.KVOLUME]
             with olk:
-                o[fdef.KTRADE].append((price, volume))
+                order[fdef.KTRADE].append((price, volume))
 
             # update position
             code = order[fdef.KCODE]
             direction = order[fdef.KDIR]
             otype = order[fdef.KOTYPE]
-            poskey = fdef.poskey(code, direction)
+            poskey = fdef.genposkey(code, direction)
             p, plk = self.getposition(poskey)
             with plk:
                 if otype == fdef.VOPEN:
@@ -1295,7 +1308,7 @@ class TBookProxy(Thread):
                 br = self.queue.get(True, 2)
                 self.process(br)
                 self.queue.task_done()
-            except Queue.Empty:
+            except Empty:
                 pass
 
     def stop(self, dojoin=True):
@@ -1313,8 +1326,3 @@ class TBookProxy(Thread):
     def getqueue(self):
         return self.queue
 
-    def getptfdef(self, ptfdefid):
-        ret = self.tb.getptfdef(ptfdefid)
-        return ret
-
-        return None

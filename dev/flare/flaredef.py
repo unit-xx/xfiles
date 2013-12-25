@@ -6,6 +6,8 @@ NSSEP = ':'
 POSKEYSEP = '|'
 
 # namespace definitions.
+ACCOUNTNS = 'ACCOUNT'
+QUOTENS = 'QUOTE'
 ORDERNS = 'ORDER'
 TRADENS = 'TRADE'
 POSITIONNS = 'POSITION'
@@ -39,7 +41,7 @@ KISRESERVED = 'ISRESERVED'
 KTRADE = 'TRADE'
 
 KOTYPE = 'OTYPE'
-VOPEN  = 'OPEN'
+VOPEN = 'OPEN'
 VCLOSE = 'CLOSE'
 
 KACTION = 'OACTION'
@@ -90,7 +92,7 @@ KAVGPRICE = 'AVGPRICE'
 FRONTIDKB = 'ALLFRONT'
 SESSIONIDKB = 'ALLSESSION'
 
-def fullname(*name)
+def fullname(*name):
     return NSSEP.join(name)
 
 def splitname(name):
@@ -102,8 +104,8 @@ def localoid():
     '''
     return ''
 
-def poskey(code, dir):
-    return POSKEYSEP.join( (code, dir) )
+def genposkey(code, direction):
+    return POSKEYSEP.join((code, direction))
 
 def splitposkey(poskey):
     return poskey.split(POSKEYSEP)

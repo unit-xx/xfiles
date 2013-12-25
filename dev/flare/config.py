@@ -2,37 +2,24 @@ import os
 import logging, logging.config
 import ConfigParser
 
-from util import Record
 import flaredef as fdef
 
-# a global config variable.
-# gconfig[NS:SECTION][KEY] = VALUE
-gconfig = None
+# a global config variable accessed by:
+# GCONFIG[NS:SECTION][KEY] = VALUE
+GCONFIG = None
 
-# gconfig is defaultdict of defaultdict
-# CATALOG is defaultdict of dict
-# NAME is dict
-
-# namespace prefix: NS:xxx
-# setting in a namespace: NS:xxx:yyy
-
-def parseconfig(name='config.ini', configpath = '.'):
-    '''
-    section name has the format CATALOG:NAME, parsed result is accessed
-    by gconfig.CATALOG.NAME.property
-    '''
-
+def parseconfig(name='config.ini', configpath='.'):
     cfg = ConfigParser.ConfigParser()
     cfgfn = os.path.join(configpath, name)
     cfg.read(cfgfn)
 
-    config = dict()
+    config = {}
 
     for sec in cfg.sections():
         if cfg.has_option(sec, fdef.NSPREFIX):
             namespace = getattr(fdef, cfg.get(sec, fdef.NSPREFIX))
             cfg.set(sec, fdef.NSPREFIX, namespace)
-            csec = fdef.NSSEP.join((namespace, sec))
+            csec = fdef.fullname(namespace, sec)
         else:
             csec = sec
 
@@ -40,7 +27,7 @@ def parseconfig(name='config.ini', configpath = '.'):
 
     return config
 
-def setuplogger(app, name='logger.ini', configpath = '.'):
+def setuplogger(app, name='logger.ini', configpath='.'):
     cfgfn = os.path.join(configpath, name)
     logging.config.fileConfig(cfgfn, {"logfn":app+'.log'})
     logger = logging.getLogger()
@@ -48,9 +35,9 @@ def setuplogger(app, name='logger.ini', configpath = '.'):
     logger.info('%s is started!', app)
 
 def init_gconfig(config):
-    global gconfig
-    if gconfig is None:
-        gconfig = config
+    global GCONFIG
+    if GCONFIG is None:
+        GCONFIG = config
         return True
     else:
         return False
