@@ -167,6 +167,60 @@ class qrepo(MdSpi):
         self.api.Release()
 
 class Engine(Thread):
+    def __init__(self, tradercfg, pubsub):
+        Thread.__init__(self)
+
+        self.tradercfg = tradercfg
+        self.pubsub = pubsub
+        self.ctp = None
+
+        self.runflag = True
+        self.logger = logging.getLogger()
+        self.name = self.__class__.__name__
+
+    def setup(self):
+        self.pubsub.subscribe(fdef.CHOREQ)
+
+        self.ctp = EngineCTP(self.tradercfg, self.pubsub)
+        return self.ctp.setup()
+
+    def close(self):
+        self.pubsub.unsubscribe(fdef.CHOREQ)
+        if self.ctp:
+            self.ctp.api.Release()
+            self.ctp = None
+
+    def stop(self):
+        self.runflag = False
+        self.pubsub.publish(fdef.CHOREQ, 'stop ctp engine')
+
+    def run(self):
+        # TODO: exception handling
+        if not self.setup():
+            self.logger.warning('Engine setup failed.')
+            self.close()
+            return
+
+        self.logger.info('Engine setup ok.')
+        while self.runflag:
+            # get one order and make it
+            m = self.pubsub.listen()
+            try:
+                req = Record.load(m['data'])
+            except pickle.PickleError:
+                self.logger.exception('unpickable: %s', m['data'])
+                continue
+
+            try:
+                if req[fdef.KACTION] == fdef.VINSERT:
+                    self.ctp.reqorder(req)
+                elif req[fdef.KACTION] == fdef.VCANCEL:
+                    self.ctp.cancelorder(req)
+            except Exception:
+                self.logger.exception('handling req error')
+        self.close()
+
+class EngineCTP(TraderSpi):
     '''
     Engine is a router for CTP orders. It
     1. receives request from strats, and send the request to CTP
@@ -185,15 +239,13 @@ class Engine(Thread):
     Engine can be extended to routing orders to more than one
     account.
     '''
-    def __init__(self, tradercfg, pubsub, store):
-        Thread.__init__(self)
+    def __init__(self, tradercfg, pubsub):
 
-        self.broker_id = tradercfg.broker_id
-        self.investor_id = tradercfg.investor_id
-        self.passwd = tradercfg.passwd
+        self.broker_id = tradercfg['broker_id']
+        self.investor_id = tradercfg['investor_id']
+        self.passwd = tradercfg['passwd']
         self.tradercfg = tradercfg
         self.pubsub = pubsub
-        self.store = store
         self.trader = None
         self.runflag = True
 
@@ -216,7 +268,6 @@ class Engine(Thread):
         self.oreflock = Lock()
         self.reqlock = Lock()
 
-
         # strat => (many) oid => (one) oreftp/exchid
         # reverse map from exchangeID/OrderRef to oid
         self.exch2oid = {}
@@ -236,46 +287,15 @@ class Engine(Thread):
         trader.RegisterSpi(self)
         trader.SubscribePublicTopic(THOST_TERT_QUICK)
         trader.SubscribePrivateTopic(THOST_TERT_QUICK)
-        trader.RegisterFront(self.tradercfg.port)
+        trader.RegisterFront(self.tradercfg['port'])
         trader.Init()
         self.trader = trader
         self.loginevent.wait()
 
         if self.islogin:
             self.loginsession = (self.frontid, self.sessionid)
-            self.pubsub.subscribe(fdef.CHOREQ)
 
         return self.islogin
-
-    def close(self):
-        self.pubsub.unsubscribe(fdef.CHOREQ)
-        if self.trader:
-            self.trader.Release()
-            self.trader = None
-
-    def stop(self):
-        self.runflag = False
-
-    def run(self):
-        # TODO: exception handling
-        if not self.setup():
-            self.logger.warning('Engine setup failed.')
-            self.close()
-            return
-
-        self.logger.info('Engine setup ok.')
-        while self.runflag:
-            # get one order and make it
-            m = self.pubsub.listen()
-            try:
-                req = Record.load(m['data'])
-                if req[fdef.KACTION] == fdef.VINSERT:
-                    self.reqorder(req)
-                elif req[fdef.KACTION] == fdef.VCANCEL:
-                    self.cancelorder(req)
-            except Exception:
-                self.logger.exception('handling req error')
-        self.close()
 
     def reqorder(self, req):
         '''
@@ -292,14 +312,14 @@ class Engine(Thread):
         # make ctp request
         # update reverse map
         # and submit
-        oref = self.inc_order_ref()
         code = req[fdef.KCODE]
         ismktprice = True if req[fdef.KPRICE]<0 else False
         volume = req[fdef.KVOLUME]
         price = req[fdef.KPRICE]
-        otype = req[fdef.OTYPE]
+        otype = req[fdef.KOTYPE]
         isIOC = (fdef.KISIOC in req) and req[fdef.KISIOC]
 
+        oref = self.inc_order_ref()
         ctpreq = ustruct.InputOrder(
                 InstrumentID = code,
                 Direction = utype.THOST_FTDC_D_Buy if (volume>0) else utype.THOST_FTDC_D_Sell,
@@ -329,7 +349,6 @@ class Engine(Thread):
         self.setoidmap(oid, oreftp)
         self.setstratmap(oid, strat)
 
-        # XXX: why strat here?
         channel = fdef.fullname(fdef.CHORESP, strat)
         rec = self.makerecord(ctpreq, oid, strat,
                 ['FrontID', 'SessionID', 'OrderRef'])
@@ -358,6 +377,12 @@ class Engine(Thread):
                 )
         r = self.api.ReqOrderAction(ctpreq, self.inc_request_id())
 
+        strat = req[fdef.KSTRAT]
+        channel = fdef.fullname(fdef.CHORESP, strat)
+        rec = self.makerecord(ctpreq, oid, strat)
+        rec[fdef.KOSTATE] = fdef.VCANCELREQED
+        self.pubsub.publish(channel, rec.dump())
+
     def setoidmap(self, oid, someid, by='oref'):
         '''
         update reverse map oreftp/exchid => oid
@@ -365,8 +390,10 @@ class Engine(Thread):
         with self.idmaplock:
             if by=='exchid':
                 self.exch2oid[someid] = oid
+                self.logger.info('Current exchid map: %s', self.exch2oid)
             elif by=='oref':
                 self.oref2oid[someid] = oid
+                self.logger.info('Current oref map: %s', self.oref2oid)
 
     def getoid(self, someid, by='oref'):
         '''
@@ -390,6 +417,7 @@ class Engine(Thread):
         '''
         with self.stratlock:
             self.oid2strat[oid] = strat
+        self.logger.info('Current strat map: %s', self.oid2strat)
 
     def getstrat(self, oid):
         strat = None
@@ -448,7 +476,7 @@ class Engine(Thread):
     def OnRspUserLogin(self, userlogin, info, rid, is_last):
         self.logger.info(u'Engine login, info:%s, rid:%s, is_last:%s' % (info, rid, is_last))
         if self.isRspSuccess(info):
-            self.logger.info(u'Engine login success, session: %s, front: %s' % (userlogin.SessionID, userlogin.FrontID))
+            self.logger.info(u'Engine login success, session: %s, front: %s, maxref: %s' % (userlogin.SessionID, userlogin.FrontID, userlogin.MaxOrderRef))
             self.frontid = userlogin.FrontID
             self.sessionid = userlogin.SessionID
             self.oref = int(userlogin.MaxOrderRef)
@@ -622,56 +650,69 @@ class Engine(Thread):
             self.pubsub.publish(channel, rec.dump())
 
 '''
-A strategy is splitted into top and bottom parts. The top part listens for
-quotes and other input streams, and generates trading signals. The bottom part
-listens for order responses from engine and invoke strategy callbacks.
+A strategy is splitted into top and bottom parts. The top part listens
+for quotes and other input streams, and generates trading signals. The
+bottom part listens for order responses from engine and invoke strategy
+callbacks.
 '''
 class strattop(Thread):
     '''
     1. a defined strategy task has only one instance at any time.
-    2. when a strategy task is restarted, it has to recover from previous run, including orders, positions, margins, cash account, etc.
+    2. when a strategy task is restarted, it has to recover from
+    previous run, including orders, positions, margins, cash account,
+    etc.
     3. 
     '''
-    def __init__(self, tbook):
+    def __init__(self, stratname, pubsub, tbook):
+        Thread.__init__(self)
+
+        self.strat = stratname
+        self.pubsub = pubsub
         self.tbook = tbook
 
-        Thread.__init__(self)
         self.runflag = True
         self.logger = logging.getLogger()
         self.name = self.__class__.__name__
 
     def setup(self):
-        pass
+        return True
 
-    def signal(self):
-        # listen for input streams and generate trading signals, or
-        # call stop() to quit strategy.
+    def signal(self, m):
+        # process input message
         pass
 
     def run(self):
         try:
             if False == self.setup():
+                self.logger.error('setup failed.')
                 return
         except:
+            self.logger.error('setup exception.')
             return
 
         while self.runflag:
-            self.signal()
+            m = self.pubsub.listen()
+            self.signal(m)
 
     def stop(self):
         self.runflag = False
 
     def getstrat(self):
-        pass
+        return self.strat
 
-    def reqorder(self):
+    def reqorder(self, order):
         '''
         neworder
         riskcheck
         reserve
         submit
         '''
-        pass
+        od = order.dump()
+        self.pubsub.publish(fdef.CHOREQ, od)
+
+    def cancelorder(self, order):
+        od = order.dump()
+        self.pubsub.publish(fdef.CHOREQ, od)
 
     def riskcheck(self, order):
         '''
@@ -680,8 +721,11 @@ class strattop(Thread):
         return False
 
     def onOrderState(self, oid, resp):
-        self.tbook.updateorder(oid, resp)
+        # XXX: disable tbook op temporarily
+        #self.tbook.updateorder(oid, resp)
         state = resp[fdef.KOSTATE]
+        self.logger.info('OrderResp: %s', stat)
+        self.logger.info('OrderResp: %s', resp)
         if state == fdef.VORDERREJECTED:
             self.onOrderRejected(oid, resp)
         elif state == fdef.VORDERACCEPTED:
@@ -717,8 +761,10 @@ class strattop(Thread):
 
     def onTradeState(self, oid, resp):
         # arrive here only when new trade is informed.
-        self.tbook.addtrade(oid, resp)
+        # XXX: disable tbook op temporarily
+        #self.tbook.addtrade(oid, resp)
         self.onNewTrade(oid, resp)
+        self.logger.info('NewTrade: %s', resp)
 
     def onNewTrade(self, oid, trade):
         '''
@@ -727,8 +773,11 @@ class strattop(Thread):
         pass
 
     def onCancelState(self, oid, resp):
-        self.tbook.updateorder(oid, resp)
+        # XXX: disable tbook op temporarily
+        #self.tbook.updateorder(oid, resp)
         state = resp[fdef.KCANCELSTATE]
+        self.logger.info('CancelResp: %s', stat)
+        self.logger.info('CancelResp: %s', resp)
         if state == fdef.VCANCELREJECTED:
             self.onCancelRejected(oid, resp)
         elif state == fdef.VCANCELLED:
@@ -760,21 +809,25 @@ class stratbottom(Thread):
         self.pubsub.subscribe(chname)
 
         while self.runflag:
-            t = self.pubsub.listen()
+            m = self.pubsub.listen()
+            self.process(m)
+
+    def process(self, m):
+        try:
             resp = Record.load(t['data'])
             oid = resp[fdef.KOID]
             #resp.pop(fdef.KOID])
-            try:
-                if fdef.KOSTATE in resp.keys():
-                    self.top.onOrderState(oid, resp)
-                elif fdef.KTRADESTATE in resp.keys():
-                    self.top.onTradeState(oid, resp)
-                elif fdef.KCANCELSTATE in resp.keys():
-                    self.top.onCancelState(oid, resp)
-                else:
-                    self.logger.error('Unknown state.')
-            except:
-                self.logger.exception('On handling engine response.')
+
+            if fdef.KOSTATE in resp.keys():
+                self.top.onOrderState(oid, resp)
+            elif fdef.KTRADESTATE in resp.keys():
+                self.top.onTradeState(oid, resp)
+            elif fdef.KCANCELSTATE in resp.keys():
+                self.top.onCancelState(oid, resp)
+            else:
+                self.logger.error('Unknown order state.')
+        except:
+            self.logger.exception('On handling engine response.')
 
     def stop(self):
         self.runflag = False
@@ -929,6 +982,7 @@ class TBookCache:
 
         '''
         tblib = self.tbproxy.gettblib()
+        # tbook-strat link check.
         if self.strat != tblib.strat:
             return False
 
@@ -989,10 +1043,11 @@ class TBookCache:
             toupdate = { k:order[k] for k in field }
             with olk:
                 o.update(toupdate)
+                # XXX: to proxy
 
             # update reserve if order is cancelled, and order is reserved
             if fdef.KCANCELSTATE in order and order[fdef.KISRESERVED]==True:
-                otype = order[fdef.OTYPE]
+                otype = order[fdef.KOTYPE]
                 if otype == fdef.VOPEN:
                     if order[fdef.KCANCELSTATE]==fdef.VCANCELLED:
                         code = order[fdef.KCODE]
@@ -1003,6 +1058,7 @@ class TBookCache:
                         p, plk = self.getposition(poskey)
                         with plk:
                             p[fdef.KRESERVED] -= untrade
+                            # XXX: to proxy
 
     def doreserve(self, oid):
         '''
@@ -1014,7 +1070,7 @@ class TBookCache:
         order, olk = self.getorder(oid)
 
         action = order[fdef.KACTION]
-        otype = order[fdef.OTYPE]
+        otype = order[fdef.KOTYPE]
         code = order[fdef.KCODE]
         direction = order[fdef.KDIR]
         volume = order[fdef.KVOLUME]
@@ -1024,13 +1080,15 @@ class TBookCache:
         poskey = fdef.genposkey(code, direction)
         p, plk = self.getposition(poskey)
         with plk:
-            if p[fdef.MAXLIMIT] >= (volume+p[fdef.KPOSITION]):
+            if p[fdef.KMAXLIMIT] >= (volume+p[fdef.KPOSITION]):
                 p[fdef.KRESERVED] += volume
+                # XXX: to proxy
                 ret = True
 
         if ret:
             with olk:
                 order[fdef.KISRESERVED] = True
+                # XXX: to proxy
 
         return ret
 
@@ -1050,7 +1108,7 @@ class TBookCache:
     def neworder(self, order):
         # insert order in ordercc, tradecc and updates its metadata
         oidlocal = fdef.localoid()
-        oid = fdef.makename(fdef.ORDERNS, oidlocal)
+        oid = fdef.fullname(fdef.ORDERNS, oidlocal)
 
         olk = Lock()
         o = deepcopy(order)
@@ -1064,6 +1122,7 @@ class TBookCache:
             o[fdef.KISRESERVED] = False
             o[fdef.KOSTATE] = fdef.VORDERINIT
             o[fdef.KCANCELSTATE] = fdef.VCANCELINIT
+            # XXX: to proxy
 
         return o, olk
 
@@ -1088,6 +1147,7 @@ class TBookCache:
             volume = trade[fdef.KVOLUME]
             with olk:
                 order[fdef.KTRADE].append((price, volume))
+                # XXX: to proxy
 
             # update position
             code = order[fdef.KCODE]
@@ -1107,6 +1167,7 @@ class TBookCache:
                     p[fdef.KRESERVED] -= volume
                 elif otype == fdef.VCLOSE:
                     p[fdef.KPOSITION] -= volume
+                # XXX: to proxy
 
         return ret
 
@@ -1127,6 +1188,7 @@ class TBookCache:
                 p[fdef.KRESERVED] = 0
                 p[fdef.KAVGPRICE] = 0.0
                 p[fdef.KMAXLIMIT] = self.posmax[poskey]
+                # XXX: to proxy
 
         return p, plk
 
@@ -1213,7 +1275,7 @@ class TBookLib:
                 fdef.KVOLUME:int,
                 fdef.KPRICE:float,
                 fdef.KISIOC:lambda x: x=='True',
-                fdef.ISRESERVED:lambda x: x=='True'
+                fdef.KISRESERVED:lambda x: x=='True'
                 }
 
         self.ttypeconv = {
@@ -1232,8 +1294,8 @@ class TBookLib:
         self.strat = self.store.hget(fdef.STRATTBMAP, self.tbname)
         # read strat's position limit
         pmaxkey = fdef.fullname(fdef.POSMAXNS, self.strat)
-        self.stratposmax = self.store.hgetall(pmaxkey)
-        self.stratposmax = [int(x) for x in self.stratposmax]
+        stratposmax = self.store.hgetall(pmaxkey)
+        self.stratposmax = {k:int(stratposmax[k]) for k in stratposmax}
         return True
 
     def getalloid(self):
@@ -1310,11 +1372,11 @@ class TBookProxy(Thread):
     1. store updates in redis using TBookLib,
     2. breadcasts update through pubsub.
     '''
-    def __init__(self, pubsub, store):
+    def __init__(self, pubsub, store, tbname):
         Thread.__init__(self)
         self.pubsub = pubsub
         self.store = store
-        self.tb = TBookLib()
+        self.tb = TBookLib(store, tbname)
         self.queue = Queue()
         self.runflag = True
 
@@ -1334,7 +1396,7 @@ class TBookProxy(Thread):
 
     def process(self, br):
         try:
-            self.tb.update(self.store, br)
+            #self.tb.update(self.store, br)
             self.pubsub.publish(br)
         except:
             pass

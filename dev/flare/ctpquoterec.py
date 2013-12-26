@@ -79,7 +79,7 @@ class TraderSpiDelegate(TraderSpi):
             print u'综合交易平台登陆失败，请检查网络或用户名/口令'
             self.is_logged = False
         else:
-            self.logger.info(u'TD:trader login success')
+            self.logger.info(u'TD:trader login success, %s', pRspUserLogin.MaxOrderRef)
             self.is_logged = True
             self.login_success(pRspUserLogin.FrontID,pRspUserLogin.SessionID,pRspUserLogin.MaxOrderRef)
         self.evt.set()
@@ -445,8 +445,8 @@ def main():
     logging.info('')
     logging.info('======================')
 
-    BEGINTIME = datetime.time(9, 10, 0)
-    ENDTIME = datetime.time(15, 20, 0)
+    BEGINTIME = datetime.time(9, 5, 0)
+    ENDTIME = datetime.time(16, 20, 0)
     nowt = datetime.datetime.now().time()
     if (nowt < BEGINTIME) or (nowt > ENDTIME):
         logging.info('Not in trading time.')
@@ -489,7 +489,7 @@ def main():
                 trader.tdspi = tdspi
                 trader.SubscribePublicTopic(THOST_TERT_QUICK)
                 trader.SubscribePrivateTopic(THOST_TERT_QUICK)
-                trader.RegisterFront("tcp://180.169.112.50:41205")
+                trader.RegisterFront("tcp://180.169.112.50:41213")
                 # TODO: settlement confirmation.
                 trader.Init()
 

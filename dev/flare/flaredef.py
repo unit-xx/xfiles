@@ -1,3 +1,4 @@
+import uuid
 # define constants for flare library
 
 # namespace prefix, used in config parsing.
@@ -102,7 +103,7 @@ def localoid():
     '''
     a UUID
     '''
-    return ''
+    return uuid.uuid1().hex
 
 def genposkey(code, direction):
     return POSKEYSEP.join((code, direction))

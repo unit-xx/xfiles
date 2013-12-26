@@ -1,26 +1,27 @@
 import time
 
-from flamelib import qrepo, getstore, getpubsub
+from flamelib import Engine, getstore, getpubsub
 import config
 
 if __name__=='__main__':
 
-    mysec = 'quoteserver'
+    mysec = 'engine'
     cfg = config.parseconfig()
     mycfg = cfg[mysec]
     storecfg = cfg[mycfg['store']]
     storecfg['port'] = int(storecfg['port'])
     storecfg['db'] = int(storecfg['db'])
-    mdcfg = cfg[mycfg['mdaccount']]
+    tradercfg = cfg[mycfg['trader']]
 
     config.setuplogger(mysec)
 
     store = getstore(storecfg)
     pubsub = getpubsub(storecfg)
 
-    qserv = qrepo(['IF1401', 'IF1402'], mdcfg, pubsub, store)
-    qserv.setup()
+    engine = Engine(tradercfg, pubsub)
+    engine.start()
 
+    print 'Engine start.'
     while 1:
         try:
             time.sleep(1)
@@ -32,5 +33,8 @@ if __name__=='__main__':
             except KeyboardInterrupt:
                 print 'Continue'
 
-    qserv.stop()
+    engine.stop()
+    engine.join()
+    print 'Engine quit.'
+
 
