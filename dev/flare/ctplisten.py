@@ -365,17 +365,17 @@ def main():
     trader = TraderApi.CreateTraderApi("trader")
 
     myspi = TraderSpiDelegate(instruments=INSTS, 
-                             broker_id='2070',
-                             investor_id= "900199999",
-                             passwd= "999999",
+                             broker_id='1021',
+                             investor_id= "00000062",
+                             passwd= "4617011",
                              trader=trader
                        )
     trader.RegisterSpi(myspi)
     trader.myspi = myspi
     trader.SubscribePublicTopic(THOST_TERT_QUICK)
     trader.SubscribePrivateTopic(THOST_TERT_QUICK)
-    #trader.RegisterFront("tcp://180.169.124.2:21205")
-    trader.RegisterFront("tcp://180.169.112.50:41205")
+    trader.RegisterFront("tcp://180.169.124.2:21205")
+    #trader.RegisterFront("tcp://180.169.112.50:41205")
     #trader.RegisterFront("tcp://180.169.124.2:21213") this is for MD
     trader.Init()
 

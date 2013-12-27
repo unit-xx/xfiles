@@ -313,6 +313,7 @@ class EngineCTP(TraderSpi):
         # update reverse map
         # and submit
         code = req[fdef.KCODE]
+        direct = req[fdef.KDIR]
         ismktprice = True if req[fdef.KPRICE]<0 else False
         volume = req[fdef.KVOLUME]
         price = req[fdef.KPRICE]
@@ -322,10 +323,10 @@ class EngineCTP(TraderSpi):
         oref = self.inc_order_ref()
         ctpreq = ustruct.InputOrder(
                 InstrumentID = code,
-                Direction = utype.THOST_FTDC_D_Buy if (volume>0) else utype.THOST_FTDC_D_Sell,
+                Direction = utype.THOST_FTDC_D_Buy if (direct==fdef.VLONG) else utype.THOST_FTDC_D_Sell,
                 OrderRef = str(oref),
                 LimitPrice = 0.0 if ismktprice else price,
-                VolumeTotalOriginal = volume if (volume>0) else -volume,
+                VolumeTotalOriginal = volume,
                 OrderPriceType = utype.THOST_FTDC_OPT_AnyPrice if ismktprice else utype.THOST_FTDC_OPT_LimitPrice,
                 BrokerID = self.broker_id,
                 InvestorID = self.investor_id,
@@ -500,7 +501,11 @@ class EngineCTP(TraderSpi):
         ret[fdef.KOID] = oid
         ret[fdef.KSTRAT] = strat
         for k in fields:
-            ret[k] = getattr(ctporder, k)
+            try:
+                ret[k] = getattr(ctporder, k)
+            except AttributeError:
+                pass
+        return ret
 
     def OnRspOrderInsert(self, pInputOrder, pRspInfo, nRequestID, bIsLast):
         '''
@@ -511,16 +516,19 @@ class EngineCTP(TraderSpi):
         if pInputOrder is None or pRspInfo is None:
             return
 
-        oreftp = self.makeoreftp(pInputOrder)
-        if self.ismysession(oreftp):
-            oid = self.getoid(oreftp)
-            strat = self.getstrat(oid)
-            rec = self.makerecord(pInputOrder, oid, strat)
-            rec[fdef.KOSTATE] = fdef.VORDERREJECTED
-            rec.update(pRspInfo)
-            channel = fdef.fullname(fdef.CHORESP, strat)
+        self.logger.debug(pRspInfo)
+        # ASSUMPTION: OnRspOrderInsert is called when I 'own' this order.
+        oreftp = self.myoreftp(int(pInputOrder.OrderRef))
+        oid = self.getoid(oreftp)
+        strat = self.getstrat(oid)
+        self.logger.debug('%s, %s, %s', oreftp, oid, strat)
+        rec = self.makerecord(pInputOrder, oid, strat)
+        rec[fdef.KOSTATE] = fdef.VORDERREJECTED
+        rec['ErrorID'] = pRspInfo.ErrorID
+        rec['ErrorMsg'] = pRspInfo.ErrorMsg
+        channel = fdef.fullname(fdef.CHORESP, strat)
 
-            self.pubsub.publish(channel, rec.dump())
+        self.pubsub.publish(channel, rec.dump())
 
     def OnErrRtnOrderInsert(self, pInputOrder, pRspInfo):
         '''
@@ -531,16 +539,18 @@ class EngineCTP(TraderSpi):
         if pInputOrder is None or pRspInfo is None:
             return
 
-        oreftp = self.makeoreftp(pInputOrder)
-        if self.ismysession(oreftp):
-            oid = self.getoid(oreftp)
-            strat = self.getstrat(oid)
-            rec = self.makerecord(pInputOrder, oid, strat)
-            rec.update(pRspInfo)
-            rec[fdef.KOSTATE] = fdef.VORDERREJECTED
-            channel = fdef.fullname(fdef.CHORESP, strat)
+        self.logger.debug(pRspInfo)
+        # ASSUMPTION: OnRspOrderInsert is called when I 'own' this order.
+        oreftp = self.myoreftp(int(pInputOrder.OrderRef))
+        oid = self.getoid(oreftp)
+        strat = self.getstrat(oid)
+        rec = self.makerecord(pInputOrder, oid, strat)
+        rec[fdef.KOSTATE] = fdef.VORDERREJECTED
+        rec['ErrorID'] = pRspInfo.ErrorID
+        rec['ErrorMsg'] = pRspInfo.ErrorMsg
+        channel = fdef.fullname(fdef.CHORESP, strat)
 
-            self.pubsub.publish(channel, rec.dump())
+        self.pubsub.publish(channel, rec.dump())
 
     def OnRtnOrder(self, pOrder):
         ''' 
@@ -551,6 +561,7 @@ class EngineCTP(TraderSpi):
         if pOrder is None:
             return
 
+        self.logger.debug(pOrder)
         oreftp = self.makeoreftp(pOrder)
         if self.ismysession(oreftp):
             oid = self.getoid(oreftp)
@@ -596,7 +607,7 @@ class EngineCTP(TraderSpi):
         exchid = (pTrade.ExchangeID, pTrade.OrderSysID)
         oid = self.getoid(exchid, 'exchid')
         if oid is None:
-            self.logger.info('trade with no oid')
+            self.logger.info('not my trade.')
             return
 
         strat = self.getstrat(oid)
@@ -624,8 +635,9 @@ class EngineCTP(TraderSpi):
             oid = self.getoid(oreftp)
             strat = self.getstrat(oid)
             rec = self.makerecord(pOrderAction, oid, strat, ['OrderActionStatus', 'StatusMsg'])
-            rec.update(pRspInfo)
             rec[fdef.KCANCELSTATE] = fdef.VCANCELREJECTED
+            rec['ErrorID'] = pRspInfo.ErrorID
+            rec['ErrorMsg'] = pRspInfo.ErrorMsg
             channel = fdef.fullname(fdef.CHORESP, strat)
 
             self.pubsub.publish(channel, rec.dump())
@@ -643,8 +655,9 @@ class EngineCTP(TraderSpi):
             oid = self.getoid(oreftp)
             strat = self.getstrat(oid)
             rec = self.makerecord(pOrderAction, oid, strat, ['OrderActionStatus', 'StatusMsg'])
-            rec.update(pRspInfo)
             rec[fdef.KCANCELSTATE] = fdef.VCANCELREJECTED
+            rec['ErrorID'] = pRspInfo.ErrorID
+            rec['ErrorMsg'] = pRspInfo.ErrorMsg
             channel = fdef.fullname(fdef.CHORESP, strat)
 
             self.pubsub.publish(channel, rec.dump())
@@ -724,7 +737,7 @@ class strattop(Thread):
         # XXX: disable tbook op temporarily
         #self.tbook.updateorder(oid, resp)
         state = resp[fdef.KOSTATE]
-        self.logger.info('OrderResp: %s', stat)
+        self.logger.info('OrderResp: %s', state)
         self.logger.info('OrderResp: %s', resp)
         if state == fdef.VORDERREJECTED:
             self.onOrderRejected(oid, resp)
@@ -776,7 +789,7 @@ class strattop(Thread):
         # XXX: disable tbook op temporarily
         #self.tbook.updateorder(oid, resp)
         state = resp[fdef.KCANCELSTATE]
-        self.logger.info('CancelResp: %s', stat)
+        self.logger.info('CancelResp: %s', state)
         self.logger.info('CancelResp: %s', resp)
         if state == fdef.VCANCELREJECTED:
             self.onCancelRejected(oid, resp)
@@ -801,7 +814,10 @@ class stratbottom(Thread):
         self.pubsub = pubsub
         self.top = top
         self.strat = None
+
+        self.runflag = True
         self.logger = logging.getLogger()
+        self.name = self.__class__.__name__
 
     def run(self):
         self.strat = self.top.getstrat()
@@ -814,7 +830,7 @@ class stratbottom(Thread):
 
     def process(self, m):
         try:
-            resp = Record.load(t['data'])
+            resp = Record.load(m['data'])
             oid = resp[fdef.KOID]
             #resp.pop(fdef.KOID])
 
@@ -935,7 +951,9 @@ class TBookCache:
     '''
     def __init__(self, strat, tbproxy=None):
         self.tbproxy = tbproxy
-        self.qproxy = tbproxy.getqueue()
+        self.qproxy = None
+        if tbproxy is not None:
+            self.qproxy = tbproxy.getqueue()
         self.strat = strat
 
         self.bkname = None
@@ -1000,6 +1018,8 @@ class TBookCache:
             pos = tblib.getposition(poskey)
             self.poscc[poskey] = pos
             self.poslk[poskey] = Lock()
+
+        return True
 
     def getorder(self, oid):
         o = None
@@ -1107,8 +1127,7 @@ class TBookCache:
 
     def neworder(self, order):
         # insert order in ordercc, tradecc and updates its metadata
-        oidlocal = fdef.localoid()
-        oid = fdef.fullname(fdef.ORDERNS, oidlocal)
+        oid = fdef.localoid()
 
         olk = Lock()
         o = deepcopy(order)
@@ -1354,7 +1373,7 @@ class TBookLib:
         pass
 
     def getallposkey(self):
-        rkey = fdef.fullname(fdef.ALLTRADE, self.tbname)
+        rkey = fdef.fullname(fdef.ALLPOSKEY, self.tbname)
         allposkey = self.store.smembers(rkey)
         return allposkey
 

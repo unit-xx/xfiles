@@ -1,3 +1,4 @@
+import sys
 import time
 
 from flamelib import Engine, getstore, getpubsub
@@ -11,6 +12,9 @@ if __name__=='__main__':
     storecfg = cfg[mycfg['store']]
     storecfg['port'] = int(storecfg['port'])
     storecfg['db'] = int(storecfg['db'])
+    ans = raw_input('Using ctp config: %s, sure? ' % mycfg['trader'])
+    if not ans.startswith('y'):
+        sys.exit(1)
     tradercfg = cfg[mycfg['trader']]
 
     config.setuplogger(mysec)

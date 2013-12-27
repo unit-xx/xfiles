@@ -74,14 +74,15 @@ class TraderSpiDelegate(TraderSpi):
         self.logger.info(u'TD:trader login, islast: %d' % bIsLast)
         self.logger.debug(u"TD:loggin %s" % str(pRspInfo))
         self.logger.debug(u"TD:loggin %s" % str(pRspUserLogin))
-        if not self.isRspSuccess(pRspInfo):
-            self.logger.warning(u'TD:trader login failed, errMsg=%s' %(pRspInfo.ErrorMsg,))
-            print u'综合交易平台登陆失败，请检查网络或用户名/口令'
-            self.is_logged = False
-        else:
-            self.logger.info(u'TD:trader login success, %s', pRspUserLogin.MaxOrderRef)
-            self.is_logged = True
-            self.login_success(pRspUserLogin.FrontID,pRspUserLogin.SessionID,pRspUserLogin.MaxOrderRef)
+        if bIsLast:
+            if not self.isRspSuccess(pRspInfo):
+                self.logger.warning(u'TD:trader login failed, errMsg=%s' %(pRspInfo.ErrorMsg,))
+                print u'综合交易平台登陆失败，请检查网络或用户名/口令'
+                self.is_logged = False
+            else:
+                self.logger.info(u'TD:trader login success, %s', pRspUserLogin.MaxOrderRef)
+                self.is_logged = True
+                self.login_success(pRspUserLogin.FrontID,pRspUserLogin.SessionID,pRspUserLogin.MaxOrderRef)
         self.evt.set()
         #self.settlementInfoConfirm()
         #self.query_settlement_info()
@@ -482,7 +483,7 @@ def main():
                 # get instruments list from traderapi
                 trader = TraderApi.CreateTraderApi("trader")
                 tdspi = TraderSpiDelegate(broker_id='2070',
-                                         investor_id= "9001999991",
+                                         investor_id= "900199999",
                                          passwd= "999999",
                                          trader=trader)
                 trader.RegisterSpi(tdspi)
