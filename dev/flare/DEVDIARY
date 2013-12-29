@@ -36,3 +36,8 @@ balance
 margin
 available cash
 
+state machines: reserve, states, etc.
+reqorder by oid, a raw reqorder for ordering by order obj.
+keep queueing update to proxy in lock, for keeping sequence
+
+
