@@ -11,15 +11,15 @@ from copy import deepcopy
 import cPickle as pickle
 from threading import Thread, Lock, Event
 
+from util import Record, printdictdict
+import flaredef as fdef
+
 import redis
 
 from MdApi import MdApi, MdSpi
 from TraderApi import TraderApi, TraderSpi  
 import UserApiStruct as ustruct
 import UserApiType as utype
-
-from util import Record
-import flaredef as fdef
 
 THOST_TERT_RESTART = 0
 THOST_TERT_RESUME = 1
@@ -593,6 +593,7 @@ class EngineCTP(TraderSpi):
             else:
                 self.logger.warning('unknown order status: strat=%s, oid=%s, status=%s' %(strat, oid, pOrder.OrderStatus))
 
+            self.logger.debug(rec)
             self.pubsub.publish(channel, rec.dump())
 
         return
@@ -713,25 +714,37 @@ class strattop(Thread):
     def getstrat(self):
         return self.strat
 
-    def reqorder(self, order):
+    def reqorder(self, otype, direct, code, price, volume, doreserve=True):
         '''
-        neworder
-        riskcheck
-        reserve
-        submit
+        tbc.neworder
+        self.riskcheck
+        tbc.doreserve
+        self.submit
         '''
+        ret = False
+        oid = self.tbook.neworder(otype, direct, code, price, volume)
+        rcok = self.riskcheck(oid)
+        if rcok and doreserve:
+            resvok = self.tbook.doreserve(oid)
+            self.tbook.printpos()
+
+            if resvok:
+                o, olk = self.tbook.getorder(oid)
+                with olk:
+                    od = o.dump()
+                    self.pubsub.publish(fdef.CHOREQ, od)
+                    ret = True
+        return ret
+
+    def cancelorder(self, oid):
         od = order.dump()
         self.pubsub.publish(fdef.CHOREQ, od)
 
-    def cancelorder(self, order):
-        od = order.dump()
-        self.pubsub.publish(fdef.CHOREQ, od)
-
-    def riskcheck(self, order):
+    def riskcheck(self, oid):
         '''
         return True for ok to submit order.
         '''
-        return False
+        return True
 
     def onOrderState(self, oid, resp):
         # XXX: disable tbook op temporarily
@@ -1019,16 +1032,84 @@ class TBookCache:
             self.poscc[poskey] = pos
             self.poslk[poskey] = Lock()
 
+        self.posmax = tblib.getposmax()
+
         return True
 
-    def getorder(self, oid):
-        o = None
-        olk = None
+    def printpos(self):
+        with self.posblk:
+            rkey = self.poscc.keys()
+            ckey = [fdef.KMAXLIMIT, fdef.KPOSITION, fdef.KRESERVED, fdef.KAVGPRICE]
+            printdictdict(self.poscc, rkey, ckey)
+
+    def neworder(self, otype, direct, code, price, volume):
+        # insert order in ordercc, tradecc and updates its metadata
+        oid = fdef.localoid()
+        olk = Lock()
+
+        o = Record()
+        with olk:
+            o[fdef.KOID] = oid
+            o[fdef.KSTRAT] = self.strat
+            o[fdef.KISRESERVED] = False
+            o[fdef.KOSTATE] = fdef.VORDERINIT
+            o[fdef.KCANCELSTATE] = fdef.VCANCELINIT
+            o[fdef.KTRADE] = []
+            
+            o[fdef.KACTION] = fdef.VINSERT
+            o[fdef.KOTYPE] = otype
+            o[fdef.KPRICE] = price
+            o[fdef.KCODE] = code
+            o[fdef.KDIR] = direct
+            o[fdef.KVOLUME] = volume
+
         with self.orderblk:
-            if oid in self.ordercc:
-                o = self.ordercc[oid]
-                olk = self.orderlk[oid]
-        return  o, olk
+            self.ordercc[oid] = o
+            self.orderlk[oid] = olk
+            # XXX: to proxy
+
+        return oid
+
+    def doreserve(self, oid):
+        '''
+        check risk measures and reserve order in position.
+        only reserve `insert open long/short order'
+        '''
+        ret = False
+
+        order, olk = self.getorder(oid)
+        if order is None:
+            return ret
+
+        action = order[fdef.KACTION]
+        otype = order[fdef.KOTYPE]
+        code = order[fdef.KCODE]
+        direction = order[fdef.KDIR]
+        volume = order[fdef.KVOLUME]
+        if action != fdef.VINSERT or otype != fdef.VOPEN:
+            return ret
+
+        poskey = fdef.genposkey(code, direction)
+        p, plk = self.getposition(poskey)
+        with plk:
+            if p[fdef.KMAXLIMIT] >= (volume+p[fdef.KPOSITION]+p[fdef.KRESERVED]):
+                p[fdef.KRESERVED] += volume
+                # XXX: to proxy
+                ret = True
+
+        if ret:
+            # XXX: is it ok to set KISRESERVED out of plk?
+            with olk:
+                order[fdef.KISRESERVED] = True
+                # XXX: to proxy
+
+        return ret
+
+    def freereserve(self, oid, count):
+        '''
+        Need this function?
+        '''
+        pass
 
     def updateorder(self, oid, order, field=[]):
         '''
@@ -1068,55 +1149,26 @@ class TBookCache:
             # update reserve if order is cancelled, and order is reserved
             if fdef.KCANCELSTATE in order and order[fdef.KISRESERVED]==True:
                 otype = order[fdef.KOTYPE]
-                if otype == fdef.VOPEN:
-                    if order[fdef.KCANCELSTATE]==fdef.VCANCELLED:
-                        code = order[fdef.KCODE]
-                        direction = order[fdef.KDIR]
-                        # NOTE: assume that all untraded volume is cancelled.
-                        untrade = order[fdef.KUNTRADEVOL]
-                        poskey = fdef.genposkey(code, direction)
-                        p, plk = self.getposition(poskey)
-                        with plk:
-                            p[fdef.KRESERVED] -= untrade
-                            # XXX: to proxy
+                cstate = order[fdef.KCANCELSTATE]
+                if otype==fdef.VOPEN and cstate==fdef.VCANCELLED:
+                    code = order[fdef.KCODE]
+                    direction = order[fdef.KDIR]
+                    # NOTE: assume that all untraded volume is cancelled.
+                    untrade = order[fdef.KUNTRADEVOL]
+                    poskey = fdef.genposkey(code, direction)
+                    p, plk = self.getposition(poskey)
+                    with plk:
+                        p[fdef.KRESERVED] -= untrade
+                        # XXX: to proxy
 
-    def doreserve(self, oid):
-        '''
-        check risk measures and reserve order in position.
-        only reserve `insert open long/short order'
-        '''
-        ret = False
-
-        order, olk = self.getorder(oid)
-
-        action = order[fdef.KACTION]
-        otype = order[fdef.KOTYPE]
-        code = order[fdef.KCODE]
-        direction = order[fdef.KDIR]
-        volume = order[fdef.KVOLUME]
-        if action != fdef.VINSERT or otype != fdef.VOPEN:
-            return ret
-
-        poskey = fdef.genposkey(code, direction)
-        p, plk = self.getposition(poskey)
-        with plk:
-            if p[fdef.KMAXLIMIT] >= (volume+p[fdef.KPOSITION]):
-                p[fdef.KRESERVED] += volume
-                # XXX: to proxy
-                ret = True
-
-        if ret:
-            with olk:
-                order[fdef.KISRESERVED] = True
-                # XXX: to proxy
-
-        return ret
-
-    def freereserve(self, oid, count):
-        '''
-        Need this function?
-        '''
-        pass
+    def getorder(self, oid):
+        o = None
+        olk = None
+        with self.orderblk:
+            if oid in self.ordercc:
+                o = self.ordercc[oid]
+                olk = self.orderlk[oid]
+        return  o, olk
 
     def hasorder(self, oid):
         ret = False
@@ -1125,26 +1177,7 @@ class TBookCache:
                 ret = True
         return ret
 
-    def neworder(self, order):
-        # insert order in ordercc, tradecc and updates its metadata
-        oid = fdef.localoid()
-
-        olk = Lock()
-        o = deepcopy(order)
-        with self.orderblk:
-            self.ordercc[oid] = o
-            self.orderlk[oid] = olk
-
-        with olk:
-            o[fdef.KOID] = oid
-            o[fdef.KTRADE] = []
-            o[fdef.KISRESERVED] = False
-            o[fdef.KOSTATE] = fdef.VORDERINIT
-            o[fdef.KCANCELSTATE] = fdef.VCANCELINIT
-            # XXX: to proxy
-
-        return o, olk
-
+    # use order[fdef.KTRADE] instead
     #def gettrade(self, oid):
     #    t = None
     #    tlk = None
@@ -1164,6 +1197,7 @@ class TBookCache:
             ret = True
             price = trade[fdef.KPRICE]
             volume = trade[fdef.KVOLUME]
+            isreserved = order[fdef.KISRESERVED]
             with olk:
                 order[fdef.KTRADE].append((price, volume))
                 # XXX: to proxy
@@ -1176,14 +1210,16 @@ class TBookCache:
             p, plk = self.getposition(poskey)
             with plk:
                 if otype == fdef.VOPEN:
+                    # XXX: PNL
                     # average trade price
                     cpos = p[fdef.KPOSITION]
                     cprice = p[fdef.KAVGPRICE]
-                    p[fdef.KAVGPRICE] = (cpos*cprice + volume*price)/(cpos+volume)
+                    p[fdef.KAVGPRICE] = (cpos*cprice+volume*price)/(cpos+volume)
                     # total position
                     p[fdef.KPOSITION] += volume
                     # reserved count
-                    p[fdef.KRESERVED] -= volume
+                    if isreserved:
+                        p[fdef.KRESERVED] -= volume
                 elif otype == fdef.VCLOSE:
                     p[fdef.KPOSITION] -= volume
                 # XXX: to proxy
@@ -1317,6 +1353,9 @@ class TBookLib:
         self.stratposmax = {k:int(stratposmax[k]) for k in stratposmax}
         return True
 
+    def getposmax(self):
+        return self.stratposmax
+
     def getalloid(self):
         rkey = fdef.fullname(fdef.ALLORDER, self.tbname)
         alloids = self.store.smembers(rkey)
@@ -1397,7 +1436,10 @@ class TBookProxy(Thread):
         self.store = store
         self.tb = TBookLib(store, tbname)
         self.queue = Queue()
+
         self.runflag = True
+        self.logger = logging.getLogger()
+        self.name = self.__class__.__name__
 
     def run(self):
         while self.runflag:

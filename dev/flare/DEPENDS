@@ -1,2 +1,3 @@
 pyctp
-redispy
+redispy+redis
+prettytable

@@ -2,7 +2,7 @@
 
 import os, sys
 
-from flamelib import strattop, stratbottom, getstore, getpubsub
+from flamelib import strattop, stratbottom, getstore, getpubsub, TBookCache
 import flaredef as fdef
 import config
 from util import Record
@@ -11,9 +11,6 @@ class rcstrat(strattop):
     def setup(self):
         chresp = fdef.fullname(fdef.CHORESP, self.strat)
         self.pubsub.subscribe((chresp, fdef.CHQUOTE))
-
-    def riskcheck(self):
-        pass
 
 def neworder(otype, direct, code, price, volume):
     o = Record()
@@ -48,7 +45,10 @@ def main():
     store = getstore(storecfg)
     pubsub = getpubsub(storecfg)
 
-    rc = rcstrat(mysec, pubsub, None)
+    tbook = TBookCache(mysec)
+    # XXX: hack for test only
+    tbook.posmax = {'IF1401|LONG':6, 'IF1401|SHORT':6}
+    rc = rcstrat(mysec, pubsub, tbook)
     rcbottom = stratbottom(pubsub, rc)
 
     rcbottom.start()
@@ -57,20 +57,23 @@ def main():
     print os.getpid()
 
     lastoid = None
-    dirct = fdef.VSHORT
-    code = 'IF1401'
     while 1:
         try:
-            m = raw_input('An order or cancle? ')
+            m = raw_input('New order or cancle? ')
             tp = m.split()
             if m.startswith('cancel'):
                 print 'Not impl.'
-            elif m.startswith('open'):
-                o = neworder(fdef.VOPEN, tp[1].upper(), tp[2].upper(), float(tp[3]), int(tp[4]))
-                rc.reqorder(o)
-            elif m.startswith('close'):
-                o = neworder(fdef.VCLOSE, tp[1].upper(), tp[2].upper(), float(tp[3]), int(tp[4]))
-                rc.reqorder(o)
+            elif m.startswith('open') or m.startswith('close'):
+                otype = tp[0].upper()
+                direct = tp[1].upper()
+                code = tp[2].upper()
+                price = float(tp[3])
+                volume = int(tp[4])
+                print rc.reqorder(otype, direct, code, price, volume, doreserve=True)
+            elif m.startswith('pos'):
+                tbook.printpos()
+            else:
+                print 'Unkown command.'
 
         except KeyboardInterrupt:
             break
