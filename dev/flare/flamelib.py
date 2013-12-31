@@ -9,7 +9,7 @@ from Queue import Queue, Empty
 from collections import defaultdict
 from copy import deepcopy
 import cPickle as pickle
-from threading import Thread, Lock, Event
+from threading import Thread, Lock, Event, currentThread
 
 from util import Record, printdictdict
 import flaredef as fdef
@@ -31,21 +31,38 @@ THOST_TERT_QUICK = 2
 class redispubsub:
     def __init__(self, rconfig):
         self.rconfig = rconfig
-        self.pubsub = None
+        self.pubsub = {}
+        self.plk = Lock()
         self.redis = None
 
     def setup(self):
         self.redis = redis.Redis(**self.rconfig)
-        self.pubsub = self.redis.pubsub()
+
+    def getpubsub(self):
+        '''
+        pubsub object is not thread safe, so we create one pubsub
+        for each thread.
+        '''
+        tid = currentThread().ident
+        ret = None
+        with self.plk:
+            try:
+                ret = self.pubsub[tid]
+            except KeyError:
+                ret = self.redis.pubsub()
+                self.pubsub[tid] = ret
+        return ret
 
     def publish(self, channel, msg):
         self.redis.publish(channel, msg)
 
     def subscribe(self, channel):
-        self.pubsub.subscribe(channel)
+        p = self.getpubsub()
+        p.subscribe(channel)
 
     def unsubscribe(self, channel):
-        self.pubsub.unsubscribe(channel)
+        p = self.getpubsub()
+        p.unsubscribe(channel)
 
     def listen(self):
         '''
@@ -54,8 +71,9 @@ class redispubsub:
         {'pattern': None, 'type': 'subscribe', 'channel': 'xxx', 'data': 1L}
         should filter by type, pattern and channel.
         '''
+        p = self.getpubsub()
         while 1:
-            ret = next(self.pubsub.listen())
+            ret = next(p.listen())
             if 'message' == ret['type']:
                 break
         return ret
@@ -721,9 +739,10 @@ class strattop(Thread):
         tbc.doreserve
         self.submit
         '''
-        ret = False
+        ret = None
         oid = self.tbook.neworder(otype, direct, code, price, volume)
         rcok = self.riskcheck(oid)
+        # TODO: doreserve is only applicable to OPEN
         if rcok and doreserve:
             resvok = self.tbook.doreserve(oid)
             self.tbook.printpos()
@@ -733,7 +752,7 @@ class strattop(Thread):
                 with olk:
                     od = o.dump()
                     self.pubsub.publish(fdef.CHOREQ, od)
-                    ret = True
+                    ret = oid
         return ret
 
     def cancelorder(self, oid):
@@ -747,8 +766,7 @@ class strattop(Thread):
         return True
 
     def onOrderState(self, oid, resp):
-        # XXX: disable tbook op temporarily
-        #self.tbook.updateorder(oid, resp)
+        self.tbook.updateorder(oid, resp)
         state = resp[fdef.KOSTATE]
         self.logger.info('OrderResp: %s', state)
         self.logger.info('OrderResp: %s', resp)
@@ -787,8 +805,7 @@ class strattop(Thread):
 
     def onTradeState(self, oid, resp):
         # arrive here only when new trade is informed.
-        # XXX: disable tbook op temporarily
-        #self.tbook.addtrade(oid, resp)
+        self.tbook.addtrade(oid, resp)
         self.onNewTrade(oid, resp)
         self.logger.info('NewTrade: %s', resp)
 
@@ -799,8 +816,7 @@ class strattop(Thread):
         pass
 
     def onCancelState(self, oid, resp):
-        # XXX: disable tbook op temporarily
-        #self.tbook.updateorder(oid, resp)
+        self.tbook.updateorder(oid, resp)
         state = resp[fdef.KCANCELSTATE]
         self.logger.info('CancelResp: %s', state)
         self.logger.info('CancelResp: %s', resp)
@@ -861,91 +877,90 @@ class stratbottom(Thread):
     def stop(self):
         self.runflag = False
 
-'''
-class stratdispatch(Thread):
-    def __init__(self):
-        Thread.__init__(self)
-        self.queue = Queue.Queue()
-        self.wset = []
-        self.wsize = wsize
-        self.pubsub = pubsub
-        self.strats = {}
-        self.runflag = True
+if False:
+    class stratdispatch(Thread):
+        def __init__(self):
+            Thread.__init__(self)
+            self.queue = Queue.Queue()
+            self.wset = []
+            self.wsize = wsize
+            self.pubsub = pubsub
+            self.strats = {}
+            self.runflag = True
 
-    def run(self):
-        # start workers
-        for i in range(self.wsize):
-            w = stratworker(self.queue)
-            self.wsize.append(w)
-            w.start()
+        def run(self):
+            # start workers
+            for i in range(self.wsize):
+                w = stratworker(self.queue)
+                self.wsize.append(w)
+                w.start()
 
-        while self.runflag:
-            t = self.pubsub.listen()
-            if(self.hasstrat(t)):
-                self.queue.put(t)
+            while self.runflag:
+                t = self.pubsub.listen()
+                if(self.hasstrat(t)):
+                    self.queue.put(t)
 
-        self.close()
+            self.close()
 
-    def stop(self):
-        self.runflag = False
+        def stop(self):
+            self.runflag = False
 
-    def close(self):
-        pass
-
-    def addstrat(self, sname, strat):
-        pass
-
-    def hasstrat(self, sname):
-        pass
-
-    def getstrat(self, sname):
-        pass
-
-    def handleOpenResp(self):
-        if resp=='ok':
-            self.pubsub.publish(Tbook, Update, oid)
-            self.pubsub.publish(Tbook, Confirm, oid)
-        elif resp=='error':
-            self.pubsub.publish(Tbook, Update, oid)
-            self.pubsub.publish(Tbook, Release, oid)
-
-    def handleCloseResp(self):
-        pass
-
-    def handleCancelResp(self):
-        if resp=='ok':
-            self.pubsub.publish(Tbook, Update, oid)
-            self.pubsub.publish(Tbook, Release, oid)
-        elif resp=='error':
-            self.pubsub.publish(Tbook, Update, oid)
-
-class stratworker(Thread):
-    def __init__(self, queue):
-        Thread.__init__(self)
-        self.queue = queue
-        self.runflag = True
-
-    def run(self):
-        while self.runflag:
-            try:
-                t = self.queue.get(True, 2)
-                self.process(t)
-            except Queue.Empty:
-                pass
-
-    def stop(self):
-        self.runflag = False
-
-    def process(self, t):
-        try:
-            # get strategy object
-            # get t's callback
-            # call strategy's corresponding callback.
-            strat = self.getstrat()
-            strat.handleresp(t)
-        except:
+        def close(self):
             pass
-'''
+
+        def addstrat(self, sname, strat):
+            pass
+
+        def hasstrat(self, sname):
+            pass
+
+        def getstrat(self, sname):
+            pass
+
+        def handleOpenResp(self):
+            if resp=='ok':
+                self.pubsub.publish(Tbook, Update, oid)
+                self.pubsub.publish(Tbook, Confirm, oid)
+            elif resp=='error':
+                self.pubsub.publish(Tbook, Update, oid)
+                self.pubsub.publish(Tbook, Release, oid)
+
+        def handleCloseResp(self):
+            pass
+
+        def handleCancelResp(self):
+            if resp=='ok':
+                self.pubsub.publish(Tbook, Update, oid)
+                self.pubsub.publish(Tbook, Release, oid)
+            elif resp=='error':
+                self.pubsub.publish(Tbook, Update, oid)
+
+    class stratworker(Thread):
+        def __init__(self, queue):
+            Thread.__init__(self)
+            self.queue = queue
+            self.runflag = True
+
+        def run(self):
+            while self.runflag:
+                try:
+                    t = self.queue.get(True, 2)
+                    self.process(t)
+                except Queue.Empty:
+                    pass
+
+        def stop(self):
+            self.runflag = False
+
+        def process(self, t):
+            try:
+                # get strategy object
+                # get t's callback
+                # call strategy's corresponding callback.
+                strat = self.getstrat()
+                strat.handleresp(t)
+            except:
+                pass
 
 class TBookCache:
     '''
@@ -962,11 +977,26 @@ class TBookCache:
     confirmatin and new quotes.
     5. daily settlement.
     '''
+    READONLYOKEY = set([
+        fdef.KOID,
+        fdef.KSTRAT,
+        fdef.KACTION,
+        fdef.KOTYPE,
+        fdef.KDIR,
+        fdef.KCODE,
+        fdef.KVOLUME,
+        fdef.KPRICE,
+        fdef.KISIOC,
+        fdef.KISRESERVED
+        ])
+
     def __init__(self, strat, tbproxy=None):
         self.tbproxy = tbproxy
         self.qproxy = None
+        self.tblib = None
         if tbproxy is not None:
             self.qproxy = tbproxy.getqueue()
+            self.tblib = tbproxy.gettblib()
         self.strat = strat
 
         self.bkname = None
@@ -1010,11 +1040,12 @@ class TBookCache:
 
         check strat-tbook mapping
         read all orders/positions
-
         '''
-        tblib = self.tbproxy.gettblib()
+
+        tblib = self.tblib
         # tbook-strat link check.
         if self.strat != tblib.strat:
+            self.logger.error('strat-tbook mapping mismatch: %s %s', self.strat, tblib.strat)
             return False
 
         self.bkname = tblib.tbname
@@ -1041,6 +1072,16 @@ class TBookCache:
             rkey = self.poscc.keys()
             ckey = [fdef.KMAXLIMIT, fdef.KPOSITION, fdef.KRESERVED, fdef.KAVGPRICE]
             printdictdict(self.poscc, rkey, ckey)
+
+    def printorder(self, oid):
+        o, olk = self.getorder(oid)
+        if o is not None:
+            with olk:
+                print o
+
+    def printalloid(self):
+        with self.orderblk:
+            print self.ordercc.keys()
 
     def neworder(self, otype, direct, code, price, volume):
         # insert order in ordercc, tradecc and updates its metadata
@@ -1111,7 +1152,7 @@ class TBookCache:
         '''
         pass
 
-    def updateorder(self, oid, order, field=[]):
+    def updateorder(self, oid, uorder, field=[]):
         '''
         - update order with oid, using input order and field
 
@@ -1134,6 +1175,8 @@ class TBookCache:
 
         KOSTATE
         KCANCELSTATE
+        KTRADEVOL
+        KUNTRADEVOL
         (ctp attributes)
 
         '''
@@ -1141,20 +1184,27 @@ class TBookCache:
         # TODO: check that only updatable keys are updated
         o, olk = self.getorder(oid)
         if o is not None:
-            toupdate = { k:order[k] for k in field }
+            if len(field)==0:
+                ufield = set(uorder.keys())
+            else:
+                ufield = set(field)
+            ufield -= self.READONLYOKEY
+
+            toupdate = { k:uorder[k] for k in ufield }
+            self.logger.debug('update order %s to %s', oid, toupdate)
             with olk:
                 o.update(toupdate)
                 # XXX: to proxy
 
             # update reserve if order is cancelled, and order is reserved
-            if fdef.KCANCELSTATE in order and order[fdef.KISRESERVED]==True:
-                otype = order[fdef.KOTYPE]
-                cstate = order[fdef.KCANCELSTATE]
+            if fdef.KCANCELSTATE in uorder and o[fdef.KISRESERVED]==True:
+                otype = o[fdef.KOTYPE]
+                cstate = uorder[fdef.KCANCELSTATE]
                 if otype==fdef.VOPEN and cstate==fdef.VCANCELLED:
-                    code = order[fdef.KCODE]
-                    direction = order[fdef.KDIR]
+                    code = o[fdef.KCODE]
+                    direction = o[fdef.KDIR]
                     # NOTE: assume that all untraded volume is cancelled.
-                    untrade = order[fdef.KUNTRADEVOL]
+                    untrade = uorder[fdef.KUNTRADEVOL]
                     poskey = fdef.genposkey(code, direction)
                     p, plk = self.getposition(poskey)
                     with plk:
@@ -1329,6 +1379,8 @@ class TBookLib:
         self.otypeconv = {
                 fdef.KVOLUME:int,
                 fdef.KPRICE:float,
+                fdef.KTRADEVOL:int,
+                fdef.KUNTRADEVOL:int,
                 fdef.KISIOC:lambda x: x=='True',
                 fdef.KISRESERVED:lambda x: x=='True'
                 }
@@ -1351,6 +1403,8 @@ class TBookLib:
         pmaxkey = fdef.fullname(fdef.POSMAXNS, self.strat)
         stratposmax = self.store.hgetall(pmaxkey)
         self.stratposmax = {k:int(stratposmax[k]) for k in stratposmax}
+        self.logger.debug(self.strat)
+        self.logger.debug(self.stratposmax)
         return True
 
     def getposmax(self):
@@ -1430,11 +1484,11 @@ class TBookProxy(Thread):
     1. store updates in redis using TBookLib,
     2. breadcasts update through pubsub.
     '''
-    def __init__(self, pubsub, store, tbname):
+    def __init__(self, pubsub, store, tblib):
         Thread.__init__(self)
         self.pubsub = pubsub
         self.store = store
-        self.tb = TBookLib(store, tbname)
+        self.tblib = tblib
         self.queue = Queue()
 
         self.runflag = True
@@ -1457,11 +1511,14 @@ class TBookProxy(Thread):
 
     def process(self, br):
         try:
-            #self.tb.update(self.store, br)
-            self.pubsub.publish(br)
+            #self.tblib.update(self.store, br)
+            #self.pubsub.publish(br)
+            pass
         except:
             pass
 
     def getqueue(self):
         return self.queue
 
+    def gettblib(self):
+        return self.tblib

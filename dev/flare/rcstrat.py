@@ -2,7 +2,7 @@
 
 import os, sys
 
-from flamelib import strattop, stratbottom, getstore, getpubsub, TBookCache
+from flamelib import strattop, stratbottom, getstore, getpubsub, TBookCache, TBookLib, TBookProxy
 import flaredef as fdef
 import config
 from util import Record
@@ -39,27 +39,31 @@ def main():
     storecfg = cfg[mycfg['store']]
     storecfg['port'] = int(storecfg['port'])
     storecfg['db'] = int(storecfg['db'])
+    tbname = mycfg['tbname']
 
     config.setuplogger(mysec)
 
     store = getstore(storecfg)
     pubsub = getpubsub(storecfg)
 
-    tbook = TBookCache(mysec)
-    # XXX: hack for test only
-    tbook.posmax = {'IF1401|LONG':6, 'IF1401|SHORT':6}
+    tblib = TBookLib(store, tbname)
+    print tblib.setup()
+    tbproxy = TBookProxy(pubsub, store, tblib)
+
+    tbook = TBookCache(mysec, tbproxy)
+    print tbook.setup()
     rc = rcstrat(mysec, pubsub, tbook)
     rcbottom = stratbottom(pubsub, rc)
 
     rcbottom.start()
     rc.start()
 
-    print os.getpid()
+    pid = os.getpid()
 
     lastoid = None
     while 1:
         try:
-            m = raw_input('New order or cancle? ')
+            m = raw_input('%d New order or cancle? ' % pid)
             tp = m.split()
             if m.startswith('cancel'):
                 print 'Not impl.'
@@ -69,9 +73,17 @@ def main():
                 code = tp[2].upper()
                 price = float(tp[3])
                 volume = int(tp[4])
-                print rc.reqorder(otype, direct, code, price, volume, doreserve=True)
+                lastoid = rc.reqorder(otype, direct, code, price, volume, doreserve=True)
+                print lastoid
             elif m.startswith('pos'):
                 tbook.printpos()
+            elif m.startswith('order'):
+                try:
+                    tbook.printorder(tp[1])
+                except IndexError:
+                    tbook.printorder(lastoid)
+            elif m.startswith('alloid'):
+                tbook.printalloid()
             else:
                 print 'Unkown command.'
 
