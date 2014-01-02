@@ -397,6 +397,7 @@ class EngineCTP(TraderSpi):
         r = self.api.ReqOrderAction(ctpreq, self.inc_request_id())
 
         strat = req[fdef.KSTRAT]
+        oid = req[fdef.KOID]
         channel = fdef.fullname(fdef.CHORESP, strat)
         rec = self.makerecord(ctpreq, oid, strat)
         rec[fdef.KOSTATE] = fdef.VCANCELREQED
@@ -459,7 +460,10 @@ class EngineCTP(TraderSpi):
 
     def makeoreftp(self, order):
         # oref tuple for current session
-        return (order.FrontID, order.SessionID, int(order.OrderRef))
+        try:
+            return (order.FrontID, order.SessionID, int(order.OrderRef))
+        except ValueError:
+            return None
 
     def inc_request_id(self):
         ret = 0 
@@ -695,12 +699,13 @@ class strattop(Thread):
     etc.
     3. 
     '''
-    def __init__(self, stratname, pubsub, tbook):
+    def __init__(self, stratname, pubsub, tbook, rmetric):
         Thread.__init__(self)
 
         self.strat = stratname
         self.pubsub = pubsub
         self.tbook = tbook
+        self.rmetric = rmetric
 
         self.runflag = True
         self.logger = logging.getLogger()
@@ -742,7 +747,7 @@ class strattop(Thread):
         ret = None
         oid = self.tbook.neworder(otype, direct, code, price, volume)
         rcok = self.riskcheck(oid)
-        # TODO: doreserve is only applicable to OPEN
+        # TODO: doreserve is only applicable to OPEN, and if an order is already reserved...
         if rcok and doreserve:
             resvok = self.tbook.doreserve(oid)
             self.tbook.printpos()
@@ -756,7 +761,12 @@ class strattop(Thread):
         return ret
 
     def cancelorder(self, oid):
-        od = order.dump()
+        o,olk = self.tbook.getorder(oid)
+        if o is not None:
+            with olk:
+                o[fdef.KACTION] = fdef.VCANCEL
+                o[fdef.KCANCELSTATE] = fdef.VCANCELINIT
+        od = o.dump()
         self.pubsub.publish(fdef.CHOREQ, od)
 
     def riskcheck(self, oid):

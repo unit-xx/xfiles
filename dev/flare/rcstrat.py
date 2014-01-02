@@ -12,6 +12,19 @@ class rcstrat(strattop):
         chresp = fdef.fullname(fdef.CHORESP, self.strat)
         self.pubsub.subscribe((chresp, fdef.CHQUOTE))
 
+    def riskcheck(self, oid):
+        o, olk = self.tbook.getorder(oid)
+        ret = False
+        if o is not None:
+            with olk:
+                vol = o[fdef.KVOLUME]
+                if vol <= self.rmetric['maxvolperorder']:
+                    ret = True
+                else:
+                    ret = False
+        self.logger.debug('rc result: %s', ret)
+        return ret
+
 def neworder(otype, direct, code, price, volume):
     o = Record()
 
@@ -52,7 +65,9 @@ def main():
 
     tbook = TBookCache(mysec, tbproxy)
     print tbook.setup()
-    rc = rcstrat(mysec, pubsub, tbook)
+    rmetric = {}
+    rmetric['maxvolperorder'] = int(mycfg['maxvolperorder'])
+    rc = rcstrat(mysec, pubsub, tbook, rmetric)
     rcbottom = stratbottom(pubsub, rc)
 
     rcbottom.start()
@@ -66,7 +81,10 @@ def main():
             m = raw_input('%d New order or cancle? ' % pid)
             tp = m.split()
             if m.startswith('cancel'):
-                print 'Not impl.'
+                try:
+                    rc.cancelorder(tp[1])
+                except IndexError:
+                    rc.cancelorder(lastoid)
             elif m.startswith('open') or m.startswith('close'):
                 otype = tp[0].upper()
                 direct = tp[1].upper()
