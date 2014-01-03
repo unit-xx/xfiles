@@ -737,28 +737,31 @@ class strattop(Thread):
     def getstrat(self):
         return self.strat
 
-    def reqorder(self, otype, direct, code, price, volume, doreserve=True):
+    def reqorder(self, otype, direct, code, price, volume):
         '''
         tbc.neworder
         self.riskcheck
         tbc.doreserve
         self.submit
         '''
-        ret = None
+        rcok = False
+        resvok = False
+        doreq = False
+
         oid = self.tbook.neworder(otype, direct, code, price, volume)
         rcok = self.riskcheck(oid)
-        # TODO: doreserve is only applicable to OPEN, and if an order is already reserved...
-        if rcok and doreserve:
+        # TODO: check possition before closing order 
+        if rcok:
             resvok = self.tbook.doreserve(oid)
-            self.tbook.printpos()
+            doreq = resvok
 
-            if resvok:
-                o, olk = self.tbook.getorder(oid)
-                with olk:
-                    od = o.dump()
-                    self.pubsub.publish(fdef.CHOREQ, od)
-                    ret = oid
-        return ret
+        if doreq:
+            self.tbook.printpos()
+            o, olk = self.tbook.getorder(oid)
+            with olk:
+                od = o.dump()
+                self.pubsub.publish(fdef.CHOREQ, od)
+        return oid, doreq, rcok
 
     def cancelorder(self, oid):
         o,olk = self.tbook.getorder(oid)
@@ -773,7 +776,7 @@ class strattop(Thread):
         '''
         return True for ok to submit order.
         '''
-        return True
+        return False
 
     def onOrderState(self, oid, resp):
         self.tbook.updateorder(oid, resp)
@@ -1080,7 +1083,7 @@ class TBookCache:
     def printpos(self):
         with self.posblk:
             rkey = self.poscc.keys()
-            ckey = [fdef.KMAXLIMIT, fdef.KPOSITION, fdef.KRESERVED, fdef.KAVGPRICE]
+            ckey = [fdef.KMAXLIMIT, fdef.KPOSITION, fdef.KRESERVEDOPEN, fdef.KRESERVEDCLOSE, fdef.KAVGPRICE]
             printdictdict(self.poscc, rkey, ckey)
 
     def printorder(self, oid):
@@ -1126,29 +1129,41 @@ class TBookCache:
         check risk measures and reserve order in position.
         only reserve `insert open long/short order'
         '''
-        ret = False
+        # TODO: reserve twice, cancel need to reserve
+        isreservd = False
 
         order, olk = self.getorder(oid)
         if order is None:
-            return ret
+            return False
 
-        action = order[fdef.KACTION]
-        otype = order[fdef.KOTYPE]
-        code = order[fdef.KCODE]
-        direction = order[fdef.KDIR]
-        volume = order[fdef.KVOLUME]
-        if action != fdef.VINSERT or otype != fdef.VOPEN:
-            return ret
+        with olk:
+            isreserved = order[fdef.KISRESERVED]
+            action = order[fdef.KACTION]
+            otype = order[fdef.KOTYPE]
+            code = order[fdef.KCODE]
+            direction = order[fdef.KDIR]
+            volume = order[fdef.KVOLUME]
+
+        if isreserved:
+            return True
+
+        if action != fdef.VINSERT:
+            return False
 
         poskey = fdef.genposkey(code, direction)
         p, plk = self.getposition(poskey)
         with plk:
-            if p[fdef.KMAXLIMIT] >= (volume+p[fdef.KPOSITION]+p[fdef.KRESERVED]):
-                p[fdef.KRESERVED] += volume
-                # XXX: to proxy
-                ret = True
+            if otype==fdef.VOPEN:
+                if p[fdef.KMAXLIMIT] >= (volume+p[fdef.KPOSITION]+p[fdef.KRESERVEDOPEN]):
+                    p[fdef.KRESERVEDOPEN] += volume
+                    # XXX: to proxy
+                    isreserved = True
+            elif otype==fdef.VCLOSE:
+                if p[fdef.KPOSITION] >= (volume+p[fdef.KRESERVEDCLOSE]):
+                    p[fdef.KRESERVEDCLOSE] += volume
+                    isreserved = True
 
-        if ret:
+        if isreserve:
             # XXX: is it ok to set KISRESERVED out of plk?
             with olk:
                 order[fdef.KISRESERVED] = True
@@ -1208,9 +1223,9 @@ class TBookCache:
 
             # update reserve if order is cancelled, and order is reserved
             if fdef.KCANCELSTATE in uorder and o[fdef.KISRESERVED]==True:
-                otype = o[fdef.KOTYPE]
                 cstate = uorder[fdef.KCANCELSTATE]
-                if otype==fdef.VOPEN and cstate==fdef.VCANCELLED:
+                if cstate==fdef.VCANCELLED:
+                    otype = o[fdef.KOTYPE]
                     code = o[fdef.KCODE]
                     direction = o[fdef.KDIR]
                     # NOTE: assume that all untraded volume is cancelled.
@@ -1218,7 +1233,10 @@ class TBookCache:
                     poskey = fdef.genposkey(code, direction)
                     p, plk = self.getposition(poskey)
                     with plk:
-                        p[fdef.KRESERVED] -= untrade
+                        if otype == fdef.VOPEN:
+                            p[fdef.KRESERVEDOPEN] -= untrade
+                        elif otype == fdef.VCLOSE:
+                            p[fdef.KRESERVEDCLOSE] -= untrade
                         # XXX: to proxy
 
     def getorder(self, oid):
@@ -1279,9 +1297,11 @@ class TBookCache:
                     p[fdef.KPOSITION] += volume
                     # reserved count
                     if isreserved:
-                        p[fdef.KRESERVED] -= volume
+                        p[fdef.KRESERVEDOPEN] -= volume
                 elif otype == fdef.VCLOSE:
                     p[fdef.KPOSITION] -= volume
+                    if isreserved:
+                        p[fdef.KRESERVEDCLOSE] -= volume
                 # XXX: to proxy
 
         return ret
@@ -1300,7 +1320,8 @@ class TBookCache:
                 self.poscc[poskey] = p
                 self.poslk[poskey] = plk
                 p[fdef.KPOSITION] = 0
-                p[fdef.KRESERVED] = 0
+                p[fdef.KRESERVEDOPEN] = 0
+                p[fdef.KRESERVEDCLOSE] = 0
                 p[fdef.KAVGPRICE] = 0.0
                 p[fdef.KMAXLIMIT] = self.posmax[poskey]
                 # XXX: to proxy
@@ -1397,7 +1418,8 @@ class TBookLib:
 
         self.ttypeconv = {
                 fdef.KPOSITION:int,
-                fdef.KRESERVED:int,
+                fdef.KRESERVEDOPEN:int,
+                fdef.KRESERVEDCLOSE:int,
                 fdef.KAVGPRICE:float,
                 fdef.KMAXLIMIT:int
                 }

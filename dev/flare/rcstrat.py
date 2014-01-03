@@ -22,7 +22,7 @@ class rcstrat(strattop):
                     ret = True
                 else:
                     ret = False
-        self.logger.debug('rc result: %s', ret)
+        self.logger.debug('order %s rc result: %s', oid, ret)
         return ret
 
 def neworder(otype, direct, code, price, volume):
@@ -91,8 +91,8 @@ def main():
                 code = tp[2].upper()
                 price = float(tp[3])
                 volume = int(tp[4])
-                lastoid = rc.reqorder(otype, direct, code, price, volume, doreserve=True)
-                print lastoid
+                lastoid, doreq, rcok = rc.reqorder(otype, direct, code, price, volume, doreserve=True)
+                print 'requested,' if doreq else 'unrequested,', 'rickcheck pass,' if rcok else 'riskcheck not pass,', lastoid
             elif m.startswith('pos'):
                 tbook.printpos()
             elif m.startswith('order'):
