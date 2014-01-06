@@ -348,7 +348,7 @@ class EngineCTP(TraderSpi):
                 OrderPriceType = utype.THOST_FTDC_OPT_AnyPrice if ismktprice else utype.THOST_FTDC_OPT_LimitPrice,
                 BrokerID = self.broker_id,
                 InvestorID = self.investor_id,
-                CombOffsetFlag = utype.THOST_FTDC_OF_Open if (otype==fdef.VOPEN) else utype.THOST_FTDC_OF_Close,
+                CombOffsetFlag = utype.THOST_FTDC_OF_Open if (otype==fdef.VOPEN) else utype.THOST_FTDC_OF_CloseToday,
                 CombHedgeFlag = utype.THOST_FTDC_HF_Speculation,
                 VolumeCondition = utype.THOST_FTDC_VC_AV,
                 MinVolume = 1,
@@ -400,7 +400,7 @@ class EngineCTP(TraderSpi):
         oid = req[fdef.KOID]
         channel = fdef.fullname(fdef.CHORESP, strat)
         rec = self.makerecord(ctpreq, oid, strat)
-        rec[fdef.KOSTATE] = fdef.VCANCELREQED
+        rec[fdef.KCANCELSTATE] = fdef.VCANCELREQED
         self.pubsub.publish(channel, rec.dump())
 
     def setoidmap(self, oid, someid, by='oref'):
@@ -1163,13 +1163,13 @@ class TBookCache:
                     p[fdef.KRESERVEDCLOSE] += volume
                     isreserved = True
 
-        if isreserve:
+        if isreserved:
             # XXX: is it ok to set KISRESERVED out of plk?
             with olk:
                 order[fdef.KISRESERVED] = True
                 # XXX: to proxy
 
-        return ret
+        return isreserved
 
     def freereserve(self, oid, count):
         '''
@@ -1215,29 +1215,43 @@ class TBookCache:
                 ufield = set(field)
             ufield -= self.READONLYOKEY
 
-            toupdate = { k:uorder[k] for k in ufield }
+            toupdate = Record()
+            toupdate.update({ k:uorder[k] for k in ufield })
             self.logger.debug('update order %s to %s', oid, toupdate)
             with olk:
                 o.update(toupdate)
                 # XXX: to proxy
 
+            isreserved = o[fdef.KISRESERVED]
+            otype = o[fdef.KOTYPE]
+            code = o[fdef.KCODE]
+            direction = o[fdef.KDIR]
             # update reserve if order is cancelled, and order is reserved
-            if fdef.KCANCELSTATE in uorder and o[fdef.KISRESERVED]==True:
-                cstate = uorder[fdef.KCANCELSTATE]
-                if cstate==fdef.VCANCELLED:
-                    otype = o[fdef.KOTYPE]
-                    code = o[fdef.KCODE]
-                    direction = o[fdef.KDIR]
-                    # NOTE: assume that all untraded volume is cancelled.
-                    untrade = uorder[fdef.KUNTRADEVOL]
-                    poskey = fdef.genposkey(code, direction)
-                    p, plk = self.getposition(poskey)
-                    with plk:
-                        if otype == fdef.VOPEN:
-                            p[fdef.KRESERVEDOPEN] -= untrade
-                        elif otype == fdef.VCLOSE:
-                            p[fdef.KRESERVEDCLOSE] -= untrade
-                        # XXX: to proxy
+            if isreserved:
+                if fdef.KCANCELSTATE in uorder:
+                    cstate = uorder[fdef.KCANCELSTATE]
+                    if cstate==fdef.VCANCELLED:
+                        # NOTE: assume that all untraded volume is cancelled.
+                        untrade = uorder[fdef.KUNTRADEVOL]
+                        poskey = fdef.genposkey(code, direction)
+                        p, plk = self.getposition(poskey)
+                        with plk:
+                            if otype == fdef.VOPEN:
+                                p[fdef.KRESERVEDOPEN] -= untrade
+                            elif otype == fdef.VCLOSE:
+                                p[fdef.KRESERVEDCLOSE] -= untrade
+                            # XXX: to proxy
+                elif fdef.KOSTATE in uorder:
+                    ostate = uorder[fdef.KOSTATE]
+                    if ostate==fdef.VORDERREJECTED:
+                        volume = o[fdef.KVOLUME]
+                        poskey = fdef.genposkey(code, direction)
+                        p, plk = self.getposition(poskey)
+                        with plk:
+                            if otype == fdef.VOPEN:
+                                p[fdef.KRESERVEDOPEN] -= volume
+                            elif otype == fdef.VCLOSE:
+                                p[fdef.KRESERVEDCLOSE] -= volume
 
     def getorder(self, oid):
         o = None

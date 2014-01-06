@@ -91,8 +91,8 @@ def main():
                 code = tp[2].upper()
                 price = float(tp[3])
                 volume = int(tp[4])
-                lastoid, doreq, rcok = rc.reqorder(otype, direct, code, price, volume, doreserve=True)
-                print 'requested,' if doreq else 'unrequested,', 'rickcheck pass,' if rcok else 'riskcheck not pass,', lastoid
+                lastoid, doreq, rcok = rc.reqorder(otype, direct, code, price, volume)
+                print 'requested,' if doreq else 'unrequested,', 'riskcheck ok,' if (doreq and rcok) else 'riskcheck failed,', lastoid
             elif m.startswith('pos'):
                 tbook.printpos()
             elif m.startswith('order'):
