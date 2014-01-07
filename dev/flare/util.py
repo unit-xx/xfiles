@@ -15,8 +15,8 @@ class Record(dict):
         return pickle.dumps(self, -1)
 
     @staticmethod
-    def load(str):
-        return pickle.loads(str)
+    def load(s):
+        return pickle.loads(s)
 
     def __str__(self):
         return u', '.join( u': '.join((unicode(k),unicode(self[k]))) for k in self )

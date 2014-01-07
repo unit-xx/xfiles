@@ -90,6 +90,12 @@ KRESERVEDCLOSE = 'RESERVEDCLOSE'
 # TODO: how to calc margins for order with market price
 KAVGPRICE = 'AVGPRICE'
 
+# TBookProxy command
+CMDNEWORDER = 'CMDNEWORDER'
+CMDUPDATEPOS = 'CMDUPDATEPOS'
+CMDUPDATEORDER = 'CMDUPDATEORDER'
+CMDADDTRADE = 'CMDADDTRADE'
+
 # global keys
 # need suffix :<tradingday>
 FRONTIDKB = 'ALLFRONT'

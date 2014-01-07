@@ -62,6 +62,7 @@ def main():
     tblib = TBookLib(store, tbname)
     print tblib.setup()
     tbproxy = TBookProxy(pubsub, store, tblib)
+    tbproxy.start()
 
     tbook = TBookCache(mysec, tbproxy)
     print tbook.setup()

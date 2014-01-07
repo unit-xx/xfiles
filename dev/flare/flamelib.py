@@ -7,7 +7,7 @@ import logging
 import cPickle as pickle
 from Queue import Queue, Empty
 from collections import defaultdict
-from copy import deepcopy
+from copy import copy
 import cPickle as pickle
 from threading import Thread, Lock, Event, currentThread
 
@@ -779,10 +779,10 @@ class strattop(Thread):
         return False
 
     def onOrderState(self, oid, resp):
-        self.tbook.updateorder(oid, resp)
         state = resp[fdef.KOSTATE]
         self.logger.info('OrderResp: %s', state)
         self.logger.info('OrderResp: %s', resp)
+        self.tbook.updateorder(oid, resp)
         if state == fdef.VORDERREJECTED:
             self.onOrderRejected(oid, resp)
         elif state == fdef.VORDERACCEPTED:
@@ -1096,6 +1096,10 @@ class TBookCache:
         with self.orderblk:
             print self.ordercc.keys()
 
+    def cmdproxy(self, cmd, arg):
+        if self.qproxy is not None:
+            self.qproxy.put((cmd, arg))
+
     def neworder(self, otype, direct, code, price, volume):
         # insert order in ordercc, tradecc and updates its metadata
         oid = fdef.localoid()
@@ -1120,7 +1124,7 @@ class TBookCache:
         with self.orderblk:
             self.ordercc[oid] = o
             self.orderlk[oid] = olk
-            # XXX: to proxy
+            self.cmdproxy(fdef.CMDNEWORDER, (oid, o))
 
         return oid
 
@@ -1156,18 +1160,19 @@ class TBookCache:
             if otype==fdef.VOPEN:
                 if p[fdef.KMAXLIMIT] >= (volume+p[fdef.KPOSITION]+p[fdef.KRESERVEDOPEN]):
                     p[fdef.KRESERVEDOPEN] += volume
-                    # XXX: to proxy
                     isreserved = True
+                    self.cmdproxy(fdef.CMDUPDATEPOS, (poskey, p))
             elif otype==fdef.VCLOSE:
                 if p[fdef.KPOSITION] >= (volume+p[fdef.KRESERVEDCLOSE]):
                     p[fdef.KRESERVEDCLOSE] += volume
                     isreserved = True
+                    self.cmdproxy(fdef.CMDUPDATEPOS, (poskey, p))
 
         if isreserved:
             # XXX: is it ok to set KISRESERVED out of plk?
-            with olk:
-                order[fdef.KISRESERVED] = True
-                # XXX: to proxy
+            toupdate = Record()
+            toupdate[fdef.KISRESERVED] = True
+            self.updateorder(oid, toupdate)
 
         return isreserved
 
@@ -1220,13 +1225,13 @@ class TBookCache:
             self.logger.debug('update order %s to %s', oid, toupdate)
             with olk:
                 o.update(toupdate)
-                # XXX: to proxy
+                self.cmdproxy(fdef.CMDUPDATEORDER, (oid, toupdate))
 
             isreserved = o[fdef.KISRESERVED]
             otype = o[fdef.KOTYPE]
             code = o[fdef.KCODE]
             direction = o[fdef.KDIR]
-            # update reserve if order is cancelled, and order is reserved
+            # update reserve if reserved order is cancelled
             if isreserved:
                 if fdef.KCANCELSTATE in uorder:
                     cstate = uorder[fdef.KCANCELSTATE]
@@ -1240,7 +1245,7 @@ class TBookCache:
                                 p[fdef.KRESERVEDOPEN] -= untrade
                             elif otype == fdef.VCLOSE:
                                 p[fdef.KRESERVEDCLOSE] -= untrade
-                            # XXX: to proxy
+                            self.cmdproxy(fdef.CMDUPDATEPOS, (poskey, p))
                 elif fdef.KOSTATE in uorder:
                     ostate = uorder[fdef.KOSTATE]
                     if ostate==fdef.VORDERREJECTED:
@@ -1252,6 +1257,7 @@ class TBookCache:
                                 p[fdef.KRESERVEDOPEN] -= volume
                             elif otype == fdef.VCLOSE:
                                 p[fdef.KRESERVEDCLOSE] -= volume
+                            self.cmdproxy(fdef.CMDUPDATEPOS, (poskey, p))
 
     def getorder(self, oid):
         o = None
@@ -1292,7 +1298,7 @@ class TBookCache:
             isreserved = order[fdef.KISRESERVED]
             with olk:
                 order[fdef.KTRADE].append((price, volume))
-                # XXX: to proxy
+                self.cmdproxy(fdef.CMDADDTRADE, (oid, price, volume))
 
             # update position
             code = order[fdef.KCODE]
@@ -1316,7 +1322,7 @@ class TBookCache:
                     p[fdef.KPOSITION] -= volume
                     if isreserved:
                         p[fdef.KRESERVEDCLOSE] -= volume
-                # XXX: to proxy
+                self.cmdproxy(fdef.CMDUPDATEPOS, (poskey, p))
 
         return ret
 
@@ -1459,6 +1465,7 @@ class TBookLib:
     def getalloid(self):
         rkey = fdef.fullname(fdef.ALLORDER, self.tbname)
         alloids = self.store.smembers(rkey)
+        alloids = [fdef.splitname(x)[2] for x in alloids]
         return alloids
 
     def getorder(self, oid):
@@ -1473,7 +1480,7 @@ class TBookLib:
         order, traderaw = p.execute()
 
         try:
-            trade = [Record.load(t) for t in traderaw]
+            trade = [pickle.loads(t) for t in traderaw]
         except:
             trade = []
             self.logger.exception('Load trade error.')
@@ -1496,20 +1503,25 @@ class TBookLib:
         '''
         store order, trade is empty now, add oid in alloid
         '''
-        o = deepcopy(order)
+        o = copy(order)
         if fdef.KTRADE in o:
             o.pop(fdef.KTRADE)
 
         okey = fdef.fullname(fdef.ORDERNS, self.tbname, oid)
         aokey = fdef.fullname(fdef.ALLORDER, self.tbname)
         p = self.store.pipeline()
-        p.hmset(okey, o)
+        p.hmset(okey, order)
         p.sadd(aokey, okey)
         p.execute()
 
-    def addtrade(self, oid, trade):
-        # TODO: update position at the same time.
-        pass
+    def addtrade(self, oid, price, volume):
+        tkey = fdef.fullname(fdef.TRADENS, self.tbname, oid)
+        newtrade = (price, volume)
+        self.store.rpush(tkey, pickle.dumps(newtrade))
+
+    def updateposition(self, poskey, pos):
+        pkey = fdef.fullname(fdef.POSITIONNS, self.tbname, poskey)
+        self.store.hmset(poskey, pos)
 
     def getallposkey(self):
         rkey = fdef.fullname(fdef.ALLPOSKEY, self.tbname)
@@ -1544,8 +1556,8 @@ class TBookProxy(Thread):
     def run(self):
         while self.runflag:
             try:
-                br = self.queue.get(True, 2)
-                self.process(br)
+                cmd, arg = self.queue.get(True, 2)
+                self.process(cmd, arg)
                 self.queue.task_done()
             except Empty:
                 pass
@@ -1555,13 +1567,33 @@ class TBookProxy(Thread):
         if dojoin:
             self.queue.join()
 
-    def process(self, br):
+    def process(self, cmd, arg):
+        self.logger.debug('cmd: %s, arg: %s', cmd, arg)
         try:
+            if cmd==fdef.CMDNEWORDER:
+                oid = arg[0]
+                o = arg[1]
+                self.tblib.neworder(oid, o)
+            elif cmd==fdef.CMDUPDATEORDER:
+                oid = arg[0]
+                toupdate = arg[1]
+                self.tblib.updateorder(oid, toupdate)
+            elif cmd==fdef.CMDUPDATEPOS:
+                poskey = arg[0]
+                p = arg[1]
+                self.tblib.updateposition(poskey, p)
+            elif cmd==fdef.CMDADDTRADE:
+                oid = arg[0]
+                price = arg[1]
+                volume = arg[2]
+                self.tblib.addtrade(oid, price, volume)
+            else:
+                self.logger.error('unkonw TBookProxy command: %s.', cmd)
             #self.tblib.update(self.store, br)
             #self.pubsub.publish(br)
             pass
         except:
-            pass
+            self.logger.exception('exception at handling command %s, with arg %s', cmd, arg)
 
     def getqueue(self):
         return self.queue
