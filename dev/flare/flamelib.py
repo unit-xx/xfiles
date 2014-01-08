@@ -818,9 +818,9 @@ class strattop(Thread):
 
     def onTradeState(self, oid, resp):
         # arrive here only when new trade is informed.
+        self.logger.info('NewTrade: %s', resp)
         self.tbook.addtrade(oid, resp)
         self.onNewTrade(oid, resp)
-        self.logger.info('NewTrade: %s', resp)
 
     def onNewTrade(self, oid, trade):
         '''
@@ -829,10 +829,10 @@ class strattop(Thread):
         pass
 
     def onCancelState(self, oid, resp):
-        self.tbook.updateorder(oid, resp)
         state = resp[fdef.KCANCELSTATE]
         self.logger.info('CancelResp: %s', state)
         self.logger.info('CancelResp: %s', resp)
+        self.tbook.updateorder(oid, resp)
         if state == fdef.VCANCELREJECTED:
             self.onCancelRejected(oid, resp)
         elif state == fdef.VCANCELLED:
@@ -1000,7 +1000,6 @@ class TBookCache:
         fdef.KVOLUME,
         fdef.KPRICE,
         fdef.KISIOC,
-        fdef.KISRESERVED
         ])
 
     def __init__(self, strat, tbproxy=None):
@@ -1124,6 +1123,7 @@ class TBookCache:
         with self.orderblk:
             self.ordercc[oid] = o
             self.orderlk[oid] = olk
+            self.logger.debug('neworder: %s', o)
             self.cmdproxy(fdef.CMDNEWORDER, (oid, o))
 
         return oid
@@ -1211,7 +1211,6 @@ class TBookCache:
 
         '''
 
-        # TODO: check that only updatable keys are updated
         o, olk = self.getorder(oid)
         if o is not None:
             if len(field)==0:
@@ -1231,7 +1230,7 @@ class TBookCache:
             otype = o[fdef.KOTYPE]
             code = o[fdef.KCODE]
             direction = o[fdef.KDIR]
-            # update reserve if reserved order is cancelled
+            # update reserve and position if reserved order is cancelled
             if isreserved:
                 if fdef.KCANCELSTATE in uorder:
                     cstate = uorder[fdef.KCANCELSTATE]
@@ -1337,14 +1336,15 @@ class TBookCache:
                 # Ok, a postion entry hasn't been added, but is needed.
                 p = {}
                 plk = Lock()
-                self.poscc[poskey] = p
-                self.poslk[poskey] = plk
                 p[fdef.KPOSITION] = 0
                 p[fdef.KRESERVEDOPEN] = 0
                 p[fdef.KRESERVEDCLOSE] = 0
                 p[fdef.KAVGPRICE] = 0.0
                 p[fdef.KMAXLIMIT] = self.posmax[poskey]
-                # XXX: to proxy
+                self.poscc[poskey] = p
+                self.poslk[poskey] = plk
+                # XXX: seems no need to sync to store
+                self.cmdproxy(fdef.CMDNEWPOSITION, (poskey, p))
 
         return p, plk
 
@@ -1510,7 +1510,7 @@ class TBookLib:
         okey = fdef.fullname(fdef.ORDERNS, self.tbname, oid)
         aokey = fdef.fullname(fdef.ALLORDER, self.tbname)
         p = self.store.pipeline()
-        p.hmset(okey, order)
+        p.hmset(okey, o)
         p.sadd(aokey, okey)
         p.execute()
 
@@ -1519,13 +1519,22 @@ class TBookLib:
         newtrade = (price, volume)
         self.store.rpush(tkey, pickle.dumps(newtrade))
 
+    def newposition(self, poskey, pos):
+        pkey = fdef.fullname(fdef.POSITIONNS, self.tbname, poskey)
+        apkey = fdef.fullname(fdef.ALLPOS, self.tbname)
+        p = self.store.pipeline()
+        p.hmset(pkey, pos)
+        p.sadd(apkey, pkey)
+        p.execute()
+
     def updateposition(self, poskey, pos):
         pkey = fdef.fullname(fdef.POSITIONNS, self.tbname, poskey)
-        self.store.hmset(poskey, pos)
+        self.store.hmset(pkey, pos)
 
     def getallposkey(self):
-        rkey = fdef.fullname(fdef.ALLPOSKEY, self.tbname)
-        allposkey = self.store.smembers(rkey)
+        apkey = fdef.fullname(fdef.ALLPOS, self.tbname)
+        allposkey = self.store.smembers(apkey)
+        allposkey = [fdef.splitname(x)[2] for x in allposkey]
         return allposkey
 
     def getposition(self, poskey):
@@ -1587,6 +1596,10 @@ class TBookProxy(Thread):
                 price = arg[1]
                 volume = arg[2]
                 self.tblib.addtrade(oid, price, volume)
+            elif cmd==fdef.CMDNEWPOSITION:
+                poskey = arg[0]
+                p = arg[1]
+                self.tblib.newposition(poskey, p)
             else:
                 self.logger.error('unkonw TBookProxy command: %s.', cmd)
             #self.tblib.update(self.store, br)
