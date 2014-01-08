@@ -1488,7 +1488,7 @@ class TBookLib:
             if k in order.keys():
                 order[k] = self.otypeconv[k](order[k])
         order[fdef.KTRADE] = trade
-        return order
+        return Record(order)
 
     def updateorder(self, oid, toupdate):
         okey = fdef.fullname(fdef.ORDERNS, self.tbname, oid)
@@ -1543,7 +1543,7 @@ class TBookLib:
         for k in pos.keys():
             if k in self.ttypeconv:
                 pos[k] = self.ttypeconv[k](pos[k])
-        return pos
+        return Record(pos)
 
 class TBookProxy(Thread):
     '''
