@@ -2,6 +2,7 @@
 # 2. visualize correlation on some time spots.
 
 library(zoo)
+library(tseries)
 
 fn = 'citic.level1.csv'
 retdata = read.zoo(fn, header=T, sep=',', colClasses=c('character',rep(c('NULL','numeric'),29)))
@@ -14,6 +15,7 @@ endtick = seq(firstend, NROW(retdata), step)
 startick = endtick - winsize + 1
 avgcor.zoo = zoo(0, index(retdata)[endtick])
 avgsd.zoo = zoo(0, index(retdata)[endtick])
+avgcoint.zoo = zoo(0, index(retdata)[endtick])
 
 for(i in 1:length(startick))
 {
