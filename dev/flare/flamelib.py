@@ -10,9 +10,11 @@ from collections import defaultdict
 from copy import copy
 import cPickle as pickle
 from threading import Thread, Lock, Event, currentThread
+from datetime import datetime
 
 from util import Record, printdictdict
 import flaredef as fdef
+import config
 
 import redis
 
@@ -337,11 +339,15 @@ class EngineCTP(TraderSpi):
         price = req[fdef.KPRICE]
         otype = req[fdef.KOTYPE]
         isIOC = (fdef.KISIOC in req) and req[fdef.KISIOC]
+        if otype==fdef.VOPEN:
+            ctpdirect = utype.THOST_FTDC_D_Buy if (direct==fdef.VLONG) else utype.THOST_FTDC_D_Sell
+        else:
+            ctpdirect = utype.THOST_FTDC_D_Buy if (direct==fdef.VSHORT) else utype.THOST_FTDC_D_Sell
 
         oref = self.inc_order_ref()
         ctpreq = ustruct.InputOrder(
                 InstrumentID = code,
-                Direction = utype.THOST_FTDC_D_Buy if (direct==fdef.VLONG) else utype.THOST_FTDC_D_Sell,
+                Direction = ctpdirect,
                 OrderRef = str(oref),
                 LimitPrice = 0.0 if ismktprice else price,
                 VolumeTotalOriginal = volume,
@@ -1082,7 +1088,8 @@ class TBookCache:
     def printpos(self):
         with self.posblk:
             rkey = self.poscc.keys()
-            ckey = [fdef.KMAXLIMIT, fdef.KPOSITION, fdef.KRESERVEDOPEN, fdef.KRESERVEDCLOSE, fdef.KAVGPRICE]
+            rkey.sort()
+            ckey = [fdef.KPOSKEY, fdef.KMAXLIMIT, fdef.KPOSITION, fdef.KRESERVEDOPEN, fdef.KRESERVEDCLOSE, fdef.KAVGPRICE]
             printdictdict(self.poscc, rkey, ckey)
 
     def printorder(self, oid):
@@ -1112,6 +1119,7 @@ class TBookCache:
             o[fdef.KOSTATE] = fdef.VORDERINIT
             o[fdef.KCANCELSTATE] = fdef.VCANCELINIT
             o[fdef.KTRADE] = []
+            o[fdef.KORDERDATE] = datetime.now().strftime(config.GCONFIG['dateformat'])
             
             o[fdef.KACTION] = fdef.VINSERT
             o[fdef.KOTYPE] = otype
@@ -1336,6 +1344,7 @@ class TBookCache:
                 # Ok, a postion entry hasn't been added, but is needed.
                 p = {}
                 plk = Lock()
+                p[fdef.KPOSKEY] = poskey
                 p[fdef.KPOSITION] = 0
                 p[fdef.KRESERVEDOPEN] = 0
                 p[fdef.KRESERVEDCLOSE] = 0
@@ -1566,7 +1575,7 @@ class TBookProxy(Thread):
         while self.runflag:
             try:
                 cmd, arg = self.queue.get(True, 2)
-                self.process(cmd, arg)
+                self.processcmd(cmd, arg)
                 self.queue.task_done()
             except Empty:
                 pass
@@ -1576,7 +1585,7 @@ class TBookProxy(Thread):
         if dojoin:
             self.queue.join()
 
-    def process(self, cmd, arg):
+    def processcmd(self, cmd, arg):
         self.logger.debug('cmd: %s, arg: %s', cmd, arg)
         try:
             if cmd==fdef.CMDNEWORDER:

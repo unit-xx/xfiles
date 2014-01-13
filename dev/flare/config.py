@@ -9,6 +9,7 @@ import flaredef as fdef
 GCONFIG = None
 
 def parseconfig(name='config.ini', configpath='.'):
+    global GCONFIG
     cfg = ConfigParser.ConfigParser()
     cfgfn = os.path.join(configpath, name)
     cfg.read(cfgfn)
@@ -25,6 +26,11 @@ def parseconfig(name='config.ini', configpath='.'):
 
         config[csec] = dict(cfg.items(sec))
 
+    try:
+        GCONFIG = config['GLOBAL']
+    except KeyError:
+        pass
+
     return config
 
 def setuplogger(app, name='logger.ini', configpath='.'):
@@ -34,10 +40,10 @@ def setuplogger(app, name='logger.ini', configpath='.'):
     logger.info("========================")
     logger.info('%s is started!', app)
 
-def init_gconfig(config):
-    global GCONFIG
-    if GCONFIG is None:
-        GCONFIG = config
-        return True
-    else:
-        return False
+#def init_gconfig(config):
+#    global GCONFIG
+#    if GCONFIG is None:
+#        GCONFIG = config
+#        return True
+#    else:
+#        return False
