@@ -28,6 +28,9 @@ STRATTBMAP = 'STRATTBMAP'
 CHQUOTE = 'CHQUOTE'
 CHOREQ = 'CHOREQ'
 CHORESP = 'CHORESP'
+# TBook update notification
+CHNTFTBOOK = 'CHNTFTBOOK'
+
 
 # order keys and constants, K for order key, V for order value
 KOID = 'OID'
@@ -98,6 +101,9 @@ CMDUPDATEORDER = 'CMDUPDATEORDER'
 CMDADDTRADE = 'CMDADDTRADE'
 CMDNEWPOSITION = 'CMDNEWPOSITION'
 CMDUPDATEPOS = 'CMDUPDATEPOS'
+
+# UI refresh command
+CMDUI = 'CMDUI'
 
 # global keys
 # need suffix :<tradingday>

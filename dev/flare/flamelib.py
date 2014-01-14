@@ -1096,7 +1096,7 @@ class TBookCache:
         o, olk = self.getorder(oid)
         if o is not None:
             with olk:
-                print o
+                print str(o)
 
     def printalloid(self):
         with self.orderblk:
@@ -1305,7 +1305,7 @@ class TBookCache:
             isreserved = order[fdef.KISRESERVED]
             with olk:
                 order[fdef.KTRADE].append((price, volume))
-                self.cmdproxy(fdef.CMDADDTRADE, (oid, price, volume))
+                self.cmdproxy(fdef.CMDADDTRADE, (oid, (price, volume)))
 
             # update position
             code = order[fdef.KCODE]
@@ -1526,7 +1526,7 @@ class TBookLib:
     def addtrade(self, oid, price, volume):
         tkey = fdef.fullname(fdef.TRADENS, self.tbname, oid)
         newtrade = (price, volume)
-        self.store.rpush(tkey, pickle.dumps(newtrade))
+        self.store.rpush(tkey, pickle.dumps(newtrade, -1))
 
     def newposition(self, poskey, pos):
         pkey = fdef.fullname(fdef.POSITIONNS, self.tbname, poskey)
@@ -1602,8 +1602,7 @@ class TBookProxy(Thread):
                 self.tblib.updateposition(poskey, p)
             elif cmd==fdef.CMDADDTRADE:
                 oid = arg[0]
-                price = arg[1]
-                volume = arg[2]
+                price, volume = arg[1]
                 self.tblib.addtrade(oid, price, volume)
             elif cmd==fdef.CMDNEWPOSITION:
                 poskey = arg[0]
@@ -1611,9 +1610,12 @@ class TBookProxy(Thread):
                 self.tblib.newposition(poskey, p)
             else:
                 self.logger.error('unkonw TBookProxy command: %s.', cmd)
-            #self.tblib.update(self.store, br)
-            #self.pubsub.publish(br)
-            pass
+
+            try:
+                nft = pickle.dumps((cmd, self.tblib.strat, arg), -1)
+                self.pubsub.publish(fdef.CHNTFTBOOK, nft)
+            except pickle.PickleError:
+                pass
         except:
             self.logger.exception('exception at handling command %s, with arg %s', cmd, arg)
 

@@ -1,5 +1,8 @@
 import sys
 from datetime import datetime
+from threading import Thread
+import cPickle as pickle
+import logging
 
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
@@ -18,8 +21,8 @@ class crabmonwin(QMainWindow, Ui_crabmainwin):
         self.tblibs = {}
         self.strat2tb = {}
         self.curstrat = None
-        self.posmodel = listofdictTableModel([getattr(fdef, x) for x in mycfg['poskeys'].split()], {})
-        self.ordermodel = listofdictTableModel([getattr(fdef, x) for x in mycfg['orderkeys'].split()], {})
+        self.posmodel = listofdictTableModel(getattr(fdef, mycfg['poskey']), [getattr(fdef, x) for x in mycfg['poscolumn'].split()], {})
+        self.ordermodel = listofdictTableModel(getattr(fdef, mycfg['orderkey']), [getattr(fdef, x) for x in mycfg['ordercolumn'].split()], {})
 
     def setup(self):
         self.setupUi(self)
@@ -48,9 +51,10 @@ class crabmonwin(QMainWindow, Ui_crabmainwin):
         self.curstrat = str(strat)
         tbname = self.strat2tb[self.curstrat]
         self.tbnameline.setText(QString(tbname))
-
-        self.reloadpos()
-        self.reloadorder()
+        try:
+            self.pubsub.publish(fdef.CHNTFTBOOK, pickle.dumps((fdef.CMDUI, self.curstrat, self.curstrat), -1))
+        except pickle.PickleError:
+            pass
 
     def reloadstrat(self, newindex=0):
         tb2strat = self.store.hgetall(fdef.STRATTBMAP)
@@ -61,6 +65,7 @@ class crabmonwin(QMainWindow, Ui_crabmainwin):
             self.stratcmbo.addItem(QString(s))
         self.stratcmbo.setCurrentIndex(newindex)
 
+    @pyqtSlot()
     def reloadpos(self):
         tblib = self.gettblib(self.curstrat)
         if tblib is None:
@@ -73,9 +78,10 @@ class crabmonwin(QMainWindow, Ui_crabmainwin):
             newpos.append(tblib.getposition(pk))
 
         self.posmodel.clean()
-        self.posmodel.addrows(newpos)
+        self.posmodel.updaterows(newpos)
         #self.posmodel.updateall()
 
+    @pyqtSlot()
     def reloadorder(self):
         tblib = self.gettblib(self.curstrat)
         if tblib is None:
@@ -88,8 +94,67 @@ class crabmonwin(QMainWindow, Ui_crabmainwin):
         neworders.sort(key=lambda x: datetime.strptime(x[fdef.KORDERDATE], config.GCONFIG['dateformat']))
 
         self.ordermodel.clean()
-        self.ordermodel.addrows(neworders)
+        self.ordermodel.updaterows(neworders)
         #self.ordermodel.updateall()
+
+class updater(Thread):
+    def __init__(self, pubsub, win):
+        Thread.__init__(self)
+        self.pubsub = pubsub
+        self.posmodel = win.posmodel
+        self.ordermodel = win.ordermodel
+        self.win = win
+        self.curstrat = None
+
+        self.runflag = True
+        self.logger = logging.getLogger()
+        self.name = self.__class__.__name__
+
+    def setup(self):
+        self.pubsub.subscribe(fdef.CHNTFTBOOK)
+
+    def stop(self):
+        self.runflag = False
+
+    def run(self):
+        self.setup()
+
+        while self.runflag:
+            m = self.pubsub.listen()
+            try:
+                cmd, strat, arg = pickle.loads(m['data'])
+            except pickle.PickleError:
+                continue
+
+            try:
+                if cmd==fdef.CMDUI:
+                    self.curstrat = arg
+                    QMetaObject.invokeMethod(self.win, 'reloadpos', Qt.QueuedConnection)
+                    QMetaObject.invokeMethod(self.win, 'reloadorder', Qt.QueuedConnection)
+
+                if strat==self.curstrat and cmd in (fdef.CMDNEWORDER, fdef.CMDUPDATEPOS):
+                    oid = arg[0]
+                    o = arg[1]
+                    QMetaObject.invokeMethod(self.win.ordermodel,
+                            'updaterows',
+                            Qt.QueuedConnection,
+                            Q_ARG(str, pickle.dumps([o]))
+                            )
+
+                elif strat==self.curstrat and cmd in (fdef.CMDUPDATEPOS, fdef.CMDNEWPOSITION):
+                    poskey = arg[0]
+                    p = arg[1]
+                    QMetaObject.invokeMethod(self.win.ordermodel,
+                            'updaterows',
+                            Qt.QueuedConnection,
+                            Q_ARG(str, pickle.dumps([p]))
+                            )
+            except:
+                self.logger.exception('exception at update UI %s, with arg %s', cmd, arg)
+
+
+
+
 
 def main(args):
     app = QApplication(args)
@@ -108,10 +173,15 @@ def main(args):
     pubsub = getpubsub(storecfg)
 
     ui = crabmonwin(store, pubsub, mycfg)
+
+    upd = updater(pubsub, ui)
+    upd.start()
+
     ui.setup()
     ui.show()
-
     app.exec_()
+
+    upd.stop()
 
 if __name__=="__main__":
     main(sys.argv)

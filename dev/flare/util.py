@@ -1,4 +1,6 @@
 import cPickle as pickle
+from threading import RLock
+
 from prettytable import PrettyTable
 from PyQt4.QtCore import *
 
@@ -20,8 +22,10 @@ class Record(dict):
         return pickle.loads(s)
 
     def __str__(self):
-        # TODO: unicode seems not work.
-        return u', '.join( u': '.join((unicode(k),unicode(self[k]))) for k in self )
+        s = ', '.join( ': '.join((str(k),str(self[k]))) for k in self )
+        return s#.encode('utf-8')
+
+    __repr__ = __str__
 
 def printdictdict(d, rowkey, colkey):
     ck = [x for x in colkey]
@@ -33,27 +37,64 @@ def printdictdict(d, rowkey, colkey):
     print tbl
 
 class listofdictTableModel(QAbstractTableModel):
-    def __init__(self, colname, colnamemap, parent=None):
+    def __init__(self, keyname, colname, colnamemap, parent=None):
         QAbstractTableModel.__init__(self, parent)
         self.data = []
+        self.keys = []
+        self.lock = RLock()
+        self.keyname = keyname
         self.colname = colname
         self.colnamemap = colnamemap
 
     def rowCount(self, parent=None):
-        return len(self.data)
+        with self.lock:
+            ret = len(self.data)
+        return ret
 
     def columnCount(self, parent=None):
-        return len(self.colname)
+        with self.lock:
+            ret = len(self.colname)
+        return ret
 
-    def addrows(self, newrows):
-        self.beginInsertRows(QModelIndex(), self.rowCount(), self.rowCount()+len(newrows)-1)
-        self.data.extend(newrows)
-        self.endInsertRows()
+    @pyqtSlot(str)
+    def updaterows(self, newrows):
+        # add a new row or update an existing row.
+        print type(newrows)
+        print newrows
+        with self.lock:
+            for row in newrows:
+                if isinstance(row, list):
+                    r = row
+                else:
+                    try:
+                        r = pickle.loads(row)
+                    except pickle.PickleError:
+                        pass
+                    print row
+                    return
+
+                try:
+                    k = r[self.keyname]
+                    if k in self.keys:
+                        # existing key
+                        i = self.keys.index(k)
+                        self.data[i].update(r)
+                        self.refreshrow(i)
+                    else:
+                        # a new key
+                        self.beginInsertRows(QModelIndex(), self.rowCount(), self.rowCount())
+                        self.keys.append(k)
+                        self.data.append(r)
+                        self.endInsertRows()
+                except KeyError:
+                    pass
 
     def clean(self):
         if self.rowCount() > 0:
             self.beginRemoveRows(QModelIndex(), 0, self.rowCount()-1)
-            del self.data[0:]
+            with self.lock:
+                del self.data[0:]
+                del self.keys[0:]
             self.endRemoveRows()
 
     def headerData(self, section, orientation, role):
@@ -89,13 +130,13 @@ class listofdictTableModel(QAbstractTableModel):
         return QVariant()
 
     @pyqtSlot(int)
-    def updaterow(self, rowindex):
+    def refreshrow(self, rowindex):
         self.emit(SIGNAL("dataChanged(QModelIndex,QModelIndex)"),
                 self.index(rowindex,0),
                 self.index(rowindex, len(self.colname)-1))
 
     @pyqtSlot()
-    def updateall(self):
+    def refreshall(self):
         self.emit(SIGNAL("dataChanged(QModelIndex,QModelIndex)"),
                 self.index(0,0),
                 self.index(self.rowCount()-1, len(self.colname)-1))
