@@ -12,10 +12,21 @@ holdu = 20
 # 2. select most underperformed / overperformed stock with equal weights
 # 3. hold the stocks for hold days, compare net gain against an index's performance
 
-#stock.zoo
-#index.zoo
+citicq.fn = 'citic.level1.csv'
+citicq.zoo = read.zoo(citicq.fn, header=T, sep=',', colClasses=c('character',rep(c('numeric','NULL'),29)))
 
-stock.zoo = zoo(1:20, as.Date("2003-02-01")+1:20)
-lagret = exp(diff(log(stock.zoo), lag=lagu))-1
-holdret = exp(diff(log(stock.zoo), lag=-holdu))-1
-# select most xxx stocks (columns in zoo)
+hs300q.fn = 'hs300.csv'
+hs300q.zoo = read.zoo(hs300q.fn, header=T, sep=',', colClasses=c('character',rep(c('numeric','NULL'),1)))
+
+all.zoo = merge(hs300q.zoo, citicq.zoo, all=FALSE)
+
+lagret = exp(diff(log(all.zoo), lag=lagu))-1
+holdret = exp(diff(log(all.zoo), lag=-holdu))-1
+
+# relative return with first column (hs300)
+rellagret = lagret - lagret[,1]
+rellagret = rellagret[,-1]
+relholdret = holdret - holdret[,1]
+relholdret = relholdret[,-1]
+
+tmp = merge(rellagret, relholdret, all=FALSE)
