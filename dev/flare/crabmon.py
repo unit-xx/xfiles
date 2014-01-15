@@ -1,6 +1,6 @@
 import sys
 from datetime import datetime
-from threading import Thread
+from threading import Thread, currentThread
 import cPickle as pickle
 import logging
 
@@ -78,7 +78,7 @@ class crabmonwin(QMainWindow, Ui_crabmainwin):
             newpos.append(tblib.getposition(pk))
 
         self.posmodel.clean()
-        self.posmodel.updaterows(newpos)
+        self.posmodel.updaterows(newpos, [p[fdef.KPOSKEY] for p in newpos])
         #self.posmodel.updateall()
 
     @pyqtSlot()
@@ -94,7 +94,7 @@ class crabmonwin(QMainWindow, Ui_crabmainwin):
         neworders.sort(key=lambda x: datetime.strptime(x[fdef.KORDERDATE], config.GCONFIG['dateformat']))
 
         self.ordermodel.clean()
-        self.ordermodel.updaterows(neworders)
+        self.ordermodel.updaterows(neworders, [o[fdef.KOID] for o in neworders])
         #self.ordermodel.updateall()
 
 class updater(Thread):
@@ -132,22 +132,24 @@ class updater(Thread):
                     QMetaObject.invokeMethod(self.win, 'reloadpos', Qt.QueuedConnection)
                     QMetaObject.invokeMethod(self.win, 'reloadorder', Qt.QueuedConnection)
 
-                if strat==self.curstrat and cmd in (fdef.CMDNEWORDER, fdef.CMDUPDATEPOS):
+                if strat==self.curstrat and cmd in (fdef.CMDNEWORDER, fdef.CMDUPDATEORDER):
                     oid = arg[0]
                     o = arg[1]
                     QMetaObject.invokeMethod(self.win.ordermodel,
                             'updaterows',
                             Qt.QueuedConnection,
-                            Q_ARG(str, pickle.dumps([o]))
+                            Q_ARG(list, [o]),
+                            Q_ARG(list, [oid])
                             )
 
                 elif strat==self.curstrat and cmd in (fdef.CMDUPDATEPOS, fdef.CMDNEWPOSITION):
                     poskey = arg[0]
                     p = arg[1]
-                    QMetaObject.invokeMethod(self.win.ordermodel,
+                    QMetaObject.invokeMethod(self.win.posmodel,
                             'updaterows',
                             Qt.QueuedConnection,
-                            Q_ARG(str, pickle.dumps([p]))
+                            Q_ARG(list, [p]),
+                            Q_ARG(list, [poskey])
                             )
             except:
                 self.logger.exception('exception at update UI %s, with arg %s', cmd, arg)

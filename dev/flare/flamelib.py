@@ -1342,7 +1342,7 @@ class TBookCache:
                 plk = self.poslk[poskey]
             except KeyError:
                 # Ok, a postion entry hasn't been added, but is needed.
-                p = {}
+                p = Record()
                 plk = Lock()
                 p[fdef.KPOSKEY] = poskey
                 p[fdef.KPOSITION] = 0

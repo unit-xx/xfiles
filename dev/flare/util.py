@@ -1,5 +1,5 @@
 import cPickle as pickle
-from threading import RLock
+from threading import RLock, currentThread
 
 from prettytable import PrettyTable
 from PyQt4.QtCore import *
@@ -56,38 +56,35 @@ class listofdictTableModel(QAbstractTableModel):
             ret = len(self.colname)
         return ret
 
-    @pyqtSlot(str)
-    def updaterows(self, newrows):
+    @pyqtSlot(list, list)
+    def updaterows(self, newrows, keys):
         # add a new row or update an existing row.
-        print type(newrows)
-        print newrows
         with self.lock:
-            for row in newrows:
-                if isinstance(row, list):
-                    r = row
-                else:
-                    try:
-                        r = pickle.loads(row)
-                    except pickle.PickleError:
-                        pass
-                    print row
-                    return
+            for i, r in enumerate(newrows):
+                #if isinstance(row, list):
+                #    r = row
+                #else:
+                #    try:
+                #        r = pickle.loads(row)
+                #    except pickle.PickleError:
+                #        pass
+                #    print row
+                #    return
 
-                try:
-                    k = r[self.keyname]
-                    if k in self.keys:
-                        # existing key
-                        i = self.keys.index(k)
-                        self.data[i].update(r)
-                        self.refreshrow(i)
-                    else:
-                        # a new key
-                        self.beginInsertRows(QModelIndex(), self.rowCount(), self.rowCount())
-                        self.keys.append(k)
-                        self.data.append(r)
-                        self.endInsertRows()
-                except KeyError:
-                    pass
+                k = keys[i]
+                if k in self.keys:
+                    # existing key
+                    j = self.keys.index(k)
+                    #print 'update row', j+1, k
+                    self.data[j].update(r)
+                    self.refreshrow(j)
+                else:
+                    # a new key
+                    #print 'insert new row', self.rowCount()+1, k
+                    self.beginInsertRows(QModelIndex(), self.rowCount(), self.rowCount())
+                    self.keys.append(k)
+                    self.data.append(r)
+                    self.endInsertRows()
 
     def clean(self):
         if self.rowCount() > 0:
