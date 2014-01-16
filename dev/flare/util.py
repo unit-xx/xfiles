@@ -138,3 +138,4 @@ class listofdictTableModel(QAbstractTableModel):
                 self.index(0,0),
                 self.index(self.rowCount()-1, len(self.colname)-1))
 
+# $Id$ 

@@ -18,3 +18,4 @@ class mmpair(strattop):
         self.tbook = tbook
 
 p = mmpair('a', 'b')
+# $Id$ 

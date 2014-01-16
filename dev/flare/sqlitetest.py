@@ -39,3 +39,4 @@ conn.close()
 # with commit per loop: 0:00:07.293000 0.07293 13.7117784177
 # without commit: 0:00:00.053000 5.3e-06 188679.245283
 
+# $Id$ 

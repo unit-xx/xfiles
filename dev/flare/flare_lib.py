@@ -797,3 +797,4 @@ class strategy(Thread):
     def onquote(self, q):
         pass
 
+# $Id$ 

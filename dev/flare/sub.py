@@ -9,3 +9,4 @@ while 1:
     if qmsg['type'] == 'message':
         m = pickle.loads(qmsg['data'])
         print m
+# $Id$ 

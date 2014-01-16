@@ -76,3 +76,4 @@ class Ui_crabmainwin(object):
         self.label.setText(_translate("crabmainwin", "策略", None))
         self.label_2.setText(_translate("crabmainwin", "账目", None))
 
+# $Id$ 

@@ -127,3 +127,4 @@ def genposkey(code, direction):
 
 def splitposkey(poskey):
     return poskey.split(POSKEYSEP)
+# $Id$ 

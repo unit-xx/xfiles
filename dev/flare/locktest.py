@@ -20,3 +20,4 @@ for i in range(n):
 t2 = datetime.now()
 print t2-t1, seconds(t2-t1)/n, n/seconds(t2-t1)
 
+# $Id$ 

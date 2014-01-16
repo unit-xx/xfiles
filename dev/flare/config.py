@@ -47,3 +47,4 @@ def setuplogger(app, name='logger.ini', configpath='.'):
 #        return True
 #    else:
 #        return False
+# $Id$ 

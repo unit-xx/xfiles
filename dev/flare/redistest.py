@@ -67,3 +67,4 @@ def listener(n, r, ch):
 Thread(target=listener, args=(10, r, 'test')).start()
 Thread(target=publisher, args=(10, r, 'test')).start()
 
+# $Id$ 
