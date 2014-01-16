@@ -200,19 +200,21 @@ class Engine(Thread):
 
     def setup(self):
         self.pubsub.subscribe(fdef.CHOREQ)
+        self.pubsub.subscribe(fdef.CHHEARTBEAT)
 
         self.ctp = EngineCTP(self.tradercfg, self.pubsub)
         return self.ctp.setup()
 
     def close(self):
         self.pubsub.unsubscribe(fdef.CHOREQ)
+        self.pubsub.unsubscribe(fdef.CHHEARTBEAT)
         if self.ctp:
             self.ctp.api.Release()
             self.ctp = None
 
     def stop(self):
         self.runflag = False
-        self.pubsub.publish(fdef.CHOREQ, 'stop ctp engine')
+        self.pubsub.publish(fdef.CHHEARTBEAT, 'hello')
 
     def run(self):
         # TODO: exception handling
@@ -225,20 +227,19 @@ class Engine(Thread):
         while self.runflag:
             # get one order and make it
             m = self.pubsub.listen()
-            try:
-                req = Record.load(m['data'])
-            except pickle.PickleError:
-                self.logger.exception('unpickable: %s', m['data'])
+            if m['channel'] == fdef.CHHEARTBEAT:
                 continue
 
             try:
+                req = Record.load(m['data'])
                 if req[fdef.KACTION] == fdef.VINSERT:
                     self.ctp.reqorder(req)
                 elif req[fdef.KACTION] == fdef.VCANCEL:
                     self.ctp.cancelorder(req)
-            except Exception:
+            except:
                 self.logger.exception('handling req error')
         self.close()
+        self.logger.info('stop engine.')
 
 class EngineCTP(TraderSpi):
     '''
@@ -726,7 +727,7 @@ class strattop(Thread):
 
     def run(self):
         try:
-            if False == self.setup():
+            if not self.setup():
                 self.logger.error('setup failed.')
                 return
         except:
@@ -735,10 +736,15 @@ class strattop(Thread):
 
         while self.runflag:
             m = self.pubsub.listen()
+            if m['channel'] == fdef.CHHEARTBEAT:
+                continue
+
             self.signal(m)
+        self.logger.info('stop strat.')
 
     def stop(self):
         self.runflag = False
+        self.pubsub.publish(fdef.CHHEARTBEAT, 'hello')
 
     def getstrat(self):
         return self.strat
@@ -871,10 +877,15 @@ class stratbottom(Thread):
         self.strat = self.top.getstrat()
         chname = fdef.fullname(fdef.CHORESP, self.strat)
         self.pubsub.subscribe(chname)
+        self.pubsub.subscribe(fdef.CHHEARTBEAT)
 
         while self.runflag:
             m = self.pubsub.listen()
+            if m['channel'] == fdef.CHHEARTBEAT:
+                continue
+
             self.process(m)
+        self.logger.info('stop bottom')
 
     def process(self, m):
         try:
@@ -895,6 +906,7 @@ class stratbottom(Thread):
 
     def stop(self):
         self.runflag = False
+        self.pubsub.publish(fdef.CHHEARTBEAT, 'hello')
 
 if False:
     class stratdispatch(Thread):
@@ -1579,11 +1591,13 @@ class TBookProxy(Thread):
                 self.queue.task_done()
             except Empty:
                 pass
+        self.logger.info('stop TBookProxy')
 
     def stop(self, dojoin=True):
         self.runflag = False
         if dojoin:
             self.queue.join()
+        self.logger.info('TBookProxy queue clean, ready to stop.')
 
     def processcmd(self, cmd, arg):
         self.logger.debug('cmd: %s, arg: %s', cmd, arg)

@@ -112,6 +112,7 @@ class updater(Thread):
 
     def setup(self):
         self.pubsub.subscribe(fdef.CHNTFTBOOK)
+        self.pubsub.subscribe(fdef.CHHEARTBEAT)
 
     def stop(self):
         self.runflag = False
@@ -121,6 +122,9 @@ class updater(Thread):
 
         while self.runflag:
             m = self.pubsub.listen()
+            if m['channel'] == fdef.CHHEARTBEAT:
+                continue
+
             try:
                 cmd, strat, arg = pickle.loads(m['data'])
             except pickle.PickleError:
@@ -157,6 +161,7 @@ class updater(Thread):
                             )
             except:
                 self.logger.exception('exception at update UI %s, with arg %s', cmd, arg)
+        self.logger.info('stop monitor.')
 
 def main(args):
     app = QApplication(args)
@@ -184,6 +189,7 @@ def main(args):
     app.exec_()
 
     upd.stop()
+    pubsub.publish(fdef.CHHEARTBEAT, 'stop monitor')
 
 if __name__=="__main__":
     main(sys.argv)

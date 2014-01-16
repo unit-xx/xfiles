@@ -46,12 +46,12 @@ class listofdictTableModel(QAbstractTableModel):
         self.colname = colname
         self.colnamemap = colnamemap
 
-    def rowCount(self, parent=None):
+    def rowCount(self, parent=QModelIndex()):
         with self.lock:
             ret = len(self.data)
         return ret
 
-    def columnCount(self, parent=None):
+    def columnCount(self, parent=QModelIndex()):
         with self.lock:
             ret = len(self.colname)
         return ret

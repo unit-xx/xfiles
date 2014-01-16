@@ -30,7 +30,8 @@ CHOREQ = 'CHOREQ'
 CHORESP = 'CHORESP'
 # TBook update notification
 CHNTFTBOOK = 'CHNTFTBOOK'
-
+# Heartbeat channel
+CHHEARTBEAT = 'HEARTBEAT'
 
 # order keys and constants, K for order key, V for order value
 KOID = 'OID'

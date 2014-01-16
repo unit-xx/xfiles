@@ -10,7 +10,8 @@ from util import Record
 class rcstrat(strattop):
     def setup(self):
         chresp = fdef.fullname(fdef.CHORESP, self.strat)
-        self.pubsub.subscribe((chresp, fdef.CHQUOTE))
+        self.pubsub.subscribe((chresp, fdef.CHQUOTE, fdef.CHHEARTBEAT))
+        return True
 
     def riskcheck(self, oid):
         o, olk = self.tbook.getorder(oid)
@@ -107,7 +108,12 @@ def main():
                 print 'Unkown command.'
 
         except KeyboardInterrupt:
+            print 'now exit'
             break
+
+    rc.stop()
+    rcbottom.stop()
+    tbproxy.stop()
 
 if __name__=='__main__':
     main()
