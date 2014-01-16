@@ -141,6 +141,10 @@ class updater(Thread):
                             Q_ARG(list, [o]),
                             Q_ARG(list, [oid])
                             )
+                    QMetaObject.invokeMethod(self.win.ordertbl,
+                            'scrollToBottom',
+                            Qt.QueuedConnection
+                            )
 
                 elif strat==self.curstrat and cmd in (fdef.CMDUPDATEPOS, fdef.CMDNEWPOSITION):
                     poskey = arg[0]
@@ -153,10 +157,6 @@ class updater(Thread):
                             )
             except:
                 self.logger.exception('exception at update UI %s, with arg %s', cmd, arg)
-
-
-
-
 
 def main(args):
     app = QApplication(args)
