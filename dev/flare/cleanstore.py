@@ -36,4 +36,4 @@ print aok
 print apk
 print pkey
   
-$Id$ 
+# $Id$ 
