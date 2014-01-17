@@ -1,3 +1,6 @@
 pyctp
-redispy+redis
-prettytable
+redis
+redispy (easy_install redis, rename redis dir to other names first)
+easy_install (copy sitecustomize.py to site-packages first)
+prettytable (easy_install prettytable)
+pyqt4 (PyQt4-4.10.3-gpl-Py2.7-Qt4.8.5-x32.exe )
