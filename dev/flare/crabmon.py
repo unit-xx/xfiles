@@ -178,6 +178,8 @@ def main(args):
 
     store = getstore(storecfg)
     pubsub = getpubsub(storecfg)
+    if store is None or pubsub is None:
+        raise Exception('connect to store or pubsub failed.')
 
     ui = crabmonwin(store, pubsub, mycfg)
 

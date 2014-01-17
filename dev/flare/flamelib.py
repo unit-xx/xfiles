@@ -96,7 +96,7 @@ def getstore(cfg):
         r = KVstore(**cfg)
         r.info()
     except:
-        pass
+        r = None
     return r
 
 def getpubsub(cfg):
@@ -107,7 +107,7 @@ def getpubsub(cfg):
         # a warmup, redis-py connect to redis only at the first command
         p.redis.info()
     except:
-        pass
+        p = None
     return p
 
 # STATUS: code ready
@@ -1693,6 +1693,8 @@ def runstrat(sname, sconsole):
 
         store = getstore(storecfg)
         pubsub = getpubsub(storecfg)
+        if store is None or pubsub is None:
+            raise flameException('connect to store or pubsub failed.')
 
         tblib = TBookLib(store, tbname)
         if not tblib.setup():
