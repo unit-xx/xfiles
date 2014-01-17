@@ -3,7 +3,10 @@
 # flare library in message passing style.
 # flame = flare in message
 
+import os
 import logging
+import signal
+from cmd import Cmd
 import cPickle as pickle
 from Queue import Queue, Empty
 from collections import defaultdict
@@ -706,13 +709,13 @@ class strattop(Thread):
     etc.
     3. 
     '''
-    def __init__(self, stratname, pubsub, tbook, rmetric):
+    def __init__(self, stratname, pubsub, tbook, mycfg):
         Thread.__init__(self)
 
         self.strat = stratname
         self.pubsub = pubsub
         self.tbook = tbook
-        self.rmetric = rmetric
+        self.mycfg = mycfg
 
         self.runflag = True
         self.logger = logging.getLogger()
@@ -1638,4 +1641,86 @@ class TBookProxy(Thread):
 
     def gettblib(self):
         return self.tblib
+
+class stratconsole(Cmd):
+    def __init__(self, top, **kwargs):
+        Cmd.__init__(**kwargs)
+        self.top = top
+
+    def do_quit(self, args):
+        """Quits the program."""
+        print "Quitting."
+        return True
+
+    def do_EOF(self,line):
+        print 'type `quit\' to exit.'
+
+    def do_pid(self, args):
+        print os.pid()
+
+    def do_order(self, args):
+        pass
+
+    def do_pos(self, args):
+        pass
+
+    def do_alloid(self, args):
+        pass
+
+class flameException(Exception):
+    pass
+
+def runstrat(sname, sconsole):
+    '''
+    Can only be called by main thread.
+    '''
+    oldhandler = signal.signal(signal.SIGINT, signal.SIG_IGN)
+
+    self.logger.info('starting strategy %s', sname)
+    try:
+        mysec = sname
+        cfg = config.parseconfig()
+        mycfg = cfg[mysec]
+
+        tbname = mycfg['tbname']
+
+        storecfg = cfg[mycfg['store']]
+        # XXX: just for redis now.
+        storecfg['port'] = int(storecfg['port'])
+        storecfg['db'] = int(storecfg['db'])
+
+        config.setuplogger(mysec)
+
+        store = getstore(storecfg)
+        pubsub = getpubsub(storecfg)
+
+        tblib = TBookLib(store, tbname)
+        if not tblib.setup():
+            raise flameException('TBookLib setup failed.')
+
+        tbproxy = TBookProxy(pubsub, store, tblib)
+        tbproxy.start()
+
+        tbook = TBookCache(mysec, tbproxy)
+        if not tbook.setup():
+            raise flameException('TBookCache setup failed.')
+
+        rc = rcstrat(mysec, pubsub, tbook, mycfg)
+        rcbottom = stratbottom(pubsub, rc)
+
+        rcbottom.start()
+        rc.start()
+
+        console = sconsole()
+        console.prompt = '> '
+        console.cmdloop('running strategy %s, type `help\' for commands' % sname)
+
+        rc.stop()
+        rcbottom.stop()
+        tbproxy.stop()
+    except:
+        self.logger.exception('fatal error while startin strategy.')
+
+    signal.signal(signal.SIGINT, oldhandler)
+
 # $Id$ 

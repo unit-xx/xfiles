@@ -2,13 +2,15 @@
 
 import os, sys
 
-from flamelib import strattop, stratbottom, getstore, getpubsub, TBookCache, TBookLib, TBookProxy
+from flamelib import strattop, stratbottom, getstore, getpubsub, TBookCache, TBookLib, TBookProxy, stratconsole
 import flaredef as fdef
 import config
 from util import Record
 
 class rcstrat(strattop):
     def setup(self):
+        self.mycfg['maxvolperorder'] = int(self.mycfg['maxvolperorder'])
+
         chresp = fdef.fullname(fdef.CHORESP, self.strat)
         self.pubsub.subscribe((chresp, fdef.CHQUOTE, fdef.CHHEARTBEAT))
         return True
@@ -19,63 +21,52 @@ class rcstrat(strattop):
         if o is not None:
             with olk:
                 vol = o[fdef.KVOLUME]
-                if vol <= self.rmetric['maxvolperorder']:
+                if vol <= self.mycfg['maxvolperorder']:
                     ret = True
                 else:
                     ret = False
         self.logger.debug('order %s rc result: %s', oid, ret)
         return ret
 
-def neworder(otype, direct, code, price, volume):
-    o = Record()
+class rcconsole(stratconsole):
+    def __init__(self, top):
+        stratconsole.__init__(top)
+        self.lastoid = None
 
-    oid = fdef.localoid()
+    def do_cancel(self, args):
+        tp = args.split()
+        try:
+            self.top.cancelorder(tp[0])
+        except IndexError:
+            self.top.cancelorder(lastoid)
 
-    o[fdef.KOID] = oid
-    o[fdef.KSTRAT] = 'rcstrat'
-    o[fdef.KISRESERVED] = False
-    o[fdef.KOSTATE] = fdef.VORDERINIT
-    o[fdef.KCANCELSTATE] = fdef.VCANCELINIT
-    
-    o[fdef.KACTION] = fdef.VINSERT
-    o[fdef.KOTYPE] = otype
-    o[fdef.KPRICE] = price
-    o[fdef.KCODE] = code
-    o[fdef.KDIR] = direct
-    o[fdef.KVOLUME] = volume
-    return o
+    def do_open(self, args):
+        tp = args.split()
+        otype = 'open'
+        direct = tp[0].upper()
+        code = tp[1].upper()
+        price = float(tp[2])
+        volume = int(tp[3])
+        lastoid, doreq, rcok = rc.reqorder(otype, direct, code, price, volume)
+        print 'requested,' if doreq else 'unrequested,', 'riskcheck ok,' if (doreq and rcok) else 'riskcheck failed,', lastoid
+        self.lastoid = lastoid
+
+    def do_close(self, args):
+        tp = args.split()
+        otype = 'close'
+        direct = tp[0].upper()
+        code = tp[1].upper()
+        price = float(tp[2])
+        volume = int(tp[3])
+        lastoid, doreq, rcok = rc.reqorder(otype, direct, code, price, volume)
+        print 'requested,' if doreq else 'unrequested,', 'riskcheck ok,' if (doreq and rcok) else 'riskcheck failed,', lastoid
+        self.lastoid = lastoid
+
+    def do_cancel(self, args):
+        pass
 
 def main():
     mysec = 'rcstrat'
-    cfg = config.parseconfig()
-    mycfg = cfg[mysec]
-
-    storecfg = cfg[mycfg['store']]
-    storecfg['port'] = int(storecfg['port'])
-    storecfg['db'] = int(storecfg['db'])
-    tbname = mycfg['tbname']
-
-    config.setuplogger(mysec)
-
-    store = getstore(storecfg)
-    pubsub = getpubsub(storecfg)
-
-    tblib = TBookLib(store, tbname)
-    print tblib.setup()
-    tbproxy = TBookProxy(pubsub, store, tblib)
-    tbproxy.start()
-
-    tbook = TBookCache(mysec, tbproxy)
-    print tbook.setup()
-    rmetric = {}
-    rmetric['maxvolperorder'] = int(mycfg['maxvolperorder'])
-    rc = rcstrat(mysec, pubsub, tbook, rmetric)
-    rcbottom = stratbottom(pubsub, rc)
-
-    rcbottom.start()
-    rc.start()
-
-    pid = os.getpid()
 
     lastoid = None
     while 1:
