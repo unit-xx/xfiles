@@ -1,4 +1,5 @@
 import time
+import sys
 
 from flamelib import qrepo, getstore, getpubsub
 import config
@@ -18,7 +19,13 @@ if __name__=='__main__':
     store = getstore(storecfg)
     pubsub = getpubsub(storecfg)
 
-    qserv = qrepo(['IF1401', 'IF1402'], mdcfg, pubsub, store)
+    codes = mycfg['code'].split()
+    ret = raw_input('Listen quote for:\n%s\n\nOk? ' % codes)
+    if ret[0] != 'y':
+        print 'I quit.'
+        sys.exit(1)
+
+    qserv = qrepo(codes, mdcfg, pubsub, store)
     qserv.setup()
 
     while 1:
@@ -28,6 +35,7 @@ if __name__=='__main__':
             try:
                 ret = raw_input('Stop quote server? ')
                 if ret[0] == 'y':
+                    print 'I quit.'
                     break
             except KeyboardInterrupt:
                 print 'Continue'

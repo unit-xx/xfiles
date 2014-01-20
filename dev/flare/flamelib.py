@@ -76,6 +76,7 @@ class redispubsub:
         {'pattern': None, 'type': 'subscribe', 'channel': 'xxx', 'data': 1L}
         should filter by type, pattern and channel.
         '''
+        # TODO: StopIteration when subscribe to no channels.
         p = self.getpubsub()
         while 1:
             ret = next(p.listen())

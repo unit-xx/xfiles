@@ -5,7 +5,6 @@ import os, sys
 from flamelib import stratconsole, runstrat, strattop
 import flaredef as fdef
 import config
-from util import Record
 
 class rcstrat(strattop):
     def setup(self):
