@@ -57,7 +57,7 @@ class crabmonwin(QMainWindow, Ui_crabmainwin):
             pass
 
     def reloadstrat(self, newindex=0):
-        tb2strat = self.store.hgetall(fdef.STRATTBMAP)
+        tb2strat = self.store.hgetall(fdef.TB2STRATMAP)
         self.strat2tb = {tb2strat[k]:k for k in tb2strat}
 
         self.stratcmbo.clear()

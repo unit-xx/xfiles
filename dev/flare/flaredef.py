@@ -7,6 +7,7 @@ NSSEP = ':'
 POSKEYSEP = '|'
 
 # namespace definitions.
+LOCKNS = 'LOCK'
 ACCOUNTNS = 'ACCOUNT'
 QUOTENS = 'QUOTE'
 ORDERNS = 'ORDER'

@@ -784,8 +784,8 @@ class strattop(Thread):
             with olk:
                 o[fdef.KACTION] = fdef.VCANCEL
                 o[fdef.KCANCELSTATE] = fdef.VCANCELINIT
-        od = o.dump()
-        self.pubsub.publish(fdef.CHOREQ, od)
+            od = o.dump()
+            self.pubsub.publish(fdef.CHOREQ, od)
 
     def riskcheck(self, oid):
         '''
@@ -1672,6 +1672,21 @@ class stratconsole(Cmd):
 class flameException(Exception):
     pass
 
+def rlock(store, name):
+    '''
+    global and distributed lock using redis.
+    '''
+    lk = fdef.fullname(fdef.LOCKNS, name)
+    ret = store.set(lk, 1, nx=True)
+    if ret is None:
+        ret = False
+    return ret
+
+def runlock(store, name):
+    lk = fdef.fullname(fdef.LOCKNS, name)
+    ret = store.delete(lk, 1)
+    return (ret==1)
+
 def runstrat(sname, mytop, sconsole):
     '''
     Can only be called by main thread.
@@ -1701,30 +1716,37 @@ def runstrat(sname, mytop, sconsole):
             raise flameException('TBookLib setup failed.')
 
         tbproxy = TBookProxy(pubsub, store, tblib)
-        tbproxy.start()
 
         tbook = TBookCache(myname, tbproxy)
         if not tbook.setup():
             raise flameException('TBookCache setup failed.')
 
-        rc = mytop(myname, pubsub, tbook, mycfg)
-        rc.setup()
-        rcbottom = stratbottom(pubsub, rc)
+        if not rlock(store, myname):
+            raise flameException('a strat instance is already running.')
+        try:
+            rc = mytop(myname, pubsub, tbook, mycfg)
+            rc.setup()
+            rcbottom = stratbottom(pubsub, rc)
 
-        rcbottom.start()
-        rc.start()
+            tbproxy.start()
+            rcbottom.start()
+            rc.start()
 
-        oldhandler = signal.signal(signal.SIGINT, signal.SIG_IGN)
-        console = sconsole(rc)
-        console.prompt = '> '
-        console.cmdloop('running strategy %s, type `help\' for commands' % sname)
+            oldhandler = signal.signal(signal.SIGINT, signal.SIG_IGN)
+            console = sconsole(rc)
+            console.prompt = '> '
+            console.cmdloop('running strategy %s, type `help\' for commands' % sname)
 
-        rc.stop()
-        rcbottom.stop()
-        tbproxy.stop()
+            rc.stop()
+            rcbottom.stop()
+            tbproxy.stop()
+            signal.signal(signal.SIGINT, oldhandler)
+        except:
+            logging.exception('fatal error while running strategy.')
+        finally:
+            runlock(store, myname)
     except:
-        logging.exception('fatal error while startin strategy.')
+        logging.exception('fatal error while starting strategy.')
 
-    signal.signal(signal.SIGINT, oldhandler)
 
 # $Id$ 
