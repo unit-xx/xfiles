@@ -1474,7 +1474,7 @@ class TBookLib:
 
     def setup(self):
         # read linked strat
-        self.strat = self.store.hget(fdef.STRATTBMAP, self.tbname)
+        self.strat = self.store.hget(fdef.TB2STRATMAP, self.tbname)
         # read strat's position limit
         pmaxkey = fdef.fullname(fdef.POSMAXNS, self.strat)
         stratposmax = self.store.hgetall(pmaxkey)
@@ -1644,7 +1644,7 @@ class TBookProxy(Thread):
 
 class stratconsole(Cmd):
     def __init__(self, top, **kwargs):
-        Cmd.__init__(**kwargs)
+        Cmd.__init__(self, **kwargs)
         self.top = top
 
     def do_quit(self, args):
@@ -1656,31 +1656,31 @@ class stratconsole(Cmd):
         print 'type `quit\' to exit.'
 
     def do_pid(self, args):
-        print os.pid()
+        print os.getpid()
 
     def do_order(self, args):
-        pass
+        tp = args.split()
+        if len(tp) > 0:
+            self.top.tbook.printorder(tp[0])
 
     def do_pos(self, args):
-        pass
+        self.top.tbook.printpos()
 
     def do_alloid(self, args):
-        pass
+        self.top.tbook.printalloid()
 
 class flameException(Exception):
     pass
 
-def runstrat(sname, sconsole):
+def runstrat(sname, mytop, sconsole):
     '''
     Can only be called by main thread.
     '''
-    oldhandler = signal.signal(signal.SIGINT, signal.SIG_IGN)
-
-    self.logger.info('starting strategy %s', sname)
+    logging.info('starting strategy %s', sname)
     try:
-        mysec = sname
+        myname = sname
         cfg = config.parseconfig()
-        mycfg = cfg[mysec]
+        mycfg = cfg[myname]
 
         tbname = mycfg['tbname']
 
@@ -1689,7 +1689,7 @@ def runstrat(sname, sconsole):
         storecfg['port'] = int(storecfg['port'])
         storecfg['db'] = int(storecfg['db'])
 
-        config.setuplogger(mysec)
+        config.setuplogger(myname)
 
         store = getstore(storecfg)
         pubsub = getpubsub(storecfg)
@@ -1703,17 +1703,19 @@ def runstrat(sname, sconsole):
         tbproxy = TBookProxy(pubsub, store, tblib)
         tbproxy.start()
 
-        tbook = TBookCache(mysec, tbproxy)
+        tbook = TBookCache(myname, tbproxy)
         if not tbook.setup():
             raise flameException('TBookCache setup failed.')
 
-        rc = rcstrat(mysec, pubsub, tbook, mycfg)
+        rc = mytop(myname, pubsub, tbook, mycfg)
+        rc.setup()
         rcbottom = stratbottom(pubsub, rc)
 
         rcbottom.start()
         rc.start()
 
-        console = sconsole()
+        oldhandler = signal.signal(signal.SIGINT, signal.SIG_IGN)
+        console = sconsole(rc)
         console.prompt = '> '
         console.cmdloop('running strategy %s, type `help\' for commands' % sname)
 
@@ -1721,7 +1723,7 @@ def runstrat(sname, sconsole):
         rcbottom.stop()
         tbproxy.stop()
     except:
-        self.logger.exception('fatal error while startin strategy.')
+        logging.exception('fatal error while startin strategy.')
 
     signal.signal(signal.SIGINT, oldhandler)
 
