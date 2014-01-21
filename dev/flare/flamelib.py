@@ -1692,7 +1692,6 @@ def runstrat(sname, mytop, sconsole):
     '''
     Can only be called by main thread.
     '''
-    logging.info('starting strategy %s', sname)
     try:
         myname = sname
         cfg = config.parseconfig()
