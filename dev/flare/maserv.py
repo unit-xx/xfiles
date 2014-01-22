@@ -18,14 +18,15 @@ class maserv(Thread):
         self.mycfg = mycfg
         self.pubsub = pubsub
 
-        # code -> lastest MA, using mid-price
-        self.ma = {}
+        self.machannel = mycfg['machannel']
+        self.secperunit = int(mycfg['secperunit'])
+        self.mawsize = int(mycfg['mawsize'])
+
         # code -> buffer unit
-        self.buflen = defaultdict(list)
-        self.bufsum = defaultdict(list)
+        self.unitlen = defaultdict(dict)
+        self.unitsum = defaultdict(dict)
         # code -> current buffer tick unit
-        self.curbuf = {}
-        self.lastvol = 0
+        self.curunit = {}
 
         self.runflag = True
         self.logger = logging.getLogger()
@@ -36,12 +37,53 @@ class maserv(Thread):
         return True
 
     def qma(self, q):
+        '''
+        Calculate ma (moving average) as follows.
+
+        Organize quote into time unit, whose length is defined by secperunit.
+        Tick numbers and sum of mid-price is maintained in unitlen and unitsum.
+        When the latest tick move into a new unit, generate MA value for the
+        last time unit.
+        '''
         inst = q['code']
+        tu = int(q['tic'] / self.secperunit)
 
-        if len(self.buflen[inst])==0:
-            self.buflen[inst].append(0.0)
-            self.bufsum[inst].append(0.0)
+        try:
+            cunit = self.curunit[inst]
+        except KeyError:
+            self.curunit[inst] = tu
+            self.unitsum[inst][tu] = (q['bid1'] + q['ask1'])/2
+            self.unitlen[inst][tu] = 1
+            return
 
+        if tu != cunit:
+            # step into new time unit, calc and publish MA for latest time unit
+            ttsum = 0.0
+            ttlen = 0.0
+            maval = None
+            try:
+                for i in range(cunit-self.mawsize+1, cunit+1):
+                    ttsum += self.unitsum[inst][i]
+                    ttlen += self.unitlen[inst][i]
+                maval = ttsum/ttlen
+            except KeyError, ZeroDivisionError:
+                pass
+
+            if maval is not None:
+                try:
+                    mad = pickle.dumps((inst, cunit, maval))
+                except:
+                    self.logger.exception('dump ma value.')
+                self.pubsub.publish(self.machannel, mad)
+
+            self.curunit[inst] = tu
+            self.unitsum[inst][tu] = (q['bid1'] + q['ask1'])/2
+            self.unitlen[inst][tu] = 1
+        else:
+            self.unitsum[inst][tu] += (q['bid1'] + q['ask1'])/2
+            self.unitlen[inst][tu] += 1
+
+        return
 
     def run(self):
         if not self.setup():
@@ -53,17 +95,14 @@ class maserv(Thread):
                 continue
 
             try:
-                quote = pickle.loads(m['data'])
+                q = pickle.loads(m['data'])
                 if q is None:
-                    return
-
-                if q.BidPrice1 > q.UpperLimitPrice or q.BidPrice1 < q.LowerLimitPrice:
-                    return
-
-                if q.AskPrice1 > q.UpperLimitPrice or q.AskPrice1 < q.LowerLimitPrice:
-                    return
-
-                self.qma(quote)
+                    continue
+                if q['bid1'] > q['upperlimit'] or q['bid1'] < q['lowerlimit']:
+                    continue
+                if q['ask1'] > q['upperlimit'] or q['ask1'] < q['lowerlimit']:
+                    continue
+                self.qma(q)
             except:
                 self.logger.exception('Wrong data.')
         self.logger.info('Quit ma server.')
@@ -109,7 +148,9 @@ def main():
     oldhandler = signal.signal(signal.SIGINT, signal.SIG_IGN)
     console = emptyconsole()
     console.prompt = '> '
-    console.cmdloop('running MA server, type `help\' for commands')
+    secperunit = int(mycfg['secperunit'])
+    mawsize = int(mycfg['mawsize'])
+    console.cmdloop('running MA server with secperunit %d, mawsize %d, type `help\' for commands' % (secperunit, mawsize))
 
     ms.stop()
     signal.signal(signal.SIGINT, oldhandler)

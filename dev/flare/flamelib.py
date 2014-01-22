@@ -158,18 +158,20 @@ class qrepo(MdSpi):
             self.logger.info('Login failed: %s.', info)
 
     def OnRtnDepthMarketData(self, q):
-        tic = float(q.UpdateTime[-2:]) + float(q.UpdateTime[-5:-3])*60 + q.UpdateMillisec/1000.0
+        tic = float(q.UpdateTime[0:2])*3600 + float(q.UpdateTime[3:5])*60 + float(q.UpdateTime[6:8]) + q.UpdateMillisec/1000.0
         qq = {
+                'code':q.InstrumentID,
+                'last':q.LastPrice,
                 'bid1':q.BidPrice1,
                 'bidvol1':q.BidVolume1,
                 'ask1':q.AskPrice1,
                 'askvol1':q.AskVolume1,
-                'last':q.LastPrice,
+                'upperlimit':q.UpperLimitPrice,
+                'lowerlimit':q.LowerLimitPrice,
                 'time':q.UpdateTime,
                 'msec':q.UpdateMillisec,
-                'code':q.InstrumentID,
                 'tic':tic
-                    }
+                }
         try:
             qd = pickle.dumps(qq, -1)
             self.pubsub.publish(self.qchannel, qd)
