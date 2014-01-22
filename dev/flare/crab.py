@@ -2,6 +2,7 @@
 
 import sys
 import cPickle as pickle
+from threading import Thread
 
 from flamelib import stratconsole, runstrat, strattop
 import flaredef as fdef
@@ -18,9 +19,21 @@ class crabstrat(strattop):
         self.quickleg = self.mycfg['quickleg']
         self.lazyleg = self.mycfg['lazyleg']
 
+        # using MA value to calc midprice of spread
+        # store ticku and value for each leg.
+        self.midprice = defaultdict(dict)
         self.sprdmid = 0.0
         self.sprdmidfix = 0.0
         self.qhold = 0
+
+        self.lazylegoid = {
+                'short':None,
+                'long':None
+                }
+        self.shortmidprice = 0.0
+        
+        self.mystate = 'init'
+        self.lock = Lock()
 
         self.pubsub.subscribe((fdef.CHQUOTE, self.chma, fdef.CHHEARTBEAT))
 
@@ -40,39 +53,78 @@ class crabstrat(strattop):
         return ret
 
     def signal(self, m):
-        # using MA value as midprice of spread
-        midprice = defaultdict(dict)
+        '''
+        set limit orders of lazyleg on both ask and bid, when one 
+        of the orders are traded, immediately trade the quickleg.
 
-        madiff = 0.0
+        prerequirement:
+        latest MA for both legs
+        latest quote for both legs
+
+        set limit order of lazyleg, with price calc from sprd MA,
+        sigma, intensity and quickleg's quote.
+
+        On lazyleg traded:
+            trade quickleg ASAP and cancel untraded lazyleg
+
+        On MA or quickleg's quote changed (lazyleg not traded):
+            cancel and reset lazyleg's limit order
+        '''
 
         if m['channel'] == fdef.CHQUOTE:
             try:
-                inst, tickunit, maval = pickle.loads(m['data'])
+                q = pickle.loads(m['data'])
             except:
-                pass
-            # q = dict()
+                return
+
+            if q['code'] == self.quickleg:
+                newshortmid = (q['bid1'] + q['ask1'])/2
+                if newshortmid != self.shortmidprice:
+                    # XXX: cancel existing lazyleg orders
+                    self.shortmidprice = newshortmid
+
+                # XXX: reset lazyleg limit orders
 
         elif m['channel'] == self.chma:
             # q = (inst, tu, maval)
             try:
                 inst, tickunit, maval = pickle.loads(m['data'])
             except:
-                pass
+                return
 
             if inst==self.quickleg or inst==self.lazyleg:
                 midprice[inst]['ticku'] = tickunit
                 midprice[inst]['value'] = maval
                 try:
                     if midprice[self.quickleg]['ticku']==midprice[self.lazyleg]['ticku']:
-                        self.sprdmid = midprice[self.lazyleg]['value'] - midprice[self.quickleg]['value']
-                        self.sprdmidfix = self.sprdmid - self.qhold * self.sigma
+                        newsprdmid = midprice[self.lazyleg]['value'] - midprice[self.quickleg]['value']
+                        if newsprdmid != self.sprdmid:
+                            # XXX: cancel existing lazyleg orders
+                            self.sprdmid = newsprdmid
+                            self.sprdmidfix = self.sprdmid - self.qhold * self.sigma
+
                 except KeyError:
-                    # no ma has been received
+                    # ma hasn't been received for some legs.
                     pass
                 except TypeError:
                     # ma is none since not enough quotes is accumulated to calc ma
                     pass
 
+    def onOrderRejected(self, oid, resp):
+        # really urgent case
+        pass
+
+    def OnOrderFullyTrade(self, oid, resp):
+        # whose order? lazyleg or quickleg?
+        pass
+
+    def onCancelRejected(self, oid, resp):
+        # really urgent case
+        pass
+
+    def onCancelled(self, oid, resp):
+        # should be lazyleg's cancel
+        pass
 
 class crabconsole(stratconsole):
     pass
