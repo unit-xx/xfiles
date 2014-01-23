@@ -32,3 +32,7 @@ for(i in 1:length(startick))
 plot(avgcor.zoo, main='avgcor')
 plot(avgsd.zoo, main='avgvar')
 plot(avgsd.zoo*sqrt(1-avgcor.zoo**2), main='avgcor*avgvar')
+
+# TODO: better distance definition rather than (1-cov)/2
+# TODO: and how to guide cointegration-based statarb?
+plot(hclust(as.dist((1-cormat)/2)))
