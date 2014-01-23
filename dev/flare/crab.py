@@ -13,11 +13,11 @@ class crabstrat(strattop):
         self.chma = self.mycfg['machannel']
         self.maxvolperorder = int(self.mycfg['maxvolperorder'])
 
+        self.quickleg = self.mycfg['quickleg']
+        self.lazyleg = self.mycfg['lazyleg']
         self.sigma = float(self.mycfg['sigma'])
         self.intensity = float(self.mycfg['intensity'])
         self.qmax = int(self.mycfg['qmax'])
-        self.quickleg = self.mycfg['quickleg']
-        self.lazyleg = self.mycfg['lazyleg']
 
         # using MA value to calc midprice of spread
         # store ticku and value for each leg.
@@ -30,9 +30,13 @@ class crabstrat(strattop):
                 'short':None,
                 'long':None
                 }
-        self.shortmidprice = 0.0
-        
-        self.mystate = 'init'
+        self.quicklegoid = None
+
+        self.quickmidprice = 0.0
+
+        self.quickstate = 'ready'
+        self.lazystate = 'ready'
+
         self.lock = Lock()
 
         self.pubsub.subscribe((fdef.CHQUOTE, self.chma, fdef.CHHEARTBEAT))
@@ -71,22 +75,22 @@ class crabstrat(strattop):
             cancel and reset lazyleg's limit order
         '''
 
+        isresetlazy = False
+
         if m['channel'] == fdef.CHQUOTE:
             try:
                 q = pickle.loads(m['data'])
             except:
                 return
 
+            # if midprice of quickleg is changed, reset lazyleg order
             if q['code'] == self.quickleg:
-                newshortmid = (q['bid1'] + q['ask1'])/2
-                if newshortmid != self.shortmidprice:
-                    # XXX: cancel existing lazyleg orders
+                newquickmid = (q['bid1'] + q['ask1'])/2
+                if newquickmid != self.quickmidprice:
                     self.shortmidprice = newshortmid
-
-                # XXX: reset lazyleg limit orders
+                    isresetlazy = True
 
         elif m['channel'] == self.chma:
-            # q = (inst, tu, maval)
             try:
                 inst, tickunit, maval = pickle.loads(m['data'])
             except:
@@ -96,12 +100,14 @@ class crabstrat(strattop):
                 midprice[inst]['ticku'] = tickunit
                 midprice[inst]['value'] = maval
                 try:
+                    # if midprice of sprd is changed, reset lazyleg order
                     if midprice[self.quickleg]['ticku']==midprice[self.lazyleg]['ticku']:
                         newsprdmid = midprice[self.lazyleg]['value'] - midprice[self.quickleg]['value']
                         if newsprdmid != self.sprdmid:
                             # XXX: cancel existing lazyleg orders
                             self.sprdmid = newsprdmid
                             self.sprdmidfix = self.sprdmid - self.qhold * self.sigma
+                            isresetlazy = True
 
                 except KeyError:
                     # ma hasn't been received for some legs.
@@ -110,21 +116,60 @@ class crabstrat(strattop):
                     # ma is none since not enough quotes is accumulated to calc ma
                     pass
 
-    def onOrderRejected(self, oid, resp):
-        # really urgent case
-        pass
+        if isresetlazy:
+            if self.lazystate=='ready' and self.quickstate=='ready':
+                # set limit order of lazyleg
+                self.lazystate = 'setting'
+                pass
+            elif self.lazystate=='set':
+                # cancel first
 
     def OnOrderFullyTrade(self, oid, resp):
         # whose order? lazyleg or quickleg?
-        pass
-
-    def onCancelRejected(self, oid, resp):
-        # really urgent case
-        pass
+        o, olk = self.tbook.getorder(oid)
+        if o[fdef.KCODE]==self.quickleg:
+            # quickleg should be in 'ordered' state
+            # set quickleg state to ready
+            pass
+        elif o[fdef.KCODE]==self.lazyleg:
+            # lazyleg should be in 'set' state
+            # lazyleg to cancelother state
+            # cancel other lazyleg
+            # quick leg should in ready state, otherwise it is urgent
+            # order quick leg
+            pass
 
     def onCancelled(self, oid, resp):
         # should be lazyleg's cancel
+        o, olk = self.tbook.getorder(oid)
+        if o[fdef.KCODE]==self.quickleg:
+            # error case
+            pass
+        elif o[fdef.KCODE]==self.lazyleg:
+            if self.lazystate=='cancelling':
+                # if both lazy legs are cancelled, set lazystate to ready
+                pass
+            elif self.lazystate=='cancelother':
+                # lazy leg state -> ready
+                pass
+
+    def onOrderRejected(self, oid, resp):
+        # really urgent case, log and show error sign.
         pass
+
+    def onCancelRejected(self, oid, resp):
+        o, olk = self.tbook.getorder(oid)
+        if o[fdef.KCODE]==self.quickleg:
+            # really urgent
+            pass
+        elif o[fdef.KCODE]==self.lazyleg:
+            if self.lazystate=='cancelling':
+                # if it is a race condition of cancel-while-traded, then
+                # go on to cancelother state and actions.
+                pass
+            elif self.lazystate=='cancelother':
+                # really urgent
+                pass
 
 class crabconsole(stratconsole):
     pass
