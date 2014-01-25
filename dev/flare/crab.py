@@ -38,6 +38,8 @@ class crabstrat(strattop):
 
         self.quickstate = 'ready'
         self.lazystate = 'ready'
+        self.sprdaskmode = 'empty'
+        self.sprdbidmode = 'empty'
 
         self.lock = Lock()
 
@@ -131,23 +133,23 @@ class crabstrat(strattop):
             lazybid = self.floor02(lazybid)
 
             if q==0:
-                sprdaskmode = 'openshort'
-                sprdbidmode = 'openlong'
+                self.sprdaskmode = 'openshort'
+                self.sprdbidmode = 'openlong'
             elif q > 0:
-                sprdaskmode = 'closelong'
-                sprdbidmode = 'openlong'
+                self.sprdaskmode = 'closelong'
+                self.sprdbidmode = 'openlong'
             elif q < 0:
-                sprdaskmode = 'openshort'
-                sprdbidmode = 'closeshort'
+                self.sprdaskmode = 'openshort'
+                self.sprdbidmode = 'closeshort'
 
             if q==self.qmax:
-                sprdbidmode = 'empty'
+                self.sprdbidmode = 'empty'
             elif q==-self.qmax:
-                sprdaskmode = 'empty'
+                self.sprdaskmode = 'empty'
 
             # set ask side
             askoid = None
-            if sprdaskmode=='openshort':
+            if self.sprdaskmode=='openshort':
                 # open short lazy leg
                 otype = fdef.VOPEN
                 direct = fdef.VSHORT
@@ -156,7 +158,7 @@ class crabstrat(strattop):
                 volume = 1
                 askoid, doreq, rcok = self.reqorder(otype, direct, code, price, volume)
                 # urgent case if doreq is False
-            elif sprdaskmode=='closelong':
+            elif self.sprdaskmode=='closelong':
                 otype = fdef.VCLOSE
                 direct = fdef.VLONG
                 code = self.lazyleg
@@ -171,7 +173,7 @@ class crabstrat(strattop):
 
             # set bid side
             bidoid = None
-            if sprdbidmode=='openlong':
+            if self.sprdbidmode=='openlong':
                 otype = fdef.VOPEN
                 direct = fdef.VLONG
                 code = self.lazyleg
@@ -179,7 +181,7 @@ class crabstrat(strattop):
                 volume = 1
                 bidoid, doreq, rcok = self.reqorder(otype, direct, code, price, volume)
                 # urgent case if doreq is False
-            elif sprdbidmode=='closeshort':
+            elif self.sprdbidmode=='closeshort':
                 otype = fdef.VCLOSE
                 direct = fdef.VSHORT
                 code = self.lazyleg
@@ -217,8 +219,15 @@ class crabstrat(strattop):
         if o[fdef.KCODE]==self.quickleg:
             # quickleg should be in 'ordered' state
             # set quickleg state to ready
+            lazyotype = o[fdef.KOTYPE]
+            lazydirect = fdef.VSHORT if o[fdef.KDIR]==fdef.VLONG else fdef.VLONG
+            if (lazyotype==fdef.VOPEN and lazydirect==fdef.VSHORT) or (lazyotype==fdef.VCLOSE and lazydirect==fdef.VLONG):
+                # sprd ask side is traded
+                self.qhold = self.qhold - 1
+            else:
+                # sprd bid side is traded
+                self.qhold = self.qhold + 1
             self.quickstate = 'ready'
-            self.qhold = xxxxxxxxxxxxxxxxxxxx
             self.sprdmidfix = self.sprdmid - self.qhold * self.sigma
 
         elif o[fdef.KCODE]==self.lazyleg:
@@ -239,10 +248,9 @@ class crabstrat(strattop):
             otype = o[fdef.KOTYPE]
             direct = fdef.VSHORT if o[fdef.KDIR]==fdef.VLONG else fdef.VLONG
             code = self.quickleg
-            price = lazybidxxxxxxxxxxxx
+            price = -1.0 # market price
             volume = 1
             bidoid, doreq, rcok = self.reqorder(otype, direct, code, price, volume)
-
             self.quickstate = 'ordered'
 
     def onCancelled(self, oid, resp):
@@ -264,6 +272,7 @@ class crabstrat(strattop):
                     self.lazystate = 'ready'
 
             elif self.lazystate=='cancelother':
+                # other side of lazy leg should be already traded.
                 # lazy leg state -> ready
                 self.lazystate = 'ready'
 
@@ -278,6 +287,7 @@ class crabstrat(strattop):
             pass
         elif o[fdef.KCODE]==self.lazyleg:
             if self.lazystate=='cancelling':
+                # XXX: lazystate may be also in traded/ready?
                 # if it is a race condition of cancel-while-traded, then
                 # go on to cancelother state and actions.
                 try:

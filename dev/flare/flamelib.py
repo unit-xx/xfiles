@@ -340,11 +340,11 @@ class EngineCTP(TraderSpi):
         # update reverse map
         # and submit
         code = req[fdef.KCODE]
+        otype = req[fdef.KOTYPE]
         direct = req[fdef.KDIR]
         ismktprice = True if req[fdef.KPRICE]<0 else False
         volume = req[fdef.KVOLUME]
         price = req[fdef.KPRICE]
-        otype = req[fdef.KOTYPE]
         isIOC = (fdef.KISIOC in req) and req[fdef.KISIOC]
         if otype==fdef.VOPEN:
             ctpdirect = utype.THOST_FTDC_D_Buy if (direct==fdef.VLONG) else utype.THOST_FTDC_D_Sell
