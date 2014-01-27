@@ -2,8 +2,9 @@
 
 import sys
 import cPickle as pickle
-from threading import Thread
+from threading import Thread, Lock
 from math import floor, ceil
+from collections import defaultdict
 
 from flamelib import stratconsole, runstrat, strattop
 import flaredef as fdef
@@ -31,6 +32,10 @@ class crabstrat(strattop):
         self.lazylegoid = {
                 'ask':None,
                 'bid':None
+                }
+        self.lazyordersetok = {
+                'ask':False,
+                'bid':False
                 }
         self.quicklegoid = None
 
@@ -85,6 +90,8 @@ class crabstrat(strattop):
             cancel and reset lazyleg's limit order
         '''
 
+        self.lock.acquire()
+
         isresetlazy = False
 
         if m['channel'] == fdef.CHQUOTE:
@@ -97,7 +104,7 @@ class crabstrat(strattop):
             if q['code'] == self.quickleg:
                 newquickmid = (q['bid1'] + q['ask1'])/2
                 if newquickmid != self.quickmidprice:
-                    self.shortmidprice = newshortmid
+                    self.shortmidprice = newquickmid
                     isresetlazy = True
 
         elif m['channel'] == self.chma:
@@ -157,6 +164,7 @@ class crabstrat(strattop):
                 price = lazyask
                 volume = 1
                 askoid, doreq, rcok = self.reqorder(otype, direct, code, price, volume)
+                self.lazyordersetok['ask'] = False
                 # urgent case if doreq is False
             elif self.sprdaskmode=='closelong':
                 otype = fdef.VCLOSE
@@ -165,9 +173,11 @@ class crabstrat(strattop):
                 price = lazyask
                 volume = 1
                 askoid, doreq, rcok = self.reqorder(otype, direct, code, price, volume)
+                self.lazyordersetok['ask'] = False
                 # urgent case if doreq is False
             else:
                 # empty
+                self.lazyordersetok['ask'] = True
                 pass
             self.lazylegoid['ask'] = askoid
 
@@ -180,6 +190,7 @@ class crabstrat(strattop):
                 price = lazybid
                 volume = 1
                 bidoid, doreq, rcok = self.reqorder(otype, direct, code, price, volume)
+                self.lazyordersetok['bid'] = False
                 # urgent case if doreq is False
             elif self.sprdbidmode=='closeshort':
                 otype = fdef.VCLOSE
@@ -188,15 +199,20 @@ class crabstrat(strattop):
                 price = lazybid
                 volume = 1
                 bidoid, doreq, rcok = self.reqorder(otype, direct, code, price, volume)
+                self.lazyordersetok['bid'] = False
                 # urgent case if doreq is False
             else:
                 # empty
+                self.lazyordersetok['bid'] = True
                 pass
             self.lazylegoid['bid'] = bidoid
 
+            oldlazystate = self.lazystate
+            oldquickstate = self.quickstate
+            oldqhold = self.qhold
             self.lazystate = 'setting'
 
-            self.logger.info('lazystate=%s quickstate=%s q=%d sprdmid=%.3f sprdfix=%.3f quickmid=%.2f, delta=%.3f lazyask=%.2f lazybid=%.2f ', self.lazystate, self.quickstate, self.qhold, self.sprdmid, self.sprdmidfix, self.quickmidprice, self.delta, lazyask, lazybid)
+            print('set lazy limit: lazystate=%s(<-%s) quickstate=%s(<-%s) q=%d(<-%d) sprdmid=%.3f sprdfix=%.3f quickmid=%.2f, delta=%.3f lazyask=%.2f lazybid=%.2f ' % (self.lazystate, oldlazystate, self.quickstate, oldquickstate, self.qhold, oldqhold, self.sprdmid, self.sprdmidfix, self.quickmidprice, self.delta, lazyask, lazybid))
 
         elif self.lazystate=='set' and isresetlazy:
             # NOTE: change qhold while lazy and short are both traded
@@ -209,11 +225,19 @@ class crabstrat(strattop):
             if self.lazylegoid['bid'] is not None:
                 self.cancelorder(self.lazylegoid['bid'])
 
+            oldlazystate = self.lazystate
+            oldquickstate = self.quickstate
+            oldqhold = self.qhold
             self.lazystate = 'cancelling'
 
-            self.logger.info('lazystate=%s quickstate=%s q=%d sprdmid=%.3f sprdfix=%.3f quickmid=%.2f, delta=%.3f lazyask=%.2f lazybid=%.2f ', self.lazystate, self.quickstate, self.qhold, self.sprdmid, self.sprdmidfix, self.quickmidprice, self.delta, lazyask, lazybid)
+            print('cancel both lazy limit lazystate=%s(<-%s) quickstate=%s(<-%s) q=%d(<-%d) sprdmid=%.3f sprdfix=%.3f quickmid=%.2f, delta=%.3f lazyask=%.2f lazybid=%.2f ' % (self.lazystate, oldlazystate, self.quickstate, oldquickstate, self.qhold, oldqhold, self.sprdmid, self.sprdmidfix, self.quickmidprice, self.delta, lazyask, lazybid))
+
+        self.lock.release()
 
     def OnOrderFullyTrade(self, oid, resp):
+
+        self.lock.acquire()
+
         # whose order? lazyleg or quickleg?
         o, olk = self.tbook.getorder(oid)
         if o[fdef.KCODE]==self.quickleg:
@@ -227,40 +251,93 @@ class crabstrat(strattop):
             else:
                 # sprd bid side is traded
                 self.qhold = self.qhold + 1
+
+            oldlazystate = self.lazystate
+            oldquickstate = self.quickstate
+            oldqhold = self.qhold
             self.quickstate = 'ready'
             self.sprdmidfix = self.sprdmid - self.qhold * self.sigma
+
+            print('quick traded: lazystate=%s(<-%s) quickstate=%s(<-%s) q=%d(<-%d) sprdmid=%.3f sprdfix=%.3f quickmid=%.2f, delta=%.3f lazyask=%.2f lazybid=%.2f ' % (self.lazystate, oldlazystate, self.quickstate, oldquickstate, self.qhold, oldqhold, self.sprdmid, self.sprdmidfix, self.quickmidprice, self.delta, lazyask, lazybid))
 
         elif o[fdef.KCODE]==self.lazyleg:
             # lazyleg should be in 'set' state
             # lazyleg to cancelother state
             # cancel other lazyleg
-            if oid==self.lazylegoid['ask']:
-                # ask side traded, cancel bid side
-                if self.lazylegoid['bid'] is not None:
-                    self.cancelorder(self.lazylegoid['bid'])
-            elif oid==self.lazylegoid['bid']:
-                if self.lazylegoid['ask'] is not None:
-                    self.cancelorder(self.lazylegoid['ask'])
-            self.lazystate = 'cancelother'
+            if self.lazystate=='set':
+                if oid==self.lazylegoid['ask']:
+                    # ask side traded, cancel bid side
+                    self.lazylegoid['ask'] = None
+                    if self.lazylegoid['bid'] is not None:
+                        self.cancelorder(self.lazylegoid['bid'])
+                elif oid==self.lazylegoid['bid']:
+                    self.lazylegoid['bid'] = None
+                    if self.lazylegoid['ask'] is not None:
+                        self.cancelorder(self.lazylegoid['ask'])
 
-            # quick leg should in ready state, otherwise it is urgent
-            # order quick leg
-            otype = o[fdef.KOTYPE]
-            direct = fdef.VSHORT if o[fdef.KDIR]==fdef.VLONG else fdef.VLONG
-            code = self.quickleg
-            price = -1.0 # market price
-            volume = 1
-            bidoid, doreq, rcok = self.reqorder(otype, direct, code, price, volume)
-            self.quickstate = 'ordered'
+                if self.lazylegoid['ask'] is None and self.lazylegoid['bid'] is None:
+                    oldlazystate = self.lazystate
+                    self.lazystate = 'ready'
+                else:
+                    oldlazystate = self.lazystate
+                    self.lazystate = 'cancelother'
+
+                # quick leg should in ready state, otherwise it is urgent
+                # order quick leg
+                otype = o[fdef.KOTYPE]
+                direct = fdef.VSHORT if o[fdef.KDIR]==fdef.VLONG else fdef.VLONG
+                code = self.quickleg
+                price = -1.0 # market price
+                volume = 1
+                quickoid, doreq, rcok = self.reqorder(otype, direct, code, price, volume)
+                self.quicklegoid = quickoid
+                oldquickstate = self.quickstate
+                self.quickstate = 'orderring'
+
+                oldqhold = self.qhold
+                print('cancel other lazy: lazystate=%s(<-%s) quickstate=%s(<-%s) q=%d(<-%d) sprdmid=%.3f sprdfix=%.3f quickmid=%.2f, delta=%.3f lazyask=%.2f lazybid=%.2f ' % (self.lazystate, oldlazystate, self.quickstate, oldquickstate, self.qhold, oldqhold, self.sprdmid, self.sprdmidfix, self.quickmidprice, self.delta, lazyask, lazybid))
+            elif self.lazystate=='cancelling':
+                # cancel-while-traded race condition.
+                if oid==self.lazylegoid['ask']:
+                    # ask side traded, cancel bid side
+                    self.lazylegoid['ask'] = None
+                elif oid==self.lazylegoid['bid']:
+                    self.lazylegoid['bid'] = None
+
+                if self.lazylegoid['ask'] is None and self.lazylegoid['bid'] is None:
+                    oldlazystate = self.lazystate
+                    self.lazystate = 'ready'
+                else:
+                    oldlazystate = self.lazystate
+                    self.lazystate = 'cancelother'
+
+                # order quick leg
+                otype = o[fdef.KOTYPE]
+                direct = fdef.VSHORT if o[fdef.KDIR]==fdef.VLONG else fdef.VLONG
+                code = self.quickleg
+                price = -1.0 # market price
+                volume = 1
+                quickoid, doreq, rcok = self.reqorder(otype, direct, code, price, volume)
+                self.quicklegoid = quickoid
+                oldquickstate = self.quickstate
+                self.quickstate = 'orderring'
+
+                oldqhold = self.qhold
+                print('cancel other lazy: lazystate=%s(<-%s) quickstate=%s(<-%s) q=%d(<-%d) sprdmid=%.3f sprdfix=%.3f quickmid=%.2f, delta=%.3f lazyask=%.2f lazybid=%.2f ' % (self.lazystate, oldlazystate, self.quickstate, oldquickstate, self.qhold, oldqhold, self.sprdmid, self.sprdmidfix, self.quickmidprice, self.delta, lazyask, lazybid))
+
+        self.lock.release()
 
     def onCancelled(self, oid, resp):
+
+        self.lock.acquire()
+
         # should be lazyleg's cancel
         o, olk = self.tbook.getorder(oid)
         if o[fdef.KCODE]==self.quickleg:
             # error case
             pass
         elif o[fdef.KCODE]==self.lazyleg:
-            if self.lazystate=='cancelling':
+            if self.lazystate=='cancelling' or self.lazystate=='cancelother':
                 # if both lazy legs are cancelled, set lazystate to ready
                 oid = o[fdef.KOID]
                 if oid==self.lazylegoid['ask']:
@@ -269,18 +346,25 @@ class crabstrat(strattop):
                     self.lazylegoid['bid'] = None
 
                 if self.lazylegoid['bid'] is None and self.lazylegoid['ask'] is None:
+                    oldlazystate = self.lazystate
                     self.lazystate = 'ready'
 
-            elif self.lazystate=='cancelother':
-                # other side of lazy leg should be already traded.
-                # lazy leg state -> ready
-                self.lazystate = 'ready'
+            oldlazystate = self.lazystate
+            oldquickstate = self.quickstate
+            oldqhold = self.qhold
+            print('lazystate=%s(<-%s) quickstate=%s(<-%s) q=%d(<-%d) sprdmid=%.3f sprdfix=%.3f quickmid=%.2f, delta=%.3f lazyask=%.2f lazybid=%.2f ' % (self.lazystate, oldlazystate, self.quickstate, oldquickstate, self.qhold, oldqhold, self.sprdmid, self.sprdmidfix, self.quickmidprice, self.delta, lazyask, lazybid))
+
+        self.lock.release()
 
     def onOrderRejected(self, oid, resp):
         # really urgent case, log and show error sign.
+        print 'order rejected.'
         pass
 
     def onCancelRejected(self, oid, resp):
+
+        self.lock.acquire()
+
         o, olk = self.tbook.getorder(oid)
         if o[fdef.KCODE]==self.quickleg:
             # really urgent
@@ -293,17 +377,39 @@ class crabstrat(strattop):
                 try:
                     # a dirty hack for ctp request.
                     if o['ErrorID']==26:
-                        self.lazystate = 'cancelother'
+                        print 'cancel failure by-pass'
                     else:
                         # urgent case
+                        print 'cancel both side failed.'
                         pass
                 except KeyError:
                     # urgent case
+                    print 'failed for unkown reason.'
                     pass
                 pass
             elif self.lazystate=='cancelother':
                 # really urgent
+                print 'cancel other failed'
                 pass
+
+        self.lock.release()
+
+    def onOrderAccepted(self, oid, resp):
+        self.lock.acquire()
+
+        o, olk = self.tbook.getorder(oid)
+        if 'OrderSysID' in o:
+            if oid==self.lazylegoid['ask']:
+                self.lazyordersetok['ask'] = True
+            elif oid==self.lazylegoid['bid']:
+                self.lazyordersetok['bid'] = True
+            elif oid==self.quicklegoid:
+                self.quickstate = 'ordered'
+
+            if self.lazyordersetok['ask'] and lazyordersetok['bid']:
+                self.lazystate = 'set'
+
+        self.lock.release()
 
 class crabconsole(stratconsole):
     pass
