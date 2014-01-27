@@ -1,0 +1,13 @@
+- read db
+
+- merge data by common dates
+
+- regression
+
+- get residuals
+
+- test residual conintegration p-value
+
+- produce trading signals based on residual
+
+- backtest
