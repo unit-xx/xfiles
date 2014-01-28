@@ -2,12 +2,18 @@
 
 - merge data by common dates
 
-- regression
+--> a dataframe with column 1 as y and columns 2-n as X
 
-- get residuals
+- regression: simple, or with regularization.
 
 - test residual conintegration p-value
+
+--> exploring mean-reversion properties
+
+- apply regression coefficients on another data set
 
 - produce trading signals based on residual
 
 - backtest
+
+--> backtesting part.
