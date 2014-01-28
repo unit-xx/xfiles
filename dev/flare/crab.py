@@ -26,8 +26,8 @@ class crabstrat(strattop):
         # store ticku and value for each leg.
         self.midprice = defaultdict(dict)
         self.qhold = 0
-        self.sprdmid = 0.0
-        self.sprdmidfix = 0.0
+        self.sprdmid = None
+        self.sprdmidfix = None
 
         self.lazylegoid = {
                 'ask':None,
@@ -39,7 +39,7 @@ class crabstrat(strattop):
                 }
         self.quicklegoid = None
 
-        self.quickmidprice = 0.0
+        self.quickmidprice = None
 
         self.quickstate = 'ready'
         self.lazystate = 'ready'
@@ -98,31 +98,36 @@ class crabstrat(strattop):
             try:
                 q = pickle.loads(m['data'])
             except:
+                print 'quote unpickling failed.'
+                self.lock.release()
                 return
 
             # if midprice of quickleg is changed, reset lazyleg order
             if q['code'] == self.quickleg:
                 newquickmid = (q['bid1'] + q['ask1'])/2
-                if newquickmid != self.quickmidprice:
-                    self.shortmidprice = newquickmid
+                if self.quickmidprice is None or abs(newquickmid-self.quickmidprice)>1e-6:
+                    print 'new mid: %.3f' % newquickmid
+                    self.quickmidprice = newquickmid
                     isresetlazy = True
 
         elif m['channel'] == self.chma:
             try:
                 inst, tickunit, maval = pickle.loads(m['data'])
             except:
+                self.lock.release()
                 return
 
             if inst==self.quickleg or inst==self.lazyleg:
-                midprice[inst]['ticku'] = tickunit
-                midprice[inst]['value'] = maval
+                self.midprice[inst]['ticku'] = tickunit
+                self.midprice[inst]['value'] = maval
                 try:
                     # if midprice of sprd is changed, reset lazyleg order
-                    if midprice[self.quickleg]['ticku']==midprice[self.lazyleg]['ticku']:
-                        newsprdmid = midprice[self.lazyleg]['value'] - midprice[self.quickleg]['value']
-                        if newsprdmid != self.sprdmid:
+                    if self.midprice[self.quickleg]['ticku']==self.midprice[self.lazyleg]['ticku']:
+                        newsprdmid = self.midprice[self.lazyleg]['value'] - self.midprice[self.quickleg]['value']
+                        if self.sprdmid is None or abs(newsprdmid-self.sprdmid)>0.05:
                             self.sprdmid = newsprdmid
                             self.sprdmidfix = self.sprdmid - self.qhold * self.sigma
+                            print 'new sprdmid: %.3f' % newsprdmid
                             isresetlazy = True
 
                 except KeyError:
@@ -132,6 +137,10 @@ class crabstrat(strattop):
                     # ma is none since not enough quotes is accumulated to calc ma
                     pass
 
+        if self.sprdmid is None or self.sprdmidfix is None or self.quickmidprice is None:
+            self.lock.release()
+            return
+
         if self.lazystate=='ready' and self.quickstate=='ready':
             # set limit order of lazyleg
             lazyask = self.sprdmidfix + self.quickmidprice + self.delta
@@ -139,20 +148,25 @@ class crabstrat(strattop):
             lazyask = self.ceil02(lazyask)
             lazybid = self.floor02(lazybid)
 
-            if q==0:
+            if self.qhold==0:
                 self.sprdaskmode = 'openshort'
                 self.sprdbidmode = 'openlong'
-            elif q > 0:
+                print 0
+            elif self.qhold > 0:
                 self.sprdaskmode = 'closelong'
                 self.sprdbidmode = 'openlong'
-            elif q < 0:
+                print 1
+            elif self.qhold < 0:
                 self.sprdaskmode = 'openshort'
                 self.sprdbidmode = 'closeshort'
+                print -1
 
-            if q==self.qmax:
+            if self.qhold==self.qmax:
                 self.sprdbidmode = 'empty'
-            elif q==-self.qmax:
+            elif self.qhold==-self.qmax:
                 self.sprdaskmode = 'empty'
+
+            print self.sprdaskmode, self.sprdbidmode
 
             # set ask side
             askoid = None
@@ -164,6 +178,7 @@ class crabstrat(strattop):
                 price = lazyask
                 volume = 1
                 askoid, doreq, rcok = self.reqorder(otype, direct, code, price, volume)
+                print 'set ask as open short'
                 self.lazyordersetok['ask'] = False
                 # urgent case if doreq is False
             elif self.sprdaskmode=='closelong':
@@ -173,11 +188,13 @@ class crabstrat(strattop):
                 price = lazyask
                 volume = 1
                 askoid, doreq, rcok = self.reqorder(otype, direct, code, price, volume)
+                print 'set ask as close long'
                 self.lazyordersetok['ask'] = False
                 # urgent case if doreq is False
             else:
                 # empty
                 self.lazyordersetok['ask'] = True
+                print 'set ask as empty'
                 pass
             self.lazylegoid['ask'] = askoid
 
@@ -190,6 +207,7 @@ class crabstrat(strattop):
                 price = lazybid
                 volume = 1
                 bidoid, doreq, rcok = self.reqorder(otype, direct, code, price, volume)
+                print 'set bid as open long'
                 self.lazyordersetok['bid'] = False
                 # urgent case if doreq is False
             elif self.sprdbidmode=='closeshort':
@@ -199,11 +217,13 @@ class crabstrat(strattop):
                 price = lazybid
                 volume = 1
                 bidoid, doreq, rcok = self.reqorder(otype, direct, code, price, volume)
+                print 'set bid as close short'
                 self.lazyordersetok['bid'] = False
                 # urgent case if doreq is False
             else:
                 # empty
                 self.lazyordersetok['bid'] = True
+                print 'set bid as empty'
                 pass
             self.lazylegoid['bid'] = bidoid
 
@@ -230,7 +250,13 @@ class crabstrat(strattop):
             oldqhold = self.qhold
             self.lazystate = 'cancelling'
 
-            print('cancel both lazy limit lazystate=%s(<-%s) quickstate=%s(<-%s) q=%d(<-%d) sprdmid=%.3f sprdfix=%.3f quickmid=%.2f, delta=%.3f lazyask=%.2f lazybid=%.2f ' % (self.lazystate, oldlazystate, self.quickstate, oldquickstate, self.qhold, oldqhold, self.sprdmid, self.sprdmidfix, self.quickmidprice, self.delta, lazyask, lazybid))
+            print('cancel both lazy limit: lazystate=%s(<-%s) quickstate=%s(<-%s) q=%d(<-%d) sprdmid=%.3f sprdfix=%.3f quickmid=%.2f, delta=%.3f' % (self.lazystate, oldlazystate, self.quickstate, oldquickstate, self.qhold, oldqhold, self.sprdmid, self.sprdmidfix, self.quickmidprice, self.delta))
+        else:
+            oldlazystate = self.lazystate
+            oldquickstate = self.quickstate
+            oldqhold = self.qhold
+
+            #print('info: lazystate=%s(<-%s) quickstate=%s(<-%s) q=%d(<-%d) sprdmid=%.3f sprdfix=%.3f quickmid=%.2f, delta=%.3f' % (self.lazystate, oldlazystate, self.quickstate, oldquickstate, self.qhold, oldqhold, self.sprdmid, self.sprdmidfix, self.quickmidprice, self.delta,))
 
         self.lock.release()
 
@@ -258,7 +284,7 @@ class crabstrat(strattop):
             self.quickstate = 'ready'
             self.sprdmidfix = self.sprdmid - self.qhold * self.sigma
 
-            print('quick traded: lazystate=%s(<-%s) quickstate=%s(<-%s) q=%d(<-%d) sprdmid=%.3f sprdfix=%.3f quickmid=%.2f, delta=%.3f lazyask=%.2f lazybid=%.2f ' % (self.lazystate, oldlazystate, self.quickstate, oldquickstate, self.qhold, oldqhold, self.sprdmid, self.sprdmidfix, self.quickmidprice, self.delta, lazyask, lazybid))
+            print('quick traded: lazystate=%s(<-%s) quickstate=%s(<-%s) q=%d(<-%d) sprdmid=%.3f sprdfix=%.3f quickmid=%.2f, delta=%.3f' % (self.lazystate, oldlazystate, self.quickstate, oldquickstate, self.qhold, oldqhold, self.sprdmid, self.sprdmidfix, self.quickmidprice, self.delta))
 
         elif o[fdef.KCODE]==self.lazyleg:
             # lazyleg should be in 'set' state
@@ -295,7 +321,7 @@ class crabstrat(strattop):
                 self.quickstate = 'orderring'
 
                 oldqhold = self.qhold
-                print('cancel other lazy: lazystate=%s(<-%s) quickstate=%s(<-%s) q=%d(<-%d) sprdmid=%.3f sprdfix=%.3f quickmid=%.2f, delta=%.3f lazyask=%.2f lazybid=%.2f ' % (self.lazystate, oldlazystate, self.quickstate, oldquickstate, self.qhold, oldqhold, self.sprdmid, self.sprdmidfix, self.quickmidprice, self.delta, lazyask, lazybid))
+                print('order quick: lazystate=%s(<-%s) quickstate=%s(<-%s) q=%d(<-%d) sprdmid=%.3f sprdfix=%.3f quickmid=%.2f, delta=%.3f' % (self.lazystate, oldlazystate, self.quickstate, oldquickstate, self.qhold, oldqhold, self.sprdmid, self.sprdmidfix, self.quickmidprice, self.delta))
             elif self.lazystate=='cancelling':
                 # cancel-while-traded race condition.
                 if oid==self.lazylegoid['ask']:
@@ -323,7 +349,7 @@ class crabstrat(strattop):
                 self.quickstate = 'orderring'
 
                 oldqhold = self.qhold
-                print('cancel other lazy: lazystate=%s(<-%s) quickstate=%s(<-%s) q=%d(<-%d) sprdmid=%.3f sprdfix=%.3f quickmid=%.2f, delta=%.3f lazyask=%.2f lazybid=%.2f ' % (self.lazystate, oldlazystate, self.quickstate, oldquickstate, self.qhold, oldqhold, self.sprdmid, self.sprdmidfix, self.quickmidprice, self.delta, lazyask, lazybid))
+                print('order quick at cancelling: lazystate=%s(<-%s) quickstate=%s(<-%s) q=%d(<-%d) sprdmid=%.3f sprdfix=%.3f quickmid=%.2f, delta=%.3f' % (self.lazystate, oldlazystate, self.quickstate, oldquickstate, self.qhold, oldqhold, self.sprdmid, self.sprdmidfix, self.quickmidprice, self.delta))
 
         self.lock.release()
 
@@ -349,10 +375,9 @@ class crabstrat(strattop):
                     oldlazystate = self.lazystate
                     self.lazystate = 'ready'
 
-            oldlazystate = self.lazystate
-            oldquickstate = self.quickstate
-            oldqhold = self.qhold
-            print('lazystate=%s(<-%s) quickstate=%s(<-%s) q=%d(<-%d) sprdmid=%.3f sprdfix=%.3f quickmid=%.2f, delta=%.3f lazyask=%.2f lazybid=%.2f ' % (self.lazystate, oldlazystate, self.quickstate, oldquickstate, self.qhold, oldqhold, self.sprdmid, self.sprdmidfix, self.quickmidprice, self.delta, lazyask, lazybid))
+                    oldquickstate = self.quickstate
+                    oldqhold = self.qhold
+                    print('cancelled: lazystate=%s(<-%s) quickstate=%s(<-%s) q=%d(<-%d) sprdmid=%.3f sprdfix=%.3f quickmid=%.2f, delta=%.3f' % (self.lazystate, oldlazystate, self.quickstate, oldquickstate, self.qhold, oldqhold, self.sprdmid, self.sprdmidfix, self.quickmidprice, self.delta))
 
         self.lock.release()
 
@@ -401,12 +426,15 @@ class crabstrat(strattop):
         if 'OrderSysID' in o:
             if oid==self.lazylegoid['ask']:
                 self.lazyordersetok['ask'] = True
+                print 'lazy ask order accepted'
             elif oid==self.lazylegoid['bid']:
                 self.lazyordersetok['bid'] = True
+                print 'lazy bid order accepted'
             elif oid==self.quicklegoid:
                 self.quickstate = 'ordered'
+                print 'quick order accepted'
 
-            if self.lazyordersetok['ask'] and lazyordersetok['bid']:
+            if self.lazyordersetok['ask'] and self.lazyordersetok['bid']:
                 self.lazystate = 'set'
 
         self.lock.release()

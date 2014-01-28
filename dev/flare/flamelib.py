@@ -1727,7 +1727,6 @@ def runstrat(sname, mytop, sconsole):
             raise flameException('a strat instance is already running.')
         try:
             rc = mytop(myname, pubsub, tbook, mycfg)
-            rc.setup()
             rcbottom = stratbottom(pubsub, rc)
 
             tbproxy.start()
