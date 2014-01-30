@@ -56,6 +56,16 @@ class crabmonwin(QMainWindow, Ui_crabmainwin):
         except pickle.PickleError:
             pass
 
+    @pyqtSlot()
+    def on_refreshbtn_clicked(self):
+        idx = self.stratcmbo.currentIndex()
+        strat = self.stratcmbo.itemText(idx)
+        QMetaObject.invokeMethod(self.stratcmbo,
+                'currentIndexChanged',
+                Qt.QueuedConnection,
+                Q_ARG('QString', QString(strat))
+                )
+
     def reloadstrat(self, newindex=0):
         tb2strat = self.store.hgetall(fdef.TB2STRATMAP)
         self.strat2tb = {tb2strat[k]:k for k in tb2strat}

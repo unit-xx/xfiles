@@ -3,16 +3,18 @@
 # flare library in message passing style.
 # flame = flare in message
 
-import os
+import os, sys
 import logging
 import signal
+import traceback
+import time
 from cmd import Cmd
 import cPickle as pickle
 from Queue import Queue, Empty
 from collections import defaultdict
 from copy import copy
 import cPickle as pickle
-from threading import Thread, Lock, Event, currentThread
+from threading import Thread, Lock, Event, currentThread, enumerate
 from datetime import datetime
 
 from util import Record, printdictdict
@@ -1672,6 +1674,20 @@ class stratconsole(Cmd):
     def do_alloid(self, args):
         self.top.tbook.printalloid()
 
+    def do_threads(self, args):
+        for t in enumerate():
+            print t
+
+    def do_allstack(self, args):
+        allthreads = enumerate()
+        frames = sys._current_frames()
+        for t in allthreads:
+            tid = t.ident
+            tname = t.name
+            print 'stack for %d %s' % (tid, tname)
+            traceback.print_stack(frames[tid])
+            print
+
 class flameException(Exception):
     pass
 
@@ -1740,7 +1756,12 @@ def runstrat(sname, mytop, sconsole):
 
             rc.stop()
             rcbottom.stop()
+            rc.join()
+            rcbottom.join()
+            # wait a while for TBookProxy empty the queue.
+            time.sleep(3)
             tbproxy.stop()
+            tbproxy.join()
             signal.signal(signal.SIGINT, oldhandler)
         except:
             logging.exception('fatal error while running strategy.')

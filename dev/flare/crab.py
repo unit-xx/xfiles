@@ -63,7 +63,7 @@ class crabstrat(strattop):
                     ret = True
                 else:
                     ret = False
-        self.logger.debug('order %s rc result: %s', oid, ret)
+        #self.logger.debug('order %s rc result: %s', oid, ret)
         return ret
 
     def floor02(self, x):
@@ -92,6 +92,7 @@ class crabstrat(strattop):
         '''
 
         self.lock.acquire()
+        #self.logger.debug('enter signal')
 
         isresetlazy = False
 
@@ -101,6 +102,7 @@ class crabstrat(strattop):
             except:
                 print 'quote unpickling failed.'
                 self.lock.release()
+                #self.logger.debug('exit signal')
                 return
 
             # if midprice of quickleg is changed, reset lazyleg order
@@ -117,6 +119,7 @@ class crabstrat(strattop):
                 inst, tickunit, maval = pickle.loads(m['data'])
             except:
                 self.lock.release()
+                #self.logger.debug('exit signal')
                 return
 
             if inst==self.quickleg or inst==self.lazyleg:
@@ -141,6 +144,7 @@ class crabstrat(strattop):
 
         if self.sprdmid is None or self.sprdmidfix is None or self.quickmidprice is None or self.quickquote is None:
             self.lock.release()
+            #self.logger.debug('exit signal')
             return
 
         if self.lazystate=='ready' and self.quickstate=='ready':
@@ -258,14 +262,18 @@ class crabstrat(strattop):
             #print('info: lazystate=%s(<-%s) quickstate=%s(<-%s) q=%d(<-%d) sprdmid=%.3f sprdfix=%.3f quickmid=%.2f, delta=%.3f' % (self.lazystate, oldlazystate, self.quickstate, oldquickstate, self.qhold, oldqhold, self.sprdmid, self.sprdmidfix, self.quickmidprice, self.delta,))
 
         self.lock.release()
+        #self.logger.debug('exit signal')
 
     def OnOrderFullyTrade(self, oid, resp):
 
         self.lock.acquire()
+        #self.logger.debug('enter OnOrderFullyTrade')
+        print 'fully trade'
 
         # whose order? lazyleg or quickleg?
         o, olk = self.tbook.getorder(oid)
         if o[fdef.KCODE]==self.quickleg:
+            print 'quick fully trade'
             # quickleg should be in 'ordered' state
             # set quickleg state to ready
             lazyotype = o[fdef.KOTYPE]
@@ -289,16 +297,21 @@ class crabstrat(strattop):
             # lazyleg should be in 'set' state
             # lazyleg to cancelother state
             # cancel other lazyleg
+            print 'lazy fully trade'
             if self.lazystate=='set':
                 if oid==self.lazylegoid['ask']:
                     # ask side traded, cancel bid side
                     self.lazylegoid['ask'] = None
+                    print 'ask traded'
                     if self.lazylegoid['bid'] is not None:
                         self.cancelorder(self.lazylegoid['bid'])
+                        print 'cancel bid as other'
                 elif oid==self.lazylegoid['bid']:
                     self.lazylegoid['bid'] = None
+                    print 'bid traded'
                     if self.lazylegoid['ask'] is not None:
                         self.cancelorder(self.lazylegoid['ask'])
+                        print 'cancel ask as other'
 
                 if self.lazylegoid['ask'] is None and self.lazylegoid['bid'] is None:
                     # when +/-qmax is reached only either bid or ask is set
@@ -313,7 +326,10 @@ class crabstrat(strattop):
                 otype = o[fdef.KOTYPE]
                 direct = fdef.VSHORT if o[fdef.KDIR]==fdef.VLONG else fdef.VLONG
                 code = self.quickleg
-                price = self.quickquote['bid']-1.0 if direct==fdef.VSHORT else self.quickquote['ask']+1.0
+                if (otype==fdef.VOPEN and direct==fdef.VSHORT) or (otype==fdef.VCLOSE and direct==fdef.VLONG):
+                    price = self.quickquote['bid1'] - 1.0 
+                else:
+                    price = self.quickquote['ask1'] + 1.0
                 volume = 1
                 quickoid, doreq, rcok = self.reqorder(otype, direct, code, price, volume)
                 self.quicklegoid = quickoid
@@ -321,13 +337,15 @@ class crabstrat(strattop):
                 self.quickstate = 'orderring'
 
                 oldqhold = self.qhold
-                print('order quick: lazystate=%s(<-%s) quickstate=%s(<-%s) q=%d(<-%d) sprdmid=%.3f sprdfix=%.3f quickmid=%.2f, delta=%.3f' % (self.lazystate, oldlazystate, self.quickstate, oldquickstate, self.qhold, oldqhold, self.sprdmid, self.sprdmidfix, self.quickmidprice, self.delta))
+                print('order quick at fully trade: lazystate=%s(<-%s) quickstate=%s(<-%s) q=%d(<-%d) sprdmid=%.3f sprdfix=%.3f quickmid=%.2f, delta=%.3f' % (self.lazystate, oldlazystate, self.quickstate, oldquickstate, self.qhold, oldqhold, self.sprdmid, self.sprdmidfix, self.quickmidprice, self.delta))
             elif self.lazystate=='cancelling':
                 # cancel-while-traded race condition.
                 if oid==self.lazylegoid['ask']:
                     self.lazylegoid['ask'] = None
+                    print 'ask traded'
                 elif oid==self.lazylegoid['bid']:
                     self.lazylegoid['bid'] = None
+                    print 'bid traded'
 
                 if self.lazylegoid['ask'] is None and self.lazylegoid['bid'] is None:
                     # both lazy leg is None because 1. one of them is not set 2. one of them is cancelled first normally
@@ -341,7 +359,10 @@ class crabstrat(strattop):
                 otype = o[fdef.KOTYPE]
                 direct = fdef.VSHORT if o[fdef.KDIR]==fdef.VLONG else fdef.VLONG
                 code = self.quickleg
-                price = self.quickquote['bid']-1.0 if direct==fdef.VSHORT else self.quickquote['ask']+1.0
+                if (otype==fdef.VOPEN and direct==fdef.VSHORT) or (otype==fdef.VCLOSE and direct==fdef.VLONG):
+                    price = self.quickquote['bid1'] - 1.0 
+                else:
+                    price = self.quickquote['ask1'] + 1.0
                 volume = 1
                 quickoid, doreq, rcok = self.reqorder(otype, direct, code, price, volume)
                 self.quicklegoid = quickoid
@@ -352,10 +373,12 @@ class crabstrat(strattop):
                 print('order quick at cancelling: lazystate=%s(<-%s) quickstate=%s(<-%s) q=%d(<-%d) sprdmid=%.3f sprdfix=%.3f quickmid=%.2f, delta=%.3f' % (self.lazystate, oldlazystate, self.quickstate, oldquickstate, self.qhold, oldqhold, self.sprdmid, self.sprdmidfix, self.quickmidprice, self.delta))
 
         self.lock.release()
+        #self.logger.debug('exit OnOrderFullyTrade')
 
     def onCancelled(self, oid, resp):
 
         self.lock.acquire()
+        #self.logger.debug('enter onCancelled')
 
         # should be lazyleg's cancel
         o, olk = self.tbook.getorder(oid)
@@ -383,6 +406,7 @@ class crabstrat(strattop):
                 print 'abnormal order cancelled at lazystate=%s quickstate=%s' % (self.lazystate, self.quickstate)
 
         self.lock.release()
+        #self.logger.debug('exit onCancelled')
 
     def onOrderRejected(self, oid, resp):
         # really urgent case, log and show error sign.
@@ -392,6 +416,7 @@ class crabstrat(strattop):
     def onCancelRejected(self, oid, resp):
 
         self.lock.acquire()
+        #self.logger.debug('enter onCancelRejected')
 
         o, olk = self.tbook.getorder(oid)
         if o[fdef.KCODE]==self.quickleg:
@@ -423,9 +448,11 @@ class crabstrat(strattop):
                 print 'abnormal cancel rejected at lazystate=%s quickstate=%s' % (self.lazystate, self.quickstate)
 
         self.lock.release()
+        #self.logger.debug('exit onCancelRejected')
 
     def onOrderAccepted(self, oid, resp):
         self.lock.acquire()
+        #self.logger.debug('enter onOrderAccepted')
 
         o, olk = self.tbook.getorder(oid)
         if 'OrderSysID' in o:
@@ -450,6 +477,7 @@ class crabstrat(strattop):
                 print('lazy set ok: lazystate=%s(<-%s) quickstate=%s(<-%s) q=%d(<-%d) sprdmid=%.3f sprdfix=%.3f quickmid=%.2f, delta=%.3f' % (self.lazystate, oldlazystate, self.quickstate, oldquickstate, self.qhold, oldqhold, self.sprdmid, self.sprdmidfix, self.quickmidprice, self.delta))
 
         self.lock.release()
+        #self.logger.debug('exit onOrderAccepted')
 
 class crabconsole(stratconsole):
     pass

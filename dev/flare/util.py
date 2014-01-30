@@ -1,3 +1,4 @@
+import logging
 import cPickle as pickle
 from threading import RLock, currentThread
 
@@ -46,6 +47,8 @@ class listofdictTableModel(QAbstractTableModel):
         self.colname = colname
         self.colnamemap = colnamemap
 
+        self.logger = logging.getLogger()
+
     def rowCount(self, parent=QModelIndex()):
         with self.lock:
             ret = len(self.data)
@@ -78,6 +81,7 @@ class listofdictTableModel(QAbstractTableModel):
                     #print 'update row', j+1, k
                     self.data[j].update(r)
                     self.refreshrow(j)
+                    self.logger.debug('update row %d with key %s, object %s' % (j, k, r))
                 else:
                     # a new key
                     #print 'insert new row', self.rowCount()+1, k
@@ -85,6 +89,7 @@ class listofdictTableModel(QAbstractTableModel):
                     self.keys.append(k)
                     self.data.append(r)
                     self.endInsertRows()
+                    self.logger.debug('insert row with key %s, object %s' % (k, r))
 
     def clean(self):
         if self.rowCount() > 0:

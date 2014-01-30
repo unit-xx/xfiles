@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'crabmonui.ui'
 #
-# Created: Fri Jan 10 13:25:01 2014
+# Created: Thu Jan 30 11:23:50 2014
 #      by: PyQt4 UI code generator 4.10.3
 #
 # WARNING! All changes made in this file will be lost!
@@ -33,12 +33,15 @@ class Ui_crabmainwin(object):
         self.gridLayout.setObjectName(_fromUtf8("gridLayout"))
         self.label = QtGui.QLabel(self.centralwidget)
         self.label.setObjectName(_fromUtf8("label"))
-        self.gridLayout.addWidget(self.label, 0, 0, 1, 1)
+        self.gridLayout.addWidget(self.label, 0, 3, 1, 1)
         self.stratcmbo = QtGui.QComboBox(self.centralwidget)
         self.stratcmbo.setObjectName(_fromUtf8("stratcmbo"))
-        self.gridLayout.addWidget(self.stratcmbo, 0, 1, 1, 1)
+        self.gridLayout.addWidget(self.stratcmbo, 0, 4, 1, 1)
+        self.refreshbtn = QtGui.QPushButton(self.centralwidget)
+        self.refreshbtn.setObjectName(_fromUtf8("refreshbtn"))
+        self.gridLayout.addWidget(self.refreshbtn, 0, 9, 1, 1)
         spacerItem = QtGui.QSpacerItem(533, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
-        self.gridLayout.addItem(spacerItem, 0, 4, 1, 1)
+        self.gridLayout.addItem(spacerItem, 0, 7, 1, 1)
         self.positiontbl = QtGui.QTableView(self.centralwidget)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
@@ -46,19 +49,19 @@ class Ui_crabmainwin(object):
         sizePolicy.setHeightForWidth(self.positiontbl.sizePolicy().hasHeightForWidth())
         self.positiontbl.setSizePolicy(sizePolicy)
         self.positiontbl.setObjectName(_fromUtf8("positiontbl"))
-        self.gridLayout.addWidget(self.positiontbl, 1, 0, 1, 5)
+        self.gridLayout.addWidget(self.positiontbl, 1, 0, 1, 11)
         self.ordertbl = QtGui.QTableView(self.centralwidget)
         self.ordertbl.setObjectName(_fromUtf8("ordertbl"))
-        self.gridLayout.addWidget(self.ordertbl, 2, 0, 1, 5)
+        self.gridLayout.addWidget(self.ordertbl, 2, 0, 1, 11)
         self.label_2 = QtGui.QLabel(self.centralwidget)
         self.label_2.setObjectName(_fromUtf8("label_2"))
-        self.gridLayout.addWidget(self.label_2, 0, 2, 1, 1)
+        self.gridLayout.addWidget(self.label_2, 0, 5, 1, 1)
         self.tbnameline = QtGui.QLineEdit(self.centralwidget)
         self.tbnameline.setMinimumSize(QtCore.QSize(100, 0))
         self.tbnameline.setText(_fromUtf8(""))
         self.tbnameline.setReadOnly(True)
         self.tbnameline.setObjectName(_fromUtf8("tbnameline"))
-        self.gridLayout.addWidget(self.tbnameline, 0, 3, 1, 1)
+        self.gridLayout.addWidget(self.tbnameline, 0, 6, 1, 1)
         crabmainwin.setCentralWidget(self.centralwidget)
         self.menubar = QtGui.QMenuBar(crabmainwin)
         self.menubar.setGeometry(QtCore.QRect(0, 0, 659, 23))
@@ -74,6 +77,6 @@ class Ui_crabmainwin(object):
     def retranslateUi(self, crabmainwin):
         crabmainwin.setWindowTitle(_translate("crabmainwin", "跨期套利监控", None))
         self.label.setText(_translate("crabmainwin", "策略", None))
+        self.refreshbtn.setText(_translate("crabmainwin", "Refresh", None))
         self.label_2.setText(_translate("crabmainwin", "账目", None))
 
-# $Id$ 
