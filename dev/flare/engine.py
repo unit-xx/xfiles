@@ -22,6 +22,9 @@ if __name__=='__main__':
     store = getstore(storecfg)
     pubsub = getpubsub(storecfg)
 
+    if store is None or pubsub is None:
+        raise Exception('connect to store or pubsub failed.')
+
     engine = Engine(tradercfg, pubsub)
     engine.start()
 

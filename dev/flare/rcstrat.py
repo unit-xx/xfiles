@@ -56,9 +56,18 @@ class rcconsole(stratconsole):
         code = tp[1].upper()
         price = float(tp[2])
         volume = int(tp[3])
+        try:
+            cancelimmd = int(tp[4])
+        except IndexError:
+            cancelimmd = 0
+
         lastoid, doreq, rcok = self.top.reqorder(otype, direct, code, price, volume)
         print 'requested,' if doreq else 'unrequested,', 'riskcheck ok,' if (doreq and rcok) else 'riskcheck failed,', lastoid
         self.lastoid = lastoid
+
+        if cancelimmd and doreq:
+            self.top.cancelorder(self.lastoid)
+            print '%s cancelled immediately' % self.lastoid
 
     def do_close(self, args):
         tp = args.split()
@@ -67,9 +76,18 @@ class rcconsole(stratconsole):
         code = tp[1].upper()
         price = float(tp[2])
         volume = int(tp[3])
+        try:
+            cancelimmd = int(tp[4])
+        except IndexError:
+            cancelimmd = 0
+
         lastoid, doreq, rcok = self.top.reqorder(otype, direct, code, price, volume)
         print 'requested,' if doreq else 'unrequested,', 'riskcheck ok,' if (doreq and rcok) else 'riskcheck failed,', lastoid
         self.lastoid = lastoid
+
+        if cancelimmd and doreq:
+            self.top.cancelorder(self.lastoid)
+            print '%s cancelled immediately' % self.lastoid
 
 def main():
     mysec = 'rcstrat'

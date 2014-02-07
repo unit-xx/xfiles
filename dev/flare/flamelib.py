@@ -301,6 +301,7 @@ class EngineCTP(TraderSpi):
         # reverse map from exchangeID/OrderRef to oid
         self.exch2oid = {}
         self.oref2oid = {}
+        self.oid2oref = {}
         self.idmaplock = Lock()
 
         # map from oid to strat name
@@ -353,11 +354,11 @@ class EngineCTP(TraderSpi):
         else:
             ctpdirect = utype.THOST_FTDC_D_Buy if (direct==fdef.VSHORT) else utype.THOST_FTDC_D_Sell
 
-        oref = self.inc_order_ref()
+        oref = str(self.inc_order_ref())
         ctpreq = ustruct.InputOrder(
                 InstrumentID = code,
                 Direction = ctpdirect,
-                OrderRef = str(oref),
+                OrderRef = oref,
                 LimitPrice = 0.0 if ismktprice else price,
                 VolumeTotalOriginal = volume,
                 OrderPriceType = utype.THOST_FTDC_OPT_AnyPrice if ismktprice else utype.THOST_FTDC_OPT_LimitPrice,
@@ -398,24 +399,29 @@ class EngineCTP(TraderSpi):
 
     def cancelorder(self, req):
         code = req[fdef.KCODE]
-        oref = req['OrderRef']
-
-        ctpreq = ustruct.InputOrderAction(
-                ActionFlag = utype.THOST_FTDC_AF_Delete,
-                BrokerID = self.broker_id,
-                InvestorID = self.investor_id,
-                InstrumentID = code,
-                SessionID = self.sessionid,
-                FrontID = self.frontid,
-                OrderRef = oref
-                )
-        r = self.api.ReqOrderAction(ctpreq, self.inc_request_id())
+        oid = req[fdef.KOID]
+        oreftp = self.getoreftp(oid)
+        if oreftp is None:
+            cstate = fdef.VCANCELREJECTED
+            ctpreq = None
+        else:
+            oref = oreftp[2]
+            ctpreq = ustruct.InputOrderAction(
+                    ActionFlag = utype.THOST_FTDC_AF_Delete,
+                    BrokerID = self.broker_id,
+                    InvestorID = self.investor_id,
+                    InstrumentID = code,
+                    SessionID = self.sessionid,
+                    FrontID = self.frontid,
+                    OrderRef = oref
+                    )
+            r = self.api.ReqOrderAction(ctpreq, self.inc_request_id())
+            cstate = fdef.VCANCELREQED
 
         strat = req[fdef.KSTRAT]
-        oid = req[fdef.KOID]
         channel = fdef.fullname(fdef.CHORESP, strat)
         rec = self.makerecord(ctpreq, oid, strat)
-        rec[fdef.KCANCELSTATE] = fdef.VCANCELREQED
+        rec[fdef.KCANCELSTATE] = cstate
         self.pubsub.publish(channel, rec.dump())
 
     def setoidmap(self, oid, someid, by='oref'):
@@ -428,6 +434,7 @@ class EngineCTP(TraderSpi):
                 self.logger.info('Current exchid map: %s', self.exch2oid)
             elif by=='oref':
                 self.oref2oid[someid] = oid
+                self.oid2oref[oid] = someid
                 self.logger.info('Current oref map: %s', self.oref2oid)
 
     def getoid(self, someid, by='oref'):
@@ -445,6 +452,15 @@ class EngineCTP(TraderSpi):
             except KeyError:
                 pass
         return oid
+
+    def getoreftp(self, oid):
+        oref = None
+        with self.idmaplock:
+            try:
+                oref = self.oid2oref[oid]
+            except KeyError:
+                pass
+        return oref
 
     def setstratmap(self, oid, strat):
         '''
@@ -476,7 +492,7 @@ class EngineCTP(TraderSpi):
     def makeoreftp(self, order):
         # oref tuple for current session
         try:
-            return (order.FrontID, order.SessionID, int(order.OrderRef))
+            return (order.FrontID, order.SessionID, order.OrderRef)
         except ValueError:
             return None
 
