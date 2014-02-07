@@ -298,7 +298,8 @@ class crabstrat(strattop):
             # lazyleg to cancelother state
             # cancel other lazyleg
             print 'lazy fully trade'
-            if self.lazystate=='set':
+            if self.lazystate=='set' or self.lazystate=='setting':
+                # setting when: a lazy leg is traded even before the other lazy is accepeted
                 if oid==self.lazylegoid['ask']:
                     # ask side traded, cancel bid side
                     self.lazylegoid['ask'] = None
