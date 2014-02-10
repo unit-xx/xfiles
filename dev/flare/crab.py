@@ -107,12 +107,15 @@ class crabstrat(strattop):
 
             # if midprice of quickleg is changed, reset lazyleg order
             if q['code'] == self.quickleg:
-                self.quickquote = q
-                newquickmid = (q['bid1'] + q['ask1'])/2
-                if self.quickmidprice is None or abs(newquickmid-self.quickmidprice)>1e-6:
-                    print 'new mid: %.3f' % newquickmid
-                    self.quickmidprice = newquickmid
-                    isresetlazy = True
+                if q['bid1']>q['upperlimit'] or q['bid1']<q['lowerlimit'] or q['ask1']>q['upperlimit'] or q['ask1']<q['lowerlimit']:
+                    pass
+                else:
+                    self.quickquote = q
+                    newquickmid = (q['bid1'] + q['ask1'])/2
+                    if self.quickmidprice is None or abs(newquickmid-self.quickmidprice)>1e-6:
+                        print 'new mid: %.3f' % newquickmid
+                        self.quickmidprice = newquickmid
+                        isresetlazy = True
 
         elif m['channel'] == self.chma:
             try:
