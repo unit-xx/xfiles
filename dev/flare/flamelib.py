@@ -1167,8 +1167,9 @@ class TBookCache:
         with self.orderblk:
             self.ordercc[oid] = o
             self.orderlk[oid] = olk
-            self.logger.debug('neworder: %s', o)
-            self.cmdproxy(fdef.CMDNEWORDER, (oid, o))
+            o2 = copy(o)
+            self.logger.debug('neworder: %s', o2)
+            self.cmdproxy(fdef.CMDNEWORDER, (oid, o2))
 
         return oid
 
@@ -1205,12 +1206,12 @@ class TBookCache:
                 if p[fdef.KMAXLIMIT] >= (volume+p[fdef.KPOSITION]+p[fdef.KRESERVEDOPEN]):
                     p[fdef.KRESERVEDOPEN] += volume
                     isreserved = True
-                    self.cmdproxy(fdef.CMDUPDATEPOS, (poskey, p))
+                    self.cmdproxy(fdef.CMDUPDATEPOS, (poskey, copy(p)))
             elif otype==fdef.VCLOSE:
                 if p[fdef.KPOSITION] >= (volume+p[fdef.KRESERVEDCLOSE]):
                     p[fdef.KRESERVEDCLOSE] += volume
                     isreserved = True
-                    self.cmdproxy(fdef.CMDUPDATEPOS, (poskey, p))
+                    self.cmdproxy(fdef.CMDUPDATEPOS, (poskey, copy(p)))
 
         if isreserved:
             # XXX: is it ok to set KISRESERVED out of plk?
@@ -1288,7 +1289,7 @@ class TBookCache:
                                 p[fdef.KRESERVEDOPEN] -= untrade
                             elif otype == fdef.VCLOSE:
                                 p[fdef.KRESERVEDCLOSE] -= untrade
-                            self.cmdproxy(fdef.CMDUPDATEPOS, (poskey, p))
+                            self.cmdproxy(fdef.CMDUPDATEPOS, (poskey, copy(p)))
                 elif fdef.KOSTATE in uorder:
                     ostate = uorder[fdef.KOSTATE]
                     if ostate==fdef.VORDERREJECTED:
@@ -1300,7 +1301,7 @@ class TBookCache:
                                 p[fdef.KRESERVEDOPEN] -= volume
                             elif otype == fdef.VCLOSE:
                                 p[fdef.KRESERVEDCLOSE] -= volume
-                            self.cmdproxy(fdef.CMDUPDATEPOS, (poskey, p))
+                            self.cmdproxy(fdef.CMDUPDATEPOS, (poskey, copy(p)))
 
     def getorder(self, oid):
         o = None
@@ -1365,7 +1366,7 @@ class TBookCache:
                     p[fdef.KPOSITION] -= volume
                     if isreserved:
                         p[fdef.KRESERVEDCLOSE] -= volume
-                self.cmdproxy(fdef.CMDUPDATEPOS, (poskey, p))
+                self.cmdproxy(fdef.CMDUPDATEPOS, (poskey, copy(p)))
 
         return ret
 
@@ -1389,7 +1390,7 @@ class TBookCache:
                 self.poscc[poskey] = p
                 self.poslk[poskey] = plk
                 # XXX: seems no need to sync to store
-                self.cmdproxy(fdef.CMDNEWPOSITION, (poskey, p))
+                self.cmdproxy(fdef.CMDNEWPOSITION, (poskey, copy(p)))
 
         return p, plk
 

@@ -66,15 +66,18 @@ class maserv(Thread):
                     ttsum += self.unitsum[inst][i]
                     ttlen += self.unitlen[inst][i]
                 maval = ttsum/ttlen
-            except KeyError, ZeroDivisionError:
-                pass
+            except KeyError:
+                print 'not enough data %s' % q['code']
+            except ZeroDivisionError:
+                print 'divide by zero %s' % q['code']
 
             if maval is not None:
                 try:
                     mad = pickle.dumps((inst, cunit, maval))
+                    self.pubsub.publish(self.machannel, mad)
+                    print 'new ma %s' % str((inst, cunit, maval))
                 except:
                     self.logger.exception('dump ma value.')
-                self.pubsub.publish(self.machannel, mad)
 
             self.curunit[inst] = tu
             self.unitsum[inst][tu] = (q['bid1'] + q['ask1'])/2
@@ -99,8 +102,10 @@ class maserv(Thread):
                 if q is None:
                     continue
                 if q['bid1'] > q['upperlimit'] or q['bid1'] < q['lowerlimit']:
+                    print 'q bid1 out of range: %s %.2f %.2f %.2f' % (q['code'], q['bid1'], q['upperlimit'], q['lowerlimit'])
                     continue
                 if q['ask1'] > q['upperlimit'] or q['ask1'] < q['lowerlimit']:
+                    print 'q ask1 out of range: %s %.2f %.2f %.2f' % (q['code'], q['ask1'], q['upperlimit'], q['lowerlimit'])
                     continue
                 self.qma(q)
             except:
