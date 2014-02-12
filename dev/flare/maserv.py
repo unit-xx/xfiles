@@ -67,9 +67,9 @@ class maserv(Thread):
                     ttlen += self.unitlen[inst][i]
                 maval = ttsum/ttlen
             except KeyError:
-                print 'not enough data %s' % q['code']
+                print 'not enough data %s, tick %d' % (q['code'], tu)
             except ZeroDivisionError:
-                print 'divide by zero %s' % q['code']
+                print 'divide by zero %s, tick %d' % (q['code'], tu)
 
             if maval is not None:
                 try:

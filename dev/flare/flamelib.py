@@ -1669,6 +1669,9 @@ class stratconsole(Cmd):
         Cmd.__init__(self, **kwargs)
         self.top = top
 
+    def emptyline(self):
+        pass
+
     def do_quit(self, args):
         """Quits the program."""
         print "Quitting."

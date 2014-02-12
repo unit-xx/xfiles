@@ -49,6 +49,9 @@ class crabstrat(strattop):
 
         self.lock = Lock()
 
+        # intentially set to suspended at startup
+        self.suspendflag = True
+
         self.pubsub.subscribe((fdef.CHQUOTE, self.chma, fdef.CHHEARTBEAT))
 
         return True
@@ -71,6 +74,15 @@ class crabstrat(strattop):
 
     def ceil02(self, x):
         return 0.2*ceil(x/0.2)
+
+    def issuspend(self):
+        return (self.suspendflag==True and self.qhold==0 and self.lazystate=='ready' and self.quickstate=='ready')
+
+    def dosuspend(self):
+        self.suspendflag = True
+
+    def dounsuspend(self):
+        self.suspendflag = False
 
     def signal(self, m):
         '''
@@ -148,6 +160,10 @@ class crabstrat(strattop):
         if self.sprdmid is None or self.sprdmidfix is None or self.quickmidprice is None or self.quickquote is None:
             self.lock.release()
             #self.logger.debug('exit signal')
+            return
+
+        if self.issuspend():
+            self.lock.release()
             return
 
         if self.lazystate=='ready' and self.quickstate=='ready':
@@ -484,7 +500,24 @@ class crabstrat(strattop):
         #self.logger.debug('exit onOrderAccepted')
 
 class crabconsole(stratconsole):
-    pass
+    def do_quit(self, args):
+        if args=='FORCE':
+            return True
+        else:
+            if self.top.issuspend():
+                print 'Quitting'
+                return True
+            else:
+                print 'suspend first or stop FORCE'
+
+    def do_suspend(self, args):
+        self.top.dosuspend()
+
+    def do_resume(self, args):
+        self.top.dounsuspend()
+
+    def do_issuspend(self, args):
+        print self.top.issuspend()
 
 def main():
     mysec = 'crabstrat'
