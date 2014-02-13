@@ -47,13 +47,22 @@ class maserv(Thread):
         '''
         inst = q['code']
         tu = int(q['tic'] / self.secperunit)
+        midprice = 0.0
+        midlen = 0
+
+        if q['bid1']>q['upperlimit'] or q['bid1']<q['lowerlimit'] or q['ask1']>q['upperlimit'] or q['ask1']<q['lowerlimit']:
+            midprice = 0.0
+            midlen = 0
+        else:
+            midprice = (q['bid1'] + q['ask1'])/2
+            midlen = 1
 
         try:
             cunit = self.curunit[inst]
         except KeyError:
             self.curunit[inst] = tu
-            self.unitsum[inst][tu] = (q['bid1'] + q['ask1'])/2
-            self.unitlen[inst][tu] = 1
+            self.unitsum[inst][tu] = midprice
+            self.unitlen[inst][tu] = midlen
             return
 
         if tu != cunit:
@@ -61,30 +70,54 @@ class maserv(Thread):
             ttsum = 0.0
             ttlen = 0.0
             maval = None
-            try:
-                for i in range(cunit-self.mawsize+1, cunit+1):
-                    ttsum += self.unitsum[inst][i]
-                    ttlen += self.unitlen[inst][i]
-                maval = ttsum/ttlen
-            except KeyError:
-                print 'not enough data %s, tick %d' % (q['code'], tu)
-            except ZeroDivisionError:
-                print 'divide by zero %s, tick %d' % (q['code'], tu)
+            zerounit = 0
+            starttick = cunit
+            hitunit = 0
 
-            if maval is not None:
-                try:
-                    mad = pickle.dumps((inst, cunit, maval))
-                    self.pubsub.publish(self.machannel, mad)
-                    print 'new ma %s' % str((inst, cunit, maval))
-                except:
-                    self.logger.exception('dump ma value.')
+            if len(self.unitsum[inst])<self.mawsize:
+                print 'not enough data %s, tick %d' % (inst, tu)
+            else:
+                while 1:
+                    try:
+                        ttsum += self.unitsum[inst][starttick]
+                        ttlen += self.unitlen[inst][starttick]
+                        if self.unitlen[inst][starttick]==0:
+                            zerounit += 1
+                        hitunit += 1
+                    except KeyError:
+                        pass
+
+                    starttick -= 1
+                    if hitunit >= self.mawsize:
+                        break
+
+                    if starttick < 0:
+                        print 'loop error %s, tick %d' % (q['code'], tu)
+                        break
+
+                if hitunit >= self.mawsize:
+                    if float(zerounit)/self.mawsize > 0.1:
+                        print 'too many zero unit %s, tick %d' % (q['code'], tu)
+                    else:
+                        try:
+                            maval = ttsum/ttlen
+                        except ZeroDivisionError:
+                            print 'divide by zero %s, tick %d' % (q['code'], tu)
+
+                        if maval is not None:
+                            try:
+                                mad = pickle.dumps((inst, cunit, maval))
+                                self.pubsub.publish(self.machannel, mad)
+                                print 'new ma %s' % str((inst, cunit, maval))
+                            except:
+                                self.logger.exception('dump ma value.')
 
             self.curunit[inst] = tu
-            self.unitsum[inst][tu] = (q['bid1'] + q['ask1'])/2
-            self.unitlen[inst][tu] = 1
+            self.unitsum[inst][tu] = midprice
+            self.unitlen[inst][tu] = midlen
         else:
-            self.unitsum[inst][tu] += (q['bid1'] + q['ask1'])/2
-            self.unitlen[inst][tu] += 1
+            self.unitsum[inst][tu] += midprice
+            self.unitlen[inst][tu] += midlen
 
         return
 
@@ -99,14 +132,6 @@ class maserv(Thread):
 
             try:
                 q = pickle.loads(m['data'])
-                if q is None:
-                    continue
-                if q['bid1'] > q['upperlimit'] or q['bid1'] < q['lowerlimit']:
-                    print 'q bid1 out of range: %s %.2f %.2f %.2f' % (q['code'], q['bid1'], q['upperlimit'], q['lowerlimit'])
-                    continue
-                if q['ask1'] > q['upperlimit'] or q['ask1'] < q['lowerlimit']:
-                    print 'q ask1 out of range: %s %.2f %.2f %.2f' % (q['code'], q['ask1'], q['upperlimit'], q['lowerlimit'])
-                    continue
                 self.qma(q)
             except:
                 self.logger.exception('Wrong data.')
