@@ -38,7 +38,11 @@ class crabstrat(strattop):
                 'bid':False
                 }
         self.quicklegoid = None
+
         self.quickquote = None
+        self.lazyquote = None
+
+        self.lazyerroid = None
 
         self.quickmidprice = None
 
@@ -46,6 +50,8 @@ class crabstrat(strattop):
         self.lazystate = 'ready'
         self.sprdaskmode = 'empty'
         self.sprdbidmode = 'empty'
+
+        self.delaytask = None
 
         self.lock = Lock()
 
@@ -124,10 +130,16 @@ class crabstrat(strattop):
                 else:
                     self.quickquote = q
                     newquickmid = (q['bid1'] + q['ask1'])/2
-                    if self.quickmidprice is None or abs(newquickmid-self.quickmidprice)>1e-6:
-                        print 'new mid: %.3f' % newquickmid
+                    if self.quickmidprice is None or abs(newquickmid-self.quickmidprice)>0.05:
+                        #print 'new mid: %.3f' % newquickmid
                         self.quickmidprice = newquickmid
                         isresetlazy = True
+
+            elif q['code']==self.lazyleg:
+                if q['bid1']>q['upperlimit'] or q['bid1']<q['lowerlimit'] or q['ask1']>q['upperlimit'] or q['ask1']<q['lowerlimit']:
+                    pass
+                else:
+                    self.lazyquote = q
 
         elif m['channel'] == self.chma:
             try:
@@ -147,7 +159,7 @@ class crabstrat(strattop):
                         if self.sprdmid is None or abs(newsprdmid-self.sprdmid)>0.05:
                             self.sprdmid = newsprdmid
                             self.sprdmidfix = self.sprdmid - self.qhold * self.sigma
-                            print 'new sprdmid: %.3f' % newsprdmid
+                            #print 'new sprdmid: %.3f' % newsprdmid
                             isresetlazy = True
 
                 except KeyError:
@@ -157,7 +169,7 @@ class crabstrat(strattop):
                     # ma is none since not enough quotes is accumulated to calc ma
                     pass
 
-        if self.sprdmid is None or self.sprdmidfix is None or self.quickmidprice is None or self.quickquote is None:
+        if self.sprdmid is None or self.sprdmidfix is None or self.quickmidprice is None or self.quickquote is None or self.lazyquote is None:
             self.lock.release()
             #self.logger.debug('exit signal')
             return
@@ -391,6 +403,88 @@ class crabstrat(strattop):
 
                 oldqhold = self.qhold
                 print('order quick at cancelling: lazystate=%s(<-%s) quickstate=%s(<-%s) q=%d(<-%d) sprdmid=%.3f sprdfix=%.3f quickmid=%.2f, delta=%.3f' % (self.lazystate, oldlazystate, self.quickstate, oldquickstate, self.qhold, oldqhold, self.sprdmid, self.sprdmidfix, self.quickmidprice, self.delta))
+            elif self.lazystate=='cancelother':
+                # very special case that both lazy leg is traded.
+                # it is closed as soon as possible.
+                errorleg = 'empty'
+                if oid==self.lazylegoid['ask']:
+                    self.lazylegoid['ask'] = None
+                    errorleg = 'ask'
+                    print 'corner case: ask traded'
+                elif oid==self.lazylegoid['bid']:
+                    self.lazylegoid['bid'] = None
+                    errorleg = 'bid'
+                    print 'corner case: bid traded'
+
+                # both lazy leg oid should be None now
+                if self.lazylegoid['ask'] is None and self.lazylegoid['bid'] is None:
+                    if errorleg=='ask':
+                        if self.sprdaskmode=='openshort':
+                            # close short the error leg
+                            otype = fdef.VCLOSE
+                            direct = fdef.VSHORT
+                            code = self.lazyleg
+                            price = self.lazyquote['ask1'] + 1.0
+                            volume = 1
+                            tag = 'errlazy.openshort'
+                            self.lazyerroid, doreq, rcok = self.reqorder(otype, direct, code, price, volume, tag=tag)
+                        elif self.sprdaskmode=='closelong':
+                            # re-open long
+                            otype = fdef.VOPEN
+                            direct = fdef.VLONG
+                            code = self.lazyleg
+                            price = self.lazyquote['ask1'] + 1.0
+                            volume = 1
+                            tag = 'errlazy.closelong'
+                            self.lazyerroid, doreq, rcok = self.reqorder(otype, direct, code, price, volume, tag=tag)
+                    elif errorleg=='bid':
+                        if self.sprdbidmode=='openlong':
+                            # close long the error leg
+                            otype = fdef.VCLOSE
+                            direct = fdef.VLONG
+                            code = self.lazyleg
+                            price = self.lazyquote['bid1'] - 1.0
+                            volume = 1
+                            tag = 'errlazy.openlong'
+                            self.lazyerroid, doreq, rcok = self.reqorder(otype, direct, code, price, volume, tag=tag)
+                        elif self.sprdbidmode=='closeshort':
+                            # re-open short
+                            otype = fdef.VOPEN
+                            direct = fdef.VSHORT
+                            code = self.lazyleg
+                            price = self.lazyquote['bid1'] - 1.0
+                            volume = 1
+                            tag = 'errlazy.closeshort'
+                            self.lazyerroid, doreq, rcok = self.reqorder(otype, direct, code, price, volume, tag=tag)
+                    else:
+                        print 'which error leg to recover?'
+
+                    if not doreq:
+                        # delay the reqorder to onNewTrade
+                        self.delaytask = (otype, direct, code, price, volume, tag)
+                        print 'error recovery delayed to onNewTrade'
+
+                    oldlazystate = self.lazystate
+                    oldquickstate = self.quickstate
+                    oldqhold = self.qhold
+                    self.lazystate = 'cancelotherERRorderring'
+                    print('recover error lazy at cancelother: lazystate=%s(<-%s) quickstate=%s(<-%s) q=%d(<-%d) sprdmid=%.3f sprdfix=%.3f quickmid=%.2f, delta=%.3f' % (self.lazystate, oldlazystate, self.quickstate, oldquickstate, self.qhold, oldqhold, self.sprdmid, self.sprdmidfix, self.quickmidprice, self.delta))
+                else:
+                    print 'unhandled abnormallity in cancel other'
+
+            elif self.lazystate=='cancelotherERRorderred' and o[fdef.KOID]==self.lazyerroid:
+                print 'recover lazy leg fully trade'
+                oldlazystate = self.lazystate
+                oldquickstate = self.quickstate
+                oldqhold = self.qhold
+                self.lazystate = 'ready'
+                self.lazyerroid = None
+
+                print('recover error lazy traded: lazystate=%s(<-%s) quickstate=%s(<-%s) q=%d(<-%d) sprdmid=%.3f sprdfix=%.3f quickmid=%.2f, delta=%.3f' % (self.lazystate, oldlazystate, self.quickstate, oldquickstate, self.qhold, oldqhold, self.sprdmid, self.sprdmidfix, self.quickmidprice, self.delta))
+
+            else:
+                print('unexpected fully trade: lazystate=%s quickstate=%s q=%d sprdmid=%.3f sprdfix=%.3f quickmid=%.2f, delta=%.3f' % (self.lazystate, self.quickstate, self.qhold, self.sprdmid, self.sprdmidfix, self.quickmidprice, self.delta))
+
 
         self.lock.release()
         #self.logger.debug('exit OnOrderFullyTrade')
@@ -422,7 +516,7 @@ class crabstrat(strattop):
                     oldquickstate = self.quickstate
                     oldqhold = self.qhold
                     print('cancelled: lazystate=%s(<-%s) quickstate=%s(<-%s) q=%d(<-%d) sprdmid=%.3f sprdfix=%.3f quickmid=%.2f, delta=%.3f' % (self.lazystate, oldlazystate, self.quickstate, oldquickstate, self.qhold, oldqhold, self.sprdmid, self.sprdmidfix, self.quickmidprice, self.delta))
-            else:# include lazy setting, set, 
+            else:# include lazy setting, set, cancelotherERRxxx, etc.
                 print 'abnormal order cancelled at lazystate=%s quickstate=%s' % (self.lazystate, self.quickstate)
 
         self.lock.release()
@@ -443,7 +537,7 @@ class crabstrat(strattop):
             # really urgent
             pass
         elif o[fdef.KCODE]==self.lazyleg:
-            if self.lazystate=='cancelling':
+            if self.lazystate=='cancelling' or self.lazystate=='cancelother':
                 # XXX: lazystate may be also in traded/ready?
                 # if it is a race condition of cancel-while-traded, then
                 # go on to cancelother state and actions.
@@ -486,8 +580,10 @@ class crabstrat(strattop):
             elif oid==self.lazylegoid['bid'] and self.lazystate=='setting':
                 self.lazyordersetok['bid'] = True
                 print 'lazy bid order accepted'
+            elif oid==self.lazyerroid and self.lazystate=='cancelotherERRorderring':
+                self.lazystate = 'cancelotherERRorderred'
             else:
-                print 'unknown state or order at lazystate=%s quickstate=%s' % (self.lazystate, self.quickstate)
+                print 'accept at unknown state or order at lazystate=%s quickstate=%s' % (self.lazystate, self.quickstate)
 
             if self.lazyordersetok['ask'] and self.lazyordersetok['bid'] and self.lazystate=='setting':
                 oldlazystate = self.lazystate
@@ -498,6 +594,14 @@ class crabstrat(strattop):
 
         self.lock.release()
         #self.logger.debug('exit onOrderAccepted')
+
+    def onNewTrade(self, oid, resp):
+        if self.delaytask is not None:
+            otype, direct, code, price, volume, tag = self.delaytask
+            self.lazyerroid, doreq, rcok = self.reqorder(otype, direct, code, price, volume, tag=tag)
+            print 'delayed task reqed, doreq=%s, rcok=%s' % (doreq, rcok)
+            self.delaytask = None
+
 
 class crabconsole(stratconsole):
     def do_quit(self, args):

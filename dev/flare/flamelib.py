@@ -773,7 +773,7 @@ class strattop(Thread):
     def getstrat(self):
         return self.strat
 
-    def reqorder(self, otype, direct, code, price, volume):
+    def reqorder(self, otype, direct, code, price, volume, tag=''):
         '''
         tbc.neworder
         self.riskcheck
@@ -784,7 +784,7 @@ class strattop(Thread):
         resvok = False
         doreq = False
 
-        oid = self.tbook.neworder(otype, direct, code, price, volume)
+        oid = self.tbook.neworder(otype, direct, code, price, volume, tag)
         rcok = self.riskcheck(oid)
         # TODO: check possition before closing order 
         if rcok:
@@ -1142,7 +1142,7 @@ class TBookCache:
         if self.qproxy is not None:
             self.qproxy.put((cmd, arg))
 
-    def neworder(self, otype, direct, code, price, volume):
+    def neworder(self, otype, direct, code, price, volume, tag=''):
         # insert order in ordercc, tradecc and updates its metadata
         oid = fdef.localoid()
         olk = Lock()
@@ -1163,6 +1163,8 @@ class TBookCache:
             o[fdef.KCODE] = code
             o[fdef.KDIR] = direct
             o[fdef.KVOLUME] = volume
+
+            o[fdef.KTAG] = tag
 
         with self.orderblk:
             self.ordercc[oid] = o
@@ -1276,6 +1278,8 @@ class TBookCache:
             code = o[fdef.KCODE]
             direction = o[fdef.KDIR]
             # update reserve and position if reserved order is cancelled
+            # assumption: cancel order is received once, otherwise idempotency
+            # cannot be guaranteed.
             if isreserved:
                 if fdef.KCANCELSTATE in uorder:
                     cstate = uorder[fdef.KCANCELSTATE]
