@@ -431,11 +431,11 @@ class EngineCTP(TraderSpi):
         with self.idmaplock:
             if by=='exchid':
                 self.exch2oid[someid] = oid
-                self.logger.info('Current exchid map: %s', self.exch2oid)
+                #self.logger.debug('Current exchid map: %s', self.exch2oid)
             elif by=='oref':
                 self.oref2oid[someid] = oid
                 self.oid2oref[oid] = someid
-                self.logger.info('Current oref map: %s', self.oref2oid)
+                #self.logger.debug('Current oref map: %s', self.oref2oid)
 
     def getoid(self, someid, by='oref'):
         '''
@@ -468,7 +468,7 @@ class EngineCTP(TraderSpi):
         '''
         with self.stratlock:
             self.oid2strat[oid] = strat
-        self.logger.info('Current strat map: %s', self.oid2strat)
+        #self.logger.debug('Current strat map: %s', self.oid2strat)
 
     def getstrat(self, oid):
         strat = None
