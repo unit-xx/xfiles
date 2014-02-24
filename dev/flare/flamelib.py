@@ -391,9 +391,9 @@ class EngineCTP(TraderSpi):
         self.pubsub.publish(channel, rec.dump())
 
         # logging may hurt performance
-        #self.logger.info(u'下单: instrument=%s,openclose=%s,amount=%d,price=%0.3f,ismktprice=%s,isIOC=%s,OrderRef=%d,oid=%s'
-        #        % (inst, openclose,
-        #            volume, price, str(ismktprice), isIOC, oref, oid))
+        self.logger.info(u'reqorder: instrument=%s,openclose=%s,direct=%s,volume=%d,price=%0.3f,ismktprice=%s,isIOC=%s,OrderRef=%d,oid=%s'
+                % (inst, otype,direct,
+                    volume, price, str(ismktprice), isIOC, oref, oid))
 
         return
 
@@ -619,6 +619,10 @@ class EngineCTP(TraderSpi):
         if self.ismysession(oreftp):
             oid = self.getoid(oreftp)
             strat = self.getstrat(oid)
+            if oid is None or strat is None:
+                self.logger.error('oreftp (%s) is my session, but cannot find oid/strat', oreftp)
+                return
+
             rec = self.makerecord(pOrder, oid, strat, ['OrderStatus', 'StatusMsg', 'OrderSubmitStatus', 'OrderActionStatus'])
             rec[fdef.KTRADEVOL] = pOrder.VolumeTraded
             rec[fdef.KUNTRADEVOL] = pOrder.VolumeTotal
@@ -1085,6 +1089,9 @@ class TBookCache:
         self.ptfdefcc = {}
         self.ptfblk = Lock()
 
+        self.pnl = 0.0
+        self.pnllock = Lock()
+
         self.name = self.__class__.__name__
         self.logger = logging.getLogger()
 
@@ -1127,6 +1134,10 @@ class TBookCache:
             rkey.sort()
             ckey = [fdef.KPOSKEY, fdef.KMAXLIMIT, fdef.KPOSITION, fdef.KRESERVEDOPEN, fdef.KRESERVEDCLOSE, fdef.KAVGPRICE]
             printdictdict(self.poscc, rkey, ckey)
+
+    def printpnl(self):
+        with self.pnllock:
+            print 'PNL: %.3f' % self.pnl
 
     def printorder(self, oid):
         o, olk = self.getorder(oid)
@@ -1370,6 +1381,13 @@ class TBookCache:
                     p[fdef.KPOSITION] -= volume
                     if isreserved:
                         p[fdef.KRESERVEDCLOSE] -= volume
+                    # update PNL
+                    earn = (price - p[fdef.KAVGPRICE]) * volume
+                    with self.pnllock:
+                        if direction==fdef.VLONG:
+                            self.pnl += earn
+                        else:
+                            self.pnl -= earn
                 self.cmdproxy(fdef.CMDUPDATEPOS, (poskey, copy(p)))
 
         return ret
@@ -1694,6 +1712,9 @@ class stratconsole(Cmd):
 
     def do_pos(self, args):
         self.top.tbook.printpos()
+
+    def do_pnl(self, args):
+        self.top.tbook.printpnl()
 
     def do_alloid(self, args):
         self.top.tbook.printalloid()

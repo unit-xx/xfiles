@@ -151,7 +151,11 @@ class emptyconsole(Cmd):
         print 'type `quit\' to exit.'
     
 def main():
-    mysec = 'maserv'
+    try:
+        mysec = sys.argv[1]
+    except IndexError:
+        print 'what\'s your section?'
+        sys.exit(1)
 
     cfg = config.parseconfig()
     mycfg = cfg[mysec]

@@ -309,16 +309,19 @@ class crabstrat(strattop):
             # set quickleg state to ready
             lazyotype = o[fdef.KOTYPE]
             lazydirect = fdef.VSHORT if o[fdef.KDIR]==fdef.VLONG else fdef.VLONG
+
+            oldqhold = self.qhold
             if (lazyotype==fdef.VOPEN and lazydirect==fdef.VSHORT) or (lazyotype==fdef.VCLOSE and lazydirect==fdef.VLONG):
                 # sprd ask side is traded
                 self.qhold = self.qhold - 1
             else:
                 # sprd bid side is traded
                 self.qhold = self.qhold + 1
+            if self.qhold==0:
+                self.tbook.printpnl()
 
             oldlazystate = self.lazystate
             oldquickstate = self.quickstate
-            oldqhold = self.qhold
             self.quickstate = 'ready'
             self.sprdmidfix = self.sprdmid - self.qhold * self.sigma
 
@@ -624,7 +627,11 @@ class crabconsole(stratconsole):
         print self.top.issuspend()
 
 def main():
-    mysec = 'crabstrat'
+    try:
+        mysec = sys.argv[1]
+    except IndexError:
+        print 'What\'s your section?'
+        sys.exit(1)
     runstrat(mysec, crabstrat, crabconsole)
 
 if __name__=='__main__':
