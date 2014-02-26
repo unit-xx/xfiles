@@ -21,8 +21,8 @@ class crabmonwin(QMainWindow, Ui_crabmainwin):
         self.tblibs = {}
         self.strat2tb = {}
         self.curstrat = None
-        self.posmodel = listofdictTableModel(getattr(fdef, mycfg['poskey']), [getattr(fdef, x) for x in mycfg['poscolumn'].split()], {})
-        self.ordermodel = listofdictTableModel(getattr(fdef, mycfg['orderkey']), [getattr(fdef, x) for x in mycfg['ordercolumn'].split()], {})
+        self.posmodel = listofdictTableModel(getattr(fdef, mycfg['poskey']), [getattr(fdef, x, x) for x in mycfg['poscolumn'].split()], {})
+        self.ordermodel = listofdictTableModel(getattr(fdef, mycfg['orderkey']), [getattr(fdef, x, x) for x in mycfg['ordercolumn'].split()], {})
 
     def setup(self):
         self.setupUi(self)

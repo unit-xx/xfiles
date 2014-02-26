@@ -391,8 +391,8 @@ class EngineCTP(TraderSpi):
         self.pubsub.publish(channel, rec.dump())
 
         # logging may hurt performance
-        self.logger.info(u'reqorder: instrument=%s,openclose=%s,direct=%s,volume=%d,price=%0.3f,ismktprice=%s,isIOC=%s,OrderRef=%d,oid=%s'
-                % (inst, otype,direct,
+        self.logger.info(u'reqorder: instrument=%s,openclose=%s,direct=%s,volume=%d,price=%0.3f,ismktprice=%s,isIOC=%s,OrderRef=%s,oid=%s'
+                % (code, otype,direct,
                     volume, price, str(ismktprice), isIOC, oref, oid))
 
         return
@@ -1216,7 +1216,7 @@ class TBookCache:
         p, plk = self.getposition(poskey)
         with plk:
             if otype==fdef.VOPEN:
-                if p[fdef.KMAXLIMIT] >= (volume+p[fdef.KPOSITION]+p[fdef.KRESERVEDOPEN]):
+                if p[fdef.KMAXLIMIT] < 0 or p[fdef.KMAXLIMIT] >= (volume+p[fdef.KPOSITION]+p[fdef.KRESERVEDOPEN]):
                     p[fdef.KRESERVEDOPEN] += volume
                     isreserved = True
                     self.cmdproxy(fdef.CMDUPDATEPOS, (poskey, copy(p)))

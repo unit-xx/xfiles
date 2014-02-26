@@ -609,6 +609,7 @@ class crabstrat(strattop):
 class crabconsole(stratconsole):
     def do_quit(self, args):
         if args=='FORCE':
+            print 'Quitting'
             return True
         else:
             if self.top.issuspend():

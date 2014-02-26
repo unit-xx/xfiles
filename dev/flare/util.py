@@ -122,8 +122,14 @@ class listofdictTableModel(QAbstractTableModel):
                 rawdata = self.data[rowkey][columnkey]
                 if isinstance(rawdata, float):
                     rawdata = "%0.3f" % rawdata
-                elif not isinstance(rawdata, unicode):# expect rawdata as numbers here
+                elif isinstance(rawdata, str):
+                    # a dirty hack
+                    rawdata = rawdata.decode('gbk')
+                elif isinstance(rawdata, unicode):
+                    pass
+                else:
                     rawdata = str(rawdata)
+
                 celldata = QString(rawdata)
             except KeyError:
                 return QVariant()

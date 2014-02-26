@@ -11,6 +11,7 @@ GCONFIG = None
 def parseconfig(name='config.ini', configpath='.'):
     global GCONFIG
     cfg = ConfigParser.ConfigParser()
+    cfg.optionxform = str
     cfgfn = os.path.join(configpath, name)
     cfg.read(cfgfn)
 
