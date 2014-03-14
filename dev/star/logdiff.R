@@ -24,7 +24,7 @@ for(j in 1:NCOL(qlogdiff))
 }
 dev.off()
 
-numstk = 2
+numstk = 300
 
 # normal regression
 fml = as.formula(sprintf('X000300.SH~%s', paste(names(qlogdiff)[2:(numstk+1)], collapse='+')))
@@ -37,4 +37,5 @@ qnona = (as.matrix(qnona))
 cvlasso = cv.glmnet(qnona[,2:(numstk+1)], t(qnona[,1]))
 plot(cvlasso)
 
-lmlasso = glmnet(qnona[2:(numstk+1),], qnona[1,])
+lmlasso = glmnet(qnona[,2:(numstk+1)], t(qnona[,1]))
+plot(lmlasso)
