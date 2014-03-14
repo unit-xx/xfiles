@@ -46,6 +46,7 @@ class maserv(Thread):
         last time unit.
         '''
         inst = q['code']
+        qtime = '%s.%03d' % (q['time'], q['msec'])
         tu = int(q['tic'] / self.secperunit)
         midprice = 0.0
         midlen = 0
@@ -75,7 +76,7 @@ class maserv(Thread):
             hitunit = 0
 
             if len(self.unitsum[inst])<self.mawsize:
-                print 'not enough data %s, tick %d' % (inst, tu)
+                print 'not enough data %s, tick %d, time %s' % (inst, tu, qtime)
             else:
                 while 1:
                     try:
@@ -92,23 +93,23 @@ class maserv(Thread):
                         break
 
                     if starttick < 0:
-                        print 'loop error %s, tick %d' % (q['code'], tu)
+                        print 'loop error %s, tick %d, time %s' % (q['code'], tu, qtime)
                         break
 
                 if hitunit >= self.mawsize:
                     if float(zerounit)/self.mawsize > 0.1:
-                        print 'too many zero unit %s, tick %d' % (q['code'], tu)
+                        print 'too many zero unit %s, tick %d, time %s' % (q['code'], tu, qtime)
                     else:
                         try:
                             maval = ttsum/ttlen
                         except ZeroDivisionError:
-                            print 'divide by zero %s, tick %d' % (q['code'], tu)
+                            print 'divide by zero %s, tick %d, time %s' % (q['code'], tu, qtime)
 
                         if maval is not None:
                             try:
                                 mad = pickle.dumps((inst, cunit, maval))
                                 self.pubsub.publish(self.machannel, mad)
-                                print 'new ma %s' % str((inst, cunit, maval))
+                                print 'new ma %s, tick %d, time %s, value %.5f' % (q['code'], cunit, qtime, maval)
                             except:
                                 self.logger.exception('dump ma value.')
 

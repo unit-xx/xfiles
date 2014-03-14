@@ -355,6 +355,14 @@ class EngineCTP(TraderSpi):
             ctpdirect = utype.THOST_FTDC_D_Buy if (direct==fdef.VSHORT) else utype.THOST_FTDC_D_Sell
 
         oref = str(self.inc_order_ref())
+
+        # save order first
+        oreftp = self.myoreftp(oref)
+        oid = req[fdef.KOID]
+        strat = req[fdef.KSTRAT]
+        self.setoidmap(oid, oreftp)
+        self.setstratmap(oid, strat)
+
         ctpreq = ustruct.InputOrder(
                 InstrumentID = code,
                 Direction = ctpdirect,
@@ -375,14 +383,6 @@ class EngineCTP(TraderSpi):
             )
         # NOTE: what if ReqOrderInsert return false?
         r = self.api.ReqOrderInsert(ctpreq, self.inc_request_id())
-
-        # save order by orderman
-        oreftp = self.myoreftp(oref)
-        oid = req[fdef.KOID]
-        strat = req[fdef.KSTRAT]
-
-        self.setoidmap(oid, oreftp)
-        self.setstratmap(oid, strat)
 
         channel = fdef.fullname(fdef.CHORESP, strat)
         rec = self.makerecord(ctpreq, oid, strat,
@@ -450,7 +450,7 @@ class EngineCTP(TraderSpi):
                     #self.logger.info(self.exchid2oid)
                     oid = self.exch2oid[someid]
             except KeyError:
-                pass
+                self.logger.debug(self.oref2oid)
         return oid
 
     def getoreftp(self, oid):
@@ -571,10 +571,13 @@ class EngineCTP(TraderSpi):
 
         self.logger.debug(pRspInfo)
         # ASSUMPTION: OnRspOrderInsert is called when I 'own' this order.
-        oreftp = self.myoreftp(int(pInputOrder.OrderRef))
+        oreftp = self.myoreftp(pInputOrder.OrderRef)
         oid = self.getoid(oreftp)
         strat = self.getstrat(oid)
-        self.logger.debug('%s, %s, %s', oreftp, oid, strat)
+        if oid is None or strat is None:
+            self.logger.debug('cannot find oid/strat for %s, (oid: %s, strat:%s)', oreftp, oid, strat)
+            return
+
         rec = self.makerecord(pInputOrder, oid, strat)
         rec[fdef.KOSTATE] = fdef.VORDERREJECTED
         rec['ErrorID'] = pRspInfo.ErrorID
@@ -593,10 +596,14 @@ class EngineCTP(TraderSpi):
             return
 
         self.logger.debug(pRspInfo)
-        # ASSUMPTION: OnRspOrderInsert is called when I 'own' this order.
-        oreftp = self.myoreftp(int(pInputOrder.OrderRef))
+        # ASSUMPTION: OnErrRtnOrderInsert is called when I 'own' this order.
+        oreftp = self.myoreftp(pInputOrder.OrderRef)
         oid = self.getoid(oreftp)
         strat = self.getstrat(oid)
+        if oid is None or strat is None:
+            self.logger.debug('cannot find oid/strat for %s, (oid: %s, strat:%s)', oreftp, oid, strat)
+            return
+
         rec = self.makerecord(pInputOrder, oid, strat)
         rec[fdef.KOSTATE] = fdef.VORDERREJECTED
         rec['ErrorID'] = pRspInfo.ErrorID
@@ -796,7 +803,7 @@ class strattop(Thread):
             doreq = resvok
 
         if doreq:
-            self.tbook.printpos()
+            #self.tbook.printpos()
             o, olk = self.tbook.getorder(oid)
             with olk:
                 od = o.dump()
