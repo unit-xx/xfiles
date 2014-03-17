@@ -11,8 +11,20 @@ zero2na <- function(x)
   replace(x, ind, NA)
 }
 
+nacount <- function(x)
+{
+  return(sum(is.na(x)))
+}
+
 quoteraw = read.zoo(qfn, sep=',', header=T, FUN=as.Date)
+# replace 0 with NA
 quote = apply(quoteraw, 2, zero2na)
+# count how much NA is each series
+nacnt = apply(quote, 2, nacount)
+naratio = nacnt/NROW(quote)
+# remove tickers with too much NAs
+quote = quote[,which(naratio<0.05)]
+
 quote = zoo(quote, index(quoteraw))
 qlog = log(quote)
 qlogdiff = qlog - qlog[,1]
@@ -24,7 +36,7 @@ for(j in 1:NCOL(qlogdiff))
 }
 dev.off()
 
-numstk = 300
+numstk = 250
 
 # normal regression
 fml = as.formula(sprintf('X000300.SH~%s', paste(names(qlogdiff)[2:(numstk+1)], collapse='+')))
@@ -34,8 +46,15 @@ plot(lmrst$residuals, type='l')
 # lasso regression using glmnet
 qnona = na.omit(quote[,1:(numstk+1)])
 qnona = (as.matrix(qnona))
-cvlasso = cv.glmnet(qnona[,2:(numstk+1)], t(qnona[,1]))
+
+lmlasso = glmnet(qnona[,2:(numstk+1)], t(qnona[,1]), lambda=exp(seq(-8,8,0.1)))
+plot(lmlasso, xvar='lambda')
+
+fity = predict(lmlasso, newx=qnona[,2:(numstk+1)], s=exp(0))
+resid = fity - qnona[,1]
+plot(resid, type='l')
+# coef(lmlasso, s=exp(-4))
+
+cvlasso = cv.glmnet(qnona[,2:(numstk+1)], t(qnona[,1]), lambda=exp(seq(-8,8,0.1)))
 plot(cvlasso)
 
-lmlasso = glmnet(qnona[,2:(numstk+1)], t(qnona[,1]))
-plot(lmlasso)
