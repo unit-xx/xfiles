@@ -36,7 +36,7 @@ for(j in 1:NCOL(qlogdiff))
 }
 dev.off()
 
-numstk = 250
+numstk = 100 # NCOL(quote) - 1
 
 # normal regression
 fml = as.formula(sprintf('X000300.SH~%s', paste(names(qlogdiff)[2:(numstk+1)], collapse='+')))
@@ -50,7 +50,7 @@ qnona = (as.matrix(qnona))
 lmlasso = glmnet(qnona[,2:(numstk+1)], t(qnona[,1]), lambda=exp(seq(-8,8,0.1)))
 plot(lmlasso, xvar='lambda')
 
-fity = predict(lmlasso, newx=qnona[,2:(numstk+1)], s=exp(0))
+fity = predict(lmlasso, newx=qnona[,2:(numstk+1)], s=exp(-1))
 resid = fity - qnona[,1]
 plot(resid, type='l')
 # coef(lmlasso, s=exp(-4))
@@ -58,3 +58,15 @@ plot(resid, type='l')
 cvlasso = cv.glmnet(qnona[,2:(numstk+1)], t(qnona[,1]), lambda=exp(seq(-8,8,0.1)))
 plot(cvlasso)
 
+# lasso regress by segments
+segstart = 100
+segend = 600
+qseg = qnona[seq(segstart:segend),]
+lmlasso = glmnet(qseg[,2:(numstk+1)], t(qseg[,1]), lambda=exp(seq(-8,8,0.1)))
+plot(lmlasso, xvar='lambda')
+
+#fity = predict(lmlasso, newx=qnona[,2:(numstk+1)], s=exp(-1))
+fity = predict(lmlasso, newx=qnona[,2:(numstk+1)], s=exp(-1))
+resid = fity - qnona[,1]
+plot(resid, type='l', )
+abline(v=c(segstart, segend))
