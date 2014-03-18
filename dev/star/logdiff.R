@@ -59,14 +59,21 @@ cvlasso = cv.glmnet(qnona[,2:(numstk+1)], t(qnona[,1]), lambda=exp(seq(-8,8,0.1)
 plot(cvlasso)
 
 # lasso regress by segments
-segstart = 100
-segend = 600
-qseg = qnona[seq(segstart:segend),]
-lmlasso = glmnet(qseg[,2:(numstk+1)], t(qseg[,1]), lambda=exp(seq(-8,8,0.1)))
+segstart = 200
+segend = 800
+qseg = qnona[seq(segstart,segend),]
+lmlasso = glmnet(qseg[,2:(numstk+1)], t(qseg[,1]), lambda=exp(seq(-16,16,0.1)))
 plot(lmlasso, xvar='lambda')
 
+cvlasso = cv.glmnet(qseg[,2:(numstk+1)], t(qseg[,1]), lambda=exp(seq(-16,16,0.1)))
+plot(cvlasso)
+
 #fity = predict(lmlasso, newx=qnona[,2:(numstk+1)], s=exp(-1))
-fity = predict(lmlasso, newx=qnona[,2:(numstk+1)], s=exp(-1))
-resid = fity - qnona[,1]
-plot(resid, type='l', )
+loglmbda = -1
+fity = predict(lmlasso, newx=qnona[,2:(numstk+1)], s=exp(loglmbda))
+resid = qnona[,1] - fity
+plot(resid, type='l', main=sprintf('loglambda=%.2f',loglmbda))
 abline(v=c(segstart, segend))
+#plot(qnona[,1], type='l')
+
+
