@@ -18,7 +18,7 @@ r = rd.next() # skip header
 colnum = len(r)
 
 # print header line
-header = ['tradeday', 'tradetime', 'update_id', 'contract_time', 'buyprice1', 'buyvolume1', 'sellprice1', 'sellvolume1']
+header = ['tradeday', 'tradetime', 'update_id', 'contract_time', 'buyprice1', 'buyvolume1', 'sellprice1', 'sellvolume1', 'lastprice', 'volume']
 
 ifcal = util.IFCalendar()
 
@@ -51,7 +51,9 @@ for r in rd:
             r[12],
             r[13],
             r[14],
-            r[15]
+            r[15],
+            r[16],
+            r[17],
             ]
     bbuf[ifnum].append(rec)
 
