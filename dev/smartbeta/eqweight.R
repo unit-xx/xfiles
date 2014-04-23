@@ -59,3 +59,4 @@ pzoo = read.zoo(qfn, header=T, sep=',',
 pmat = as.matrix(pzoo)
 
 wt = 
+rbpoint = 
