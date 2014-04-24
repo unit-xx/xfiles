@@ -3,6 +3,7 @@
 # 2) its return of previous k months is better than cash account
 
 library(zoo)
+library(PerformanceAnalytics)
 
 # input: 
 # pzoo, price series by column
@@ -21,8 +22,13 @@ rf = 0.03
 
 qfn = 'citic.level1.csv'
 pzoo = read.zoo(qfn, header=T, sep=',', 
-                colClasses=c('character',rep('numeric',29)))
+                colClasses=c('character',rep(c('numeric','NULL'),29)))
 pmat = as.matrix(pzoo)
+
+bmfn = 'benchmark.csv'
+bmzoo = read.zoo(bmfn, header=T, sep=',', 
+               colClasses=c('character',rep('numeric',5)))
+bmzoo[which(bmzoo==0)] = NA
 
 # rebalance points
 
@@ -88,6 +94,8 @@ repeat
 }
 
 wzoo = zoo(wealth, index(pzoo))
+wzoo = cbind(wzoo, bmzoo)
+
 
 # back test and generate trading traces
 
