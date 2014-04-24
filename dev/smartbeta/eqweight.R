@@ -1,62 +1,42 @@
 library(zoo)
+library(ggplot2)
+library(PerformanceAnalytics)
 
-rebalance <- function(pmat, wt, rbpoint, cashinit=100)
-{
-  # back test using price matrix pmat, 
-  # with rebalance at time of rbpoint (row numbers), 
-  # using weight in wt
-  
-  # return wealth series
-  
-  # no transaction fees yet
-  
-  cash = cashinit
-  rbday.prev = 1
-  sharevec = rep(0, NCOL(pzoo))
-  wealth = rep(0, NROW(pzoo))
-  
-  for(rbday in rbpoint)
-  {
-    # calc wealth between rbday and previous rbday
-    
-    pseg = pmat[rbday.prev:rbday,]
-    wseg = pseg %*% sharevec + cash
-    wealth[rbday.prev:rbday] = wseg
-    
-    # re-balance stocks
-    
-    # sell all existing stocks
-    
-    cash = wealth[rbday]
-    sharevec = rep(0, NCOL(pzoo))
-    
-    # buy new stocks
-    
-    wtvec = wt[rbday,]
-    cashvec = cash * wtvec
-    sharevec = cashvec / pmat[rbday,]
-    cash = cash * (1 - sum(wtvec))
-    
-    # step to next rebalance day
-    
-    rbday.prev = rbday
-  }
-  
-  if(rbday < NROW(pmat))
-  {
-    # calc wealth growth in ramaining days
-    pseg = pmat[rbday:NROW(pmat),]
-    wseg = pseg %*% sharevec + cash
-    wealth[rbday:NROW(pmat)] = wseg
-  }
-  
-  return(wealth)
-}
+source('sbeta.r')
 
 qfn = 'citic.level1.csv'
+#qfn = 'benchmark.csv'
+#qfn = 'hs300sec.csv'
 pzoo = read.zoo(qfn, header=T, sep=',', 
                 colClasses=c('character',rep('numeric',29)))
+#pzoo = window(pzoo, start='2011-1-1')
 pmat = as.matrix(pzoo)
 
-wt = 
-rbpoint = 
+bmfn = 'benchmark.csv'
+bmzoo = read.zoo(bmfn, header=T, sep=',', 
+                colClasses=c('character',rep('numeric',6)))
+bmzoo = bmzoo[,4]
+#bmzoo = window(bmzoo, start='2011-1-1')
+bmmat = as.matrix(bmzoo)
+
+# build weights
+wt = eqweight(NROW(pmat), NCOL(pmat))
+
+# rebalance points
+rbpoint = seq(10, NROW(pmat), by=21)
+
+# wealth path
+wealth = rebalance(pmat, wt, rbpoint)
+wzoo = zoo(wealth, index(pzoo))
+
+# rebase benchmark index
+allzoo = cbind(wzoo, bmzoo, all=FALSE)
+allzoo = rebase(allzoo)
+
+# compare performance
+
+#ggplot(as.data.frame(allzoo), )
+autoplot(allzoo, facet=NULL) + aes(linetype=Series)
+plot(log(allzoo$wzoo/allzoo$bmzoo), type='l')
+
+# compare return-risk measures

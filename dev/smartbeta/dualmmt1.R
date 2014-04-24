@@ -96,12 +96,3 @@ repeat
 wzoo = zoo(wealth, index(pzoo))
 wzoo = cbind(wzoo, bmzoo)
 
-
-# back test and generate trading traces
-
-# at predefined rebalance days
-# - close all previous positions, calc return series
-# - select targets to buy
-# - rebalance postions as equal weight
-
-# performance summary
