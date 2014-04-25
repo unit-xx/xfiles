@@ -78,10 +78,36 @@ powerweight <- function(wt.in, pow)
   # for example, diversity-weighting is wt.in^pow and rescaled,
   # and inverse volatility weight is wt.in^-1, with wt being volatility.
   
+  # it can also be use to normalize rows by set pow=1
+  
   wt = wt.in ^ pow
-  wt = wt / apply(wt, 1, sum)
+  wt = sweep(wt, 1, apply(wt, 1, sum), '/')
   wt[is.nan(wt)] = 0
   wt[is.na(wt)] = 0
   return(wt)
 }
 
+volbysd <- function(pseq)
+{
+  retseq = log(diff(pseq))
+  return(sd(retseq))
+}
+
+rollvol <- function(pseq, volfunc, term)
+{
+  endp = 1:length(pseq)
+  startp = pmax(endp - term + 1, 1)
+  
+  volseq = sapply(startp, 
+         function(startp, endp, seqx, volfunc){return(volfunc(seqx[startp:endp]))},
+         endp, seqx, volfunc)
+  
+  volseq[which(()<term)] = NA
+  return(volseq)
+}
+
+volatility <- function(pseq, term, volfunc)
+{
+  vol = apply(pseq, 2, rollvol, volfunc, term)
+  return(vol)
+}
