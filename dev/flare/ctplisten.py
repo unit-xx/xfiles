@@ -259,7 +259,7 @@ class TraderSpiDelegate(TraderSpi):
             Agent中不区分，所得信息只用于撤单
         '''
         #print repr(pOrder)
-        #self.logger.info(u'报单响应,Order=%s' % str(pOrder))
+        self.logger.info(u'报单响应,Order=%s' % repr(pOrder))
         self.logger.info('%s, price:%.2f (t%s=d%s+q%s), (%s %s), oref: %s, exchid: %s, ordersysid: %s, orderstatus: %s, ordersubmitstatus: %s, ntfyseq = %s, ordertype=%s, statusmsg=%s' % (pOrder.InstrumentID, pOrder.LimitPrice, pOrder.VolumeTotalOriginal, pOrder.VolumeTraded, pOrder.VolumeTotal,
             'open' if pOrder.CombOffsetFlag==utype.THOST_FTDC_OF_Open else 'close',
             'long' if pOrder.Direction==utype.THOST_FTDC_D_Buy else 'short',

@@ -273,6 +273,7 @@ class EngineCTP(TraderSpi):
         self.broker_id = tradercfg['broker_id']
         self.investor_id = tradercfg['investor_id']
         self.passwd = tradercfg['passwd']
+        self.prodinfo = tradercfg['prodinfo']
         self.tradercfg = tradercfg
         self.pubsub = pubsub
         self.trader = None
@@ -521,10 +522,10 @@ class EngineCTP(TraderSpi):
 
     def OnFrontConnected(self):
         self.logger.info(u'Engine connected.')
-        self.user_login(self.broker_id, self.investor_id, self.passwd)
+        self.user_login(self.broker_id, self.investor_id, self.passwd, self.prodinfo)
 
-    def user_login(self, broker_id, investor_id, passwd):
-        req = ustruct.ReqUserLogin(BrokerID=broker_id, UserID=investor_id, Password=passwd)
+    def user_login(self, broker_id, investor_id, passwd, prodinfo):
+        req = ustruct.ReqUserLogin(BrokerID=broker_id, UserID=investor_id, Password=passwd, UserProductInfo=prodinfo)
         r=self.api.ReqUserLogin(req, self.inc_request_id())
 
     def OnRspUserLogin(self, userlogin, info, rid, is_last):
