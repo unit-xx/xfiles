@@ -362,9 +362,9 @@ class crabstrat(strattop):
                 direct = fdef.VSHORT if o[fdef.KDIR]==fdef.VLONG else fdef.VLONG
                 code = self.quickleg
                 if (otype==fdef.VOPEN and direct==fdef.VSHORT) or (otype==fdef.VCLOSE and direct==fdef.VLONG):
-                    price = self.quickquote['bid1'] - 1.0 
+                    price = self.quickquote['bid1'] - 5.0 
                 else:
-                    price = self.quickquote['ask1'] + 1.0
+                    price = self.quickquote['ask1'] + 5.0
                 volume = 1
                 quickoid, doreq, rcok = self.reqorder(otype, direct, code, price, volume)
                 self.quicklegoid = quickoid
@@ -395,9 +395,9 @@ class crabstrat(strattop):
                 direct = fdef.VSHORT if o[fdef.KDIR]==fdef.VLONG else fdef.VLONG
                 code = self.quickleg
                 if (otype==fdef.VOPEN and direct==fdef.VSHORT) or (otype==fdef.VCLOSE and direct==fdef.VLONG):
-                    price = self.quickquote['bid1'] - 1.0 
+                    price = self.quickquote['bid1'] - 5.0 
                 else:
-                    price = self.quickquote['ask1'] + 1.0
+                    price = self.quickquote['ask1'] + 5.0
                 volume = 1
                 quickoid, doreq, rcok = self.reqorder(otype, direct, code, price, volume)
                 self.quicklegoid = quickoid
@@ -427,7 +427,7 @@ class crabstrat(strattop):
                             otype = fdef.VCLOSE
                             direct = fdef.VSHORT
                             code = self.lazyleg
-                            price = self.lazyquote['ask1'] + 1.0
+                            price = self.lazyquote['ask1'] + 5.0
                             volume = 1
                             tag = 'errlazy.openshort'
                             self.lazyerroid, doreq, rcok = self.reqorder(otype, direct, code, price, volume, tag=tag)
@@ -436,7 +436,7 @@ class crabstrat(strattop):
                             otype = fdef.VOPEN
                             direct = fdef.VLONG
                             code = self.lazyleg
-                            price = self.lazyquote['ask1'] + 1.0
+                            price = self.lazyquote['ask1'] + 5.0
                             volume = 1
                             tag = 'errlazy.closelong'
                             self.lazyerroid, doreq, rcok = self.reqorder(otype, direct, code, price, volume, tag=tag)
@@ -446,7 +446,7 @@ class crabstrat(strattop):
                             otype = fdef.VCLOSE
                             direct = fdef.VLONG
                             code = self.lazyleg
-                            price = self.lazyquote['bid1'] - 1.0
+                            price = self.lazyquote['bid1'] - 5.0
                             volume = 1
                             tag = 'errlazy.openlong'
                             self.lazyerroid, doreq, rcok = self.reqorder(otype, direct, code, price, volume, tag=tag)
@@ -455,7 +455,7 @@ class crabstrat(strattop):
                             otype = fdef.VOPEN
                             direct = fdef.VSHORT
                             code = self.lazyleg
-                            price = self.lazyquote['bid1'] - 1.0
+                            price = self.lazyquote['bid1'] - 5.0
                             volume = 1
                             tag = 'errlazy.closeshort'
                             self.lazyerroid, doreq, rcok = self.reqorder(otype, direct, code, price, volume, tag=tag)
