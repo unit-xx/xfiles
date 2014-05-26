@@ -1,6 +1,12 @@
-import redis
+import sys
 
+import redis
 import config
+
+ans = raw_input('DO clean? ')
+if ans!='yesall':
+    print 'Don\'t do clean'
+    sys.exit(1)
 
 rsec = 'redis'
 cfg = config.parseconfig()

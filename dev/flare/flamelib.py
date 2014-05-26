@@ -374,7 +374,8 @@ class EngineCTP(TraderSpi):
                 BrokerID = self.broker_id,
                 InvestorID = self.investor_id,
                 CombOffsetFlag = utype.THOST_FTDC_OF_Open if (otype==fdef.VOPEN) else utype.THOST_FTDC_OF_CloseToday,
-                CombHedgeFlag = utype.THOST_FTDC_HF_Speculation,
+                #CombHedgeFlag = utype.THOST_FTDC_HF_Speculation,
+                CombHedgeFlag = utype.THOST_FTDC_HF_Arbitrage,
                 VolumeCondition = utype.THOST_FTDC_VC_AV,
                 MinVolume = 1,
                 ForceCloseReason = utype.THOST_FTDC_FCC_NotForceClose,
@@ -392,7 +393,7 @@ class EngineCTP(TraderSpi):
         self.pubsub.publish(channel, rec.dump())
 
         # logging may hurt performance
-        self.logger.info(u'reqorder: instrument=%s,openclose=%s,direct=%s,volume=%d,price=%0.3f,ismktprice=%s,isIOC=%s,OrderRef=%s,oid=%s'
+        self.logger.debug(u'reqorder: instrument=%s,openclose=%s,direct=%s,volume=%d,price=%0.3f,ismktprice=%s,isIOC=%s,OrderRef=%s,oid=%s'
                 % (code, otype,direct,
                     volume, price, str(ismktprice), isIOC, oref, oid))
 
@@ -570,13 +571,13 @@ class EngineCTP(TraderSpi):
         if pInputOrder is None or pRspInfo is None:
             return
 
-        self.logger.debug(pRspInfo)
+        self.logger.info(pRspInfo)
         # ASSUMPTION: OnRspOrderInsert is called when I 'own' this order.
         oreftp = self.myoreftp(pInputOrder.OrderRef)
         oid = self.getoid(oreftp)
         strat = self.getstrat(oid)
         if oid is None or strat is None:
-            self.logger.debug('cannot find oid/strat for %s, (oid: %s, strat:%s)', oreftp, oid, strat)
+            self.logger.info('cannot find oid/strat for %s, (oid: %s, strat:%s)', oreftp, oid, strat)
             return
 
         rec = self.makerecord(pInputOrder, oid, strat)
@@ -596,13 +597,13 @@ class EngineCTP(TraderSpi):
         if pInputOrder is None or pRspInfo is None:
             return
 
-        self.logger.debug(pRspInfo)
+        self.logger.info(pRspInfo)
         # ASSUMPTION: OnErrRtnOrderInsert is called when I 'own' this order.
         oreftp = self.myoreftp(pInputOrder.OrderRef)
         oid = self.getoid(oreftp)
         strat = self.getstrat(oid)
         if oid is None or strat is None:
-            self.logger.debug('cannot find oid/strat for %s, (oid: %s, strat:%s)', oreftp, oid, strat)
+            self.logger.info('cannot find oid/strat for %s, (oid: %s, strat:%s)', oreftp, oid, strat)
             return
 
         rec = self.makerecord(pInputOrder, oid, strat)
@@ -673,7 +674,7 @@ class EngineCTP(TraderSpi):
         exchid = (pTrade.ExchangeID, pTrade.OrderSysID)
         oid = self.getoid(exchid, 'exchid')
         if oid is None:
-            self.logger.info('not my trade.')
+            self.logger.debug('not my trade.')
             return
 
         strat = self.getstrat(oid)
@@ -828,8 +829,8 @@ class strattop(Thread):
 
     def onOrderState(self, oid, resp):
         state = resp[fdef.KOSTATE]
-        self.logger.info('OrderResp: %s', state)
-        self.logger.info('OrderResp: %s', resp)
+        self.logger.debug('OrderResp: %s', state)
+        self.logger.debug('OrderResp: %s', resp)
         self.tbook.updateorder(oid, resp)
         if state == fdef.VORDERREJECTED:
             self.onOrderRejected(oid, resp)
@@ -866,7 +867,7 @@ class strattop(Thread):
 
     def onTradeState(self, oid, resp):
         # arrive here only when new trade is informed.
-        self.logger.info('NewTrade: %s', resp)
+        self.logger.debug('NewTrade: %s', resp)
         self.tbook.addtrade(oid, resp)
         self.onNewTrade(oid, resp)
 
@@ -878,8 +879,8 @@ class strattop(Thread):
 
     def onCancelState(self, oid, resp):
         state = resp[fdef.KCANCELSTATE]
-        self.logger.info('CancelResp: %s', state)
-        self.logger.info('CancelResp: %s', resp)
+        self.logger.debug('CancelResp: %s', state)
+        self.logger.debug('CancelResp: %s', resp)
         self.tbook.updateorder(oid, resp)
         if state == fdef.VCANCELREJECTED:
             self.onCancelRejected(oid, resp)
@@ -1531,8 +1532,8 @@ class TBookLib:
         pmaxkey = fdef.fullname(fdef.POSMAXNS, self.strat)
         stratposmax = self.store.hgetall(pmaxkey)
         self.stratposmax = {k:int(stratposmax[k]) for k in stratposmax}
-        self.logger.debug(self.strat)
-        self.logger.debug(self.stratposmax)
+        self.logger.info(self.strat)
+        self.logger.info(self.stratposmax)
         return True
 
     def getposmax(self):

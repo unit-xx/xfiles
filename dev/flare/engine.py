@@ -34,7 +34,7 @@ if __name__=='__main__':
             time.sleep(1)
         except KeyboardInterrupt:
             try:
-                ret = raw_input('Stop quote server? ')
+                ret = raw_input('Stop engine? ')
                 if ret[0] == 'y':
                     break
             except KeyboardInterrupt:
