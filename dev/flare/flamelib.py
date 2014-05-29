@@ -682,6 +682,9 @@ class EngineCTP(TraderSpi):
         rec[fdef.KTRADESTATE] = fdef.VTRADENEW
         rec[fdef.KVOLUME] = pTrade.Volume
         rec[fdef.KPRICE] = pTrade.Price
+        rec[fdef.KTRADETYPE] = pTrade.TradeType
+        rec[fdef.KPRICESOURCE] = pTrade.PriceSource
+
         #rec[fdef.KCODE] = pTrade.InstrumentID
         #rec[fdef.KOTYPE] = fdef.VOPEN if (utype.THOST_FTDC_OF_Open==pTrade.OffsetFlag) else fdef.VCLOSE
         #rec[fdef.KDIR] = fdef.VLONG if (utype.THOST_FTDC_D_Buy==pTrade.Direction) else fdef.VSHORT

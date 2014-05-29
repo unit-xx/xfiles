@@ -81,6 +81,15 @@ class crabstrat(strattop):
     def ceil02(self, x):
         return 0.2*ceil(x/0.2)
 
+    def quote2str(self, q):
+        keys = ('code', 'ask1', 'askvol1', 'bid1', 'bidvol1', 'time', 'msec', 'tic')
+        fmt = ('s', '.2f', 'd', '.2f', 'd', 's', 'd', '.2f')
+        
+        fmt = ['%%(%s)%s'%(x[0],x[1]) for x in zip(keys, fmt)]
+
+        s = ' '.join([' '.join(x) for x in zip(keys, fmt)])
+        return s % q
+
     def issuspend(self):
         return (self.suspendflag==True and self.qhold==0 and self.lazystate=='ready' and self.quickstate=='ready')
 
@@ -130,6 +139,9 @@ class crabstrat(strattop):
                 else:
                     self.quickquote = q
                     newquickmid = (q['bid1'] + q['ask1'])/2
+
+                    self.logger.info('new quick quote %s', self.quote2str(q))
+
                     if self.quickmidprice is None or abs(newquickmid-self.quickmidprice)>0.05:
                         #print 'new mid: %.3f' % newquickmid
                         if newquickmid is not None and self.quickmidprice is not None:
@@ -142,6 +154,7 @@ class crabstrat(strattop):
                     pass
                 else:
                     self.lazyquote = q
+                    self.logger.info('new lazy quote %s', self.quote2str(q))
 
         elif m['channel'] == self.chma:
             try:
@@ -611,6 +624,12 @@ class crabstrat(strattop):
         #self.logger.debug('exit onOrderAccepted')
 
     def onNewTrade(self, oid, resp):
+        o, olk = self.tbook.getorder(oid)
+        if o[fdef.KCODE]==self.quickleg:
+            self.logger.info('quick traded with %s', str(resp))
+        elif o[fdef.KCODE]==self.lazyleg:
+            self.logger.info('lazy traded with %s', str(resp))
+
         if self.delaytask is not None:
             otype, direct, code, price, volume, tag = self.delaytask
             self.lazyerroid, doreq, rcok = self.reqorder(otype, direct, code, price, volume, tag=tag)
