@@ -14,6 +14,10 @@ callrep <- function(tt, ss, delta, r, base=100)
   sharetobuy = diff(delta) * base
   sharetobuy = c(delta[1]*base, sharetobuy)
   
+  totalsharebought = delta * base
+  
+  totalsharevalue = totalsharebought * ss
+  
   costtobuy = sharetobuy * ss
   
   cumcosttobuy = cumsum(costtobuy)
@@ -30,7 +34,10 @@ callrep <- function(tt, ss, delta, r, base=100)
               cumcosttobuy=cumcosttobuy,
               intrstcost=intrstcost,
               cumintrst=cumintrst,
-              cumcosttotal=cumcosttotal))
+              cumcosttotal=cumcosttotal,
+              totalsharebought=totalsharebought,
+              totalsharevalue=totalsharevalue
+              ))
 }
 
 test <- function()
@@ -84,4 +91,68 @@ test <- function()
   a = callrep(tt,ss,delta, 0.05, 100000)
 }
 
+cashpath <-function(c0, u, tt)
+{
+  return (c0 * exp(u*tt))
+}
+
+lognormpath <- function(s0, u, sig, dt, N)
+{
+  # returns: a list
+  # $t 
+  # $st
+}
+
+deltapath <- function(tt, ss, type, X, u, sig, T)
+{
+  # return:
+  # delta array
+  deltas = rep(0, length(tt))
+  for(i in 1:length(tt))
+  {
+    delta = GBSGreeks('delta', type, ss[i], X, (T-tt[i]), u, u, sig)
+    deltas[i] = delta
+  }
+}
+
+Vpath <- function(tt, ss, type, X, u, sig, T)
+{
+  # return:
+  # options value array
+  values = rep(0, length(tt))
+  for(i in 1:length(tt))
+  {
+    value = GBSOption(type, ss[i], X, (T-tt[i]), u, u, sig)@price
+    values[i] = value
+  }
+}
+
+onepatherror <- function(tt, ss, type, X, u, sig, T)
+{
+  # replication error at every step of one path
+  delta = deltapath(tt, ss, type, X, u, sig, T)
+  rep = callrep(tt, ss, delta, u, base=100)
+  realvalues = Vpath(tt, ss, type, X, u, sig, T)
+  
+  cpath = cashpath(v0, u, tt)
+  
+  repvalues = rep$cumcosttotal + rep$totalsharevalue + cpath
+  
+  error = repvalues - realvalues
+  
+  return(error)
+}
+
+manypatherror <- function()
+{
+  # replication error at the final step of many paths
+  
+  # replication many paths
+  epath = onepatherror(tt, ss, type, X, u, sig, T)
+  
+  error = epath[length(epath)]
+  finals = ss[length(ss)]
+  
+  
+}
 
