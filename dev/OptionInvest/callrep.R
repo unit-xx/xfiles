@@ -1,5 +1,3 @@
-library(fOptions)
-
 callrep <- function(tt, ss, delta, r, base=100)
 {
   N = length(tt)
@@ -89,6 +87,7 @@ test <- function()
             1000)/1000
   
   a = callrep(tt,ss,delta, 0.05, 100000)
+  return(a)
 }
 
 cashpath <-function(c0, u, tt)
@@ -96,11 +95,17 @@ cashpath <-function(c0, u, tt)
   return (c0 * exp(u*tt))
 }
 
-lognormpath <- function(s0, u, sig, dt, N)
+lognormpath <- function(s0, u, sig, tt)
 {
   # returns: a list
-  # $t 
-  # $st
+  # st
+  st = rep(0, length(tt))
+  st[1] = s0
+  for(i in 2:length(tt))
+  {
+    st[i] = st[i-1] * rlnorm(1, meanlog=u*(tt[i]-tt[i-1]), sdlog=sig*(tt[i]-tt[i-1]))
+  }
+  return(st)
 }
 
 deltapath <- function(tt, ss, type, X, u, sig, T)
@@ -113,6 +118,8 @@ deltapath <- function(tt, ss, type, X, u, sig, T)
     delta = GBSGreeks('delta', type, ss[i], X, (T-tt[i]), u, u, sig)
     deltas[i] = delta
   }
+  
+  return(deltas)
 }
 
 Vpath <- function(tt, ss, type, X, u, sig, T)
@@ -125,6 +132,7 @@ Vpath <- function(tt, ss, type, X, u, sig, T)
     value = GBSOption(type, ss[i], X, (T-tt[i]), u, u, sig)@price
     values[i] = value
   }
+  return(values)
 }
 
 onepatherror <- function(tt, ss, type, X, u, sig, T)
@@ -134,7 +142,7 @@ onepatherror <- function(tt, ss, type, X, u, sig, T)
   rep = callrep(tt, ss, delta, u, base=100)
   realvalues = Vpath(tt, ss, type, X, u, sig, T)
   
-  cpath = cashpath(v0, u, tt)
+  cpath = cashpath(realvalues[1], u, tt)
   
   repvalues = rep$cumcosttotal + rep$totalsharevalue + cpath
   
