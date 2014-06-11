@@ -286,9 +286,9 @@ class crabstrat(strattop):
             oldqhold = self.qhold
             self.lazystate = 'setting'
 
-            print('set lazy limit: lazystate=%s(<-%s) quickstate=%s(<-%s) q=%d(<-%d) sprdmid=%.3f sprdfix=%.3f quickmid=%.2f, delta=%.3f lazyask=%.2f lazybid=%.2f ' % (self.lazystate, oldlazystate, self.quickstate, oldquickstate, self.qhold, oldqhold, self.sprdmid, self.sprdmidfix, self.quickmidprice, self.delta, lazyask, lazybid))
+            print('set lazy limit: lazystate=%s(<-%s) quickstate=%s(<-%s) q=%d(<-%d) sprdmid=%.3f sprdfix=%.3f quickmid=%.2f delta=%.3f lazyask=%.2f lazybid=%.2f ' % (self.lazystate, oldlazystate, self.quickstate, oldquickstate, self.qhold, oldqhold, self.sprdmid, self.sprdmidfix, self.quickmidprice, self.delta, lazyask, lazybid))
 
-            self.logger.info('set lazy limit: lazystate=%s(<-%s) quickstate=%s(<-%s) q=%d(<-%d) sprdmid=%.3f sprdfix=%.3f quickmid=%.2f, delta=%.3f setlazyask=%.2f setlazybid=%.2f quickbid=%.2f quickask=%.2f quicktick=%.2f lazybid=%.2f lazyask=%.2f lazytick=%.2f' % (self.lazystate, oldlazystate, self.quickstate, oldquickstate, self.qhold, oldqhold, self.sprdmid, self.sprdmidfix, self.quickmidprice, self.delta, lazyask, lazybid, self.quickquote['bid1'], self.quickquote['ask1'], self.quickquote['tic'], self.lazyquote['bid1'], self.lazyquote['ask1'], self.lazyquote['tic']))
+            self.logger.info('set lazy limit: lazystate=%s(<-%s) quickstate=%s(<-%s) q=%d(<-%d) sprdmid=%.3f sprdfix=%.3f quickmid=%.2f delta=%.3f setlazyask=%.2f setlazybid=%.2f quickbid=%.2f quickask=%.2f quicktick=%.2f lazybid=%.2f lazyask=%.2f lazytick=%.2f' % (self.lazystate, oldlazystate, self.quickstate, oldquickstate, self.qhold, oldqhold, self.sprdmid, self.sprdmidfix, self.quickmidprice, self.delta, lazyask, lazybid, self.quickquote['bid1'], self.quickquote['ask1'], self.quickquote['tic'], self.lazyquote['bid1'], self.lazyquote['ask1'], self.lazyquote['tic']))
 
         elif self.lazystate=='set' and isresetlazy:
             # cancel first
