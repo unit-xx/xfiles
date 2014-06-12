@@ -6,32 +6,34 @@ def doplot(frame):
     print 'beginframe'
     for ii, ff in enumerate(frame):
         if ff['event']=='quote':
-            print 'quote points %d %.2f' % (ii, ff['bid1'])
-            print 'quote points %d %.2f' % (ii, ff['ask1'])
+            if ff['tag']=='lazy':
+                print 'quote points %d %.2f - black' % (ii, ff['bid1'])
+                print 'quote points %d %.2f - black' % (ii, ff['ask1'])
+            else:
+                print 'quote points %d %.2f - black' % (ii, ff['bid1'])
+                print 'quote points %d %.2f - black' % (ii, ff['ask1'])
 
         elif ff['event']=='setlazy':
-            print 'setlazy points %d %.2f' % (ii, ff['setlazybid'])
-            print 'setlazy points %d %.2f' % (ii, ff['setlazyask'])
+            print 'setlazy points %d %.2f + red' % (ii, ff['setlazybid'])
+            print 'setlazy points %d %.2f + red' % (ii, ff['setlazyask'])
 
             setlazybid = ff['setlazybid']
             setlazyask = ff['setlazyask']
 
         elif ff['event']=='bidtrade':
-            print 'bidtrade points %d %.2f' % (ii, setlazybid)
-            print 'bidtrade points %d %.2f' % (ii, setlazyask)
+            print 'bidtrade points %d %.2f b red' % (ii, setlazybid)
             
         elif ff['event']=='asktrade':
-            print 'asktrade points %d %.2f' % (ii, setlazybid)
-            print 'asktrade points %d %.2f' % (ii, setlazyask)
+            print 'asktrade points %d %.2f a red' % (ii, setlazyask)
 
         elif ff['event']=='orderquick':
             pass
 
         elif ff['event']=='lazytradeinfo':
-            print 'lazytradeinfo points %d %.2f' % (ii, ff['price'])
+            print 'lazytradeinfo points %d %.2f L purple' % (ii, ff['price'])
 
         elif ff['event']=='quicktradeinfo':
-            print 'quicktradeinfo points %d %.2f' % (ii, ff['price'])
+            print 'quicktradeinfo points %d %.2f q purple' % (ii, ff['price'])
     print 'endframe'
 
 def main():
@@ -62,12 +64,18 @@ def main():
             qhist.append(edict)
             frame.append(edict)
 
+            print len(frametailq), 't'
             for i in range(len(frametailq)):
-                framewithtail[i].append(edict)
+                print len(frametailq)
+                print(range(len(frametailq)))
+                print i
+                print(len(framewithtail))
+                print(frametailq)
                 frametailq[i] += 1
+                framewithtail[i].append(edict)
                 if frametailq[i] == nhist:
                     # TODO: check the frame is correct.
-                    doplot(framewithtail[i])
+                    #doplot(framewithtail[i])
 
                     del framewithtail[i]
                     del frametailq[i]
