@@ -1,4 +1,4 @@
-callrep <- function(tt, ss, delta, r, base=100)
+callrep <- function(tt, ss, delta, r, base=1)
 {
   N = length(tt)
   
@@ -103,7 +103,8 @@ lognormpath <- function(s0, u, sig, tt)
   st[1] = s0
   for(i in 2:length(tt))
   {
-    st[i] = st[i-1] * rlnorm(1, meanlog=u*(tt[i]-tt[i-1]), sdlog=sig*(tt[i]-tt[i-1]))
+    dt = tt[i]-tt[i-1]
+    st[i] = st[i-1] * exp((u-sig^2/2)*dt + sig*sqrt(dt)*rnorm(1))
   }
   return(st)
 }
@@ -138,29 +139,40 @@ Vpath <- function(tt, ss, type, X, u, sig, T)
 onepatherror <- function(tt, ss, type, X, u, sig, T)
 {
   # replication error at every step of one path
-  delta = deltapath(tt, ss, type, X, u, sig, T)
-  rep = callrep(tt, ss, delta, u, base=100)
+  deltas = deltapath(tt, ss, type, X, u, sig, T)
+  rep = callrep(tt, ss, deltas, u)
   realvalues = Vpath(tt, ss, type, X, u, sig, T)
   
   cpath = cashpath(realvalues[1], u, tt)
   
-  repvalues = rep$cumcosttotal + rep$totalsharevalue + cpath
+  repvalues = -rep$cumcosttotal + rep$totalsharevalue + cpath
   
   error = repvalues - realvalues
   
   return(error)
 }
 
-manypatherror <- function()
+manypatherror <- function(s0, dt, T, X, u, sig, type, pathnum=100)
 {
   # replication error at the final step of many paths
   
   # replication many paths
-  epath = onepatherror(tt, ss, type, X, u, sig, T)
+  tt = seq(0, T, dt)
+  STs = rep(0, pathnum)
+  VTs = rep(0, pathnum)
+  errors = rep(0, pathnum)
   
-  error = epath[length(epath)]
-  finals = ss[length(ss)]
+  for(i in 1:pathnum)
+  {
+    ss = lognormpath(s0, u, sig, tt)
+    Vs = Vpath(tt, ss, type, X, u, sig, T)
+    oneerror = onepatherror(tt, ss, type, X, u, sig, T)
+
+    errors[i] = oneerror[length(oneerror)]
+    STs[i] = ss[length(ss)]
+    VTs[i] = Vs[length(ss)]
+  }
   
-  
+  return(list(ST=STs, VT=VTs, error=errors))
 }
 
