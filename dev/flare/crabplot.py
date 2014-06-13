@@ -64,21 +64,19 @@ def main():
             qhist.append(edict)
             frame.append(edict)
 
-            print len(frametailq), 't'
+            frametodel = []
             for i in range(len(frametailq)):
-                print len(frametailq)
-                print(range(len(frametailq)))
-                print i
-                print(len(framewithtail))
-                print(frametailq)
                 frametailq[i] += 1
                 framewithtail[i].append(edict)
                 if frametailq[i] == nhist:
                     # TODO: check the frame is correct.
-                    #doplot(framewithtail[i])
+                    doplot(framewithtail[i])
 
-                    del framewithtail[i]
-                    del frametailq[i]
+                    frametodel.append(i)
+
+            for i in frametodel:
+                del frametailq[i]
+                del framewithtail[i]
 
         elif event=='sprdmid':
             pass
