@@ -274,6 +274,14 @@ class EngineCTP(TraderSpi):
         self.investor_id = tradercfg['investor_id']
         self.passwd = tradercfg['passwd']
         self.prodinfo = tradercfg['prodinfo']
+        self.combohedgetype = utype.THOST_FTDC_HF_Speculation
+        if tradercfg['hedgetype'] == 'speculation':
+            self.combohedgetype = utype.THOST_FTDC_HF_Speculation
+        elif tradercfg['hedgetype'] == 'arbitrage':
+            self.combohedgetype = utype.THOST_FTDC_HF_Arbitrage
+        elif tradercfg['hedgetype'] == 'hedge':
+            self.combohedgetype = utype.THOST_FTDC_HF_Hedge
+
         self.tradercfg = tradercfg
         self.pubsub = pubsub
         self.trader = None
@@ -308,6 +316,8 @@ class EngineCTP(TraderSpi):
         # map from oid to strat name
         self.oid2strat = {}
         self.stratlock = Lock()
+
+        self.logger.info('combohedge type is %s %s', tradercfg['hedgetype'], self.combohedgetype)
 
     def setup(self):
         # start thread pool
@@ -374,8 +384,7 @@ class EngineCTP(TraderSpi):
                 BrokerID = self.broker_id,
                 InvestorID = self.investor_id,
                 CombOffsetFlag = utype.THOST_FTDC_OF_Open if (otype==fdef.VOPEN) else utype.THOST_FTDC_OF_CloseToday,
-                #CombHedgeFlag = utype.THOST_FTDC_HF_Speculation,
-                CombHedgeFlag = utype.THOST_FTDC_HF_Arbitrage,
+                CombHedgeFlag = self.combohedgetype,
                 VolumeCondition = utype.THOST_FTDC_VC_AV,
                 MinVolume = 1,
                 ForceCloseReason = utype.THOST_FTDC_FCC_NotForceClose,
