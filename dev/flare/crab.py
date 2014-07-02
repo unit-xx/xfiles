@@ -46,6 +46,9 @@ class crabstrat(strattop):
 
         self.quickmidprice = None
 
+        self.lastlazyask = 0.0
+        self.lastlazybid = 0.0
+
         self.quickstate = 'ready'
         self.lazystate = 'ready'
         self.sprdaskmode = 'empty'
@@ -288,22 +291,34 @@ class crabstrat(strattop):
 
             print('set lazy limit: lazystate=%s(<-%s) quickstate=%s(<-%s) q=%d(<-%d) sprdmid=%.3f sprdfix=%.3f quickmid=%.2f delta=%.3f lazyask=%.2f lazybid=%.2f ' % (self.lazystate, oldlazystate, self.quickstate, oldquickstate, self.qhold, oldqhold, self.sprdmid, self.sprdmidfix, self.quickmidprice, self.delta, lazyask, lazybid))
 
-            self.logger.info('set lazy limit: lazystate=%s(<-%s) quickstate=%s(<-%s) q=%d(<-%d) sprdmid=%.3f sprdfix=%.3f quickmid=%.2f delta=%.3f setlazyask=%.2f setlazybid=%.2f quickbid=%.2f quickask=%.2f quicktick=%.2f lazybid=%.2f lazyask=%.2f lazytick=%.2f' % (self.lazystate, oldlazystate, self.quickstate, oldquickstate, self.qhold, oldqhold, self.sprdmid, self.sprdmidfix, self.quickmidprice, self.delta, lazyask, lazybid, self.quickquote['bid1'], self.quickquote['ask1'], self.quickquote['tic'], self.lazyquote['bid1'], self.lazyquote['ask1'], self.lazyquote['tic']))
+            self.logger.info('set lazy limit: lazystate=%s(<-%s) quickstate=%s(<-%s) q=%d(<-%d) sprdmid=%.3f sprdfix=%.3f quickmid=%.2f delta=%.3f setlazybid=%.2f setlazyask=%.2f lastsetlazybid=%.2f lastsetlazyask=%.2f quickbid=%.2f quickask=%.2f quicktick=%.2f lazybid=%.2f lazyask=%.2f lazytick=%.2f' % (self.lazystate, oldlazystate, self.quickstate, oldquickstate, self.qhold, oldqhold, self.sprdmid, self.sprdmidfix, self.quickmidprice, self.delta, lazybid, lazyask, self.lastlazybid, self.lastlazyask, self.quickquote['bid1'], self.quickquote['ask1'], self.quickquote['tic'], self.lazyquote['bid1'], self.lazyquote['ask1'], self.lazyquote['tic']))
+
+            self.lastlazybid = lazybid
+            self.lastlazyask = lazyask
 
         elif self.lazystate=='set' and isresetlazy:
-            # cancel first
-            if self.lazylegoid['ask'] is not None:
-                self.cancelorder(self.lazylegoid['ask'])
+            lazyask = self.sprdmidfix + self.quickmidprice + self.delta
+            lazybid = self.sprdmidfix + self.quickmidprice - self.delta
+            lazyask = self.ceil02(lazyask)
+            lazybid = self.floor02(lazybid)
 
-            if self.lazylegoid['bid'] is not None:
-                self.cancelorder(self.lazylegoid['bid'])
+            if (abs(lazyask-self.lastlazyask)>1e-6) and (abs(lazybid-self.lastlazybid)>1e-6):
+                # cancel first
+                if self.lazylegoid['ask'] is not None:
+                    self.cancelorder(self.lazylegoid['ask'])
 
-            oldlazystate = self.lazystate
-            oldquickstate = self.quickstate
-            oldqhold = self.qhold
-            self.lazystate = 'cancelling'
+                if self.lazylegoid['bid'] is not None:
+                    self.cancelorder(self.lazylegoid['bid'])
 
-            print('cancel both lazy limit: lazystate=%s(<-%s) quickstate=%s(<-%s) q=%d(<-%d) sprdmid=%.3f sprdfix=%.3f quickmid=%.2f, delta=%.3f' % (self.lazystate, oldlazystate, self.quickstate, oldquickstate, self.qhold, oldqhold, self.sprdmid, self.sprdmidfix, self.quickmidprice, self.delta))
+                oldlazystate = self.lazystate
+                oldquickstate = self.quickstate
+                oldqhold = self.qhold
+                self.lazystate = 'cancelling'
+
+                print('cancel both lazy limit: lazystate=%s(<-%s) quickstate=%s(<-%s) q=%d(<-%d) sprdmid=%.3f sprdfix=%.3f quickmid=%.2f, delta=%.3f' % (self.lazystate, oldlazystate, self.quickstate, oldquickstate, self.qhold, oldqhold, self.sprdmid, self.sprdmidfix, self.quickmidprice, self.delta))
+                #self.logger.info('cancel both lazy limit: lazystate=%s(<-%s) quickstate=%s(<-%s) q=%d(<-%d) sprdmid=%.3f sprdfix=%.3f quickmid=%.2f, delta=%.3f newlazybid=%.3f newlazyask=%.3f lastlazybid=%.3f lastlazyask=%.3f' % (self.lazystate, oldlazystate, self.quickstate, oldquickstate, self.qhold, oldqhold, self.sprdmid, self.sprdmidfix, self.quickmidprice, self.delta, lazybid, lazyask, self.lastlazybid, self.lastlazyask))
+            else:
+                print 'no need to cancel lazy'
         else:
             oldlazystate = self.lazystate
             oldquickstate = self.quickstate
