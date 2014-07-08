@@ -5,6 +5,7 @@ import cPickle as pickle
 from threading import Thread, Lock
 from math import floor, ceil
 from collections import defaultdict
+from datetime import datetime
 
 from flamelib import stratconsole, runstrat, strattop
 import flaredef as fdef
@@ -83,6 +84,9 @@ class crabstrat(strattop):
 
     def ceil02(self, x):
         return 0.2*ceil(x/0.2)
+
+    def round02(self, x):
+        return 0.2*round(x/0.2)
 
     def quote2str(self, q):
         keys = ('code', 'ask1', 'askvol1', 'bid1', 'bidvol1', 'time', 'msec', 'tic')
@@ -202,8 +206,8 @@ class crabstrat(strattop):
             # set limit order of lazyleg
             lazyask = self.sprdmidfix + self.quickmidprice + self.delta
             lazybid = self.sprdmidfix + self.quickmidprice - self.delta
-            lazyask = self.ceil02(lazyask)
-            lazybid = self.floor02(lazybid)
+            lazyask = self.round02(lazyask)
+            lazybid = self.round02(lazybid)
 
             if self.qhold==0:
                 self.sprdaskmode = 'openshort'
@@ -299,8 +303,8 @@ class crabstrat(strattop):
         elif self.lazystate=='set' and isresetlazy:
             lazyask = self.sprdmidfix + self.quickmidprice + self.delta
             lazybid = self.sprdmidfix + self.quickmidprice - self.delta
-            lazyask = self.ceil02(lazyask)
-            lazybid = self.floor02(lazybid)
+            lazyask = self.round02(lazyask)
+            lazybid = self.round02(lazybid)
 
             if (abs(lazyask-self.lastlazyask)>1e-6) and (abs(lazybid-self.lastlazybid)>1e-6):
                 # cancel first
