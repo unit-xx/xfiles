@@ -1,9 +1,12 @@
 # canlendar arbitrage with simultaneous shot.
 
+import sys
+import cPickle as pickle
+from threading import Lock
+from collections import defaultdict
 
 from flamelib import stratconsole, runstrat, strattop
 import flaredef as fdef
-import config
 
 class shotstrat(strattop):
     def setup(self):
@@ -63,6 +66,15 @@ class shotstrat(strattop):
     def dounsuspend(self):
         self.suspendflag = False
 
+    def quote2str(self, q):
+        keys = ('code', 'ask1', 'askvol1', 'bid1', 'bidvol1', 'time', 'msec', 'tic')
+        fmt = ('s', '.2f', 'd', '.2f', 'd', 's', 'd', '.2f')
+        
+        fmt = ['%%(%s)%s'%(x[0],x[1]) for x in zip(keys, fmt)]
+
+        s = ' '.join([' '.join(x) for x in zip(keys, fmt)])
+        return s % q
+
     def signal(self, m):
         '''
         calender spread has 'ask' and 'bid' prices.
@@ -94,6 +106,15 @@ class shotstrat(strattop):
                     self.lazyquote = q
                     self.logger.info('new lazy quote %s', self.quote2str(q))
 
+            try:
+                if self.lazyquote['tic']==self.quickquote['tic']:
+                    self.sprdbid = self.lazyquote['bid1'] - self.quickquote['ask1']
+                    self.sprdask = self.lazyquote['ask1'] - self.quickquote['bid1']
+                    print 'sprdbid:sprdask = %.2f %.2f sprdmid=%.3f sprdmidfix=%.3f delta=%.2f' % (self.sprdbid, self.sprdask, self.sprdmid, self.sprdmidfix, self.delta)
+            except TypeError:
+                # either lazyquote or quickquote is None
+                pass
+
         elif m['channel'] == self.chma:
             try:
                 inst, tickunit, maval = pickle.loads(m['data'])
@@ -114,8 +135,6 @@ class shotstrat(strattop):
                                 self.logger.info('new sprdmid %.3f <- %.3f', newsprdmid, self.sprdmid)
                             self.sprdmid = newsprdmid
                             self.sprdmidfix = self.sprdmid - self.qhold * self.sigma
-                            #print 'new sprdmid: %.3f' % newsprdmid
-                            isresetlazy = True
 
                 except KeyError:
                     # ma hasn't been received for some legs.
@@ -124,7 +143,7 @@ class shotstrat(strattop):
                     # ma is none since not enough quotes is accumulated to calc ma
                     pass
 
-        if self.sprdmid is None or self.sprdmidfix is None or self.quickmidprice is None or self.quickquote is None or self.lazyquote is None:
+        if self.sprdmid is None or self.sprdmidfix is None or self.quickquote is None or self.lazyquote is None or self.sprdbid is None or self.sprdask is None:
             self.lock.release()
             #self.logger.debug('exit signal')
             return
@@ -133,8 +152,10 @@ class shotstrat(strattop):
             self.lock.release()
             return
 
-        if self.lazystate=='ready' and self.quickstate=='ready':
+        if self.shotstate=='ready' and self.lazystate=='ready' and self.quickstate=='ready':
             # fire shots if necessary
+            print 'sprdbid - sprdmidfix - delta = %.2f (>0 do short)' % (self.sprdbid - self.sprdmidfix - self.delta)
+            print 'sprdask - sprdmidfix + delta = %.2f (<0 do long)' % (self.sprdask - self.sprdmidfix + self.delta)
             if self.sprdbid > self.sprdmidfix + self.delta:
                 if self.qhold > -self.qmax:
                     # do sell
@@ -142,17 +163,96 @@ class shotstrat(strattop):
                     self.lazystate = 'shotting'
                     self.quickstate = 'shotting'
                     self.shotdir = 'sell'
+
+                    print 'do sell'
+                    if self.qhold > 0:
+                        # sell by close long postions
+
+                        # close long lazy
+                        otype = fdef.VCLOSE
+                        direct = fdef.VLONG
+                        code = self.lazyleg
+                        price = self.lazyquote['bid1'] - 5
+                        volume = 1
+                        lazyoid, doreq, rcok = self.reqorder(otype, direct, code, price, volume)
+
+                        # close short quick
+                        otype = fdef.VCLOSE
+                        direct = fdef.VSHORT
+                        code = self.quickleg
+                        price = self.quickquote['ask1'] + 5
+                        volume = 1
+                        quickoid, doreq, rcok = self.reqorder(otype, direct, code, price, volume)
+                        pass
+                    else:
+                        # sell by open short postions
+
+                        # open short lazy
+                        otype = fdef.VOPEN
+                        direct = fdef.VSHORT
+                        code = self.lazyleg
+                        price = self.lazyquote['bid1'] - 5
+                        volume = 1
+                        lazyoid, doreq, rcok = self.reqorder(otype, direct, code, price, volume)
+                        # open long quick
+                        otype = fdef.VOPEN
+                        direct = fdef.VLONG
+                        code = self.quickleg
+                        price = self.quickquote['ask1'] + 5
+                        volume = 1
+                        quickoid, doreq, rcok = self.reqorder(otype, direct, code, price, volume)
+
             elif self.sprdask < self.sprdmidfix - self.delta:
                 if self.qhold < self.qmax:
-                    # dobuy
+                    # do buy
                     self.shotstate = 'shotting'
                     self.lazystate = 'shotting'
                     self.quickstate = 'shotting'
                     self.shotdir = 'buy'
-                    pass
+
+                    print 'do buy'
+                    if self.qhold < 0:
+                        # buy by close short positions
+
+                        # close short lazy
+                        otype = fdef.VCLOSE
+                        direct = fdef.VSHORT
+                        code = self.lazyleg
+                        price = self.lazyquote['ask1'] + 5
+                        volume = 1
+                        lazyoid, doreq, rcok = self.reqorder(otype, direct, code, price, volume)
+                        # close long quick
+                        otype = fdef.VCLOSE
+                        direct = fdef.VLONG
+                        code = self.quickleg
+                        price = self.quickquote['bid1'] - 5
+                        volume = 1
+                        quickoid, doreq, rcok = self.reqorder(otype, direct, code, price, volume)
+                        pass
+                    else:
+                        # buy by open long positions
+
+                        # open long lazy
+                        otype = fdef.VOPEN
+                        direct = fdef.VLONG
+                        code = self.lazyleg
+                        price = self.lazyquote['ask1'] + 5
+                        volume = 1
+                        lazyoid, doreq, rcok = self.reqorder(otype, direct, code, price, volume)
+                        # open short quick
+                        otype = fdef.VOPEN
+                        direct = fdef.VSHORT
+                        code = self.quickleg
+                        price = self.quickquote['bid1'] - 5
+                        volume = 1
+                        quickoid, doreq, rcok = self.reqorder(otype, direct, code, price, volume)
+
+        self.lock.release()
 
     def OnOrderFullyTrade(self, oid, resp):
         # set legs states and qhold
+        self.lock.acquire()
+
         o, olk = self.tbook.getorder(oid)
         if o[fdef.KCODE]==self.quickleg:
             self.quickstate = 'ready'
@@ -162,10 +262,13 @@ class shotstrat(strattop):
         if self.shotstate=='shotting':
             if self.lazystate=='ready' and self.quickstate=='ready':
                 self.shotstate = 'ready'
-                if shotdir == 'sell':
+                if self.shotdir == 'sell':
                     self.qhold -= 1
-                else:
+                elif self.shotdir == 'buy':
                     self.qhold += 1
+                self.shostdir = 'empty'
+
+        self.lock.release()
 
     def onCancelled(self, oid, resp):
         # cancel can only happen from other sources such as Q7
