@@ -321,6 +321,9 @@ class shotconsole(stratconsole):
     def do_issuspend(self, args):
         print self.top.issuspend()
 
+    def do_qhold(self, args):
+        print self.top.qhold
+
 def main():
     try:
         mysec = sys.argv[1]
