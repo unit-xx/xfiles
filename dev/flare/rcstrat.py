@@ -56,7 +56,10 @@ class rcconsole(stratconsole):
         code = tp[1].upper()
         price = float(tp[2])
         volume = int(tp[3])
-        force = (tp[4]=='force')
+        try:
+            force = (tp[4]=='force')
+        except IndexError:
+            force = False
         try:
             cancelimmd = int(tp[5])
         except IndexError:
@@ -77,7 +80,10 @@ class rcconsole(stratconsole):
         code = tp[1].upper()
         price = float(tp[2])
         volume = int(tp[3])
-        force = (tp[4]=='force')
+        try:
+            force = (tp[4]=='force')
+        except IndexError:
+            force = False
         try:
             cancelimmd = int(tp[5])
         except IndexError:
