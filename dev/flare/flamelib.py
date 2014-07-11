@@ -798,7 +798,7 @@ class strattop(Thread):
     def getstrat(self):
         return self.strat
 
-    def reqorder(self, otype, direct, code, price, volume, tag=''):
+    def reqorder(self, otype, direct, code, price, volume, tag='', force=False):
         '''
         tbc.neworder
         self.riskcheck
@@ -816,7 +816,7 @@ class strattop(Thread):
             resvok = self.tbook.doreserve(oid)
             doreq = resvok
 
-        if doreq:
+        if doreq or force:
             #self.tbook.printpos()
             o, olk = self.tbook.getorder(oid)
             with olk:
@@ -1772,7 +1772,7 @@ def runlock(store, name):
     ret = store.delete(lk, 1)
     return (ret==1)
 
-def runstrat(sname, mytop, sconsole):
+def runstrat(sname, mytop, sconsole, logfnwithdate=False):
     '''
     Can only be called by main thread.
     '''
@@ -1788,7 +1788,10 @@ def runstrat(sname, mytop, sconsole):
         storecfg['port'] = int(storecfg['port'])
         storecfg['db'] = int(storecfg['db'])
 
-        config.setuplogger(myname)
+        if logfnwithdate:
+            config.setuplogger('%s.%s'%(myname, str(datetime.now().date())))
+        else:
+            config.setuplogger(myname)
 
         store = getstore(storecfg)
         pubsub = getpubsub(storecfg)

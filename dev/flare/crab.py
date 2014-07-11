@@ -683,7 +683,7 @@ def main():
     except IndexError:
         print 'What\'s your section?'
         sys.exit(1)
-    runstrat(mysec, crabstrat, crabconsole)
+    runstrat(mysec, crabstrat, crabconsole, logfnwithdate=True)
 
 if __name__=='__main__':
     main()

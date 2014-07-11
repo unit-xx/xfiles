@@ -111,6 +111,7 @@ class shotstrat(strattop):
                     self.sprdbid = self.lazyquote['bid1'] - self.quickquote['ask1']
                     self.sprdask = self.lazyquote['ask1'] - self.quickquote['bid1']
                     print 'sprdbid:sprdask = %.2f %.2f sprdmid=%.3f sprdmidfix=%.3f delta=%.2f' % (self.sprdbid, self.sprdask, self.sprdmid, self.sprdmidfix, self.delta)
+                    self.logger.info('sprdbid=%.2f sprdask=%.2f sprdmid=%.3f sprdmidfix=%.3f delta=%.2f', self.sprdbid, self.sprdask, self.sprdmid, self.sprdmidfix, self.delta)
             except TypeError:
                 # either lazyquote or quickquote is None
                 pass
@@ -154,8 +155,6 @@ class shotstrat(strattop):
 
         if self.shotstate=='ready' and self.lazystate=='ready' and self.quickstate=='ready':
             # fire shots if necessary
-            print 'sprdbid - sprdmidfix - delta = %.2f (>0 do short)' % (self.sprdbid - self.sprdmidfix - self.delta)
-            print 'sprdask - sprdmidfix + delta = %.2f (<0 do long)' % (self.sprdask - self.sprdmidfix + self.delta)
             if self.sprdbid > self.sprdmidfix + self.delta:
                 if self.qhold > -self.qmax:
                     # do sell
@@ -164,7 +163,6 @@ class shotstrat(strattop):
                     self.quickstate = 'shotting'
                     self.shotdir = 'sell'
 
-                    print 'do sell'
                     if self.qhold > 0:
                         # sell by close long postions
 
@@ -201,6 +199,8 @@ class shotstrat(strattop):
                         price = self.quickquote['ask1'] + 5
                         volume = 1
                         quickoid, doreq, rcok = self.reqorder(otype, direct, code, price, volume)
+                    print 'do sell'
+                    self.logger.info('do sell: sprdbid - sprdmidfix - delta = %.2f (>0 do short)', self.sprdbid-self.sprdmidfix-self.delta)
 
             elif self.sprdask < self.sprdmidfix - self.delta:
                 if self.qhold < self.qmax:
@@ -210,7 +210,6 @@ class shotstrat(strattop):
                     self.quickstate = 'shotting'
                     self.shotdir = 'buy'
 
-                    print 'do buy'
                     if self.qhold < 0:
                         # buy by close short positions
 
@@ -246,6 +245,8 @@ class shotstrat(strattop):
                         price = self.quickquote['bid1'] - 5
                         volume = 1
                         quickoid, doreq, rcok = self.reqorder(otype, direct, code, price, volume)
+                    print 'do buy'
+                    self.logger.info('do buy: sprdask - sprdmidfix + delta = %.2f (<0 do long)', self.sprdask-self.sprdmidfix+self.delta)
 
         self.lock.release()
 
@@ -262,21 +263,28 @@ class shotstrat(strattop):
         if self.shotstate=='shotting':
             if self.lazystate=='ready' and self.quickstate=='ready':
                 self.shotstate = 'ready'
+                qold = self.qhold
                 if self.shotdir == 'sell':
                     self.qhold -= 1
                 elif self.shotdir == 'buy':
                     self.qhold += 1
                 self.shostdir = 'empty'
+                self.logger.info('q change from %d to %d', qold, self.qhold)
+                print 'q change from %d to %d' % (qold, self.qhold)
 
         self.lock.release()
 
     def onCancelled(self, oid, resp):
         # cancel can only happen from other sources such as Q7
+        self.lock.acquire()
+
         o, olk = self.tbook.getorder(oid)
         if o[fdef.KCODE]==self.quickleg:
             self.quickstate = 'cancelled'
         elif o[fdef.KCODE]==self.lazyleg:
             self.lazystate = 'cancelled'
+
+        self.lock.release()
 
     def onOrderRejected(self, oid, resp):
         # rare case
@@ -330,7 +338,7 @@ def main():
     except IndexError:
         print 'What\'s your section?'
         sys.exit(1)
-    runstrat(mysec, shotstrat, shotconsole)
+    runstrat(mysec, shotstrat, shotconsole, logfnwithdate=True)
 
 if __name__=='__main__':
     main()

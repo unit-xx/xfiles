@@ -56,13 +56,14 @@ class rcconsole(stratconsole):
         code = tp[1].upper()
         price = float(tp[2])
         volume = int(tp[3])
+        force = (tp[4]=='force')
         try:
-            cancelimmd = int(tp[4])
+            cancelimmd = int(tp[5])
         except IndexError:
             cancelimmd = 0
 
-        lastoid, doreq, rcok = self.top.reqorder(otype, direct, code, price, volume)
-        print 'requested,' if doreq else 'unrequested,', 'riskcheck ok,' if (doreq and rcok) else 'riskcheck failed,', lastoid
+        lastoid, doreq, rcok = self.top.reqorder(otype, direct, code, price, volume, force=force)
+        print 'requested,' if (doreq or force) else 'unrequested,', 'riskcheck ok,' if (doreq and rcok) else 'riskcheck failed,', lastoid
         self.lastoid = lastoid
 
         if cancelimmd and doreq:
@@ -76,13 +77,14 @@ class rcconsole(stratconsole):
         code = tp[1].upper()
         price = float(tp[2])
         volume = int(tp[3])
+        force = (tp[4]=='force')
         try:
-            cancelimmd = int(tp[4])
+            cancelimmd = int(tp[5])
         except IndexError:
             cancelimmd = 0
 
-        lastoid, doreq, rcok = self.top.reqorder(otype, direct, code, price, volume)
-        print 'requested,' if doreq else 'unrequested,', 'riskcheck ok,' if (doreq and rcok) else 'riskcheck failed,', lastoid
+        lastoid, doreq, rcok = self.top.reqorder(otype, direct, code, price, volume, force=force)
+        print 'requested,' if (doreq or force) else 'unrequested,', 'riskcheck ok,' if (doreq and rcok) else 'riskcheck failed,', lastoid
         self.lastoid = lastoid
 
         if cancelimmd and doreq:
