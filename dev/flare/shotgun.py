@@ -110,8 +110,8 @@ class shotstrat(strattop):
                 if self.lazyquote['tic']==self.quickquote['tic']:
                     self.sprdbid = self.lazyquote['bid1'] - self.quickquote['ask1']
                     self.sprdask = self.lazyquote['ask1'] - self.quickquote['bid1']
-                    print 'sprdbid:sprdask = %.2f %.2f sprdmid=%.3f sprdmidfix=%.3f delta=%.2f' % (self.sprdbid, self.sprdask, self.sprdmid, self.sprdmidfix, self.delta)
-                    self.logger.info('sprdbid=%.2f sprdask=%.2f sprdmid=%.3f sprdmidfix=%.3f delta=%.2f', self.sprdbid, self.sprdask, self.sprdmid, self.sprdmidfix, self.delta)
+                    print('sprdbid=%.2f sprdask=%.2f sprdmid=%.3f sprdmidfix=%.3f delta=%.2f sellsig=%.2f buysig=%.2f' % (self.sprdbid, self.sprdask, self.sprdmid, self.sprdmidfix, self.delta, self.sprdbid-self.sprdmidfix, self.sprdask-self.sprdmidfix))
+                    self.logger.info('sprdbid=%.2f sprdask=%.2f sprdmid=%.3f sprdmidfix=%.3f delta=%.2f sellsig=%.2f buysig=%.2f', self.sprdbid, self.sprdask, self.sprdmid, self.sprdmidfix, self.delta, self.sprdbid-self.sprdmidfix, self.sprdask-self.sprdmidfix)
             except TypeError:
                 # either lazyquote or quickquote is None
                 pass
@@ -269,6 +269,7 @@ class shotstrat(strattop):
                 elif self.shotdir == 'buy':
                     self.qhold += 1
                 self.shostdir = 'empty'
+                self.sprdmidfix = self.sprdmid - self.qhold * self.sigma
                 self.logger.info('q change from %d to %d', qold, self.qhold)
                 print 'q change from %d to %d' % (qold, self.qhold)
 
