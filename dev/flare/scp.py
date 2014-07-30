@@ -13,8 +13,10 @@ class scpstrat(strattop):
         self.legcode = self.mycfg['legcode']
         self.ptick = float(self.mycfg['pricetick'])
         self.tmode = self.mycfg['tmode']
+        self.maxvolperorder = int(self.mycfg['maxvolperorder'])
         self.qhold = 0
         self.state = 'ready'
+        self.oid = None
         self.quote = None
         self.lock = Lock()
 
@@ -62,9 +64,13 @@ class scpstrat(strattop):
 
         OR
 
-        set limit sell order to ask1+0.2, once hit buy at ask.
+        set limit sell order to ask1+0.2, once hit buy at ask1.
         '''
         self.lock.acquire()
+
+        if self.issuspend():
+            self.lock.release()
+            return
 
         if m['channel'] == fdef.CHQUOTE:
             try:
@@ -76,7 +82,6 @@ class scpstrat(strattop):
                 return
 
             if q['code'] == self.legcode:
-                self.quote = q
 
                 if self.state=='ready':
                     # set limit order
@@ -84,27 +89,47 @@ class scpstrat(strattop):
                         otype = fdef.VOPEN
                         direct = fdef.VLONG
                         code = self.legcode
-                        price = self.quote['bid1'] - self.ptick
+                        price = q['bid1'] - self.ptick
                         volume = 1
-                        oid, doreq, rcok = self.reqorder(otype, direct, code, price, volume)
+                        self.oid, doreq, rcok = self.reqorder(otype, direct, code, price, volume, tag='set')
                         self.state = 'setting'
 
                     elif self.tmode=='ask':
                         otype = fdef.VOPEN
                         direct = fdef.VSHORT
                         code = self.legcode
-                        price = self.quote['ask1'] + self.ptick
+                        price = q['ask1'] + self.ptick
                         volume = 1
-                        oid, doreq, rcok = self.reqorder(otype, direct, code, price, volume)
+                        self.oid, doreq, rcok = self.reqorder(otype, direct, code, price, volume, tag='set')
                         self.state = 'setting'
+
+                    self.logger.info('new quick quote %s', self.quote2str(q))
+                    if self.tmode=='bid':
+                        self.logger.info('set bid=%.2f', price)
+                    elif self.tmode=='ask':
+                        self.logger.info('set ask=%.2f', price)
+
 
                 elif self.state=='set':
                     # cancel existing limit order, if necessary
+                    if self.tmode=='bid':
+                        if abs(q['bid1']-self.quote['bid1'])>1e-3:
+                            # quote changed, cancel previous order
+                            self.cancelorder(self.oid)
+                            self.state = 'cancelling'
+                            self.state = 'cancelling'
+                            self.logger.info('cancel order')
+                    elif self.tmode=='ask':
+                        if abs(q['ask1']-self.quote['ask1'])>1e-3:
+                            # quote changed, cancel previous order
+                            self.cancelorder(self.oid)
+                            self.state = 'cancelling'
+                            self.logger.info('cancel order')
+
+                else:
                     pass
 
-        if self.issuspend():
-            self.lock.release()
-            return
+                self.quote = q
 
         self.lock.release()
 
@@ -114,12 +139,44 @@ class scpstrat(strattop):
 
         o, olk = self.tbook.getorder(oid)
         if o[fdef.KCODE]==self.legcode:
-            if self.state=='set' or self.state=='setting':
+            if self.state=='set' or self.state=='setting' or self.state=='cancelling':
                 # limit order traded, close it immediatelly
-                pass
+                if self.tmode=='bid':
+                    self.qhold += 1
+                    # close long position
+                    otype = fdef.VCLOSE
+                    direct = fdef.VLONG
+                    code = self.legcode
+                    price = self.quote['bid1'] - 5.0
+                    volume = 1
+                    self.oid, doreq, rcok = self.reqorder(otype, direct, code, price, volume, force=True, tag='close')
+                    self.state = 'closing'
+                    self.logger.info('closing bid')
+                elif self.tmode=='ask':
+                    self.qhold -= 1
+                    otype = fdef.VCLOSE
+                    direct = fdef.VSHORT
+                    code = self.legcode
+                    price = self.quote['ask1'] + 5.0
+                    volume = 1
+                    self.oid, doreq, rcok = self.reqorder(otype, direct, code, price, volume, force=True, tag='close')
+                    self.state = 'closing'
+                    self.logger.info('closing ask')
+
             elif self.state=='closing':
                 # position closed, return to ready
-                pass
+                if self.tmode=='bid':
+                    self.qhold -= 1
+                    self.state = 'ready'
+                    self.logger.info('bid closed')
+                elif self.tmode=='ask':
+                    self.qhold += 1
+                    self.state = 'ready'
+                    self.logger.info('ask closed')
+
+            else:
+                self.logger.error('unexpected state %s', self.state)
+                print 'unexpected state=%s' % self.state
 
         self.lock.release()
 
@@ -131,7 +188,11 @@ class scpstrat(strattop):
         if o[fdef.KCODE]==self.legcode:
             if self.state=='cancelling':
                 # limit order cancelled, return to ready
-                pass
+                self.state = 'ready'
+                self.logger.info('limit order cancelled')
+            else:
+                self.logger.error('unexpected state %s', self.state)
+                print 'unpected state=%s' % self.state
 
         self.lock.release()
 
@@ -139,6 +200,7 @@ class scpstrat(strattop):
         # rare exception case
         o, olk = self.tbook.getorder(oid)
         self.logger.error('order rejected %s', o)
+        print 'order rejected'
 
     def onCancelRejected(self, oid, resp):
         # rare case
@@ -147,9 +209,20 @@ class scpstrat(strattop):
         o, olk = self.tbook.getorder(oid)
         if o[fdef.KCODE]==self.legcode:
             if self.state=='cancelling':
-                # limit order cancel failed, maybe it is already traded, or
-                # it is an exception case
-                pass
+                # limit order cancel failed, maybe it is already traded,
+                # otherwise it is an exception case
+                try:
+                    if o['ErrorID']==26:
+                        # order already traded.
+                        pass
+                    else:
+                        # urgent case
+                        self.logger.error('unexpected state %s', self.state)
+                        print 'unexpected state=%s' % self.state
+                except KeyError:
+                    # urgent case
+                    self.logger.error('unexpected state %s', self.state)
+                    print 'unexpected state=%s' % self.state
 
         self.lock.release()
 
@@ -161,14 +234,24 @@ class scpstrat(strattop):
             if self.state=='setting':
                 # limit order acceptted
                 self.state = 'set'
+            elif self.state=='cancelling' or self.state=='set' or self.state=='closing':
+                pass
+            else:
+                self.logger.error('unexpected state %s', self.state)
+                self.logger.error(str(resp))
+                print 'unexpected state=%s' % self.state
 
         self.lock.release()
     
     def onNewTrade(self, oid, resp):
         # log trade info
-        pass
+        o, olk = self.tbook.getorder(oid)
+        if o[fdef.KTAG]=='set':
+            self.logger.info('limit order traded price=%.2f', resp[fdef.KPRICE])
+        elif o[fdef.KTAG]=='close':
+            self.logger.info('close order traded price=%.2f', resp[fdef.KPRICE])
 
-class shotconsole(stratconsole):
+class scpconsole(stratconsole):
     def do_quit(self, args):
         if args=='FORCE':
             print 'Quitting'
@@ -192,13 +275,16 @@ class shotconsole(stratconsole):
     def do_qhold(self, args):
         print self.top.qhold
 
+    def do_state(self, args):
+        print self.top.state
+
 def main():
     try:
         mysec = sys.argv[1]
     except IndexError:
         print 'What\'s your section?'
         sys.exit(1)
-    runstrat(mysec, shotstrat, shotconsole, logfnwithdate=True)
+    runstrat(mysec, scpstrat, scpconsole, logfnwithdate=True)
 
 if __name__=='__main__':
     main()
