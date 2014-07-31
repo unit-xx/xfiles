@@ -68,10 +68,6 @@ class scpstrat(strattop):
         '''
         self.lock.acquire()
 
-        if self.issuspend():
-            self.lock.release()
-            return
-
         if m['channel'] == fdef.CHQUOTE:
             try:
                 q = pickle.loads(m['data'])
@@ -82,6 +78,11 @@ class scpstrat(strattop):
                 return
 
             if q['code'] == self.legcode:
+
+                if self.issuspend():
+                    self.logger.info('new quick quote %s', self.quote2str(q))
+                    self.lock.release()
+                    return
 
                 if self.state=='ready':
                     # set limit order
@@ -118,16 +119,18 @@ class scpstrat(strattop):
                             self.cancelorder(self.oid)
                             self.state = 'cancelling'
                             self.state = 'cancelling'
+                            self.logger.info('new quick quote %s', self.quote2str(q))
                             self.logger.info('cancel order')
                     elif self.tmode=='ask':
                         if abs(q['ask1']-self.quote['ask1'])>1e-3:
                             # quote changed, cancel previous order
                             self.cancelorder(self.oid)
                             self.state = 'cancelling'
+                            self.logger.info('new quick quote %s', self.quote2str(q))
                             self.logger.info('cancel order')
 
                 else:
-                    pass
+                    self.logger.info('new quick quote %s', self.quote2str(q))
 
                 self.quote = q
 
