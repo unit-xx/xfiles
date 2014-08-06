@@ -32,7 +32,7 @@ t2 = datetime.now()
 print t2-t1, seconds(t2-t1)/n, n/seconds(t2-t1)
 
 n = 10000
-logging.config.fileConfig('config.ini', {"logfn":'perftest.log'})
+logging.config.fileConfig('logger.ini', {"logfn":'perftest.log'})
 logger = logging.getLogger()
 logger.info('Time to minize cmd window, at your choice.')
 time.sleep(1)

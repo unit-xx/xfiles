@@ -52,7 +52,7 @@ def publisher(n, r, ch):
     for i in range(n):
         r.publish(ch, '%d'%i)
     t2 = datetime.now()
-    print 'publish %.3f' % n/seconds(t2-t1)
+    print 'publish %.3f' % (n/seconds(t2-t1))
 
 
 def listener(n, r, ch):
@@ -62,9 +62,9 @@ def listener(n, r, ch):
     for i in range(n):
         msg = next(sub.listen())
     t2 = datetime.now()
-    print 'subscribe %.3f' % n/seconds(t2-t1)
+    print 'subscribe %.3f' % (n/seconds(t2-t1))
 
-Thread(target=listener, args=(10, r, 'test')).start()
-Thread(target=publisher, args=(10, r, 'test')).start()
+Thread(target=listener, args=(1000, r, 'test')).start()
+Thread(target=publisher, args=(1000, r, 'test')).start()
 
 # $Id$ 

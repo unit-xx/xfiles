@@ -69,7 +69,7 @@ class scpstrat(strattop):
         if self.cancelmode=='ontimer' and self.state=='set':
             self.cancelorder(oid)
             self.state = 'cancelling'
-            self.logger.info('cancel order before quote')
+            self.logger.info('cancel order on timer')
 
         self.lock.release()
 
@@ -110,7 +110,8 @@ class scpstrat(strattop):
                         self.oid, doreq, rcok = self.reqorder(otype, direct, code, price, volume, tag='set')
                         self.state = 'setting'
                         if self.cancelmode=='ontimer':
-                            tcancel = Timer(self.canceltimer, self.docancel, self.oid)
+                            tcancel = Timer(self.canceltimer, self.docancel, [self.oid])
+                            tcancel.start()
 
                         self.logger.info('new quick quote %s', self.quote2str(q))
                         self.logger.info('setting bid=%.2f', price)
@@ -124,30 +125,33 @@ class scpstrat(strattop):
                         self.oid, doreq, rcok = self.reqorder(otype, direct, code, price, volume, tag='set')
                         self.state = 'setting'
                         if self.cancelmode=='ontimer':
-                            tcancel = Timer(self.canceltimer, self.docancel, self.oid)
+                            tcancel = Timer(self.canceltimer, self.docancel, [self.oid])
+                            tcancel.start()
 
                         self.logger.info('new quick quote %s', self.quote2str(q))
-                        self.logger.info('setting ask=%.2f', price)
+                        self.logger.info('setting ask=%.2f, cancel %s', price, 'on next quote' if self.cancelmode=='onquote' else 'in %.2f secs'%self.canceltimer)
+
+                    else:
+                        self.logger.info('new quick quote %s', self.quote2str(q))
 
                 elif self.state=='set':
                     # cancel existing limit order, if necessary
-                    if self.cancelmode=='onquote'
-                        if self.tmode=='bid':
-                            self.cancelorder(self.oid)
-                            self.state = 'cancelling'
-                            self.logger.info('new quick quote %s', self.quote2str(q))
-                            self.logger.info('cancel order on quote')
-                        elif self.tmode=='ask':
-                            self.cancelorder(self.oid)
-                            self.state = 'cancelling'
-                            self.logger.info('new quick quote %s', self.quote2str(q))
-                            self.logger.info('cancel order on quote')
+                    if self.cancelmode=='onquote':
+                        self.cancelorder(self.oid)
+                        self.state = 'cancelling'
+                        self.logger.info('new quick quote %s', self.quote2str(q))
+                        self.logger.info('cancel order on quote')
+                    else:
+                        self.logger.info('new quick quote %s', self.quote2str(q))
 
                 elif self.state=='closing':
                     self.closetickcnt += 1
                     if self.closetickcnt >= self.MAXCLOSETICKCNT:
                         self.cancelorder(self.oid)
+                        self.logger.info('new quick quote %s', self.quote2str(q))
                         self.logger.info('try cancel and force close')
+                    else:
+                        self.logger.info('new quick quote %s', self.quote2str(q))
 
                 else:
                     self.logger.info('new quick quote %s', self.quote2str(q))
@@ -170,23 +174,23 @@ class scpstrat(strattop):
                     otype = fdef.VCLOSE
                     direct = fdef.VLONG
                     code = self.legcode
-                    price = o[fdef.KPRICE] + 0.2
+                    price = o[fdef.KPRICE] + self.ptick
                     volume = 1
                     self.oid, doreq, rcok = self.reqorder(otype, direct, code, price, volume, force=True, tag='close')
                     self.state = 'closing'
                     self.closetickcnt = 0
-                    self.logger.info('closing bid')
+                    self.logger.info('closing bid @ %.2f', price)
                 elif self.tmode=='ask':
                     self.qhold -= 1
                     otype = fdef.VCLOSE
                     direct = fdef.VSHORT
                     code = self.legcode
-                    price = o[fdef.KPRICE] - 0.2
+                    price = o[fdef.KPRICE] - self.ptick
                     volume = 1
                     self.oid, doreq, rcok = self.reqorder(otype, direct, code, price, volume, force=True, tag='close')
                     self.closetickcnt = 0
                     self.state = 'closing'
-                    self.logger.info('closing ask')
+                    self.logger.info('closing ask @ %.2f', price)
 
             elif self.state=='closing' or self.state=='forceclosing':
                 # position closed, return to ready
@@ -224,6 +228,7 @@ class scpstrat(strattop):
                     volume = 1
                     self.oid, doreq, rcok = self.reqorder(otype, direct, code, price, volume, tag='set')
                     self.state = 'forceclosing'
+                    self.logger.info('force closing')
 
                 elif self.tmode=='ask':
                     otype = fdef.VCLOSE
@@ -233,6 +238,7 @@ class scpstrat(strattop):
                     volume = 1
                     self.oid, doreq, rcok = self.reqorder(otype, direct, code, price, volume, tag='set')
                     self.state = 'forceclosing'
+                    self.logger.info('force closing')
 
             else:
                 self.logger.error('unexpected state %s', self.state)
@@ -262,6 +268,7 @@ class scpstrat(strattop):
                     else:
                         # urgent case
                         self.logger.error('unexpected state %s', self.state)
+                        self.logger.error('resp %s', str(resp))
                         print 'unexpected state=%s' % self.state
                 except KeyError:
                     # urgent case
@@ -281,8 +288,8 @@ class scpstrat(strattop):
             if self.state=='setting':
                 # limit order acceptted
                 self.state = 'set'
-                self.logger.info('order set', self.state)
-            elif self.state=='cancelling' or self.state=='set' or self.state=='closing':
+                self.logger.info('order set')
+            elif self.state=='cancelling' or self.state=='set' or self.state=='closing' or self.state=='forceclosing':
                 pass
             else:
                 self.logger.error('unexpected state %s', self.state)

@@ -780,7 +780,7 @@ class strattop(Thread):
                 self.logger.error('setup failed.')
                 return
         except:
-            self.logger.error('setup exception.')
+            self.logger.exception('setup exception.')
             return
 
         while self.runflag:
