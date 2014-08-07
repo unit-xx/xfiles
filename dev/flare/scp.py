@@ -70,6 +70,8 @@ class scpstrat(strattop):
             self.cancelorder(oid)
             self.state = 'cancelling'
             self.logger.info('cancel order on timer')
+        else:
+            self.logger.info('docancel triggered at wrong time, cancelmode=%s state=%s', self.cancelmode, self.state)
 
         self.lock.release()
 
@@ -108,11 +110,8 @@ class scpstrat(strattop):
                         price = q['bid1'] - self.ptick
                         volume = 1
                         self.oid, doreq, rcok = self.reqorder(otype, direct, code, price, volume, tag='set')
-                        self.state = 'setting'
-                        if self.cancelmode=='ontimer':
-                            tcancel = Timer(self.canceltimer, self.docancel, [self.oid])
-                            tcancel.start()
 
+                        self.state = 'setting'
                         self.logger.info('new quick quote %s', self.quote2str(q))
                         self.logger.info('setting bid=%.2f', price)
 
@@ -123,11 +122,8 @@ class scpstrat(strattop):
                         price = q['ask1'] + self.ptick
                         volume = 1
                         self.oid, doreq, rcok = self.reqorder(otype, direct, code, price, volume, tag='set')
-                        self.state = 'setting'
-                        if self.cancelmode=='ontimer':
-                            tcancel = Timer(self.canceltimer, self.docancel, [self.oid])
-                            tcancel.start()
 
+                        self.state = 'setting'
                         self.logger.info('new quick quote %s', self.quote2str(q))
                         self.logger.info('setting ask=%.2f, cancel %s', price, 'on next quote' if self.cancelmode=='onquote' else 'in %.2f secs'%self.canceltimer)
 
@@ -205,6 +201,7 @@ class scpstrat(strattop):
 
             else:
                 self.logger.error('unexpected state %s', self.state)
+                self.logger.error('resp %s', str(resp))
                 print 'unexpected state=%s' % self.state
 
         self.lock.release()
@@ -242,7 +239,8 @@ class scpstrat(strattop):
 
             else:
                 self.logger.error('unexpected state %s', self.state)
-                print 'unpected state=%s' % self.state
+                self.logger.error('resp %s', str(resp))
+                print 'unexpected state=%s' % self.state
 
         self.lock.release()
 
@@ -250,6 +248,7 @@ class scpstrat(strattop):
         # rare exception case
         o, olk = self.tbook.getorder(oid)
         self.logger.error('order rejected %s', o)
+        self.logger.error('resp %s', str(resp))
         print 'order rejected'
 
     def onCancelRejected(self, oid, resp):
@@ -273,9 +272,11 @@ class scpstrat(strattop):
                 except KeyError:
                     # urgent case
                     self.logger.error('unexpected state %s', self.state)
+                    self.logger.error('resp %s', str(resp))
                     print 'unexpected state=%s' % self.state
             else:
                 self.logger.error('unexpected state %s', self.state)
+                self.logger.error('resp %s', str(resp))
                 print 'unexpected state=%s' % self.state
 
         self.lock.release()
@@ -289,6 +290,10 @@ class scpstrat(strattop):
                 # limit order acceptted
                 self.state = 'set'
                 self.logger.info('order set')
+                if self.cancelmode=='ontimer':
+                    tcancel = Timer(self.canceltimer, self.docancel, [self.oid])
+                    tcancel.start()
+
             elif self.state=='cancelling' or self.state=='set' or self.state=='closing' or self.state=='forceclosing':
                 pass
             else:
