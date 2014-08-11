@@ -223,7 +223,7 @@ class scpstrat(strattop):
                     code = self.legcode
                     price = self.quote['bid1'] - 5.0
                     volume = 1
-                    self.oid, doreq, rcok = self.reqorder(otype, direct, code, price, volume, tag='set')
+                    self.oid, doreq, rcok = self.reqorder(otype, direct, code, price, volume, tag='close')
                     self.state = 'forceclosing'
                     self.logger.info('force closing')
 
@@ -233,7 +233,7 @@ class scpstrat(strattop):
                     code = self.legcode
                     price = self.quote['ask1'] + 5.0
                     volume = 1
-                    self.oid, doreq, rcok = self.reqorder(otype, direct, code, price, volume, tag='set')
+                    self.oid, doreq, rcok = self.reqorder(otype, direct, code, price, volume, tag='close')
                     self.state = 'forceclosing'
                     self.logger.info('force closing')
 
