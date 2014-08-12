@@ -223,7 +223,7 @@ class scpstrat(strattop):
                     code = self.legcode
                     price = self.quote['bid1'] - 5.0
                     volume = 1
-                    self.oid, doreq, rcok = self.reqorder(otype, direct, code, price, volume, tag='close')
+                    self.oid, doreq, rcok = self.reqorder(otype, direct, code, price, volume, tag='forceclose')
                     self.state = 'forceclosing'
                     self.logger.info('force closing')
 
@@ -233,7 +233,7 @@ class scpstrat(strattop):
                     code = self.legcode
                     price = self.quote['ask1'] + 5.0
                     volume = 1
-                    self.oid, doreq, rcok = self.reqorder(otype, direct, code, price, volume, tag='close')
+                    self.oid, doreq, rcok = self.reqorder(otype, direct, code, price, volume, tag='forceclose')
                     self.state = 'forceclosing'
                     self.logger.info('force closing')
 
@@ -310,6 +310,8 @@ class scpstrat(strattop):
             self.logger.info('limit order traded price=%.2f', resp[fdef.KPRICE])
         elif o[fdef.KTAG]=='close':
             self.logger.info('close order traded price=%.2f', resp[fdef.KPRICE])
+        elif o[fdef.KTAG]=='forceclose':
+            self.logger.info('close order traded price=%.2f force=yes', resp[fdef.KPRICE])
 
 class scpconsole(stratconsole):
     def do_quit(self, args):

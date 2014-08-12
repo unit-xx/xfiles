@@ -159,7 +159,6 @@ def visualfull(tf, plotf, nhist):
             print >>sys.stderr, max(0,ii-nhist), min(ii+nhist,len(fullhist))
 
             doplot(frame, plotf)
-            state = 'open'
 
 def visualtime(tf, plotf, timefn):
     qhist = []
