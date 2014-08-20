@@ -36,9 +36,16 @@ def dostat(tf):
     oprice = 0.0
     cprice = 0.0
     earn = 0.0
+    bidvol = 0
+    askvol = 0
+
     state = 'close'
     # flow: set -> trade -> close
     for ii, edict in enumerate(fullhist):
+        if edict['event']=='quote':
+            bidvol = edict['bidvol1']
+            askvol = edict['askvol1']
+
         if edict['event']=='set':
             tdir = -1 if 'ask' in edict else 1
             stime = edict['fts']
@@ -52,7 +59,7 @@ def dostat(tf):
             cprice = edict['price']
             earn = tdir * (cprice - oprice)
 
-            tstat.append( [stime, otime, ctime, earn] )
+            tstat.append( [stime, otime, ctime, earn, bidvol, askvol, 1.0*askvol/bidvol] )
 
             stime = 0.0
             otime = 0.0
@@ -82,7 +89,7 @@ def main():
     stat = dostat(tf)
 
     csvwrt = csv.writer(statf)
-    csvwrt.writerow( ['set', 'open', 'close', 'earn'] )
+    csvwrt.writerow( ['set', 'open', 'close', 'earn', 'bidvol', 'askvol', 'askvbid'] )
     for ss in stat:
         csvwrt.writerow(ss)
 

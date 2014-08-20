@@ -3,7 +3,7 @@
 import sys, os
 from datetime import datetime
 
-def doplot(frame, plotf):
+def doplot(frame, plotf, fts):
     print >>plotf, 'beginframe'
 
     eventcnt = 0
@@ -26,14 +26,18 @@ def doplot(frame, plotf):
 
         elif ff['event']=='trade':
             eventcnt += 1
-            print >>plotf, 'trade points %d %.2f t red' % (eventcnt, ff['price'])
-            
+            if ff['fts']==fts:
+                print >>plotf, 'trade points %d %.2f T red' % (eventcnt, ff['price'])
+            else:
+                print >>plotf, 'trade points %d %.2f t red' % (eventcnt, ff['price'])
+
         elif ff['event']=='close':
             eventcnt += 1
             print >>plotf, 'close points %d %.2f c red' % (eventcnt, ff['price'])
 
         else:
             pass
+
 
     print >>plotf, 'endframe'
 
@@ -154,11 +158,12 @@ def visualfull(tf, plotf, nhist):
 
     for ii, edict in enumerate(fullhist):
         if edict['event']=='trade':
+            fts = edict['fts']
             frame = []
             frame.extend(fullhist[max(0,ii-nhist):min(ii+nhist,len(fullhist))])
             print >>sys.stderr, max(0,ii-nhist), min(ii+nhist,len(fullhist))
 
-            doplot(frame, plotf)
+            doplot(frame, plotf, fts)
 
 def visualtime(tf, plotf, timefn):
     qhist = []
