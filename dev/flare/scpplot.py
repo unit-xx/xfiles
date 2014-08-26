@@ -22,7 +22,7 @@ def doplot(frame, plotf, fts):
             if 'ask' in ff:
                 print >>plotf, 'set points %d %.2f s red' % (eventcnt, ff['ask'])
             elif 'bid' in ff:
-                print >>plotf, 'set points %d %.2f s red' % (eventcnt, ff['bid'])
+                print >>plotf, 'set points %d %.2f b red' % (eventcnt, ff['bid'])
 
         elif ff['event']=='trade':
             eventcnt += 1
