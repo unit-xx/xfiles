@@ -10,3 +10,4 @@ rem echo %dirn%xxx
 
 python scpstat.py %1 %dirn%%fn%.stat
 rscript scpstat.r %dirn%%fn%.stat %dirn%%fn%.stat.pdf
+rscript scpstat2.r %dirn%%fn%.stat %dirn%%fn%.stat2.pdf

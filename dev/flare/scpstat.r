@@ -34,25 +34,18 @@ plot(stat$close-stat$open, stat$earn, main='earn vs open-close timedelta')
 plot(stat$open-stat$set, stat$earn, main='earn vs set-open timedelta')
 
 # bidvol1 hist
-hist(stat$bidvol, breaks=20, main='bid vol')
-hist(log10(stat$bidvol), breaks=20, main='bid vol, log10')
+hist(stat$bidvol1, breaks=20, main='bid vol')
+hist(log10(stat$bidvol1), breaks=20, main='bid vol, log10')
 
 # earn vs bidvol
-plot(log10(stat$bidvol), stat$earn, main='earn vs bidvol')
+plot(log10(stat$bidvol1), stat$earn, main='earn vs bidvol')
 
 # askvol1 hist
-hist(stat$askvol, breaks=20, main='ask vol')
-hist(log10(stat$askvol), breaks=20, main='ask vol, log10')
+hist(stat$askvol1, breaks=20, main='ask vol')
+hist(log10(stat$askvol1), breaks=20, main='ask vol, log10')
 
 # earn vs askvol
-plot(log10(stat$askvol), stat$earn, main='earn vs askvol')
-
-# stat$askvbid hist
-hist(stat$askvbid, breaks=20, main='askvol/bidvol')
-hist(log10(stat$askvbid), breaks=20, main='askvol/bidvol, log10')
-
-# earn vs askvol/bidvol
-plot(log10(stat$askvbid), stat$earn, main='earn vs askvol/bidvol')
+plot(log10(stat$askvol1), stat$earn, main='earn vs askvol')
 
 dev.off()
 

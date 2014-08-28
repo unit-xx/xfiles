@@ -5,7 +5,7 @@ library(ggplot2)
 args = commandArgs(T)
 
 statfn = '20140812/scpstrat1.2014-08-12.stat'
-pdfn = 'scpstrat1.2014-08-12.stat2.pdf'
+pdfn = '20140812/scpstrat1.2014-08-12.stat2.pdf'
 
 if(length(args) >= 2)
 {
@@ -21,6 +21,30 @@ trend <- function(p, tnum)
   return(coef(lmr)[2])
 }
 
+propstat <- function(prop, y, xunit, tx, propname)
+{
+  xbin = round(prop/xunit)*xunit
+  
+  ytx.agg = aggregate(y-tx, by=list(prop=factor(xbin)), FUN=sum)
+  y.agg = aggregate(y, by=list(prop=factor(xbin)), FUN=sum)
+  
+  dfn2 = data.frame(xbin, y)
+  
+  # y distribution according to prop range
+  g = ggplot(dfn2, aes(x=factor(xbin), fill=factor(y))) + geom_bar(stat='bin') + xlab(propname) + ggtitle('Distribution')
+  plot(g)
+  
+  # y sum, with/without tx
+  g = ggplot(y.agg, aes(x=factor(prop), y=x)) + geom_bar(stat='identity') + xlab(propname) + ggtitle('Aggregated earning, Before Tx')
+  plot(g)
+  g = ggplot(ytx.agg, aes(x=factor(prop), y=x)) + geom_bar(stat='identity') + xlab(propname) + ggtitle('Aggregated earning, After Tx')
+  plot(g)
+  
+  # a simple way is like below, but is has confusing x-axis.
+  #ggplot(a, aes(x=prop,fill=factor(y)))+geom_bar(binwidth=0.05)
+  #ggplot(a, aes(x=factor(prop),fill=factor(y)))+geom_bar(binwidth=0.05)
+}
+
 stat = read.csv(statfn, header=T)
 stat.m = as.matrix(stat)
 
@@ -28,9 +52,9 @@ stat.m = as.matrix(stat)
 if (stat$tdir[1]==-1)
 {
   # ask price trend
-  prices3 = stat[,paste('ask', 3:1, sep='')]
-  prices5 = stat[,paste('ask', 5:1, sep='')]
-  prices7 = stat[,paste('ask', 7:1, sep='')]
+  prices3 = stat[,paste('ask', 1+3:1, sep='')]
+  prices5 = stat[,paste('ask', 1+5:1, sep='')]
+  prices7 = stat[,paste('ask', 1+7:1, sep='')]
   
   same3 = stat[,paste('askvol', 3:1, sep='')]
   same5 = stat[,paste('askvol', 5:1, sep='')]
@@ -41,9 +65,9 @@ if (stat$tdir[1]==-1)
   oppo7 = stat[,paste('bidvol', 7:1, sep='')]
 } else
 {
-  prices3 = stat[,paste('bid', 3:1, sep='')]
-  prices5 = stat[,paste('bid', 5:1, sep='')]
-  prices7 = stat[,paste('bid', 7:1, sep='')]
+  prices3 = stat[,paste('bid', 1+3:1, sep='')]
+  prices5 = stat[,paste('bid', 1+5:1, sep='')]
+  prices7 = stat[,paste('bid', 1+7:1, sep='')]
 
   same3 = stat[,paste('bidvol', 3:1, sep='')]
   same5 = stat[,paste('bidvol', 5:1, sep='')]
@@ -63,6 +87,7 @@ trend7 = apply(prices7, 1, FUN=trend, 7)
 # same side orderbook volume, absolute number and ratio to opposite volume
 
 lastnum = same3[,3]
+opponum = oppo3[,3]
 lastratio = same3[,3]/oppo3[,3]
 
 last3num.max = apply(same3, 1, FUN=max)
@@ -84,31 +109,30 @@ last7ratio.avg = apply(same7/oppo7, 1, FUN=mean)
 
 statpdf = pdf(pdfn, width=17.55, height=11.07)
 
-earn = stat$earn
+earn = round(stat$earn, 1)
 
-plot(trend3, earn)
-plot(trend5, earn)
-plot(trend7, earn)
+propstat(trend3, earn, 0.05, 0.14, quote(trend3))
+propstat(trend5, earn, 0.05, 0.14, quote(trend5))
+propstat(trend7, earn, 0.05, 0.14, quote(trend7))
 
-ggplot(data.frame(lastnum, earn), aes(x=log(lastnum), fill=earn)) + geom_bar(stat='bin', color='lightgrey')
+propstat(log(lastnum), earn, 0.2, 0.14, quote(lastnum))
+propstat(log(opponum), earn, 0.2, 0.14, quote(opponum))
+propstat(log(lastratio), earn, 0.2, 0.14, quote(lastratio))
 
-plot(lastnum, earn)
-plot(lastratio, earn)
+propstat(log(last3num.max), earn, 0.2, 0.14, quote(last3num.max))
+propstat(log(last3num.avg), earn, 0.2, 0.14, quote(last3num.avg))
+propstat(log(last3ratio.max), earn, 0.2, 0.14, quote(last3ratio.max))
+propstat(log(last3ratio.avg), earn, 0.2, 0.14, quote(last3ratio.avg))
 
-plot(last3num.max, earn)
-plot(last3num.avg, earn)
-plot(last3ratio.max, earn)
-plot(last3ratio.avg, earn)
+propstat(log(last5num.max), earn, 0.2, 0.14, quote(last5num.max))
+propstat(log(last5num.avg), earn, 0.2, 0.14, quote(last5num.avg))
+propstat(log(last5ratio.max), earn, 0.2, 0.14, quote(last5ratio.max))
+propstat(log(last5ratio.avg), earn, 0.2, 0.14, quote(last5ratio.avg))
 
-plot(last5num.max, earn)
-plot(last5num.avg, earn)
-plot(last5ratio.max, earn)
-plot(last5ratio.avg, earn)
-
-plot(last7num.max, earn)
-plot(last7num.avg, earn)
-plot(last7ratio.max, earn)
-plot(last7ratio.avg, earn)
+propstat(log(last7num.max), earn, 0.2, 0.14, quote(last7num.max))
+propstat(log(last7num.avg), earn, 0.2, 0.14, quote(last7num.avg))
+propstat(log(last7ratio.max), earn, 0.2, 0.14, quote(last7ratio.max))
+propstat(log(last7ratio.avg), earn, 0.2, 0.14, quote(last7ratio.avg))
 
 dev.off()
 
