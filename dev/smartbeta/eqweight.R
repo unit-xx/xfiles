@@ -9,25 +9,26 @@ qfn = 'citic.level1.csv'
 #qfn = 'hs300sec.csv'
 pzoo = read.zoo(qfn, header=T, sep=',', 
                 colClasses=c('character',rep('numeric',29)))
-#pzoo = window(pzoo, start='2011-1-1')
+pzoo = window(pzoo, start='2013-1-1')
 pmat = as.matrix(pzoo)
 
 bmfn = 'benchmark.csv'
 bmzoo = read.zoo(bmfn, header=T, sep=',', 
                 colClasses=c('character',rep('numeric',6)))
+# select a benchmark
 bmzoo = bmzoo[,4]
-#bmzoo = window(bmzoo, start='2011-1-1')
+bmzoo = window(bmzoo, start='2013-1-1')
 bmmat = as.matrix(bmzoo)
 
 # build weights
 wt = eqweight(NROW(pmat), NCOL(pmat))
 
 # rebalance points
-rbpoint = seq(10, NROW(pmat), by=21)
+rbpoint = seq(1, NROW(pmat), by=21)
 
 # wealth path
-wealth = rebalance(pmat, wt, rbpoint)
-wzoo = zoo(wealth, index(pzoo))
+wealtheqwt = eqwtrebalance(pmat, wt, rbpoint)
+wzoo = zoo(wealtheqwt, index(pzoo))
 
 # rebase benchmark index
 allzoo = cbind(wzoo, bmzoo, all=FALSE)
@@ -37,6 +38,6 @@ allzoo = rebase(allzoo)
 
 #ggplot(as.data.frame(allzoo), )
 autoplot(allzoo, facet=NULL) + aes(linetype=Series)
-plot(log(allzoo$wzoo/allzoo$bmzoo), type='l')
+plot((allzoo$wzoo/allzoo$bmzoo), type='l')
 
 # compare return-risk measures

@@ -5,6 +5,8 @@
 library(zoo)
 library(PerformanceAnalytics)
 
+source('sbeta.r')
+
 # input: 
 # pzoo, price series by column
 # N, top N in momentum
@@ -14,7 +16,7 @@ library(PerformanceAnalytics)
 
 topn = 5
 k1 = 200
-k2 = 1
+k2 = 20
 rbstep = 21
 rf = 0.03
 
@@ -22,77 +24,23 @@ rf = 0.03
 
 qfn = 'citic.level1.csv'
 pzoo = read.zoo(qfn, header=T, sep=',', 
-                colClasses=c('character',rep(c('numeric','NULL'),29)))
+                colClasses=c('character',rep(c('numeric'),29)))
 pmat = as.matrix(pzoo)
 
 bmfn = 'benchmark.csv'
 bmzoo = read.zoo(bmfn, header=T, sep=',', 
-               colClasses=c('character',rep('numeric',5)))
-bmzoo[which(bmzoo==0)] = NA
+               colClasses=c('character',rep('numeric',6)))
+bmzoo = bmzoo[,4]
+# bmzoo[which(bmzoo==0)] = NA
 
 # rebalance points
 
-rbday.prev = 1
-rbday = k1 + 1
-sharevec = rep(0, NCOL(pzoo))
-wealth = rep(0, NROW(pzoo))
-cash = 100
+wealthdmm = dualmmrebalance(pmat, topn, k1, k2, rbstep, rf)
 
-repeat
-{
-  #browser()
+wzoo = zoo(wealthdmm, index(pzoo))
 
-  if(rbday > NROW(pmat))
-  {
-    # calc returns from last rebalacne day to the end of day of pmat
-    pseg = pmat[rbday.prev:NROW(pmat),]
-    wseg = pseg %*% sharevec + cash
-    wealth[rbday.prev:NROW(pmat)] = wseg
+allzoo = cbind(wzoo, bmzoo, all=FALSE)
+allzoo = rebase(allzoo)
 
-    break
-  }
-  
-  print(rbday)
-  
-  # calc wealth between rbday and previous rbday
-  
-  pseg = pmat[rbday.prev:rbday,]
-  wseg = pseg %*% sharevec + cash
-  wealth[rbday.prev:rbday] = wseg
-  
-  # sell all existing stocks
-  
-  cash = wealth[rbday]
-  sharevec = rep(0, NCOL(pzoo))
-
-  # re-select topN dual momentum 
-  
-  plookback1 = pmat[(rbday-k1),]
-  plookback2 = pmat[(rbday-k2),]
-  # annualize return in lookback periods
-  retlb = (plookback2 / plookback1 - 1) / (k1 - k2) * 252
-  
-  # TODO: add absolute momentum
-  topnstock = order(retlb, decreasing=T)[1:topn]
-  absmmtstock = which(retlb >= rf)
-  targetstock = intersect(topnstock, absmmtstock)
-  
-  # buy new stocks
-  
-  if(length(targetstock) > 0)
-  {
-    cashvec = rep(0, NCOL(pzoo))
-    cashvec[targetstock] = cash / length(targetstock)
-    sharevec = cashvec / pmat[rbday,]
-    cash = 0
-  }
-
-  # step to next rebalance day
-  
-  rbday.prev = rbday
-  rbday = rbday + rbstep
-}
-
-wzoo = zoo(wealth, index(pzoo))
-wzoo = cbind(wzoo, bmzoo)
-
+autoplot(allzoo, facet=NULL) + aes(linetype=Series)
+plot((allzoo$wzoo/allzoo$bmzoo), type='l')
