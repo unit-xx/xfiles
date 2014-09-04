@@ -3,7 +3,7 @@
 import sys
 import cPickle as pickle
 from threading import Lock, Timer
-from collections import defaultdict
+from collections import defaultdict, deque
 
 from flamelib import stratconsole, runstrat, strattop
 import flaredef as fdef
@@ -18,12 +18,23 @@ class scpstrat(strattop):
         self.cancelmode = self.mycfg['cancelmode']
         self.canceltimer = float(self.mycfg['canceltimer'])
         self.minreqvol = int(self.mycfg['minreqvol'])
+        self.ntrend = int(self.mycfg['ntrend'])
+        self.trendbar = float(self.mycfg['trendbar'])
         self.qhold = 0
         self.state = 'ready'
         self.closetickcnt = 0
         self.oid = None
         self.quote = None
         self.lock = Lock()
+
+        # facility for calculating trend 
+        self.qhist = deque(maxlen=self.ntrend)
+        self.xseq = range(1, self.ntrend+1, 1)
+        self.xseqavg = sum(self.xseq)/len(self.xseq)
+        self.x2seqavg = sum([x^2 for x in self.xseq])/len(self.xseq)
+        self.xseqvar = self.x2seqavg - self.xseqavg
+        self.lasttrend = None
+        self.lasttrendnv = None
 
         # intentially set to suspended at startup
         self.suspendflag = True
@@ -53,6 +64,50 @@ class scpstrat(strattop):
 
     def dounsuspend(self):
         self.suspendflag = False
+
+    def dot(self, x, y):
+        if len(x)!=len(y):
+            return None
+
+        ret = 0.0
+        try:
+            rng = range(len(x))
+            for i in rng:
+                sum += x[i]*y[i]
+        except:
+            ret = None
+
+        return ret
+
+    def cov(self, x, y):
+        ret = 0.0
+
+        n = len(x)
+        try:
+            xyavg = dot(x, y)/n
+            xavg = sum(x)/n
+            yavg = sum(y)/n
+            ret = xyavg - xavg*yavg
+        except:
+            ret = None
+
+        return ret
+
+    def naivebeta(self, x, y):
+        try:
+            beta = self.cov(x, y)/self.cov(x, x)
+        except:
+            beta = None
+
+        return beta
+
+    def qhistbeta(self):
+        # optimized beta calculation
+        beta = None
+        if len(self.qhist)==self.ntrend:
+            beta = ( self.dot(self.qhist, self.xseq)/self.ntrend - self.xseqavg*sum(self.qhist)/self.ntrend ) / self.xseqvar
+
+        return beta
 
     def quote2str(self, q):
         keys = ('code', 'ask1', 'askvol1', 'bid1', 'bidvol1', 'time', 'msec', 'tic')
@@ -103,7 +158,7 @@ class scpstrat(strattop):
 
                 if self.state=='ready':
                     # set limit order
-                    if self.tmode=='bid' and q['bidvol1']>=self.minreqvol:
+                    if self.tmode=='bid' and q['bidvol1']>=self.minreqvol and self.lasttrend is not None and self.lasttrend>self.trendbar:
                         otype = fdef.VOPEN
                         direct = fdef.VLONG
                         code = self.legcode
@@ -115,7 +170,7 @@ class scpstrat(strattop):
                         self.logger.info('new quick quote %s', self.quote2str(q))
                         self.logger.info('setting bid=%.2f', price)
 
-                    elif self.tmode=='ask' and q['askvol1']>=self.minreqvol:
+                    elif self.tmode=='ask' and q['askvol1']>=self.minreqvol and self.lasttrend is not None and self.lasttrend<self.trendbar:
                         otype = fdef.VOPEN
                         direct = fdef.VSHORT
                         code = self.legcode
@@ -153,6 +208,14 @@ class scpstrat(strattop):
                     self.logger.info('new quick quote %s', self.quote2str(q))
 
                 self.quote = q
+                if self.tmode=='ask':
+                    self.qhist.append(q['ask1'])
+                elif self.tmode=='bid':
+                    self.qhist.append(q['bid1'])
+
+                self.lasttrend = self.qhistbeta(self)
+                self.lasttrendnv = self.naivebeta(self.qhist, self.xseq)
+                print 'trend opt:cov %.3f:%.3f' % (self.lasttrend, self.lasttrendnv)
 
         self.lock.release()
 
