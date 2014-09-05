@@ -62,7 +62,7 @@ unqyear = unique(pricehist$year)
 prange = round(range(pricehist.full$rp), -2)
 vrange = range(pricehist.full$x)
 
-pdf('000001.pdf', width=17.55, height=11.07)
+pdf(pdfn, width=17.55, height=11.07)
 
 # 1. plot histgram for each year on separate plot.
 for(y in unqyear)
@@ -90,13 +90,13 @@ for(y in unqyear)
 
 
 #chartSeries(price.dclose)
-gf=ggplot(pricehist, aes(x=rp, y=x, fill=year)) + coord_flip() + geom_bar(stat='identity', color='lightgrey') + ggtitle(sprintf('%s to %s', dates[1], dates[length(dates)]))
+gf=ggplot(pricehist, aes(x=rp, y=x, fill=year)) + geom_bar(stat='identity', color='lightgrey') + ggtitle(sprintf('%s to %s', dates[1], dates[length(dates)])) + scale_x_continuous(breaks=seq(prange[1], prange[2], 100))
 
-gd=ggplot(pricehist.decay, aes(x=rp, y=x, fill=year)) + coord_flip() + geom_bar(stat='identity', color='lightgrey') + ggtitle(sprintf('lambda=%.3f %s to %s', lambda, dates[1], dates[length(dates)]))
+gd=ggplot(pricehist.decay, aes(x=rp, y=x, fill=year)) + geom_bar(stat='identity', color='lightgrey') + ggtitle(sprintf('lambda=%.3f %s to %s', lambda, dates[1], dates[length(dates)])) + scale_x_continuous(breaks=seq(prange[1], prange[2], 100))
 
-mfrow.old = par(mfrow=c(1,2))
 plot(gf)
+plot(gf+coord_flip())
 plot(gd)
-par(mfrow=mfrow.old)
+plot(gd+coord_flip())
 
 dev.off()
