@@ -42,16 +42,19 @@ opval = cbind(opval, val=valvec, delta=deltavec, gamma=gammavec)
 
 a = ggplot(data=opval, aes(x=S,y=val,group=t,col=t)) + geom_line()+
 #  geom_vline(xintercept = X)+
+  scale_colour_gradient(low="red") +
   labs(title='Option price vs Stock Price, vary by t')
 print(a)
 
 a = ggplot(data=opval, aes(x=t,y=delta,group=S,col=S)) + geom_line()+
 #  geom_vline(xintercept = X)+
+  scale_colour_gradient(low="red") +
   labs(title='Delta vs Stock Price, vary by t')
 print(a)
 
-a = ggplot(data=opval, aes(x=t,y=gamma,group=S,col=S)) + geom_line()+
+a = ggplot(data=opval, aes(x=t,y=gamma,group=S,col=S)) + geom_line(size=1)+
 #  geom_vline(xintercept = X)+
+  scale_colour_gradient2(high="red", low="blue", mid='lightgreen', midpoint=50) +
   labs(title='Gamma vs Stock Price, vary by t')
 print(a)
 

@@ -41,16 +41,19 @@ print((t2-t1)/NROW(opval))
 opval = cbind(opval, val=valvec, delta=deltavec, gamma=gammavec)
 
 a = ggplot(data=opval, aes(x=S,y=val,group=vol,col=vol)) + geom_line()+
+  scale_colour_gradient(low="red") +
   geom_vline(xintercept = X)+
   labs(title='Option price vs Stock Price, vary by Vol')
 print(a)
 
 a = ggplot(data=opval, aes(x=S,y=delta,group=vol,col=vol)) + geom_line()+
+  scale_colour_gradient(low="red") +
   geom_vline(xintercept = X)+
   labs(title='Delta vs Stock Price, vary by Vol')
 print(a)
 
 a = ggplot(data=opval, aes(x=S,y=gamma,group=vol,col=vol)) + geom_line()+
+  scale_colour_gradient(low="red") +
   geom_vline(xintercept = X)+
   labs(title='Gamma vs Stock Price, vary by Vol')
 print(a)
