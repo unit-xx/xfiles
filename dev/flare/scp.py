@@ -1,6 +1,7 @@
 # scalpel 1: set limit order at bid1-0.2 and sell it at bid1 once the order is traded
 
 import sys
+import traceback
 import cPickle as pickle
 from threading import Lock, Timer
 from collections import defaultdict, deque
@@ -29,12 +30,13 @@ class scpstrat(strattop):
 
         # facility for calculating trend 
         self.qhist = deque(maxlen=self.ntrend)
-        self.xseq = range(1, self.ntrend+1, 1)
+        self.xseq = [float(x) for x in range(1, self.ntrend+1, 1)]
         self.xseqavg = sum(self.xseq)/len(self.xseq)
-        self.x2seqavg = sum([x^2 for x in self.xseq])/len(self.xseq)
-        self.xseqvar = self.x2seqavg - self.xseqavg
+        self.xseqvar = scpstrat.cov(self.xseq, self.xseq)
         self.lasttrend = None
         self.lasttrendnv = None
+        print self.xseq
+        print self.xseqavg, self.xseqvar
 
         # intentially set to suspended at startup
         self.suspendflag = True
@@ -64,8 +66,12 @@ class scpstrat(strattop):
 
     def dounsuspend(self):
         self.suspendflag = False
+        self.qhist.clear()
+        self.lasttrend = None
+        self.lasttrendnv = None
 
-    def dot(self, x, y):
+    @staticmethod
+    def dot(x, y):
         if len(x)!=len(y):
             return None
 
@@ -73,29 +79,32 @@ class scpstrat(strattop):
         try:
             rng = range(len(x))
             for i in rng:
-                sum += x[i]*y[i]
+                ret += x[i]*y[i]
         except:
             ret = None
 
         return ret
 
-    def cov(self, x, y):
-        ret = 0.0
+    @staticmethod
+    def cov(x, y):
+        ret = None
 
-        n = len(x)
+        n = float(len(x))
         try:
-            xyavg = dot(x, y)/n
+            xyavg = scpstrat.dot(x, y)/n
             xavg = sum(x)/n
             yavg = sum(y)/n
             ret = xyavg - xavg*yavg
-        except:
+            ret = ret*n/(n-1)
+        except :
             ret = None
 
         return ret
 
-    def naivebeta(self, x, y):
+    @staticmethod
+    def naivebeta(x, y):
         try:
-            beta = self.cov(x, y)/self.cov(x, x)
+            beta = scpstrat.cov(x, y)/scpstrat.cov(x, x)
         except:
             beta = None
 
@@ -105,7 +114,7 @@ class scpstrat(strattop):
         # optimized beta calculation
         beta = None
         if len(self.qhist)==self.ntrend:
-            beta = ( self.dot(self.qhist, self.xseq)/self.ntrend - self.xseqavg*sum(self.qhist)/self.ntrend ) / self.xseqvar
+            beta = ( self.dot(self.qhist, self.xseq) - self.xseqavg*sum(self.qhist) ) / (self.ntrend-1) / self.xseqvar
 
         return beta
 
@@ -168,9 +177,10 @@ class scpstrat(strattop):
 
                         self.state = 'setting'
                         self.logger.info('new quick quote %s', self.quote2str(q))
-                        self.logger.info('setting bid=%.2f', price)
+                        self.logger.info('setting bid=%.2f trend=%.3f cancel %s', price, self.lasttrend, 'on next quote' if self.cancelmode=='onquote' else 'in %.2f secs'%self.canceltimer)
+                        print 'do bid trend=%.3f bid=%.2f' % (self.lasttrend, price)
 
-                    elif self.tmode=='ask' and q['askvol1']>=self.minreqvol and self.lasttrend is not None and self.lasttrend<self.trendbar:
+                    elif self.tmode=='ask' and q['askvol1']>=self.minreqvol and self.lasttrend is not None and self.lasttrend<-self.trendbar:
                         otype = fdef.VOPEN
                         direct = fdef.VSHORT
                         code = self.legcode
@@ -180,7 +190,8 @@ class scpstrat(strattop):
 
                         self.state = 'setting'
                         self.logger.info('new quick quote %s', self.quote2str(q))
-                        self.logger.info('setting ask=%.2f, cancel %s', price, 'on next quote' if self.cancelmode=='onquote' else 'in %.2f secs'%self.canceltimer)
+                        self.logger.info('setting ask=%.2f trend=%.3f cancel %s', price, self.lasttrend, 'on next quote' if self.cancelmode=='onquote' else 'in %.2f secs'%self.canceltimer)
+                        print 'do ask trend=%.3f ask=%.2f' % (self.lasttrend, price)
 
                     else:
                         self.logger.info('new quick quote %s', self.quote2str(q))
@@ -213,9 +224,11 @@ class scpstrat(strattop):
                 elif self.tmode=='bid':
                     self.qhist.append(q['bid1'])
 
-                self.lasttrend = self.qhistbeta(self)
-                self.lasttrendnv = self.naivebeta(self.qhist, self.xseq)
-                print 'trend opt:cov %.3f:%.3f' % (self.lasttrend, self.lasttrendnv)
+                self.lasttrend = self.qhistbeta()
+                self.lasttrendnv = self.naivebeta(self.xseq, self.qhist)
+                if self.lasttrend is not None:
+                    print 'post update: %.3f'%self.lasttrend, (self.lasttrend-self.lasttrendnv)<1e-8
+                #    print 'trend opt:cov %.3f:%.3f' % (self.lasttrend, self.lasttrendnv)
 
         self.lock.release()
 
