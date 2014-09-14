@@ -13,14 +13,6 @@ multiplot <- function(price)
 
 rebase <- function(xx, newbase=100)
 {
-  # rescale series to the same starting base.
-  
-  # xx is a matrix or data frame, rebase each series (as columns) to newbase
-  
-  # extend 0 in price series
-  xx[which(xx==0)] = NA
-  yy = na.fill(xx, 'extend')
-  
   yy = sweep(yy, 2, yy[1,], `/`) * newbase
   return(yy)
 }

@@ -1,0 +1,26 @@
+library(quantmod)
+
+con = gzcon(file('./sit.gz', 'rb'))
+source(con)
+close(con)
+
+data = new.env()
+getSymbols('SPY', env=data)
+
+chartSeries(data$SPY)
+
+bt.prep(data)
+
+model = list()
+
+data$weight[1:200] = 0.5
+model$bys = bt.run.share(data, trade.summary = T, do.lag = 0)
+
+strategy.performance.snapshoot(model$bys, T)
+
+data$weight[] = 0.5
+model$byw = bt.run(data, trade.summary = T, type='weight', do.lag = 0)
+strategy.performance.snapshoot(model$byw, T)
+
+strategy.performance.snapshoot(model, T)
+
