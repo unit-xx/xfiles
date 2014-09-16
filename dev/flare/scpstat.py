@@ -69,6 +69,18 @@ def dostat(tf, qnum):
 
             kk = ii - 1
             nq = 0
+
+            # first go back to trade point
+            while 1:
+                if kk < 0:
+                    break
+
+                if fullhist[kk]['event']=='trade':
+                    break
+
+                kk -= 1
+
+            # then record last qnum quotes
             while 1:
                 if kk < 0:
                     break

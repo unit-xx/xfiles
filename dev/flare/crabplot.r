@@ -42,9 +42,9 @@ for(i in 1:NROW(pp))
     # quotes and limit orders
     text(toplot[,1], toplot[,2], labels=toplot[,3], col=toplot[,4])
 
-    # sprdmid
+    # text notes
     par(xpd=TRUE)
-    text(totext[,1], topY, labels=totext[,3], col=totext[,4], pos=3)
+    text(totext[,1], topY, labels=totext[,3], col=totext[,4], pos=3, cex=2)
   }
 }
 dev.off()

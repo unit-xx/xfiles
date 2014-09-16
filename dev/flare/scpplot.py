@@ -1,12 +1,18 @@
 # read event stream generated from scplog.py and draw trading traces.
 
-import sys, os
+import sys, os, csv
 from datetime import datetime
+from math import isnan
 
 def doplot(frame, plotf, fts):
     print >>plotf, 'beginframe'
 
     eventcnt = 0
+    lasttrend = float('NaN')
+    openprice = float('NaN')
+    closeprice = float('NaN')
+    usedtrend = lasttrend
+
     for ii, ff in enumerate(frame):
 
         if ff['event']=='quote':
@@ -21,25 +27,40 @@ def doplot(frame, plotf, fts):
         elif ff['event']=='set':
             if 'ask' in ff:
                 print >>plotf, 'set points %d %.2f s red' % (eventcnt, ff['ask'])
+                odir = -1
             elif 'bid' in ff:
                 print >>plotf, 'set points %d %.2f b red' % (eventcnt, ff['bid'])
+                odir = 1
+            try:
+                lasttrend = ff['trend']
+            except KeyError:
+                pass
 
         elif ff['event']=='trade':
             eventcnt += 1
             if ff['fts']==fts:
                 print >>plotf, 'trade points %d %.2f T red' % (eventcnt, ff['price'])
+                usedtrend = lasttrend
+                openprice = ff['price']
             else:
                 print >>plotf, 'trade points %d %.2f t red' % (eventcnt, ff['price'])
+                openprice = float('nan')
 
         elif ff['event']=='close':
             eventcnt += 1
             print >>plotf, 'close points %d %.2f c red' % (eventcnt, ff['price'])
+            closeprice = ff['price']
+            earn = (closeprice-openprice)*odir
+            if not isnan(earn):
+                print 'earn', earn
+                print >>plotf, 'trend text %d NA trend=%.3f\\nearn=%.3f black' % (eventcnt, lasttrend, earn)
 
         else:
             pass
 
 
     print >>plotf, 'endframe'
+    return usedtrend
 
 def visualone(tf, plotf, nhist):
     '''
@@ -134,6 +155,7 @@ def visualfull(tf, plotf, nhist):
     qhist = []
     frame = []
     fullhist = []
+    trends = []
 
     for line in tf:
         line = line.strip()
@@ -161,9 +183,12 @@ def visualfull(tf, plotf, nhist):
             fts = edict['fts']
             frame = []
             frame.extend(fullhist[max(0,ii-nhist):min(ii+nhist,len(fullhist))])
-            print >>sys.stderr, max(0,ii-nhist), min(ii+nhist,len(fullhist))
+            #print >>sys.stderr, max(0,ii-nhist), min(ii+nhist,len(fullhist))
 
-            doplot(frame, plotf, fts)
+            trend = doplot(frame, plotf, fts)
+            trends.append(trend)
+
+    return trends
 
 def visualtime(tf, plotf, timefn):
     qhist = []
@@ -213,6 +238,9 @@ def visualtime(tf, plotf, timefn):
 def main():
     mode = sys.argv[1]
     tracefn = sys.argv[2]
+    trendfn = tracefn.split('.')[0:-1]
+    trendfn.append('trendhist')
+    trendfn = '.'.join(trendfn)
     if(mode=='time'):
         timefn = sys.argv[3]
     else:
@@ -236,7 +264,10 @@ def main():
     if mode=='one':
         visualone(tf, plotf, nhist)
     elif mode=='full':
-        visualfull(tf, plotf, nhist)
+        trends = visualfull(tf, plotf, nhist)
+        trends = [ [x] for x in trends ]
+        with open(trendfn, 'wb') as f:
+            csv.writer(f).writerows(trends)
     elif mode=='time':
         visualtime(tf, plotf, timefn)
     else:

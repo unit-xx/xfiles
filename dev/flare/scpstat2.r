@@ -11,6 +11,7 @@ if(length(args) >= 2)
 {
   statfn = args[1]
   pdfn = args[2]
+  trendfn = paste(statfn, 'trendest', sep='.')
 }
 
 trend <- function(p, tnum)
@@ -83,6 +84,11 @@ if (stat$tdir[1]==-1)
 trend3 = apply(prices3, 1, FUN=trend, 3)
 trend5 = apply(prices5, 1, FUN=trend, 5)
 trend7 = apply(prices7, 1, FUN=trend, 7)
+
+# save trend data
+trend.rec = round(cbind(trend3, trend5, trend7), 3)
+trend.rec = cbind(trend.rec, prices7)
+write.csv(trend.rec, trendfn, row.names=F)
 
 # same side orderbook volume, absolute number and ratio to opposite volume
 

@@ -11,6 +11,7 @@ import flaredef as fdef
 
 class scpstrat(strattop):
     def setup(self):
+        self.logger.info('myconfig is ', str(self.mycfg))
         self.legcode = self.mycfg['legcode']
         self.ptick = float(self.mycfg['pricetick'])
         self.tmode = self.mycfg['tmode']
@@ -19,8 +20,10 @@ class scpstrat(strattop):
         self.cancelmode = self.mycfg['cancelmode']
         self.canceltimer = float(self.mycfg['canceltimer'])
         self.minreqvol = int(self.mycfg['minreqvol'])
-        self.ntrend = int(self.mycfg['ntrend'])
-        self.trendbar = float(self.mycfg['trendbar'])
+        self.n1trend = int(self.mycfg['n1trend'])
+        self.n2trend = int(self.mycfg['n2trend'])
+        self.trendbar1 = float(self.mycfg['trendbar1'])
+        self.trendbar2 = float(self.mycfg['trendbar2'])
         self.qhold = 0
         self.state = 'ready'
         self.closetickcnt = 0
@@ -29,14 +32,14 @@ class scpstrat(strattop):
         self.lock = Lock()
 
         # facility for calculating trend 
+        self.nan = float('nan')
         self.qhist = deque(maxlen=self.ntrend)
-        self.xseq = [float(x) for x in range(1, self.ntrend+1, 1)]
-        self.xseqavg = sum(self.xseq)/len(self.xseq)
-        self.xseqvar = scpstrat.cov(self.xseq, self.xseq)
-        self.lasttrend = None
-        self.lasttrendnv = None
-        print self.xseq
-        print self.xseqavg, self.xseqvar
+        self.x1seq = [float(x) for x in range(1, self.n1trend+1, 1)]
+        self.x2seq = [float(x) for x in range(1, self.n2trend+1, 1)]
+        self.lasttrend1nv = None
+        self.lasttrend2nv = None
+        self.ind1 = -(self.n1trend+self.n2trend-1)
+        self.ind2 = -self.n2trend
 
         # intentially set to suspended at startup
         self.suspendflag = True
@@ -67,13 +70,13 @@ class scpstrat(strattop):
     def dounsuspend(self):
         self.suspendflag = False
         self.qhist.clear()
-        self.lasttrend = None
-        self.lasttrendnv = None
+        self.lasttrend1nv = None
+        self.lasttrend2nv = None
 
     @staticmethod
     def dot(x, y):
         if len(x)!=len(y):
-            return None
+            return self.nan
 
         ret = 0.0
         try:
@@ -81,13 +84,13 @@ class scpstrat(strattop):
             for i in rng:
                 ret += x[i]*y[i]
         except:
-            ret = None
+            ret = self.nan
 
         return ret
 
     @staticmethod
     def cov(x, y):
-        ret = None
+        ret = self.nan
 
         n = float(len(x))
         try:
@@ -97,7 +100,7 @@ class scpstrat(strattop):
             ret = xyavg - xavg*yavg
             ret = ret*n/(n-1)
         except :
-            ret = None
+            ret = self.nan
 
         return ret
 
@@ -106,13 +109,13 @@ class scpstrat(strattop):
         try:
             beta = scpstrat.cov(x, y)/scpstrat.cov(x, x)
         except:
-            beta = None
+            beta = self.nan
 
         return beta
 
     def qhistbeta(self):
         # optimized beta calculation
-        beta = None
+        beta = self.nan
         if len(self.qhist)==self.ntrend:
             beta = ( self.dot(self.qhist, self.xseq) - self.xseqavg*sum(self.qhist) ) / (self.ntrend-1) / self.xseqvar
 
@@ -224,8 +227,9 @@ class scpstrat(strattop):
                 elif self.tmode=='bid':
                     self.qhist.append(q['bid1'])
 
-                self.lasttrend = self.qhistbeta()
-                self.lasttrendnv = self.naivebeta(self.xseq, self.qhist)
+                #self.lasttrend = self.qhistbeta()
+                self.lasttrend1nv = self.naivebeta(self.x1seq, self.qhist[self.ind1:(self.ind2+1)])
+                self.lasttrend1nv = self.naivebeta(self.x2seq, self.qhist[self.ind2:])
                 if self.lasttrend is not None:
                     print 'post update: %.3f'%self.lasttrend, (self.lasttrend-self.lasttrendnv)<1e-8
                 #    print 'trend opt:cov %.3f:%.3f' % (self.lasttrend, self.lasttrendnv)
