@@ -43,7 +43,6 @@ def dostat(tf, qnum):
     cprice = 0.0
     earn = 0.0
 
-    state = 'close'
     # flow: set -> trade -> close
     for ii, edict in enumerate(fullhist):
 

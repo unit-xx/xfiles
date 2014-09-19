@@ -10,6 +10,6 @@ rem echo %dirn%xxx
 
 if "%2"=="new" (
 python scplog.py %1 %dirn%%fn%.trace
-python scpplot.py full %dirn%%fn%.trace 50 %dirn%%fn%.frame
+python scpplot.py full %dirn%%fn%.trace 200 %dirn%%fn%.frame
 )
 rscript crabplot.r %dirn%%fn%.frame %dirn%%fn%.trace.pdf

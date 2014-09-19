@@ -12,6 +12,7 @@ def doplot(frame, plotf, fts):
     openprice = float('NaN')
     closeprice = float('NaN')
     usedtrend = lasttrend
+    odir = float('nan')
 
     for ii, ff in enumerate(frame):
 
@@ -39,7 +40,7 @@ def doplot(frame, plotf, fts):
         elif ff['event']=='trade':
             eventcnt += 1
             if ff['fts']==fts:
-                print >>plotf, 'trade points %d %.2f T red' % (eventcnt, ff['price'])
+                print >>plotf, 'trade points %d %.2f T purple' % (eventcnt, ff['price'])
                 usedtrend = lasttrend
                 openprice = ff['price']
             else:
@@ -52,7 +53,6 @@ def doplot(frame, plotf, fts):
             closeprice = ff['price']
             earn = (closeprice-openprice)*odir
             if not isnan(earn):
-                print 'earn', earn
                 print >>plotf, 'trend text %d NA trend=%.3f\\nearn=%.3f black' % (eventcnt, lasttrend, earn)
 
         else:
