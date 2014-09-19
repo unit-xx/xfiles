@@ -105,7 +105,7 @@ def main():
     except IndexError:
         trendf = sys.stdout
 
-    qnum = 30
+    qnum = 100
     try:
         qnum = int(sys.argv[3])
     except:
