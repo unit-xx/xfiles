@@ -13,8 +13,15 @@ bt.prep(data)
 
 model = list()
 
-data$weight[1:200] = 0.5
+capital = 100000
+
+data$weight[] = 0.5
 model$bys = bt.run.share(data, trade.summary = T, do.lag = 0)
+
+data$weight[] = NA
+data$weight[endpoints(data$weight)] = 0.5
+data$weight[] = data$weight * capital / data$prices
+model$monthlyreb = bt.run(data, trade.summary = T, do.lag = 0, type='share')
 
 strategy.performance.snapshoot(model$bys, T)
 
