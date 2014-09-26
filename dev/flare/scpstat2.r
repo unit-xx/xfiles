@@ -4,8 +4,8 @@ library(ggplot2)
 
 args = commandArgs(T)
 
-statfn = '20140812/scpstrat1.2014-08-12.stat'
-pdfn = '20140812/scpstrat1.2014-08-12.stat2.pdf'
+statfn = '20140808/scpstrat1.2014-08-08.stat'
+pdfn = '20140808/scpstrat1.2014-08-08.stat2.pdf'
 
 if(length(args) >= 2)
 {
@@ -96,6 +96,10 @@ lastnum = same3[,3]
 opponum = oppo3[,3]
 lastratio = same3[,3]/oppo3[,3]
 
+seclastnum = same3[,2]
+secopponum = oppo3[,2]
+seclastratio = same3[,2]/oppo3[,2]
+
 last3num.max = apply(same3, 1, FUN=max)
 last3num.avg = apply(same3, 1, FUN=mean)
 last3ratio.max = apply(same3/oppo3, 1, FUN=max)
@@ -121,9 +125,13 @@ propstat(trend3, earn, 0.05, 0.14, quote(trend3))
 propstat(trend5, earn, 0.05, 0.14, quote(trend5))
 propstat(trend7, earn, 0.05, 0.14, quote(trend7))
 
-propstat(log(lastnum), earn, 0.2, 0.14, quote(lastnum))
-propstat(log(opponum), earn, 0.2, 0.14, quote(opponum))
-propstat(log(lastratio), earn, 0.2, 0.14, quote(lastratio))
+propstat((lastnum), earn, 0.2, 0.14, quote(lastnum))
+propstat((opponum), earn, 0.2, 0.14, quote(opponum))
+propstat((lastratio), earn, 0.2, 0.14, quote(lastratio))
+
+propstat((seclastnum), earn, 0.2, 0.14, quote(seclastnum))
+propstat((secopponum), earn, 0.2, 0.14, quote(secopponum))
+propstat((seclastratio), earn, 0.2, 0.14, quote(seclastratio))
 
 propstat(log(last3num.max), earn, 0.2, 0.14, quote(last3num.max))
 propstat(log(last3num.avg), earn, 0.2, 0.14, quote(last3num.avg))

@@ -8,8 +8,8 @@ def dostat(tf, qnum):
     tstat = []
     fullhist = []
 
-    colnames = ['set', 'open', 'close', 'tdir', 'earn', 'oprice', 'cprice']
-    for i in range(1, 11, 1):
+    colnames = ['set', 'open', 'close', 'tdir', 'earn', 'oprice', 'cprice', 'seequote']
+    for i in range(1, qnum+1, 1):
         j = str(i)
         tmp = ['ask'+j, 'askvol'+j, 'bid'+j, 'bidvol'+j]
         colnames.extend(tmp)
@@ -42,6 +42,7 @@ def dostat(tf, qnum):
     oprice = 0.0
     cprice = 0.0
     earn = 0.0
+    seequote = 0
 
     # flow: set -> trade -> close
     for ii, edict in enumerate(fullhist):
@@ -55,6 +56,7 @@ def dostat(tf, qnum):
         elif edict['event']=='trade':
             otime = edict['fts']
             oprice = edict['price']
+            seequote = 0
 
         # record a trading `frame' when position is closed.
         elif edict['event']=='close':
@@ -62,7 +64,7 @@ def dostat(tf, qnum):
             cprice = edict['price']
             earn = tdir * (cprice - oprice)
 
-            row = [stime, otime, ctime, tdir, earn, oprice, cprice, ]
+            row = [stime, otime, ctime, tdir, earn, oprice, cprice, seequote]
 
             # going back for last 10 quotes
 
@@ -103,6 +105,9 @@ def dostat(tf, qnum):
             earn = 0.0
             oprice = 0.0
             cprice = 0.0
+
+        elif edict['event']=='quote':
+            seequote = 1
 
     return tstat, colnames
 
