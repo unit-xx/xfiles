@@ -11,7 +11,7 @@ import flaredef as fdef
 
 class scpstrat(strattop):
     def setup(self):
-        self.logger.info('myconfig is ', str(self.mycfg))
+        self.logger.info('myconfig is %s', str(self.mycfg))
         self.legcode = self.mycfg['legcode']
         self.ptick = float(self.mycfg['pricetick'])
         self.tmode = self.mycfg['tmode']
@@ -20,10 +20,11 @@ class scpstrat(strattop):
         self.cancelmode = self.mycfg['cancelmode']
         self.canceltimer = float(self.mycfg['canceltimer'])
         self.minreqvol = int(self.mycfg['minreqvol'])
-        self.n1trend = int(self.mycfg['n1trend'])
-        self.n2trend = int(self.mycfg['n2trend'])
-        self.trendbar1 = float(self.mycfg['trendbar1'])
-        self.trendbar2 = float(self.mycfg['trendbar2'])
+        #self.n1trend = int(self.mycfg['n1trend'])
+        #self.n2trend = int(self.mycfg['n2trend'])
+        #self.trendbar1 = float(self.mycfg['trendbar1'])
+        #self.trendbar2 = float(self.mycfg['trendbar2'])
+        self.volratiobar = float(self.mycfg['volratiobar'])
         self.qhold = 0
         self.state = 'ready'
         self.closetickcnt = 0
@@ -33,13 +34,13 @@ class scpstrat(strattop):
 
         # facility for calculating trend 
         self.nan = float('nan')
-        self.qhist = deque(maxlen=self.ntrend)
-        self.x1seq = [float(x) for x in range(1, self.n1trend+1, 1)]
-        self.x2seq = [float(x) for x in range(1, self.n2trend+1, 1)]
-        self.lasttrend1nv = None
-        self.lasttrend2nv = None
-        self.ind1 = -(self.n1trend+self.n2trend-1)
-        self.ind2 = -self.n2trend
+        #self.qhist = deque(maxlen=self.ntrend)
+        #self.x1seq = [float(x) for x in range(1, self.n1trend+1, 1)]
+        #self.x2seq = [float(x) for x in range(1, self.n2trend+1, 1)]
+        #self.lasttrend1nv = None
+        #self.lasttrend2nv = None
+        #self.ind1 = -(self.n1trend+self.n2trend-1)
+        #self.ind2 = -self.n2trend
 
         # intentially set to suspended at startup
         self.suspendflag = True
@@ -69,9 +70,9 @@ class scpstrat(strattop):
 
     def dounsuspend(self):
         self.suspendflag = False
-        self.qhist.clear()
-        self.lasttrend1nv = None
-        self.lasttrend2nv = None
+        #self.qhist.clear()
+        #self.lasttrend1nv = None
+        #self.lasttrend2nv = None
 
     @staticmethod
     def dot(x, y):
@@ -170,31 +171,38 @@ class scpstrat(strattop):
 
                 if self.state=='ready':
                     # set limit order
-                    if self.tmode=='bid' and q['bidvol1']>=self.minreqvol and self.lasttrend is not None and self.lasttrend>self.trendbar:
-                        otype = fdef.VOPEN
-                        direct = fdef.VLONG
-                        code = self.legcode
-                        price = q['bid1'] - self.ptick
-                        volume = 1
-                        self.oid, doreq, rcok = self.reqorder(otype, direct, code, price, volume, tag='set')
+                    if self.tmode=='bid':
+                        volratio = float(q['bidvol1'])/float(q['askvol1'])
+                        if q['bidvol1']>=self.minreqvol and volratio>self.volratiobar:
+                            otype = fdef.VOPEN
+                            direct = fdef.VLONG
+                            code = self.legcode
+                            price = q['bid1'] - self.ptick
+                            volume = 1
+                            self.oid, doreq, rcok = self.reqorder(otype, direct, code, price, volume, tag='set')
 
-                        self.state = 'setting'
-                        self.logger.info('new quick quote %s', self.quote2str(q))
-                        self.logger.info('setting bid=%.2f trend=%.3f cancel %s', price, self.lasttrend, 'on next quote' if self.cancelmode=='onquote' else 'in %.2f secs'%self.canceltimer)
-                        print 'do bid trend=%.3f bid=%.2f' % (self.lasttrend, price)
+                            self.state = 'setting'
+                            self.logger.info('new quick quote %s', self.quote2str(q))
+                            self.logger.info('setting bid=%.2f bidvol1=%d askvol1=%d ratio=%.3f cancel %s', price, q['bidvol1'], q['askvol1'], volratio, 'on next quote' if self.cancelmode=='onquote' else 'in %.2f secs'%self.canceltimer)
+                        else:
+                            self.logger.info('new quick quote %s', self.quote2str(q))
+                        print 'mode=bid bidvol=%d ask=%d volratio=%.3f' % (q['bidvol1'], q['askvol1'], volratio)
+                    elif self.tmode=='ask':
+                        volratio = float(q['askvol1'])/float(q['bidvol1'])
+                        if q['askvol1']>=self.minreqvol and volratio>self.volratiobar:
+                            otype = fdef.VOPEN
+                            direct = fdef.VSHORT
+                            code = self.legcode
+                            price = q['ask1'] + self.ptick
+                            volume = 1
+                            self.oid, doreq, rcok = self.reqorder(otype, direct, code, price, volume, tag='set')
 
-                    elif self.tmode=='ask' and q['askvol1']>=self.minreqvol and self.lasttrend is not None and self.lasttrend<-self.trendbar:
-                        otype = fdef.VOPEN
-                        direct = fdef.VSHORT
-                        code = self.legcode
-                        price = q['ask1'] + self.ptick
-                        volume = 1
-                        self.oid, doreq, rcok = self.reqorder(otype, direct, code, price, volume, tag='set')
-
-                        self.state = 'setting'
-                        self.logger.info('new quick quote %s', self.quote2str(q))
-                        self.logger.info('setting ask=%.2f trend=%.3f cancel %s', price, self.lasttrend, 'on next quote' if self.cancelmode=='onquote' else 'in %.2f secs'%self.canceltimer)
-                        print 'do ask trend=%.3f ask=%.2f' % (self.lasttrend, price)
+                            self.state = 'setting'
+                            self.logger.info('new quick quote %s', self.quote2str(q))
+                            self.logger.info('setting ask=%.2f bidvol1=%d askvol1=%d ratio=%.3f cancel %s', price, q['bidvol1'], q['askvol1'], volratio, 'on next quote' if self.cancelmode=='onquote' else 'in %.2f secs'%self.canceltimer)
+                        else:
+                            self.logger.info('new quick quote %s', self.quote2str(q))
+                        print 'mode=ask bidvol=%d ask=%d volratio=%.3f' % (q['bidvol1'], q['askvol1'], volratio)
 
                     else:
                         self.logger.info('new quick quote %s', self.quote2str(q))
@@ -222,16 +230,18 @@ class scpstrat(strattop):
                     self.logger.info('new quick quote %s', self.quote2str(q))
 
                 self.quote = q
-                if self.tmode=='ask':
-                    self.qhist.append(q['ask1'])
-                elif self.tmode=='bid':
-                    self.qhist.append(q['bid1'])
+
+                #if self.tmode=='ask':
+                #    self.qhist.append(q['ask1'])
+                #elif self.tmode=='bid':
+                #    self.qhist.append(q['bid1'])
 
                 #self.lasttrend = self.qhistbeta()
-                self.lasttrend1nv = self.naivebeta(self.x1seq, self.qhist[self.ind1:(self.ind2+1)])
-                self.lasttrend1nv = self.naivebeta(self.x2seq, self.qhist[self.ind2:])
-                if self.lasttrend is not None:
-                    print 'post update: %.3f'%self.lasttrend, (self.lasttrend-self.lasttrendnv)<1e-8
+
+                #self.lasttrend1nv = self.naivebeta(self.x1seq, self.qhist[self.ind1:(self.ind2+1)])
+                #self.lasttrend1nv = self.naivebeta(self.x2seq, self.qhist[self.ind2:])
+                #if self.lasttrend is not None:
+                #    print 'post update: %.3f'%self.lasttrend, (self.lasttrend-self.lasttrendnv)<1e-8
                 #    print 'trend opt:cov %.3f:%.3f' % (self.lasttrend, self.lasttrendnv)
 
         self.lock.release()
