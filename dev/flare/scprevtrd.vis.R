@@ -1,5 +1,4 @@
 library(PerformanceAnalytics)
-library(xts)
 options(digits.secs=3)
 
 args = commandArgs(T)
@@ -24,6 +23,7 @@ thist = read.csv(thistfn, header=T)
 
 pdf(tvisfn, width=17.55, height=11.07)
 
+allpnl = numeric(0)
 for(i in 1:NROW(thist))
 {
   # visual only force closed trades
@@ -52,10 +52,53 @@ for(i in 1:NROW(thist))
     dd = Drawdowns(diff(log(pnl.xts+1)))
     dd.pt = dd * cprice
     
+    # do trade
+    
+    stoploss.tic = which(pnl.pt<(-5))[1]
+    stopprofitbymax.tick = which(pnl.pt>10)[1]
+    stopprofitbydd.tick = which(dd.pt<(-5) & pnl.pt>0)[1]
+    last.tick = NROW(pnl.pt)
+    
+    allstops = c(stoploss.tic, stopprofitbymax.tick, stopprofitbydd.tick, last.tick)
+    stoporder = order(allstops)
+    if(stoporder[1]==1)
+    {
+      stopby = 'stoploss'
+      
+    }else if(stoporder[1]==2)
+    {
+      stopby = 'hitmax'
+      
+    }else if(stoporder[1]==3)
+    {
+      stopby = 'hitdd'
+      
+    }else if(stoporder[1]==4)
+    {
+      stopby = 'lastsecond'
+      
+    }
+    stoptick = allstops[stoporder[1]]
+    stoppnl = pnl.pt[stoptick]
+    
+    
+    # plot pnl and dd, with stop tick/type and pnl
     plot(pnl.pt, main=sprintf('PNL %d/%d trade in %s', i, NROW(thist), datestr))
+    abline(v = index(pnl.pt)[stoptick], col="red", lty="dotted")
+    text(index(pnl.pt)[stoptick], 0, labels=stopby)
+    
     plot(dd.pt, main=sprintf('DD %d/%d trade in %s', i, NROW(thist), datestr))
+    abline(v = index(pnl.pt)[stoptick], col="red", lty="dotted")
+    par(xpd=TRUE)
+    text(index(pnl.pt)[stoptick], 0, labels=stopby, pos=3)
+    
+    print(stoppnl)
+    
+    allpnl = c(allpnl, stoppnl)
   }
 }
+print(allpnl)
+barplot(allpnl, main=sprintf('Total=%.2f Avg=%.2f', sum(allpnl), mean(allpnl)))
 
 dev.off()
 # get PnL trace
