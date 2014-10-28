@@ -24,6 +24,8 @@ thist = read.csv(thistfn, header=T)
 pdf(tvisfn, width=17.55, height=11.07)
 
 allpnl = numeric(0)
+alltestearn = numeric(0)
+
 for(i in 1:NROW(thist))
 {
   # visual only force closed trades
@@ -33,6 +35,7 @@ for(i in 1:NROW(thist))
     ctick = tline$ctime
     cprice = tline$cprice
     tdir = tline$tdir
+    earn = tline$earn
     tmp1 = which(qhist$tic==ctick)
     
     if(tdir==-1)
@@ -83,11 +86,11 @@ for(i in 1:NROW(thist))
     
     
     # plot pnl and dd, with stop tick/type and pnl
-    plot(pnl.pt, main=sprintf('PNL %d/%d trade in %s', i, NROW(thist), datestr))
+    plot(pnl.pt, main=sprintf('PNL (%d/%d trade in %s, testearn=%.2f)', i, NROW(thist), datestr, earn))
     abline(v = index(pnl.pt)[stoptick], col="red", lty="dotted")
     text(index(pnl.pt)[stoptick], 0, labels=stopby)
     
-    plot(dd.pt, main=sprintf('DD %d/%d trade in %s', i, NROW(thist), datestr))
+    plot(dd.pt, main=sprintf('DD (%d/%d trade in %s, testearn=%.2f)', i, NROW(thist), datestr, earn))
     abline(v = index(pnl.pt)[stoptick], col="red", lty="dotted")
     par(xpd=TRUE)
     text(index(pnl.pt)[stoptick], 0, labels=stopby, pos=3)
@@ -95,10 +98,12 @@ for(i in 1:NROW(thist))
     print(stoppnl)
     
     allpnl = c(allpnl, stoppnl)
+    alltestearn = c(alltestearn, earn)
   }
 }
 print(allpnl)
-barplot(allpnl, main=sprintf('Total=%.2f Avg=%.2f', sum(allpnl), mean(allpnl)))
+barplot(allpnl, main=sprintf('revtrade profit: Total=%.2f Avg=%.2f', sum(allpnl), mean(allpnl)))
+barplot(alltestearn, main=sprintf('testearn: Total=%.2f Avg=%.2f', sum(alltestearn), mean(alltestearn)))
 
 dev.off()
 # get PnL trace
