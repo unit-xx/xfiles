@@ -7,6 +7,7 @@ qhistfn = 'xxx'
 thistfn = 'yyy'
 
 trdrptfn = 'zzz.rpt'
+tag = 'p2'
 
 if(length(args) >= 3)
 {
@@ -15,15 +16,23 @@ if(length(args) >= 3)
   trdrptfn = args[3]
 }
 
+trdrptfn = paste(trdrptfn, tag, sep='.')
+
 datestr = unlist(strsplit(qhistfn, split='.', fixed=T))[2]
 visdate = strptime(datestr, format="%Y-%m-%d")
 
 qhist = read.csv(qhistfn, header=T)
 thist = read.csv(thistfn, header=T)
 
-maxloss = seq(-5, -5)
-maxdd = seq(-5, -5)
-maxprofit = seq(1, 30)
+# tag = 'p1
+#maxloss = seq(-5, -5)
+#maxdd = seq(-5, -5)
+#maxprofit = seq(1, 30)
+
+# tag = 'p2
+maxloss = seq(-1, -1)
+maxdd = seq(-1, -1)
+maxprofit = seq(1, 20)
 
 paramset = expand.grid(maxloss=maxloss, maxdd=maxdd, maxprofit=maxprofit)
 

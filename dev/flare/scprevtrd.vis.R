@@ -1,4 +1,5 @@
 library(PerformanceAnalytics)
+library(xts)
 options(digits.secs=3)
 
 args = commandArgs(T)
@@ -25,6 +26,12 @@ pdf(tvisfn, width=17.55, height=11.07)
 
 allpnl = numeric(0)
 alltestearn = numeric(0)
+
+allctick = c()
+allstoptick = c()
+allstopby = c()
+allstoptime = c()
+allopentime = c()
 
 for(i in 1:NROW(thist))
 {
@@ -84,7 +91,6 @@ for(i in 1:NROW(thist))
     stoptick = allstops[stoporder[1]]
     stoppnl = pnl.pt[stoptick]
     
-    
     # plot pnl and dd, with stop tick/type and pnl
     plot(pnl.pt, main=sprintf('PNL (%d/%d trade in %s, testearn=%.2f)', i, NROW(thist), datestr, earn))
     abline(v = index(pnl.pt)[stoptick], col="red", lty="dotted")
@@ -99,13 +105,39 @@ for(i in 1:NROW(thist))
     
     allpnl = c(allpnl, stoppnl)
     alltestearn = c(alltestearn, earn)
+    
+    allctick = c(allctick, tmp1)
+    allstoptick = c(allstoptick, stoptick)
+    allopentime = c(allopentime, format(visdate+ctick))
+    allstoptime = c(allstoptime, format(index(pnl.pt)[stoptick]))
+    
+    allstopby = c(allstopby, stopby)
   }
 }
-print(allpnl)
+
 barplot(allpnl, main=sprintf('revtrade profit: Total=%.2f Avg=%.2f', sum(allpnl), mean(allpnl)))
 barplot(alltestearn, main=sprintf('testearn: Total=%.2f Avg=%.2f', sum(alltestearn), mean(alltestearn)))
 
+qhist.ts = visdate+qhist$tic
+qhist.xts = xts(qhist$ask1, order.by=qhist.ts)
+
+print('all open time')
+print(index(qhist.xts)[allctick])
+print('all open time 2')
+print(allopentime)
+
+print('all close time')
+print(index(qhist.xts)[allctick+allstoptick-1])
+print('all close time 2')
+print(allstoptime)
+
+plot(qhist.xts, main='All tradings are here.')
+par(xpd=TRUE)
+text(index(qhist.xts)[allctick], qhist.xts[allctick], labels=paste('T', seq(length(allctick)), sep='-'), col='red')
+text(index(qhist.xts)[allctick+allstoptick-1], qhist.xts[allctick+allstoptick-1], labels=paste("C", seq(length(allstopby)), sep='-'), col='red')
+
 dev.off()
+
 # get PnL trace
 
 # get drawdown trace
