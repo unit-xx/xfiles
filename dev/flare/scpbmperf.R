@@ -20,6 +20,7 @@ if(length(args) >= 2)
 
 datestr = unlist(strsplit(qhistfn, split='.', fixed=T))[2]
 visdate = strptime(datestr, format="%Y-%m-%d")
+print(visdate)
 
 qhist = read.csv(qhistfn, header=T)
 
@@ -39,17 +40,20 @@ trdrpt = data.frame(
   stoptick = numeric(possibleNROW),
   stoppnl = numeric(possibleNROW),
   stopby = character(possibleNROW),
-  validrow = numeric(possibleNROW)
+  validrow = numeric(possibleNROW),
+  stringsAsFactors=F
 )
 
 starttic = 9*3600 + 30*60
-endtic = 11*3600 + 45*60
+endtic = 14*3600 + 45*60
+qstep = 5
 
 print(possibleNROW)
+tstart = Sys.time()
 
-for(i in 1:NROW(qhist))
+for(i in seq(1, NROW(qhist), qstep))
 {
-  if(i %% 50 == 0) print(i)
+  #if((i-1) %% qstep == 0) print(i)
   if((qhist$tic[i]>starttic) & (qhist$tic[i]<endtic))
   {
     # NOTE: just test long
@@ -131,4 +135,8 @@ for(i in 1:NROW(qhist))
     }
   }
 }
-write.csv(trdrpt, trdrptfn, row.names=F)
+
+tend = Sys.time()
+print(sprintf('%d test in %.2f secs', length(which(trdrpt$validrow==1)), as.numeric(tend-tstart, units='secs')))
+
+write.csv(trdrpt[which(trdrpt$validrow==1),], trdrptfn, row.names=F)

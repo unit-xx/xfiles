@@ -11,5 +11,5 @@ rem echo %dirn%xxx
 if "%2"=="new" (
 python scpcontext.py %dirn%%fn%.trace %dirn%%fn%.qhist %dirn%%fn%.thist
 )
-rscript scprevtrd.vis.R %dirn%%fn%.qhist %dirn%%fn%.thist %dirn%%fn%.revtrade.pdf
+rscript scprevtrd.vis.R %dirn%%fn%.qhist %dirn%%fn%.thist %dirn%%fn%.revtrade.p2.pdf
 

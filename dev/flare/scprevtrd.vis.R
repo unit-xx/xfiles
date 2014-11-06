@@ -33,6 +33,10 @@ allstopby = c()
 allstoptime = c()
 allopentime = c()
 
+maxlossparam = -1
+maxddparam = -1
+maxprofitparam = 2.4
+
 for(i in 1:NROW(thist))
 {
   # visual only force closed trades
@@ -64,9 +68,9 @@ for(i in 1:NROW(thist))
     
     # do trade
     
-    stoploss.tic = which(pnl.pt<(-5))[1]
-    stopprofitbymax.tick = which(pnl.pt>10)[1]
-    stopprofitbydd.tick = which(dd.pt<(-5) & pnl.pt>0)[1]
+    stoploss.tic = which(pnl.pt<(maxlossparam))[1]
+    stopprofitbymax.tick = which(pnl.pt>maxprofitparam)[1]
+    stopprofitbydd.tick = which(dd.pt<(maxddparam) & pnl.pt>0)[1]
     last.tick = NROW(pnl.pt)
     
     allstops = c(stoploss.tic, stopprofitbymax.tick, stopprofitbydd.tick, last.tick)
@@ -92,7 +96,8 @@ for(i in 1:NROW(thist))
     stoppnl = pnl.pt[stoptick]
     
     # plot pnl and dd, with stop tick/type and pnl
-    plot(pnl.pt, main=sprintf('PNL (%d/%d trade in %s, testearn=%.2f)', i, NROW(thist), datestr, earn))
+    plot(pnl.pt, main=sprintf('PNL (%d/%d trade in %s, testearn=%.2f, stoploss=%.2f, maxdd=%.2f, stopwin=%.2f)', i, NROW(thist), datestr, earn, maxlossparam, maxddparam, maxprofitparam))
+    
     abline(v = index(pnl.pt)[stoptick], col="red", lty="dotted")
     text(index(pnl.pt)[stoptick], 0, labels=stopby)
     

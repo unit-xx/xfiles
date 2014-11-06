@@ -17,20 +17,45 @@ for(i in 1:length(rptfnset))
 
 all.rpt = do.call(rbind, allrpt.list)
 
-pdf('p2.pdf', width=17.55, height=11.07)
+pdf('p1.pdf', width=17.55, height=11.07)
+# NOTE: assume "maxlossparam","maxddparam" are fixed.
+# TODO: add title, 
+
 # total profit by maxprofit param
 all.rpt.agg1 = aggregate(stoppnl~maxprofitparam, data=all.rpt, FUN=sum)
-ggplot(all.rpt.agg1, aes(y=stoppnl, x=maxprofitparam)) + geom_line() + geom_point()
+ggplot(all.rpt.agg1, aes(y=stoppnl, x=maxprofitparam)) + geom_line() + geom_point() + ggtitle('total profit')
 
 # average profit by maxprofit param
 all.rpt.agg2 = aggregate(stoppnl~maxprofitparam, data=all.rpt, FUN=mean)
-ggplot(all.rpt.agg2, aes(y=stoppnl, x=maxprofitparam)) + geom_line() + geom_point()
-
-dev.off()
+ggplot(all.rpt.agg2, aes(y=stoppnl, x=maxprofitparam)) + geom_line() + geom_point() + ggtitle('average profit')
 
 # win-loss ratio
-# all.rpt.agg3 = aggregate(stoppnl~maxprofitparam, data=all.rpt, FUN=function(x) {length(which(x>0))})
-# ggplot(all.rpt.agg3, aes(y=stoppnl, x=maxprofitparam)) + geom_line() + geom_point()
+all.rpt.agg3 = aggregate(stoppnl~maxprofitparam, data=all.rpt, FUN=function(x) {length(which(x>0))/length(x)})
+ggplot(all.rpt.agg3, aes(y=stoppnl, x=maxprofitparam)) + geom_line() + geom_point() + ggtitle('win-loss count ratio')
+
+# win-loss points ratio
+all.rpt.agg4 = aggregate(stoppnl~maxprofitparam, data=all.rpt, FUN=function(x) {-sum(x[which(x>0)])/sum(x[which(x<0)])})
+ggplot(all.rpt.agg4, aes(y=stoppnl, x=maxprofitparam)) + geom_line() + geom_point() + ggtitle('win-loss points ratio')
+
+# win points
+all.rpt.agg5 = aggregate(stoppnl~maxprofitparam, data=all.rpt, FUN=function(x) {sum(x[which(x>0)])})
+ggplot(all.rpt.agg5, aes(y=stoppnl, x=maxprofitparam)) + geom_line() + geom_point() + ggtitle('total win points')
+
+# loss points
+all.rpt.agg6 = aggregate(stoppnl~maxprofitparam, data=all.rpt, FUN=function(x) {-sum(x[which(x<0)])})
+ggplot(all.rpt.agg6, aes(y=stoppnl, x=maxprofitparam)) + geom_line() + geom_point() + ggtitle('total loss points')
+
+# slice of pnl on specified maxprofitparam
+for(i in sort(unique(all.rpt$maxprofitparam)))
+{
+  slice = all.rpt$stoppnl[which(all.rpt$maxprofitparam==i)]
+  slice.xts = xts(slice, order.by=as.Date(all.rpt$date[which(all.rpt$maxprofitparam==i)]))
+  barplot(slice.xts, main=sprintf('pnl when maxprofit=%d', i))
+  cumslice = cumsum(slice)
+  plot(cumslice, type='o')
+}
+
+dev.off()
 
 # by close type
 # ggplot(all.rpt, aes(x=factor(maxprofitparam), fill=factor(stopby))) + geom_bar(stat='bin')
