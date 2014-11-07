@@ -22,14 +22,14 @@ qhist = read.csv(qhistfn, header=T)
 thist = read.csv(thistfn, header=T)
 
 # tag = 'p1
-#maxloss = seq(-5, -5)
-#maxdd = seq(-5, -5)
-#maxprofit = seq(1, 30)
+maxloss = seq(-5, -5)
+maxdd = seq(-5, -5)
+maxprofit = seq(1, 30)
 
 # tag = 'p2
-maxloss = seq(-1, -1)
-maxdd = seq(-1, -1)
-maxprofit = seq(1, 30)
+#maxloss = seq(-1, -1)
+#maxdd = seq(-1, -1)
+#maxprofit = seq(1, 30)
 
 paramset = expand.grid(maxloss=maxloss, maxdd=maxdd, maxprofit=maxprofit)
 

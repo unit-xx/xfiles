@@ -51,8 +51,13 @@ for(i in sort(unique(all.rpt$maxprofitparam)))
   slice = all.rpt$stoppnl[which(all.rpt$maxprofitparam==i)]
   slice.xts = xts(slice, order.by=as.Date(all.rpt$date[which(all.rpt$maxprofitparam==i)]))
   barplot(slice.xts, main=sprintf('pnl when maxprofit=%d', i))
+}
+
+for(i in sort(unique(all.rpt$maxprofitparam)))
+{
+  slice = all.rpt$stoppnl[which(all.rpt$maxprofitparam==i)]
   cumslice = cumsum(slice)
-  plot(cumslice, type='o')
+  plot(cumslice, type='o', main=sprintf('cum-pnl when maxprofit=%d', i))
 }
 
 dev.off()

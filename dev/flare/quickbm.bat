@@ -1,4 +1,4 @@
-REM call scpbm.bat d:\work\pair\20141008\scpstrat1.2014-10-08.trace
+call scpbm.bat d:\work\pair\20141008\scpstrat1.2014-10-08.trace
 call scpbm.bat d:\work\pair\20141009\scpstrat1.2014-10-09.trace
 call scpbm.bat d:\work\pair\20141010\scpstrat1.2014-10-10.trace
 call scpbm.bat d:\work\pair\20141013\scpstrat1.2014-10-13.trace

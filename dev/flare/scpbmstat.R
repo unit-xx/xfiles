@@ -48,8 +48,8 @@ allwinlosspntratio = winpt/losspt
 pdf('bmstat.pdf', width=17.55, height=11.07)
 
 plot(1:10, type='n', main=sprintf('total winloss count ratio=%.3f, winloss point ratio=%.3f', allwinlosscntratio, allwinlosspntratio))
-plot(xts(trdstat$winlosscntratio, order.by=as.Date(trdstat$date)), main='total win-loss count ratio')
-plot(xts(trdstat$winlosspntratio, order.by=as.Date(trdstat$date)), main='total win-loss point ratio')
+plot(xts(trdstat$winlosscntratio, order.by=as.Date(trdstat$date)), type='o', main='total win-loss count ratio')
+plot(xts(trdstat$winlosspntratio, order.by=as.Date(trdstat$date)), type='o', main='total win-loss point ratio')
 
 dev.off()
 
