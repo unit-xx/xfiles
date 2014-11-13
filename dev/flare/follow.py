@@ -14,7 +14,7 @@ class followstrat(strattop):
         self.qhold = 0
         self.state = 'ready'
         # key=oid, value=dict(dir, oprice, maxdd, maxwin, maxloss, ...)
-        self.order = {}
+        self.orders = {}
         self.openorders = []
         self.quote = None
         self.lock = Lock()
@@ -78,19 +78,47 @@ class followstrat(strattop):
                     self.logger.info('new quick quote %s', self.quote2str(q))
                     self.lock.release()
                     return
-
-                if self.state=='ready':
-                    otype = fdef.VOPEN
-                    direct = fdef.VLONG
-                    code = self.legcode
-                    price = q['bid1'] - self.ptick
-                    volume = 1
-                    self.oid, doreq, rcok = self.reqorder(otype, direct, code, price, volume, tag='set')
-
                 else:
-                    self.logger.info('new quick quote %s', self.quote2str(q))
+                    # update pnl and dd for active orders
+                    for oid in self.openorders:
+
+
+
 
                 self.quote = q
+
+        elif m['channel'] == fdef.CHFOLLOW:
+            try:
+                followparam = pickle.loads(m['data'])
+            except:
+                print 'follow signal unpickling failed.'
+                self.lock.release()
+                #self.logger.debug('exit signal')
+                return
+
+            code = followparam['code']
+            maxloss = followparam['maxloss']
+            maxwin = followparam['maxwin']
+            maxdd = followparam['maxdd']
+            tdir = followparam['tdir']
+
+            if code!=self.legcode:
+                self.lock.release()
+                self.logger.warning('mismatched contract code')
+                print('mismatched contract code')
+                return
+            else:
+                otype = fdef.VOPEN
+                direct = fdef.VLONG if (tdir>0) else fdef.VSHORT
+                price = (self.quote['ask1']+2) if (tdir>0) else (self.quote['bid1']22)
+                volume = 1
+                oid, doreq, rcok = self.reqorder(otype, direct, code, price, volume, tag='order')
+
+                if doreq:
+                    orec = {}
+                    # TODO
+                    self.orders[oid] = orec
+                    self.openorders.append(oid)
 
         self.lock.release()
 
