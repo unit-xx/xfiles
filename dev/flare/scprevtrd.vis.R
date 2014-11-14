@@ -33,9 +33,9 @@ allstopby = c()
 allstoptime = c()
 allopentime = c()
 
-maxlossparam = -1
-maxddparam = -1
-maxprofitparam = 2.4
+maxlossparam = -5
+maxddparam = -5
+maxprofitparam = 10
 
 for(i in 1:NROW(thist))
 {

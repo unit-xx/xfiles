@@ -12,10 +12,9 @@ class followstrat(strattop):
     def setup(self):
         # TODO: maintain order state, track pnl/dd
         self.qhold = 0
-        self.state = 'ready'
-        # key=oid, value=dict(dir, oprice, maxdd, maxwin, maxloss, ...)
+        # key=oid, value=dict(dir, oprice, maxdd, maxprofit, maxloss, ...)
         self.orders = {}
-        self.openorders = []
+        self.trackingopen = []
         self.quote = None
         self.lock = Lock()
 
@@ -80,7 +79,28 @@ class followstrat(strattop):
                     return
                 else:
                     # update pnl and dd for active orders
-                    for oid in self.openorders:
+                    toclose = []
+                    for oid in self.activeorders:
+                        orec = self.orders[oid]
+                        orec['pnl'] = orec['tdir'] * (q['last']-orec['refoprice'])
+                        if (orec['pnl']-orec['maxpnl'] > 1e-3):
+                            orec['maxpnl'] = orec['pnl']
+
+                        orec['dd'] = orec['pnl'] - orec['maxpnl']
+
+                        # stop profit
+                        if (orec['pnl']-orec['maxprofit']>1e-3):
+                            toclose.append(oid)
+                        # stop loss
+                        elif (orec['pnl']-orec['maxloss']<1e-3):
+                            toclose.append(oid)
+
+                        # stop on max dd
+                        if (orec['dd']-orec['maxdd']<1e-3):
+                            toclose.append(oid)
+
+
+
 
 
 
@@ -97,8 +117,9 @@ class followstrat(strattop):
                 return
 
             code = followparam['code']
+            refoprice = followparam['refoprice']
             maxloss = followparam['maxloss']
-            maxwin = followparam['maxwin']
+            maxprofit = followparam['maxprofit']
             maxdd = followparam['maxdd']
             tdir = followparam['tdir']
 
@@ -112,13 +133,21 @@ class followstrat(strattop):
                 direct = fdef.VLONG if (tdir>0) else fdef.VSHORT
                 price = (self.quote['ask1']+2) if (tdir>0) else (self.quote['bid1']22)
                 volume = 1
-                oid, doreq, rcok = self.reqorder(otype, direct, code, price, volume, tag='order')
+                oid, doreq, rcok = self.reqorder(otype, direct, code, price, volume, tag='open')
 
                 if doreq:
                     orec = {}
-                    # TODO
+                    orec['oid'] = oid
+                    orec['tdir'] = tdir
+                    orec['refoprice'] = refoprice
+                    orec['pnl'] = 0.0
+                    orec['maxpnl'] = 0.0
+                    orec['maxprofit'] = maxprofit
+                    orec['maxloss'] = maxloss
+                    orec['maxdd'] = maxdd
+                    orec['stae'] = 'requested'
                     self.orders[oid] = orec
-                    self.openorders.append(oid)
+                    self.activeorders.append(oid)
 
         self.lock.release()
 
@@ -128,8 +157,9 @@ class followstrat(strattop):
 
         o, olk = self.tbook.getorder(oid)
         if o[fdef.KCODE]==self.legcode:
-            if self.state=='set' or self.state=='setting' or self.state=='cancelling':
-                # limit order traded, close it immediatelly
+            if oid in self.activeorders:
+                pass
+
         self.lock.release()
 
     def onCancelled(self, oid, resp):
@@ -138,48 +168,24 @@ class followstrat(strattop):
 
         o, olk = self.tbook.getorder(oid)
         if o[fdef.KCODE]==self.legcode:
-            if self.state=='cancelling':
-            else:
-                self.logger.error('unexpected state %s', self.state)
-                self.logger.error('resp %s', str(resp))
-                print 'unexpected state=%s' % self.state
+            if oid in self.activeorders:
+                self.logger.error('open order cancelled')
 
         self.lock.release()
 
     def onOrderRejected(self, oid, resp):
         # rare exception case
         o, olk = self.tbook.getorder(oid)
-        self.logger.error('order rejected %s', o)
-        self.logger.error('resp %s', str(resp))
-        print 'order rejected'
+        if o[fdef.KCODE]==self.legcode:
+            if oid in self.activeorders:
+                self.logger.error('open order rejected')
 
     def onCancelRejected(self, oid, resp):
         # rare case
         self.lock.acquire()
 
         o, olk = self.tbook.getorder(oid)
-        if o[fdef.KCODE]==self.legcode:
-            if self.state=='cancelling' or self.state=='closing':
-                # limit order cancel failed, maybe it is already traded,
-                # otherwise it is an exception case
-                try:
-                    if o['ErrorID']==26:
-                        # order already traded.
-                        pass
-                    else:
-                        # urgent case
-                        self.logger.error('unexpected state %s', self.state)
-                        self.logger.error('resp %s', str(resp))
-                        print 'unexpected state=%s' % self.state
-                except KeyError:
-                    # urgent case
-                    self.logger.error('unexpected state %s', self.state)
-                    self.logger.error('resp %s', str(resp))
-                    print 'unexpected state=%s' % self.state
-            else:
-                self.logger.error('unexpected state %s', self.state)
-                self.logger.error('resp %s', str(resp))
-                print 'unexpected state=%s' % self.state
+        self.logger.error('cancel order rejected')
 
         self.lock.release()
 
@@ -188,27 +194,15 @@ class followstrat(strattop):
 
         o, olk = self.tbook.getorder(oid)
         if o[fdef.KCODE]==self.legcode:
-            if self.state=='setting':
-                # limit order acceptted
-                self.state = 'set'
-                self.logger.info('order set')
-                if self.cancelmode=='ontimer':
-                    tcancel = Timer(self.canceltimer, self.docancel, [self.oid])
-                    tcancel.start()
-
-            elif self.state=='cancelling' or self.state=='set' or self.state=='closing' or self.state=='forceclosing':
-                pass
-            else:
-                self.logger.error('unexpected state %s', self.state)
-                self.logger.error(str(resp))
-                print 'unexpected state=%s' % self.state
+            pass
 
         self.lock.release()
     
     def onNewTrade(self, oid, resp):
         # log trade info
         o, olk = self.tbook.getorder(oid)
-        if o[fdef.KTAG]=='set':
+        if o[fdef.KTAG]=='open':
+            self.activeorders[oid]['oprice'] = resp[fdef.KPRICE]
             self.logger.info('limit order traded price=%.2f', resp[fdef.KPRICE])
         elif o[fdef.KTAG]=='close':
             self.logger.info('close order traded price=%.2f', resp[fdef.KPRICE])

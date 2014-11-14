@@ -1,4 +1,5 @@
 library(ggplot2)
+library(xts)
 
 args = commandArgs(T)
 
