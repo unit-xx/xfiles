@@ -5,7 +5,10 @@ args = commandArgs(T)
 
 rptfn = 'alltrdrpt'
 
-rptfn = args[1]
+if(length(args)>=1)
+{
+  rptfn = args[1]
+}
 rptfnset = read.table(rptfn, header=F, stringsAsFactors=F)[,1]
 
 allrpt.list = list()
