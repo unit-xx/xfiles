@@ -14,25 +14,43 @@ param$oossize = 500 # out of sample period
 idxfn = 'hs300.csv'
 stkfn = 'zz800.csv'
 
+# NOTE: check they share the same date
 idxq = read.csv(idxfn, header=T, stringsAsFactors=F)
 stkq = read.csv(stkfn, header=T, stringsAsFactors=F)
+print(which(!(stkq[,1]==idxq[,1])))
+
+# replace 0 in stkq with latest observation
+stkq[stkq==0] = NA
+stkq = na.locf(stkq)
+
+datestr = idxq[,1]
+idxq = idxq[,-1]
+stkq = stkq[,-1]
 
 # for a fixed period, i is the starting time.
 for(i in seq(1, NROW(stkq)-param$winsize, param$step))
 {
   # cointegration test and stock selection on in-sample-quote
-  stkisq = stkq[i:(i+param$winsize)]
+  stkisq = stkq[i:(i+param$winsize),]
   stkselector = rep(0, NCOL(stkq))
-  idxisq = stkq[i:(i+param$winsize), 2]
+  idxisq = idxq[i:(i+param$winsize)]
+  idxisq.log = log(idxisq)
   # for every stock, column 1 is date which is skipped
-  for(j in 2:NCOL(stkq))
+  for(j in 1:NCOL(stkq))
   {
     stkisqA = stkisq[,j]
-    lmrst = lm(idxisq~stkisqA)
-    pvalue = adf.test(residuals(lmrst), alternative="stationary")$p.value
-    stkselector[j] = ifelse((pvalue<param$maxpvalue), 1, 0)
+    if(is.na(stkisqA[1]))
+    {
+      stkselector[j] = 1
+    } else
+    {
+      retdiff = log(stkisqA) - idxisq.log
+      pvalue = adf.test(retdiff, alternative="stationary")$p.value
+      stkselector[j] = ifelse((pvalue<param$maxpvalue), pvalue, 1)
+    }
   }
   
+  # print in-sample-return portfolio
+  
   # check cointegration on out of sample quote
-  # eq-weight?
 }
