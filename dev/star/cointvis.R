@@ -27,8 +27,17 @@ datestr = idxq[,1]
 idxq = idxq[,-1]
 stkq = stkq[,-1]
 
+ptfeqwret <- function(stkq)
+{
+  stkq.eqw = sweep(stkq, 2, unlist(stkq[1,]), `/`)
+  ptfosq = apply(stkq.eqw, 1, sum) / NCOL(stkq.eqw)
+  return(ptfosq)
+}
+
+pdf('cointvis.pdf', width=17.55, height=11.07)
+
 # for a fixed period, i is the starting time.
-for(i in seq(1, NROW(stkq)-param$winsize, param$step))
+for(i in seq(1, NROW(stkq)-param$winsize-param$oossize, param$step))
 {
   # cointegration test and stock selection on in-sample-quote
   stkisq = stkq[i:(i+param$winsize),]
@@ -50,7 +59,20 @@ for(i in seq(1, NROW(stkq)-param$winsize, param$step))
     }
   }
   
-  # print in-sample-return portfolio
-  
-  # check cointegration on out of sample quote
+  stkosq = stkq[(i+param$winsize):(i+param$winsize+param$oossize),which(stkselector!=1)]
+  idxosq = idxq[(i+param$winsize):(i+param$winsize+param$oossize)]
+
+  ptfisq = ptfeqwret(stkisq[,which(stkselector!=1)])
+  idxisq2 = idxisq / idxisq[1]
+  iretdiff = log(ptfisq) - log(idxisq2)
+  ipvalue = adf.test(iretdiff, alternative="stationary")$p.value
+  plot(iretdiff, type='l', main=sprintf('insample, from=%s to=%s pvalue=%.3f', datestr[i], datestr[i+param$winsize], ipvalue))
+
+  ptfosq = ptfeqwret(stkosq)
+  idxosq2 = idxosq / idxosq[1]
+  oretdiff = log(ptfosq) - log(idxosq2)
+  opvalue = adf.test(oretdiff, alternative="stationary")$p.value
+  plot(oretdiff, type='l', main=sprintf('outsample, from=%s to=%s pvalue=%.3f', datestr[i+param$winsize], datestr[i+param$winsize+param$oossize], opvalue))
 }
+
+dev.off()
