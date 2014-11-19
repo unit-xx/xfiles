@@ -66,13 +66,13 @@ for(i in seq(1, NROW(stkq)-param$winsize-param$oossize, param$step))
   idxisq2 = idxisq / idxisq[1]
   iretdiff = log(ptfisq) - log(idxisq2)
   ipvalue = adf.test(iretdiff, alternative="stationary")$p.value
-  plot(iretdiff, type='l', main=sprintf('insample, from=%s to=%s pvalue=%.3f', datestr[i], datestr[i+param$winsize], ipvalue))
+  plot(iretdiff, type='l', main=sprintf('insample %d, from=%s to=%s pvalue=%.3f', length(which(stkselector!=1)), datestr[i], datestr[i+param$winsize], ipvalue))
 
   ptfosq = ptfeqwret(stkosq)
   idxosq2 = idxosq / idxosq[1]
   oretdiff = log(ptfosq) - log(idxosq2)
   opvalue = adf.test(oretdiff, alternative="stationary")$p.value
-  plot(oretdiff, type='l', main=sprintf('outsample, from=%s to=%s pvalue=%.3f', datestr[i+param$winsize], datestr[i+param$winsize+param$oossize], opvalue))
+  plot(oretdiff, type='l', main=sprintf('outsample %d, from=%s to=%s pvalue=%.3f', length(which(stkselector!=1)), datestr[i+param$winsize], datestr[i+param$winsize+param$oossize], opvalue))
 }
 
 dev.off()
