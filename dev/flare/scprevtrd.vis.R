@@ -37,6 +37,13 @@ maxlossparam = -5
 maxddparam = -5
 maxprofitparam = 10
 
+ts2HLC <- function(tss, winsize, step)
+{
+  
+}
+
+
+
 for(i in 1:NROW(thist))
 {
   # visual only force closed trades

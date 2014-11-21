@@ -33,6 +33,7 @@ CHORESP = 'CHORESP'
 CHNTFTBOOK = 'CHNTFTBOOK'
 # Heartbeat channel
 CHHEARTBEAT = 'HEARTBEAT'
+CHFOLLOW = 'CHFOLLOW'
 
 # order keys and constants, K for order key, V for order value
 KOID = 'OID'

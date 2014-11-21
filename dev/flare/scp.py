@@ -402,6 +402,16 @@ class scpstrat(strattop):
             self.logger.info('close order traded price=%.2f', resp[fdef.KPRICE])
         elif o[fdef.KTAG]=='forceclose':
             self.logger.info('close order traded price=%.2f force=yes', resp[fdef.KPRICE])
+            followparam = {}
+            followparam['code'] = self.legcode
+            followparam['refoprice'] = resp[fdef.KPRICE]
+            followparam['maxloss'] = -5
+            followparam['maxprofit'] = 10
+            followparam['maxdd'] = -5
+            followparam['tdir'] = 1 if (self.tmode=='ask') else -1
+
+            fd = pickle.dumps(followparam, -1)
+            self.pubsub.publish(self.qchannel, fd)
 
 class scpconsole(stratconsole):
     def do_quit(self, args):
