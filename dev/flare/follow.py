@@ -15,6 +15,10 @@ class followstrat(strattop):
         self.orders = {}
         self.trackingopen = []
         self.quote = None
+
+        self.legcode = self.mycfg['legcode']
+        self.maxvolperorder = int(self.mycfg['maxvolperorder'])
+
         self.lock = Lock()
 
         # intentially set to suspended at startup
@@ -38,7 +42,7 @@ class followstrat(strattop):
         return ret
     
     def issuspend(self):
-        return (self.suspendflag==True and self.qhold==0 and self.state=='ready')
+        return (self.suspendflag==True and length(self.trackingopen)==0)
     
     def dosuspend(self):
         self.suspendflag = True
@@ -78,7 +82,7 @@ class followstrat(strattop):
                     return
                 else:
                     # update pnl and dd for active orders
-                    toclose = []
+                    toclose = set()
                     for oid in self.trackingopen:
                         orec = self.orders[oid]
                         if orec['stae']=='opened':
@@ -90,14 +94,13 @@ class followstrat(strattop):
 
                             # stop profit
                             if (orec['pnl']-orec['maxprofit']>1e-3):
-                                toclose.append(oid)
+                                toclose.add(oid)
                             # stop loss
-                            elif (orec['pnl']-orec['maxloss']<1e-3):
-                                toclose.append(oid)
-
+                            if (orec['pnl']-orec['maxloss']<1e-3):
+                                toclose.add(oid)
                             # stop on max dd
                             if (orec['dd']-orec['maxdd']<1e-3):
-                                toclose.append(oid)
+                                toclose.add(oid)
 
                     for ooid in toclose:
                         oorec = self.orders[ooid]
@@ -116,7 +119,7 @@ class followstrat(strattop):
                             corec['oid'] = coid
                             corec['ooid'] = ooid
                         else:
-                            self.logger.erro('close not requested')
+                            self.logger.erro('close order cannot requested')
 
                 self.quote = q
 

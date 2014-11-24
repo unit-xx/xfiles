@@ -148,6 +148,11 @@ par(xpd=TRUE)
 text(index(qhist.xts)[allctick], qhist.xts[allctick], labels=paste('T', seq(length(allctick)), sep='-'), col='red')
 text(index(qhist.xts)[allctick+allstoptick-1], qhist.xts[allctick+allstoptick-1], labels=paste("C", seq(length(allstopby)), sep='-'), col='red')
 
+# atr, ema(arctan(bid/ask)), hint on signal frequency/win probability and future trend?
+
+angle = atan(qhist$askvol1/qhist$bidvol1) * 2/pi
+angle.xts = xts(angle, order.by=visdate+qhist$tic)
+
 dev.off()
 
 # get PnL trace
