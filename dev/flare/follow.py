@@ -10,8 +10,6 @@ import flaredef as fdef
 
 class followstrat(strattop):
     def setup(self):
-        # TODO: maintain order state, track pnl/dd
-        # key=oid, value=dict(dir, oprice, maxdd, maxprofit, maxloss, ...)
         self.orders = {}
         self.trackingopen = []
         self.quote = None
@@ -42,7 +40,7 @@ class followstrat(strattop):
         return ret
     
     def issuspend(self):
-        return (self.suspendflag==True and length(self.trackingopen)==0)
+        return (self.suspendflag==True and len(self.trackingopen)==0)
     
     def dosuspend(self):
         self.suspendflag = True
@@ -70,6 +68,7 @@ class followstrat(strattop):
                 q = pickle.loads(m['data'])
             except:
                 print 'quote unpickling failed.'
+                self.logger.warning('quote unpickling failed.')
                 self.lock.release()
                 #self.logger.debug('exit signal')
                 return
@@ -77,7 +76,7 @@ class followstrat(strattop):
             if q['code'] == self.legcode:
 
                 if self.issuspend():
-                    self.logger.info('new quick quote %s', self.quote2str(q))
+                    #self.logger.info('new quick quote %s', self.quote2str(q))
                     self.lock.release()
                     return
                 else:
@@ -85,26 +84,36 @@ class followstrat(strattop):
                     toclose = set()
                     for oid in self.trackingopen:
                         orec = self.orders[oid]
-                        if orec['stae']=='opened':
+                        if orec['state']=='opened':
                             orec['pnl'] = orec['tdir'] * (q['last']-orec['refoprice'])
                             if (orec['pnl']-orec['maxpnl'] > 1e-3):
                                 orec['maxpnl'] = orec['pnl']
 
                             orec['dd'] = orec['pnl'] - orec['maxpnl']
 
+                            print 'ref=%.2f last=%.2f pnl=%.2f maxpnl=%.2f dd=%.2f oid=%s' % (orec['refoprice'], q['last'], orec['pnl'], orec['maxpnl'], orec['dd'], oid)
+                            #self.logger.info('ref=%.2f last=%.2f pnl=%.2f maxpnl=%.2f dd=%.2f oid=%s', orec['refoprice'], q['last'], orec['pnl'], orec['maxpnl'], orec['dd'], oid)
+
                             # stop profit
                             if (orec['pnl']-orec['maxprofit']>1e-3):
                                 toclose.add(oid)
+                                print 'stop profit %s' % oid
+                                self.logger.info('stop profit %s', oid)
                             # stop loss
-                            if (orec['pnl']-orec['maxloss']<1e-3):
+                            elif (orec['pnl']-orec['maxloss']<1e-3):
                                 toclose.add(oid)
+                                print 'stop loss %s' % oid
+                                self.logger.info('stop loss %s', oid)
                             # stop on max dd
-                            if (orec['dd']-orec['maxdd']<1e-3):
+                            elif (orec['dd']-orec['maxdd']<1e-3) and (orec['pnl']>1e-3):
                                 toclose.add(oid)
+                                print 'stop dd %s' % oid
+                                self.logger.info('stop dd %s', oid)
 
                     for ooid in toclose:
                         oorec = self.orders[ooid]
                         tdir = orec['tdir']
+                        code = self.legcode
 
                         otype = fdef.VCLOSE
                         direct = fdef.VLONG if (tdir>0) else fdef.VSHORT
@@ -118,12 +127,20 @@ class followstrat(strattop):
                             corec = {}
                             corec['oid'] = coid
                             corec['ooid'] = ooid
+                            corec['otype'] = otype
+                            self.orders[coid] = corec
+                            print 'close order requested'
                         else:
-                            self.logger.erro('close order cannot requested')
+                            print 'close order cannot be requested'
+                            self.logger.error('close order cannot requested')
 
                 self.quote = q
 
         elif m['channel'] == fdef.CHFOLLOW:
+            if self.issuspend():
+                self.lock.release()
+                return
+
             try:
                 followparam = pickle.loads(m['data'])
             except:
@@ -147,6 +164,7 @@ class followstrat(strattop):
             else:
                 otype = fdef.VOPEN
                 direct = fdef.VLONG if (tdir>0) else fdef.VSHORT
+                # TODO: self.quote might be None
                 price = (self.quote['ask1']+2) if (tdir>0) else (self.quote['bid1']-2)
                 volume = 1
                 oid, doreq, rcok = self.reqorder(otype, direct, code, price, volume, tag='open')
@@ -165,6 +183,10 @@ class followstrat(strattop):
                     orec['state'] = 'requested'
                     self.orders[oid] = orec
                     self.trackingopen.append(oid)
+                    print 'open order requested'
+                else:
+                    print 'open order not requested'
+                    self.logger.info('open order not requested')
 
         self.lock.release()
 
@@ -176,10 +198,12 @@ class followstrat(strattop):
         orec = self.orders[oid]
         if (orec['otype']==fdef.VOPEN):
             orec['state'] = 'opened'
+            print 'order opened'
         elif (orec['otype']==fdef.VCLOSE):
             openoid = orec['ooid']
             orec['state'] = 'closed'
-            self.trackingopen.remove[openoid]
+            self.trackingopen.remove(openoid)
+            print 'order closed'
 
         self.lock.release()
 
@@ -193,7 +217,6 @@ class followstrat(strattop):
             self.trackingopen.remove(oid)
         else:
             self.logger.error('close order cancelled')
-            self.trackingclose.remove(oid)
 
         self.lock.release()
 
@@ -207,7 +230,6 @@ class followstrat(strattop):
             self.trackingopen.remove(oid)
         else:
             self.logger.error('close order rejected')
-            self.trackingclose.remove(oid)
 
         self.lock.release()
 
@@ -224,7 +246,11 @@ class followstrat(strattop):
 
     def onNewTrade(self, oid, resp):
         # log trade info
-        pass
+        o, olk = self.tbook.getorder(oid)
+        if o[fdef.KTAG]=='open':
+            self.logger.info('open order traded price=%.2f', resp[fdef.KPRICE])
+        elif o[fdef.KTAG]=='close':
+            self.logger.info('close order traded price=%.2f', resp[fdef.KPRICE])
 
 class followconsole(stratconsole):
     def do_quit(self, args):
@@ -251,7 +277,8 @@ class followconsole(stratconsole):
         print self.top.qhold
 
     def do_state(self, args):
-        print self.top.state
+        print '%d orders in tracking' % len(self.top.trackingopen)
+        print self.top.trackingopen
 
 def main():
     try:
@@ -259,7 +286,7 @@ def main():
     except IndexError:
         print 'What\'s your section?'
         sys.exit(1)
-    runstrat(mysec, folowstrat, followconsole, logfnwithdate=True)
+    runstrat(mysec, followstrat, followconsole, logfnwithdate=True)
 
 if __name__=='__main__':
     main()

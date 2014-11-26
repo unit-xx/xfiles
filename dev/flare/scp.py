@@ -411,7 +411,7 @@ class scpstrat(strattop):
             followparam['tdir'] = 1 if (self.tmode=='ask') else -1
 
             fd = pickle.dumps(followparam, -1)
-            self.pubsub.publish(self.qchannel, fd)
+            self.pubsub.publish(fdef.CHFOLLOW, fd)
 
 class scpconsole(stratconsole):
     def do_quit(self, args):
