@@ -2,6 +2,9 @@
 # is cointegrated with the index in out-of-sample periods. This is done in a moving window
 # fashion.
 
+# TODO: in/out/inout pvalue correlation, how cointegration set evolve, better cointegration set element selection (subset?)
+# TODO: backtest
+
 library(tseries)
 library(zoo)
 
