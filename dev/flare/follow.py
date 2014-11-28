@@ -184,6 +184,7 @@ class followstrat(strattop):
                     self.orders[oid] = orec
                     self.trackingopen.append(oid)
                     print 'open order requested'
+                    self.logger.info('open order requested refoprice=%.2f maxprofit=%.2f maxloss=%.2f maxdd=%.2f', refoprice, maxprofit, maxloss, maxdd)
                 else:
                     print 'open order not requested'
                     self.logger.info('open order not requested')
