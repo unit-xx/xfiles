@@ -56,35 +56,34 @@ for(i in seq(1, NROW(stkq)-param$winsize-param$oossize, param$step))
     {
       # 1 for not selected
       stkselector[j] = 1
-    } else
-    {
+    } else {
       retdiff = log(stkisqA) - idxisq.log
       pvalue = adf.test(retdiff, alternative="stationary")$p.value
-      stkselector[j] = ifelse((pvalue<param$maxpvalue), pvalue, 1)
+      stkselector[j] = pvalue
     }
   }
   
-  stkosq = stkq[(i+param$winsize):(i+param$winsize+param$oossize),which(stkselector!=1)]
+  stkosq = stkq[(i+param$winsize):(i+param$winsize+param$oossize),which(stkselector<param$maxpvalue)]
   idxosq = idxq[(i+param$winsize):(i+param$winsize+param$oossize)]
 
-  ptfisq = ptfeqwret(stkisq[,which(stkselector!=1)])
+  ptfisq = ptfeqwret(stkisq[,which(stkselector<param$maxpvalue)])
   idxisq2 = idxisq / idxisq[1]
   iretdiff = ptfisq - log(idxisq2)
   ipvalue = adf.test(iretdiff, alternative="stationary")$p.value
-  plot(iretdiff, type='l', main=sprintf('insample %d, from=%s to=%s pvalue=%.3f', length(which(stkselector!=1)), datestr[i], datestr[i+param$winsize], ipvalue))
+  plot(iretdiff, type='l', main=sprintf('insample %d, from=%s to=%s pvalue=%.3f', length(which(stkselector<param$maxpvalue)), datestr[i], datestr[i+param$winsize], ipvalue))
 
   ptfosq = ptfeqwret(stkosq)
   idxosq2 = idxosq / idxosq[1]
   oretdiff = ptfosq - log(idxosq2)
   opvalue = adf.test(oretdiff, alternative="stationary")$p.value
-  plot(oretdiff, type='l', main=sprintf('outsample %d, from=%s to=%s pvalue=%.3f', length(which(stkselector!=1)), datestr[i+param$winsize], datestr[i+param$winsize+param$oossize], opvalue))
+  plot(oretdiff, type='l', main=sprintf('outsample %d, from=%s to=%s pvalue=%.3f', length(which(stkselector<param$maxpvalue)), datestr[i+param$winsize], datestr[i+param$winsize+param$oossize], opvalue))
 
-  pdfiosq = ptfeqwret(stkq[i:(i+param$winsize+param$oossize),which(stkselector!=1)])
+  pdfiosq = ptfeqwret(stkq[i:(i+param$winsize+param$oossize),which(stkselector<param$maxpvalue)])
   idxiosq = idxq[i:(i+param$winsize+param$oossize)]
   idxiosq2 = idxiosq / idxiosq[1]
   ioretdiff = pdfiosq - log(idxiosq2)
   iopvalue = adf.test(ioretdiff, alternative="stationary")$p.value
-  plot(ioretdiff, type='l', main=sprintf('in & outsample %d, from=%s to=%s pvalue=%.3f', length(which(stkselector!=1)), datestr[i], datestr[i+param$winsize+param$oossize], iopvalue))
+  plot(ioretdiff, type='l', main=sprintf('in & outsample %d, from=%s to=%s pvalue=%.3f', length(which(stkselector<param$maxpvalue)), datestr[i], datestr[i+param$winsize+param$oossize], iopvalue))
   abline(v=param$winsize)
 }
 
