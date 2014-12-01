@@ -32,6 +32,10 @@ class scpstrat(strattop):
         self.quote = None
         self.lock = Lock()
 
+        self.fpmaxprofit = float(self.mycfg['fpmaxprofit'])
+        self.fpmaxloss = float(self.mycfg['fpmaxloss'])
+        self.fpmaxdd = float(self.mycfg['fpmaxdd'])
+
         # facility for calculating trend 
         self.nan = float('nan')
         #self.qhist = deque(maxlen=self.ntrend)
@@ -405,9 +409,9 @@ class scpstrat(strattop):
             followparam = {}
             followparam['code'] = self.legcode
             followparam['refoprice'] = resp[fdef.KPRICE]
-            followparam['maxloss'] = -5
-            followparam['maxprofit'] = 10
-            followparam['maxdd'] = -5
+            followparam['maxloss'] = self.fpmaxloss
+            followparam['maxprofit'] = self.fpmaxprofit
+            followparam['maxdd'] = self.fpmaxdd
             followparam['tdir'] = 1 if (self.tmode=='ask') else -1
 
             fd = pickle.dumps(followparam, -1)
